@@ -32,7 +32,7 @@ describe('RateLimitedMinter', function () {
 
     this.core = await getCore();
 
-    this.fei = await ethers.getContractAt('Fei', await this.core.fei());
+    this.fei = await ethers.getContractAt('Volt', await this.core.volt());
 
     this.rateLimitPerSecond = '1';
     this.bufferCap = '20000';

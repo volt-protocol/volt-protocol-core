@@ -47,7 +47,7 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.Core
   },
   tribe: {
-    artifactName: 'Tribe',
+    artifactName: 'Vcon',
     address: '0xc7283b66Eb1EB5FB86327f08e1B5816b0720212B',
     category: AddressCategory.Core
   },

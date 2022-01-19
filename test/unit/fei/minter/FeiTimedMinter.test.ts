@@ -42,7 +42,7 @@ describe('FeiTimedMinter', function () {
 
     this.core = await getCore();
 
-    this.fei = await ethers.getContractAt('Fei', await this.core.fei());
+    this.fei = await ethers.getContractAt('Volt', await this.core.volt());
 
     this.incentive = '100';
     this.frequency = '3600';

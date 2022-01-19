@@ -39,7 +39,7 @@ describe('PCVEquityMinter', function () {
       await ethers.getContractFactory('MockCollateralizationOracle')
     ).deploy(this.core.address, '1');
 
-    this.fei = await ethers.getContractAt('Fei', await this.core.fei());
+    this.fei = await ethers.getContractAt('Volt', await this.core.volt());
 
     this.swapper = await (await ethers.getContractFactory('MockPCVSwapper')).deploy();
 
