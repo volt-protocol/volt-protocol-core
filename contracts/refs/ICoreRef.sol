@@ -16,8 +16,6 @@ interface ICoreRef {
 
     function setCore(address newCore) external;
 
-    function resetTokens() external;
-
     function setContractAdminRole(bytes32 newContractAdminRole) external;
 
     // ----------- Governor or Guardian only state changing api -----------

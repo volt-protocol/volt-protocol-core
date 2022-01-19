@@ -12,10 +12,10 @@ abstract contract CoreRef is ICoreRef, Pausable {
     ICore private _core;
 
     /// @notice volt contract
-    IVolt public override volt;
+    IVolt public override immutable volt;
 
     /// @notice vcon contract
-    IERC20 public override vcon;
+    IERC20 public override immutable vcon;
 
     /// @notice a role used with a subset of governor permissions for this contract only
     bytes32 public override CONTRACT_ADMIN_ROLE;
@@ -26,6 +26,11 @@ abstract contract CoreRef is ICoreRef, Pausable {
 
     constructor(address coreAddress) {
         _initialize(coreAddress);
+
+        _core = ICore(coreAddress);
+        /// call out to core and get the volt and vcon addresses
+        volt = _core.volt();
+        vcon = _core.vcon();
     }
 
     /// @notice CoreRef constructor
@@ -36,10 +41,6 @@ abstract contract CoreRef is ICoreRef, Pausable {
 
         _core = ICore(coreAddress);
         _setContractAdminRole(_core.GOVERN_ROLE());
-
-        /// call out to core and get the volt and vcon addresses
-        volt = _core.volt();
-        vcon = _core.vcon();
     }
 
     modifier ifMinterSelf() {
@@ -104,12 +105,6 @@ abstract contract CoreRef is ICoreRef, Pausable {
     modifier onlyVolt() {
         require(msg.sender == address(volt), "CoreRef: Caller is not VOLT");
         _;
-    }
-
-    /// @notice function to reset the tokens based on the values in CoreRef
-    function resetTokens() external override onlyGovernor {
-        volt = _core.volt();
-        vcon = _core.vcon();
     }
 
     /// @notice set new Core reference address
