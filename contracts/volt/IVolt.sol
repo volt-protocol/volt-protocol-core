@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title FEI stablecoin interface
 /// @author Fei Protocol
-interface IFei is IERC20 {
+interface IVolt is IERC20 {
     // ----------- Events -----------
 
     event Minting(
@@ -39,19 +39,7 @@ interface IFei is IERC20 {
         bytes32 s
     ) external;
 
-    // ----------- Burner only state changing api -----------
-
-    function burnFrom(address account, uint256 amount) external;
-
     // ----------- Minter only state changing api -----------
 
     function mint(address account, uint256 amount) external;
-
-    // ----------- Governor only state changing api -----------
-
-    function setIncentiveContract(address account, address incentive) external;
-
-    // ----------- Getters -----------
-
-    function incentiveContract(address account) external view returns (address);
 }

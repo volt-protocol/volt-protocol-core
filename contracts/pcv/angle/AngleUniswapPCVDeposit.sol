@@ -78,12 +78,12 @@ contract AngleUniswapPCVDeposit is UniswapPCVDeposit {
         stableMaster = _stableMaster;
         poolManager = _poolManager;
         stakingRewards = _stakingRewards;
-        require(_poolManager.token() == address(fei()), "AngleUniswapPCVDeposit: invalid poolManager");
+        require(_poolManager.token() == address(volt), "AngleUniswapPCVDeposit: invalid poolManager");
         require(_stableMaster.agToken() == token, "AngleUniswapPCVDeposit: invalid stableMaster");
         require(_stakingRewards.stakingToken() == _pair, "AngleUniswapPCVDeposit: invalid stakingRewards");
 
         // Approve FEI on StableMaster to be able to mint agTokens
-        SafeERC20.safeApprove(IERC20(address(fei())), address(_stableMaster), type(uint256).max);
+        SafeERC20.safeApprove(IERC20(address(volt)), address(_stableMaster), type(uint256).max);
         // Approve LP tokens on StakingRewards to earn ANGLE rewards
         SafeERC20.safeApprove(IERC20(_pair), address(_stakingRewards), type(uint256).max);
     }
@@ -107,7 +107,7 @@ contract AngleUniswapPCVDeposit is UniswapPCVDeposit {
           .asUint256();
 
         // mint FEI to self
-        _mintFei(address(this), amountFei);
+        _mintVolt(address(this), amountFei);
 
         // mint agToken from FEI
         stableMaster.mint(
@@ -141,7 +141,7 @@ contract AngleUniswapPCVDeposit is UniswapPCVDeposit {
         );
 
         // burn FEI held (after redeeming agTokens, we have some)
-        _burnFeiHeld();
+        _burnVoltHeld();
     }
 
     /// @notice burn ALL agToken held for FEI

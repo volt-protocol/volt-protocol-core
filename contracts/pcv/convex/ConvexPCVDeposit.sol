@@ -46,7 +46,7 @@ contract ConvexPCVDeposit is PCVDeposit {
         curvePool = ICurvePool(_curvePool);
 
         // cache some values for later gas optimizations
-        address feiAddress = address(fei());
+        address feiAddress = address(volt);
         bool foundFeiInPool = false;
         uint256 feiFoundAtIndex = 0;
         for (uint256 i = 0; i < N_COINS; i++) {
@@ -116,7 +116,7 @@ contract ConvexPCVDeposit is PCVDeposit {
     }
 
     /// @notice returns the resistant balance in USD and FEI held by the contract
-    function resistantBalanceAndFei() public view override returns (
+    function resistantBalanceAndVolt() public view override returns (
         uint256 resistantBalance,
         uint256 resistantFei
     ) {

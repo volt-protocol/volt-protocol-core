@@ -46,7 +46,7 @@ abstract contract UniRef is IUniRef, OracleRef {
     {
         address token0 = pair.token0();
         (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
-        (feiReserves, tokenReserves) = address(fei()) == token0
+        (feiReserves, tokenReserves) = address(volt) == token0
             ? (reserve0, reserve1)
             : (reserve1, reserve0);
         return (feiReserves, tokenReserves);
@@ -64,7 +64,7 @@ abstract contract UniRef is IUniRef, OracleRef {
 
     function _token() internal view returns (address) {
         address token0 = pair.token0();
-        if (address(fei()) == token0) {
+        if (address(volt) == token0) {
             return pair.token1();
         }
         return token0;

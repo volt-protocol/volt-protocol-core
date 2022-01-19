@@ -2,18 +2,15 @@
 pragma solidity ^0.8.4;
 
 import "./IPermissions.sol";
-import "../fei/IFei.sol";
+import "../volt/IVolt.sol";
 
 /// @title Core Interface
 /// @author Fei Protocol
 interface ICore is IPermissions {
-    // ----------- Events -----------
 
-    event FeiUpdate(address indexed _fei);
-    event TribeUpdate(address indexed _tribe);
-    event GenesisGroupUpdate(address indexed _genesisGroup);
-    event TribeAllocation(address indexed _to, uint256 _amount);
-    event GenesisPeriodComplete(uint256 _timestamp);
+    // ----------- Events -----------
+    event VoltUpdate(address indexed _fei);
+    event VconUpdate(address indexed _tribe);
 
     // ----------- Governor only state changing api -----------
 
@@ -21,15 +18,13 @@ interface ICore is IPermissions {
 
     // ----------- Governor only state changing api -----------
 
-    function setFei(address token) external;
+    function setVolt(address token) external;
 
-    function setTribe(address token) external;
-
-    function allocateTribe(address to, uint256 amount) external;
+    function setVcon(address token) external;
 
     // ----------- Getters -----------
 
-    function fei() external view returns (IFei);
+    function volt() external view returns (IVolt);
 
-    function tribe() external view returns (IERC20);
+    function vcon() external view returns (IERC20);
 }

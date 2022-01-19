@@ -2,7 +2,7 @@
 pragma solidity ^0.8.4;
 
 import "./MergerBase.sol";
-import "../fei/IFei.sol";
+import "../volt/IVolt.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 /**
@@ -29,7 +29,7 @@ contract TRIBERagequit is MergerBase {
     address public constant rewardsDripper = 0x3Fe0EAD3500e767F0F8bC2d3B5AF7755B1b21A6a;
 
     /// @notice you already know
-    IFei public constant fei = IFei(0x956F47F50A910163D8BF957Cf5846D573E7f87CA);
+    IVolt public constant fei = IVolt(0x956F47F50A910163D8BF957Cf5846D573E7f87CA);
 
     /// @notice first timestamp for ragequit
     uint256 public immutable rageQuitStart;

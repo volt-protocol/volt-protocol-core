@@ -88,7 +88,7 @@ contract BPTLens is IPCVDepositBalances {
      * https://docs.gyro.finance/learn/oracles/bpt-oracle
      * This is robust to price manipulations within the Balancer pool.
      */
-    function resistantBalanceAndFei() public view override returns(uint256, uint256) {
+    function resistantBalanceAndVolt() public view override returns(uint256, uint256) {
         uint256[] memory prices = new uint256[](2);
         uint256 j = index == 0 ? 1 : 0;
 

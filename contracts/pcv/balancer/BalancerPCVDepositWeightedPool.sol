@@ -66,7 +66,7 @@ contract BalancerPCVDepositWeightedPool is BalancerPCVDepositBase {
 
         // set cached values for token addresses & indexes
         bool tokenFound = false;
-        address _fei = address(fei());
+        address _fei = address(volt);
         for (uint256 i = 0; i < poolAssets.length; i++) {
             tokenOraclesMapping[IERC20(address(poolAssets[i]))] = _tokenOracles[i];
             if (address(poolAssets[i]) == _token) {
@@ -130,7 +130,7 @@ contract BalancerPCVDepositWeightedPool is BalancerPCVDepositBase {
     }
 
     // @notice returns the manipulation-resistant balance of tokens & FEI held.
-    function resistantBalanceAndFei() public view override returns (
+    function resistantBalanceAndVolt() public view override returns (
         uint256 _resistantBalance,
         uint256 _resistantFei
     ) {
@@ -189,7 +189,7 @@ contract BalancerPCVDepositWeightedPool is BalancerPCVDepositBase {
             // If FEI is in pool, we mint the good balance of FEI to go with the tokens
             // we are depositing
             uint256 _feiToMint = underlyingPrices[tokenIndexInPool] * balances[tokenIndexInPool] / 1e18;
-            _mintFei(address(this), _feiToMint);
+            _mintVolt(address(this), _feiToMint);
             balances[feiIndexInPool] = _feiToMint;
         }
 
@@ -276,7 +276,7 @@ contract BalancerPCVDepositWeightedPool is BalancerPCVDepositBase {
 
             vault.exitPool(poolId, address(this), payable(address(this)), request);
             SafeERC20.safeTransfer(token, to, amount);
-            _burnFeiHeld();
+            _burnVoltHeld();
 
             emit Withdrawal(msg.sender, to, amount);
         }

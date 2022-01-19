@@ -286,7 +286,7 @@ contract CollateralizationOracle is ICollateralizationOracle, CoreRef {
                 address _deposit = tokenToDeposits[_token].at(j);
 
                 // read the deposit, and increment token balance/protocol fei
-                (uint256 _depositBalance, uint256 _depositFei) = IPCVDepositBalances(_deposit).resistantBalanceAndFei();
+                (uint256 _depositBalance, uint256 _depositFei) = IPCVDepositBalances(_deposit).resistantBalanceAndVolt();
                 _totalTokenBalance += _depositBalance;
                 _protocolControlledFei += _depositFei;
             }
@@ -302,7 +302,7 @@ contract CollateralizationOracle is ICollateralizationOracle, CoreRef {
             }
         }
 
-        userCirculatingFei = fei().totalSupply() - _protocolControlledFei;
+        userCirculatingFei = volt.totalSupply() - _protocolControlledFei;
         protocolEquity = protocolControlledValue.toInt256() - userCirculatingFei.toInt256();
     }
 

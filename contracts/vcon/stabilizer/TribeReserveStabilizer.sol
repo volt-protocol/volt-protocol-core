@@ -3,7 +3,7 @@ pragma solidity ^0.8.4;
 
 import "./ReserveStabilizer.sol";
 import "./ITribeReserveStabilizer.sol";
-import "../../tribe/ITribeMinter.sol";
+import "../../vcon/ITribeMinter.sol";
 import "../../utils/Timed.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
@@ -50,7 +50,7 @@ contract TribeReserveStabilizer is ITribeReserveStabilizer, ReserveStabilizer, T
         
         // Setting token here because it isn't available until after CoreRef is constructed
         // This does skip the _setDecimalsNormalizerFromToken call in ReserveStabilizer constructor, but it isn't needed because TRIBE is 18 decimals
-        token = tribe();
+        token = vcon;
 
         tribeMinter = _tribeMinter;
     }

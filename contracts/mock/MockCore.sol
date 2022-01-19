@@ -2,8 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "./../core/Permissions.sol";
-import "../fei/Fei.sol";
-import "../tribe/Tribe.sol";
+import "../vcon/Vcon.sol";
+import "../volt/Volt.sol";
 
 /// @title Mock Source of truth for Fei Protocol
 /// @author Fei Protocol
@@ -11,10 +11,10 @@ import "../tribe/Tribe.sol";
 contract MockCore is Permissions {
 
     /// @notice the address of the FEI contract
-    IFei public fei;
+    IVolt public volt;
     
     /// @notice the address of the TRIBE contract
-    IFei public tribe;
+    IERC20 public vcon;
 
     /// @notice tracks whether the contract has been initialized
     bool private _initialized;
@@ -30,10 +30,10 @@ contract MockCore is Permissions {
         require(id != 1, "cannot deploy mock on mainnet");
         _setupGovernor(msg.sender);
         
-        Fei _fei = new Fei(address(this));
-        fei = IFei(_fei);
+        Volt _volt = new Volt(address(this));
+        volt = IVolt(_volt);
 
-        Tribe _tribe = new Tribe(msg.sender, msg.sender);
-        tribe = IFei(address(_tribe));
+        Vcon _vcon = new Vcon(msg.sender, msg.sender);
+        vcon = IERC20(address(_vcon));
     }
 }

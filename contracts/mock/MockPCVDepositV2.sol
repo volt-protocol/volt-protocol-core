@@ -30,7 +30,7 @@ contract MockPCVDepositV2 is IPCVDeposit, CoreRef {
     }
 
     // gets the resistant token balance and protocol owned fei of this deposit
-    function resistantBalanceAndFei() external view override returns (uint256, uint256) {
+    function resistantBalanceAndVolt() external view override returns (uint256, uint256) {
         return (resistantBalance, resistantProtocolOwnedFei);
     }
 

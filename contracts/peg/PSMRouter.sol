@@ -17,9 +17,9 @@ contract PSMRouter is IPSMRouter {
     IPegStabilityModule public immutable override psm;
     /// @notice reference to the FEI contract used. Does not reference core to save on gas
     /// Router can be redeployed if FEI address changes
-    IFei public override immutable fei;
+    IVolt public override immutable fei;
 
-    constructor(IPegStabilityModule _psm, IFei _fei) {
+    constructor(IPegStabilityModule _psm, IVolt _fei) {
         psm = _psm;
         fei = _fei;
         IERC20(address(Constants.WETH)).approve(address(_psm), type(uint256).max);

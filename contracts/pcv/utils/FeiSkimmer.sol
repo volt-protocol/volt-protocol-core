@@ -4,22 +4,22 @@ pragma solidity ^0.8.4;
 import "../IPCVDeposit.sol"; 
 import "../../refs/CoreRef.sol";
 
-/// @title a contract to skim excess FEI from addresses
-/// @author Fei Protocol
+/// @title a contract to skim excess Volt from addresses
+/// @author FEI Protocol
 contract FeiSkimmer is CoreRef {
  
     event ThresholdUpdate(uint256 newThreshold);
 
-    /// @notice source PCV deposit to skim excess FEI from
+    /// @notice source PCV deposit to skim excess Volt from
     IPCVDeposit public immutable source;
 
-    /// @notice the threshold of FEI above which to skim
+    /// @notice the threshold of Volt above which to skim
     uint256 public threshold;
 
-    /// @notice FEI Skimmer
-    /// @param _core Fei Core for reference
+    /// @notice Volt Skimmer
+    /// @param _core Volt Core for reference
     /// @param _source the target to skim from
-    /// @param _threshold the threshold of FEI to be maintained by source
+    /// @param _threshold the threshold of Volt to be maintained by source
     constructor(
         address _core,
         IPCVDeposit _source,
@@ -32,29 +32,30 @@ contract FeiSkimmer is CoreRef {
         emit ThresholdUpdate(threshold);
     }
 
-    /// @return true if FEI balance of source exceeds threshold
+    /// @return true if Volt balance of source exceeds threshold
     function skimEligible() external view returns (bool) {
-        return fei().balanceOf(address(source)) > threshold;
+        return volt.balanceOf(address(source)) > threshold;
     }
 
-    /// @notice skim FEI above the threshold from the source. Pausable. Requires skimEligible()
+    /// @notice skim Volt above the threshold from the source. Pausable. Requires skimEligible()
     function skim()
         external
         whenNotPaused
     {
-        IFei _fei = fei();
-        uint256 feiTotal = _fei.balanceOf(address(source));
+        IVolt _volt = volt; /// save gas by pushing this value onto the stack instead of reading from storage
 
-        require(feiTotal > threshold, "under threshold");
+        uint256 voltTotal = _volt.balanceOf(address(source));
+
+        require(voltTotal > threshold, "under threshold");
         
-        uint256 burnAmount = feiTotal - threshold;
-        source.withdrawERC20(address(_fei), address(this), burnAmount);
+        uint256 burnAmount = voltTotal - threshold;
+        source.withdrawERC20(address(_volt), address(this), burnAmount);
 
-        _fei.burn(burnAmount);
+        _volt.burn(burnAmount);
     }
     
-    /// @notice set the threshold for FEI skims. Only Governor or Admin
-    /// @param newThreshold the new value above which FEI is skimmed.
+    /// @notice set the threshold for volt skims. Only Governor or Admin
+    /// @param newThreshold the new value above which volt is skimmed.
     function setThreshold(uint256 newThreshold) external onlyGovernorOrAdmin {
         threshold = newThreshold;
         emit ThresholdUpdate(newThreshold);

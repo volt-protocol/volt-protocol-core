@@ -125,7 +125,7 @@ contract TribeMinter is ITribeMinter, RateLimited, Ownable {
     /// @param newMinter the new minter address
     function setMinter(address newMinter) external override onlyOwner {
         require(newMinter != address(0), "TribeReserveStabilizer: zero address");
-        ITribe _tribe = ITribe(address(tribe()));
+        ITribe _tribe = ITribe(address(vcon));
         _tribe.setMinter(newMinter);
     }
 
@@ -142,7 +142,7 @@ contract TribeMinter is ITribeMinter, RateLimited, Ownable {
 
     /// @notice return the TRIBE supply, subtracting locked TRIBE
     function tribeCirculatingSupply() public view override returns (uint256) {
-        IERC20 _tribe = tribe();
+        IERC20 _tribe = vcon;
 
         // Remove all locked TRIBE from total supply calculation
         uint256 lockedTribe = _tribe.balanceOf(address(this));
@@ -171,7 +171,7 @@ contract TribeMinter is ITribeMinter, RateLimited, Ownable {
 
     // Transfer held TRIBE first, then mint to cover remainder
     function _mint(address to, uint256 amount) internal {
-        ITribe _tribe = ITribe(address(tribe()));
+        ITribe _tribe = ITribe(address(vcon));
 
         uint256 _tribeBalance = _tribe.balanceOf(address(this));
         uint256 mintAmount = amount;

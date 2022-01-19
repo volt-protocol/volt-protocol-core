@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 /// @title a Fei Timed Minter
 /// @author Fei Protocol
-interface IFeiTimedMinter {
+interface IVoltTimedMinter {
 
     // ----------- Events -----------
 

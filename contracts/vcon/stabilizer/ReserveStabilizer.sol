@@ -53,8 +53,8 @@ contract ReserveStabilizer is OracleRef, IReserveStabilizer, PCVDeposit {
     function exchangeFei(uint256 feiAmount) public virtual override whenNotPaused returns (uint256 amountOut) {
         updateOracle();
 
-        fei().transferFrom(msg.sender, address(this), feiAmount);
-        _burnFeiHeld();
+        volt.transferFrom(msg.sender, address(this), feiAmount);
+        _burnVoltHeld();
 
         amountOut = getAmountOut(feiAmount);
 

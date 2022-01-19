@@ -4,11 +4,11 @@ import "../../refs/CoreRef.sol";
 import "../../utils/Timed.sol";
 import "../../utils/Incentivized.sol";
 import "./RateLimitedMinter.sol";
-import "./IFeiTimedMinter.sol";
+import "./IVoltTimedMinter.sol";
 
 /// @title FeiTimedMinter
 /// @notice a contract which mints FEI to a target address on a timed cadence
-contract FeiTimedMinter is IFeiTimedMinter, CoreRef, Timed, Incentivized, RateLimitedMinter {
+contract FeiTimedMinter is IVoltTimedMinter, CoreRef, Timed, Incentivized, RateLimitedMinter {
     
     /// @notice most frequent that mints can happen
     uint256 public constant override MIN_MINT_FREQUENCY = 1 hours; // Min 1 hour per mint
@@ -60,8 +60,8 @@ contract FeiTimedMinter is IFeiTimedMinter, CoreRef, Timed, Incentivized, RateLi
         _incentivize();
 
         if (amount != 0) {
-            // Calls the overriden RateLimitedMinter _mintFei which includes the rate limiting logic
-            _mintFei(target, amount);
+            // Calls the overriden RateLimitedMinter _mintVolt which includes the rate limiting logic
+            _mintVolt(target, amount);
         
             emit FeiMinting(msg.sender, amount);
         }
@@ -103,8 +103,8 @@ contract FeiTimedMinter is IFeiTimedMinter, CoreRef, Timed, Incentivized, RateLi
         emit MintAmountUpdate(oldMintAmount, newMintAmount);
     }
 
-    function _mintFei(address to, uint256 amountIn) internal override(CoreRef, RateLimitedMinter) {
-      RateLimitedMinter._mintFei(to, amountIn);
+    function _mintVolt(address to, uint256 amountIn) internal override(CoreRef, RateLimitedMinter) {
+      RateLimitedMinter._mintVolt(to, amountIn);
     }
 
     function _afterMint() internal virtual {}

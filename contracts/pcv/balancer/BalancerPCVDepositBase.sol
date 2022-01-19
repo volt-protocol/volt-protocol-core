@@ -127,7 +127,7 @@ abstract contract BalancerPCVDepositBase is PCVDeposit {
             vault.exitPool(poolId, address(this), payable(address(_to)), request);
 
             if (_to == address(this)) {
-                _burnFeiHeld();
+                _burnVoltHeld();
             }
 
             emit ExitPool(poolId, _to, bptBalance);

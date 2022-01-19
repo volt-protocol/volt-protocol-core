@@ -16,6 +16,8 @@ interface ICoreRef {
 
     function setCore(address newCore) external;
 
+    function resetTokens() external;
+
     function setContractAdminRole(bytes32 newContractAdminRole) external;
 
     // ----------- Governor or Guardian only state changing api -----------
@@ -28,13 +30,13 @@ interface ICoreRef {
 
     function core() external view returns (ICore);
 
-    function fei() external view returns (IFei);
+    function volt() external view returns (IVolt);
 
-    function tribe() external view returns (IERC20);
+    function vcon() external view returns (IERC20);
 
-    function feiBalance() external view returns (uint256);
+    function voltBalance() external view returns (uint256);
 
-    function tribeBalance() external view returns (uint256);
+    function vconBalance() external view returns (uint256);
 
     function CONTRACT_ADMIN_ROLE() external view returns (bytes32);
 

@@ -7,7 +7,7 @@ import "../../utils/RateLimited.sol";
 /// @author Fei Protocol
 abstract contract RateLimitedMinter is RateLimited {
 
-    uint256 private constant MAX_FEI_LIMIT_PER_SECOND = 10_000e18; // 10000 FEI/s or ~860m FEI/day
+    uint256 private constant MAX_FEI_LIMIT_PER_SECOND = 10_000e18; // 10000 volt/s or ~860m volt/day
     
     constructor(
         uint256 _feiLimitPerSecond, 
@@ -18,8 +18,8 @@ abstract contract RateLimitedMinter is RateLimited {
     {}
 
     /// @notice override the FEI minting behavior to enforce a rate limit
-    function _mintFei(address to, uint256 amount) internal virtual override {
+    function _mintVolt(address to, uint256 amount) internal virtual override {
         uint256 mintAmount = _depleteBuffer(amount);
-        super._mintFei(to, mintAmount);
+        super._mintVolt(to, mintAmount);
     }
 }

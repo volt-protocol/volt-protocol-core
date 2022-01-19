@@ -181,7 +181,7 @@ contract NamedStaticPCVDepositWrapper is IPCVDepositBalances, CoreRef {
     }
 
     /// @notice returns the resistant balance and FEI in the deposit
-    function resistantBalanceAndFei() public view override returns (uint256, uint256) {
+    function resistantBalanceAndVolt() public view override returns (uint256, uint256) {
         return (balance, feiReportBalance);
     }
 

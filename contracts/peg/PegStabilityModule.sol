@@ -2,7 +2,7 @@
 pragma solidity ^0.8.4;
 
 import "./../pcv/PCVDeposit.sol";
-import "./../fei/minter/RateLimitedMinter.sol";
+import "./../volt/minter/RateLimitedMinter.sol";
 import "./IPegStabilityModule.sol";
 import "./../refs/OracleRef.sol";
 import "../Constants.sol";
@@ -158,7 +158,7 @@ contract PegStabilityModule is IPegStabilityModule, RateLimitedMinter, OracleRef
         amountOut = _getRedeemAmountOut(amountFeiIn);
         require(amountOut >= minAmountOut, "PegStabilityModule: Redeem not enough out");
 
-        IERC20(fei()).safeTransferFrom(msg.sender, address(this), amountFeiIn);
+        IERC20(volt).safeTransferFrom(msg.sender, address(this), amountFeiIn);
 
         _transfer(to, amountOut);
 
@@ -178,13 +178,13 @@ contract PegStabilityModule is IPegStabilityModule, RateLimitedMinter, OracleRef
 
         _transferFrom(msg.sender, address(this), amountIn);
 
-        uint256 amountFeiToTransfer = Math.min(fei().balanceOf(address(this)), amountFeiOut);
+        uint256 amountFeiToTransfer = Math.min(volt.balanceOf(address(this)), amountFeiOut);
         uint256 amountFeiToMint = amountFeiOut - amountFeiToTransfer;
 
-        IERC20(fei()).safeTransfer(to, amountFeiToTransfer);
+        IERC20(volt).safeTransfer(to, amountFeiToTransfer);
 
         if (amountFeiToMint > 0) {
-            _mintFei(to, amountFeiToMint);
+            _mintVolt(to, amountFeiToMint);
         }
         
         emit Mint(to, amountIn, amountFeiOut);
@@ -231,7 +231,7 @@ contract PegStabilityModule is IPegStabilityModule, RateLimitedMinter, OracleRef
 
     /// @notice the maximum mint amount out
     function getMaxMintAmountOut() external override view returns (uint256) {
-        return fei().balanceOf(address(this)) + buffer();
+        return volt.balanceOf(address(this)) + buffer();
     }
 
     /// @notice a flag for whether the current balance is above (true) or below (false) the reservesThreshold
@@ -255,8 +255,8 @@ contract PegStabilityModule is IPegStabilityModule, RateLimitedMinter, OracleRef
     }
 
     /// @notice override default behavior of not checking fei balance
-    function resistantBalanceAndFei() public view override returns(uint256, uint256) {
-      return (balance(), feiBalance());
+    function resistantBalanceAndVolt() public view override returns(uint256, uint256) {
+      return (balance(), voltBalance());
     }
 
     // ----------- Internal Methods -----------
@@ -310,8 +310,8 @@ contract PegStabilityModule is IPegStabilityModule, RateLimitedMinter, OracleRef
     }
 
     /// @notice mint amount of FEI to the specified user on a rate limit
-    function _mintFei(address to, uint256 amount) internal override(CoreRef, RateLimitedMinter) {
-        super._mintFei(to, amount);
+    function _mintVolt(address to, uint256 amount) internal override(CoreRef, RateLimitedMinter) {
+        super._mintVolt(to, amount);
     }
 
     // ----------- Hooks -----------

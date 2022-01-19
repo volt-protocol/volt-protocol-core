@@ -1,7 +1,7 @@
 pragma solidity ^0.8.4;
 
 import "./IPegStabilityModule.sol";
-import "../fei/IFei.sol";
+import "../volt/IVolt.sol";
 
 interface IPSMRouter {
     // ---------- View-Only API ----------
@@ -10,7 +10,7 @@ interface IPSMRouter {
     function psm() external returns (IPegStabilityModule);
 
     /// @notice reference to the FEI contract used.    
-    function fei() external returns (IFei);
+    function fei() external returns (IVolt);
 
     /// @notice calculate the amount of FEI out for a given `amountIn` of underlying
     function getMintAmountOut(uint256 amountIn) external view returns (uint256 amountFeiOut);

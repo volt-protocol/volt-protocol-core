@@ -38,7 +38,7 @@ contract UniswapPCVDeposit is IUniswapPCVDeposit, PCVDeposit, UniRef {
     ) UniRef(_core, _pair, _oracle, _backupOracle) {
         router = IUniswapV2Router02(_router);
 
-        _approveToken(address(fei()));
+        _approveToken(address(volt));
         _approveToken(token);
         _approveToken(_pair);
 
@@ -60,7 +60,7 @@ contract UniswapPCVDeposit is IUniswapPCVDeposit, PCVDeposit, UniRef {
 
         _addLiquidity(tokenAmount, feiAmount);
 
-        _burnFeiHeld(); // burn any FEI dust from LP
+        _burnVoltHeld(); // burn any FEI dust from LP
 
         emit Deposit(msg.sender, tokenAmount);
     }
@@ -95,7 +95,7 @@ contract UniswapPCVDeposit is IUniswapPCVDeposit, PCVDeposit, UniRef {
         uint256 amountWithdrawn = _removeLiquidity(liquidityToWithdraw);
         SafeERC20.safeTransfer(IERC20(token), to, amountWithdrawn);
 
-        _burnFeiHeld(); // burn remaining FEI
+        _burnVoltHeld(); // burn remaining FEI
 
         emit Withdrawal(msg.sender, to, amountWithdrawn);
     }
@@ -158,7 +158,7 @@ contract UniswapPCVDeposit is IUniswapPCVDeposit, PCVDeposit, UniRef {
 
         Finally scale the resistant reserves by the ratio owned by the contract
      */
-    function resistantBalanceAndFei() public view override returns(uint256, uint256) {
+    function resistantBalanceAndVolt() public view override returns(uint256, uint256) {
         (uint256 feiInPool, uint256 otherInPool) = getReserves();
 
         Decimal.D256 memory priceOfToken = readOracle();
@@ -188,7 +188,7 @@ contract UniswapPCVDeposit is IUniswapPCVDeposit, PCVDeposit, UniRef {
         // No restrictions on withdrawal price
         (, uint256 amountWithdrawn) =
             router.removeLiquidity(
-                address(fei()),
+                address(volt),
                 token,
                 liquidity,
                 0,
@@ -200,12 +200,12 @@ contract UniswapPCVDeposit is IUniswapPCVDeposit, PCVDeposit, UniRef {
     }
 
     function _addLiquidity(uint256 tokenAmount, uint256 feiAmount) internal virtual {
-        _mintFei(address(this), feiAmount);
+        _mintVolt(address(this), feiAmount);
 
         uint256 endOfTime = type(uint256).max;
         // Deposit price gated by slippage parameter
         router.addLiquidity(
-            address(fei()),
+            address(volt),
             token,
             feiAmount,
             tokenAmount,
