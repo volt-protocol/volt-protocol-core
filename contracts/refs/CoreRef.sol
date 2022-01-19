@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 /// @notice defines some modifiers and utilities around interacting with Core
 abstract contract CoreRef is ICoreRef, Pausable {
     /// @notice reference to CoreRef
-    ICore private _core;
+    ICore private immutable _core;
 
     /// @notice volt contract
     IVolt public override immutable volt;
@@ -39,8 +39,7 @@ abstract contract CoreRef is ICoreRef, Pausable {
         require(!_initialized, "CoreRef: already initialized");
         _initialized = true;
 
-        _core = ICore(coreAddress);
-        _setContractAdminRole(_core.GOVERN_ROLE());
+        _setContractAdminRole(ICore(coreAddress).GOVERN_ROLE());
     }
 
     modifier ifMinterSelf() {
@@ -105,15 +104,6 @@ abstract contract CoreRef is ICoreRef, Pausable {
     modifier onlyVolt() {
         require(msg.sender == address(volt), "CoreRef: Caller is not VOLT");
         _;
-    }
-
-    /// @notice set new Core reference address
-    /// @param newCore the new core address
-    function setCore(address newCore) external override onlyGovernor {
-        require(newCore != address(0), "CoreRef: zero address");
-        address oldCore = address(_core);
-        _core = ICore(newCore);
-        emit CoreUpdate(oldCore, newCore);
     }
 
     /// @notice sets a new admin role for this contract
