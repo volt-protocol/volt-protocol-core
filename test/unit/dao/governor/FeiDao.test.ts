@@ -98,14 +98,6 @@ describe('FeiDAO', function () {
     it('timelock', async function () {
       expect(await feiDAO.timelock()).to.be.equal(timelock.address);
     });
-
-    it('rollback deadline', async function () {
-      expect((await feiDAO.ROLLBACK_DEADLINE()).toString()).to.be.equal('1635724800');
-    });
-
-    it('backup governor correct address', async function () {
-      expect(await feiDAO.BACKUP_GOVERNOR()).to.be.equal('0x4C895973334Af8E06fd6dA4f723Ac24A5f259e6B');
-    });
   });
 
   describe('Set Parameters', function () {

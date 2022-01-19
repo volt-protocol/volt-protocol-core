@@ -12,3 +12,5 @@ cache
 types/contracts
 .eslintcache
 .xml
+yarn.lock
+todo
