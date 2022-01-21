@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
-import "../utils/RateLimitedMinter.sol";
+import "../volt/minter/RateLimitedMinter.sol";
 
 contract MockRateLimitedMinter is RateLimitedMinter {
 
@@ -20,6 +20,6 @@ contract MockRateLimitedMinter is RateLimitedMinter {
 	}
 
     function mint(address to, uint256 amount) public {
-        _mintFei(to, amount);
+        _mintVolt(to, amount);
     }
 }

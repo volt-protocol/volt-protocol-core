@@ -56,7 +56,7 @@ contract MockEthPCVDeposit is IPCVDeposit {
         return address(0);
     }
 
-    function resistantBalanceAndFei() public view virtual override returns(uint256, uint256) {
+    function resistantBalanceAndVolt() public view virtual override returns(uint256, uint256) {
       return (balance(), 0);
     }
 }

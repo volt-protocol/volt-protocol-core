@@ -38,7 +38,7 @@ contract UniswapPCVDeposit is IUniswapPCVDeposit, PCVDeposit, UniRef {
     ) UniRef(_core, _pair, _oracle, _backupOracle) {
         router = IUniswapV2Router02(_router);
 
-        _approveToken(address(fei()));
+        _approveToken(address(volt));
         _approveToken(token);
         _approveToken(_pair);
 
@@ -60,7 +60,7 @@ contract UniswapPCVDeposit is IUniswapPCVDeposit, PCVDeposit, UniRef {
 
         _addLiquidity(tokenAmount, feiAmount);
 
-        _burnFeiHeld(); // burn any FEI dust from LP
+        _burnVoltHeld(); // burn any FEI dust from LP
 
         emit Deposit(msg.sender, tokenAmount);
     }
@@ -95,7 +95,7 @@ contract UniswapPCVDeposit is IUniswapPCVDeposit, PCVDeposit, UniRef {
         uint256 amountWithdrawn = _removeLiquidity(liquidityToWithdraw);
         SafeERC20.safeTransfer(IERC20(token), to, amountWithdrawn);
 
-        _burnFeiHeld(); // burn remaining FEI
+        _burnVoltHeld(); // burn remaining FEI
 
         emit Withdrawal(msg.sender, to, amountWithdrawn);
     }
@@ -124,7 +124,7 @@ contract UniswapPCVDeposit is IUniswapPCVDeposit, PCVDeposit, UniRef {
     /// @notice set the new pair contract
     /// @param _pair the new pair
     /// @dev also approves the router for the new pair token and underlying token
-    function setPair(address _pair) external override onlyGovernor {
+    function setPair(address _pair) public virtual override onlyGovernor {
         _setupPair(_pair);
 
         _approveToken(token);
@@ -150,15 +150,15 @@ contract UniswapPCVDeposit is IUniswapPCVDeposit, PCVDeposit, UniRef {
         Derivation rETH, rFEI = resistant (ideal) ETH and FEI reserves, P = price of ETH in FEI:
         1. rETH * rFEI = k
         2. rETH = k / rFEI
-        3. rETH = (k * rETH) / (rFEI * rETH) 
+        3. rETH = (k * rETH) / (rFEI * rETH)
         4. rETH ^ 2 = k / P
         5. rETH = sqrt(k / P)
-        
+
         and rFEI = k / rETH by 1.
 
         Finally scale the resistant reserves by the ratio owned by the contract
      */
-    function resistantBalanceAndFei() public view override returns(uint256, uint256) {
+    function resistantBalanceAndVolt() public view override returns(uint256, uint256) {
         (uint256 feiInPool, uint256 otherInPool) = getReserves();
 
         Decimal.D256 memory priceOfToken = readOracle();
@@ -172,23 +172,23 @@ contract UniswapPCVDeposit is IUniswapPCVDeposit, PCVDeposit, UniRef {
 
         Decimal.D256 memory ratioOwned = _ratioOwned();
         return (
-            ratioOwned.mul(resistantOtherInPool).asUint256(), 
+            ratioOwned.mul(resistantOtherInPool).asUint256(),
             ratioOwned.mul(resistantFeiInPool).asUint256()
         );
     }
 
     /// @notice amount of pair liquidity owned by this contract
     /// @return amount of LP tokens
-    function liquidityOwned() public view override returns (uint256) {
+    function liquidityOwned() public view virtual override returns (uint256) {
         return pair.balanceOf(address(this));
     }
 
-    function _removeLiquidity(uint256 liquidity) internal returns (uint256) {
+    function _removeLiquidity(uint256 liquidity) internal virtual returns (uint256) {
         uint256 endOfTime = type(uint256).max;
         // No restrictions on withdrawal price
         (, uint256 amountWithdrawn) =
             router.removeLiquidity(
-                address(fei()),
+                address(volt),
                 token,
                 liquidity,
                 0,
@@ -199,13 +199,13 @@ contract UniswapPCVDeposit is IUniswapPCVDeposit, PCVDeposit, UniRef {
         return amountWithdrawn;
     }
 
-    function _addLiquidity(uint256 tokenAmount, uint256 feiAmount) internal {
-        _mintFei(address(this), feiAmount);
+    function _addLiquidity(uint256 tokenAmount, uint256 feiAmount) internal virtual {
+        _mintVolt(address(this), feiAmount);
 
         uint256 endOfTime = type(uint256).max;
         // Deposit price gated by slippage parameter
         router.addLiquidity(
-            address(fei()),
+            address(volt),
             token,
             feiAmount,
             tokenAmount,

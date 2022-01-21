@@ -4,68 +4,49 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./Permissions.sol";
 import "./ICore.sol";
-import "../token/Fei.sol";
-import "../dao/Tribe.sol";
+import "../volt/Volt.sol";
+import "../vcon/Vcon.sol";
 
 /// @title Source of truth for Fei Protocol
 /// @author Fei Protocol
-/// @notice maintains roles, access control, fei, tribe, genesisGroup, and the TRIBE treasury
+/// @notice maintains roles, access control, Volt, Vcon, and the Vcon treasury
 contract Core is ICore, Permissions, Initializable {
 
     /// @notice the address of the FEI contract
-    IFei public override fei;
+    IVolt public override volt;
     
-    /// @notice the address of the TRIBE contract
-    IERC20 public override tribe;
+    /// @notice the address of the Vcon contract
+    IERC20 public override vcon;
 
     function init() external override initializer {
         _setupGovernor(msg.sender);
         
-        Fei _fei = new Fei(address(this));
-        _setFei(address(_fei));
+        Volt _volt = new Volt(address(this));
+        _setVolt(address(_volt));
 
-        Tribe _tribe = new Tribe(address(this), msg.sender);
-        _setTribe(address(_tribe));
+        Vcon _vcon = new Vcon(address(this), msg.sender);
+        _setVcon(address(_vcon));
     }
 
-    /// @notice sets Fei address to a new address
-    /// @param token new fei address
-    function setFei(address token) external override onlyGovernor {
-        _setFei(token);
+    /// @notice sets Volt address to a new address
+    /// @param token new Volt address
+    function setVolt(address token) external override onlyGovernor {
+        _setVolt(token);
     }
 
-    /// @notice sets Tribe address to a new address
-    /// @param token new tribe address
-    function setTribe(address token) external override onlyGovernor {
-        _setTribe(token);
+    /// @notice sets Vcon address to a new address
+    /// @param token new Vcon address
+    function setVcon(address token) external override onlyGovernor {
+        _setVcon(token);
     }
 
-    /// @notice sends TRIBE tokens from treasury to an address
-    /// @param to the address to send TRIBE to
-    /// @param amount the amount of TRIBE to send
-    function allocateTribe(address to, uint256 amount)
-        external
-        override
-        onlyGovernor
-    {
-        IERC20 _tribe = tribe;
-        require(
-            _tribe.balanceOf(address(this)) >= amount,
-            "Core: Not enough Tribe"
-        );
-
-        _tribe.transfer(to, amount);
-
-        emit TribeAllocation(to, amount);
+    function _setVolt(address token) internal {
+        volt = IVolt(token);
+        emit VoltUpdate(token);
     }
 
-    function _setFei(address token) internal {
-        fei = IFei(token);
-        emit FeiUpdate(token);
-    }
-
-    function _setTribe(address token) internal {
-        tribe = IERC20(token);
-        emit TribeUpdate(token);
+    function _setVcon(address token) internal {
+        vcon = IERC20(token);
+        emit VconUpdate(token);
     }
 }

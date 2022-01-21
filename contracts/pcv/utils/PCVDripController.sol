@@ -3,7 +3,7 @@ pragma solidity ^0.8.4;
 
 import "./IPCVDripController.sol"; 
 import "../../utils/Incentivized.sol"; 
-import "../../utils/RateLimitedMinter.sol"; 
+import "../../volt/minter/RateLimitedMinter.sol"; 
 import "../../utils/Timed.sol";
 
 /// @title a PCV dripping controller
@@ -117,7 +117,7 @@ contract PCVDripController is IPCVDripController, Timed, RateLimitedMinter, Ince
         return target.balance() < dripAmount;
     }
 
-    function _mintFei(address to, uint256 amountIn) internal override(CoreRef, RateLimitedMinter) {
-      RateLimitedMinter._mintFei(to, amountIn);
+    function _mintVolt(address to, uint256 amountIn) internal override(CoreRef, RateLimitedMinter) {
+      RateLimitedMinter._mintVolt(to, amountIn);
     }
 }

@@ -8,7 +8,14 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 /// @author Fei Protocol
 /// @notice defines some modifiers and utilities around interacting with Core
 abstract contract CoreRef is ICoreRef, Pausable {
-    ICore private _core;
+    /// @notice reference to CoreRef
+    ICore private immutable _core;
+
+    /// @notice volt contract
+    IVolt public override immutable volt;
+
+    /// @notice vcon contract
+    IERC20 public override immutable vcon;
 
     /// @notice a role used with a subset of governor permissions for this contract only
     bytes32 public override CONTRACT_ADMIN_ROLE;
@@ -19,16 +26,20 @@ abstract contract CoreRef is ICoreRef, Pausable {
 
     constructor(address coreAddress) {
         _initialize(coreAddress);
+
+        _core = ICore(coreAddress);
+        /// call out to core and get the volt and vcon addresses
+        volt = _core.volt();
+        vcon = _core.vcon();
     }
 
     /// @notice CoreRef constructor
-    /// @param coreAddress Fei Core to reference
+    /// @param coreAddress volt Core to reference
     function _initialize(address coreAddress) internal {
         require(!_initialized, "CoreRef: already initialized");
         _initialized = true;
 
-        _core = ICore(coreAddress);
-        _setContractAdminRole(_core.GOVERN_ROLE());
+        _setContractAdminRole(ICore(coreAddress).GOVERN_ROLE());
     }
 
     modifier ifMinterSelf() {
@@ -81,18 +92,18 @@ abstract contract CoreRef is ICoreRef, Pausable {
         _;
     }
 
-    modifier onlyFei() {
-        require(msg.sender == address(fei()), "CoreRef: Caller is not FEI");
+    modifier isGovernorOrGuardianOrAdmin() {
+        require(
+            _core.isGovernor(msg.sender) ||
+            _core.isGuardian(msg.sender) || 
+            isContractAdmin(msg.sender), 
+            "CoreRef: Caller is not governor or guardian or admin");
         _;
     }
 
-    /// @notice set new Core reference address
-    /// @param newCore the new core address
-    function setCore(address newCore) external override onlyGovernor {
-        require(newCore != address(0), "CoreRef: zero address");
-        address oldCore = address(_core);
-        _core = ICore(newCore);
-        emit CoreUpdate(oldCore, newCore);
+    modifier onlyVolt() {
+        require(msg.sender == address(volt), "CoreRef: Caller is not VOLT");
+        _;
     }
 
     /// @notice sets a new admin role for this contract
@@ -121,37 +132,25 @@ abstract contract CoreRef is ICoreRef, Pausable {
         return _core;
     }
 
-    /// @notice address of the Fei contract referenced by Core
-    /// @return IFei implementation address
-    function fei() public view override returns (IFei) {
-        return _core.fei();
+    /// @notice Volt balance of contract
+    /// @return Volt amount held
+    function voltBalance() public view override returns (uint256) {
+        return volt.balanceOf(address(this));
     }
 
-    /// @notice address of the Tribe contract referenced by Core
-    /// @return IERC20 implementation address
-    function tribe() public view override returns (IERC20) {
-        return _core.tribe();
+    /// @notice VCON balance of contract
+    /// @return VCON amount held
+    function vconBalance() public view override returns (uint256) {
+        return vcon.balanceOf(address(this));
     }
 
-    /// @notice fei balance of contract
-    /// @return fei amount held
-    function feiBalance() public view override returns (uint256) {
-        return fei().balanceOf(address(this));
+    function _burnVoltHeld() internal {
+        volt.burn(voltBalance());
     }
 
-    /// @notice tribe balance of contract
-    /// @return tribe amount held
-    function tribeBalance() public view override returns (uint256) {
-        return tribe().balanceOf(address(this));
-    }
-
-    function _burnFeiHeld() internal {
-        fei().burn(feiBalance());
-    }
-
-    function _mintFei(address to, uint256 amount) internal virtual {
+    function _mintVolt(address to, uint256 amount) internal virtual {
         if (amount != 0) {
-            fei().mint(to, amount);
+            volt.mint(to, amount);
         }
     }
 
