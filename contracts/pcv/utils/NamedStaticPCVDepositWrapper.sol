@@ -150,7 +150,7 @@ contract NamedStaticPCVDepositWrapper is IPCVDepositBalances, CoreRef {
 
 
     /// @notice function to remove a PCV Deposit
-    function removeDeposit(uint256 index) external isGovernorOrGuardianOrAdmin {
+    function removeDeposit(uint256 index) external onlyGovernorOrGuardianOrAdmin {
         _removeDeposit(index);
     }
 

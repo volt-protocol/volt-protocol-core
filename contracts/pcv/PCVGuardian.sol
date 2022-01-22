@@ -59,13 +59,13 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
 
     /// @notice governor-or-guardian-only method to un-set an address as "safe" to withdraw funds to
     /// @param pcvDeposit the address to un-set as safe
-    function unsetSafeAddress(address pcvDeposit) external override isGovernorOrGuardianOrAdmin {
+    function unsetSafeAddress(address pcvDeposit) external override onlyGovernorOrGuardianOrAdmin {
         _unsetSafeAddress(pcvDeposit);
     }
 
     /// @notice batch version of unsetSafeAddresses
     /// @param _safeAddresses the addresses to un-set as safe
-    function unsetSafeAddresses(address[] calldata _safeAddresses) external override isGovernorOrGuardianOrAdmin {
+    function unsetSafeAddresses(address[] calldata _safeAddresses) external override onlyGovernorOrGuardianOrAdmin {
         require(_safeAddresses.length != 0, "empty");
         for (uint256 i = 0; i < _safeAddresses.length; i++) {
             _unsetSafeAddress(_safeAddresses[i]);
@@ -84,7 +84,7 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         uint256 amount,
         bool pauseAfter,
         bool depositAfter
-    ) external override isGovernorOrGuardianOrAdmin {
+    ) external override onlyGovernorOrGuardianOrAdmin {
         require(isSafeAddress(safeAddress), "Provided address is not a safe address!");
 
         pcvDeposit._ensureUnpaused();
@@ -114,7 +114,7 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         uint256 amount,
         bool pauseAfter,
         bool depositAfter
-    ) external override isGovernorOrGuardianOrAdmin {
+    ) external override onlyGovernorOrGuardianOrAdmin {
         require(isSafeAddress(safeAddress), "Provided address is not a safe address!");
 
         pcvDeposit._ensureUnpaused();
@@ -145,7 +145,7 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         uint256 amount,
         bool pauseAfter,
         bool depositAfter
-    ) external override isGovernorOrGuardianOrAdmin {
+    ) external override onlyGovernorOrGuardianOrAdmin {
         require(isSafeAddress(safeAddress), "Provided address is not a safe address!");
 
         pcvDeposit._ensureUnpaused();
