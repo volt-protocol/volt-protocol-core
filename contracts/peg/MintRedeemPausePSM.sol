@@ -49,13 +49,13 @@ contract MintRedeemPausePSM is PegStabilityModule {
     }
 
     /// @notice set secondary pausable methods to paused
-    function pauseRedeem() public isGovernorOrGuardianOrAdmin whileRedemptionsNotPaused {
+    function pauseRedeem() public onlyGovernorOrGuardianOrAdmin whileRedemptionsNotPaused {
         redeemPaused = true;
         emit RedemptionsPaused(msg.sender);
     }
 
     /// @notice set secondary pausable methods to unpaused
-    function unpauseRedeem() public isGovernorOrGuardianOrAdmin whileRedemptionsPaused {
+    function unpauseRedeem() public onlyGovernorOrGuardianOrAdmin whileRedemptionsPaused {
         redeemPaused = false;
         emit RedemptionsUnpaused(msg.sender);
     }

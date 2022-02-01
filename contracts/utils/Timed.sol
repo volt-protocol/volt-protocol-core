@@ -30,6 +30,12 @@ abstract contract Timed {
         _;
     }
 
+    modifier afterTimeInit() {
+        require(isTimeEnded(), "Timed: time not ended, init");
+        _;
+        _initTimed();
+    }
+
     /// @notice return true if time period has ended
     function isTimeEnded() public view returns (bool) {
         return remainingTime() == 0;

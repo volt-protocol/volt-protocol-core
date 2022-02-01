@@ -29,11 +29,11 @@ contract FuseGuardian is CoreRef {
       * @param cTokens The addresses of the markets (tokens) to change the supply caps for
       * @param newSupplyCaps The new supply cap values in underlying to be set. A value of 0 corresponds to unlimited supplying.
       */
-    function _setMarketSupplyCaps(CToken[] memory cTokens, uint[] calldata newSupplyCaps) external isGovernorOrGuardianOrAdmin {
+    function _setMarketSupplyCaps(CToken[] memory cTokens, uint[] calldata newSupplyCaps) external onlyGovernorOrGuardianOrAdmin {
         _setMarketSupplyCapsInternal(cTokens, newSupplyCaps);
     }
 
-    function _setMarketSupplyCapsByUnderlying(address[] calldata underlyings, uint[] calldata newSupplyCaps) external isGovernorOrGuardianOrAdmin {
+    function _setMarketSupplyCapsByUnderlying(address[] calldata underlyings, uint[] calldata newSupplyCaps) external onlyGovernorOrGuardianOrAdmin {
         _setMarketSupplyCapsInternal(_underlyingToCTokens(underlyings), newSupplyCaps);
     }
 
@@ -57,7 +57,7 @@ contract FuseGuardian is CoreRef {
       * @param cTokens The addresses of the markets (tokens) to change the borrow caps for
       * @param newBorrowCaps The new borrow cap values in underlying to be set. A value of 0 corresponds to unlimited borrowing.
       */
-    function _setMarketBorrowCaps(CToken[] memory cTokens, uint[] calldata newBorrowCaps) external isGovernorOrGuardianOrAdmin {
+    function _setMarketBorrowCaps(CToken[] memory cTokens, uint[] calldata newBorrowCaps) external onlyGovernorOrGuardianOrAdmin {
         _setMarketBorrowCapsInternal(cTokens, newBorrowCaps);
     }
 
@@ -65,7 +65,7 @@ contract FuseGuardian is CoreRef {
         comptroller._setMarketBorrowCaps(cTokens, newBorrowCaps);
     }
 
-    function _setMarketBorrowCapsByUnderlying(address[] calldata underlyings, uint[] calldata newBorrowCaps) external isGovernorOrGuardianOrAdmin {
+    function _setMarketBorrowCapsByUnderlying(address[] calldata underlyings, uint[] calldata newBorrowCaps) external onlyGovernorOrGuardianOrAdmin {
         _setMarketBorrowCapsInternal(_underlyingToCTokens(underlyings), newBorrowCaps);
     }
 
@@ -87,13 +87,13 @@ contract FuseGuardian is CoreRef {
         return comptroller._setPauseGuardian(newPauseGuardian);
     }
 
-    function _setMintPausedByUnderlying(address underlying, bool state) external isGovernorOrGuardianOrAdmin returns (bool) {
+    function _setMintPausedByUnderlying(address underlying, bool state) external onlyGovernorOrGuardianOrAdmin returns (bool) {
         address cToken = comptroller.cTokensByUnderlying(underlying);
         require(cToken != address(0), "cToken doesn't exist");
         _setMintPausedInternal(CToken(cToken), state);
     }
 
-    function _setMintPaused(CToken cToken, bool state) external isGovernorOrGuardianOrAdmin returns (bool) {
+    function _setMintPaused(CToken cToken, bool state) external onlyGovernorOrGuardianOrAdmin returns (bool) {
         return _setMintPausedInternal(cToken, state);
     }
 
@@ -101,7 +101,7 @@ contract FuseGuardian is CoreRef {
         return comptroller._setMintPaused(cToken, state);
     }
 
-    function _setBorrowPausedByUnderlying(address underlying, bool state) external isGovernorOrGuardianOrAdmin returns (bool) {
+    function _setBorrowPausedByUnderlying(address underlying, bool state) external onlyGovernorOrGuardianOrAdmin returns (bool) {
         address cToken = comptroller.cTokensByUnderlying(underlying);
         require(cToken != address(0), "cToken doesn't exist");
         return _setBorrowPausedInternal(CToken(cToken), state);
@@ -111,15 +111,15 @@ contract FuseGuardian is CoreRef {
         return comptroller._setBorrowPaused(cToken, state);
     }
 
-    function _setBorrowPaused(CToken cToken, bool state) external isGovernorOrGuardianOrAdmin returns (bool) {
+    function _setBorrowPaused(CToken cToken, bool state) external onlyGovernorOrGuardianOrAdmin returns (bool) {
         _setBorrowPausedInternal(CToken(cToken), state);
     }
 
-    function _setTransferPaused(bool state) external isGovernorOrGuardianOrAdmin returns (bool) {
+    function _setTransferPaused(bool state) external onlyGovernorOrGuardianOrAdmin returns (bool) {
         return comptroller._setTransferPaused(state);
     }
 
-    function _setSeizePaused(bool state) external isGovernorOrGuardianOrAdmin returns (bool) {
+    function _setSeizePaused(bool state) external onlyGovernorOrGuardianOrAdmin returns (bool) {
         return comptroller._setSeizePaused(state);
     }
 }

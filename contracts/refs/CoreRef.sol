@@ -92,7 +92,7 @@ abstract contract CoreRef is ICoreRef, Pausable {
         _;
     }
 
-    modifier isGovernorOrGuardianOrAdmin() {
+    modifier onlyGovernorOrGuardianOrAdmin() {
         require(
             _core.isGovernor(msg.sender) ||
             _core.isGuardian(msg.sender) || 
