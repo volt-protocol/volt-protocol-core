@@ -14,21 +14,19 @@ import "./../utils/Queue.sol";
  * Find information on LINK Token Contracts and get the latest ETH and LINK faucets here: https://docs.chain.link/docs/link-token-contracts/
  */
 
-/**
- * THIS IS AN EXAMPLE CONTRACT WHICH USES HARDCODED VALUES FOR CLARITY.
- * PLEASE DO NOT USE THIS CODE IN PRODUCTION.
- */
-contract APIConsumer is ChainlinkClient, Ownable, Queue {
+/// @notice ChainlinkOracle contract to get the latest CPI data
+contract ChainlinkOracle is ChainlinkClient, Ownable, Queue {
     using Chainlink for Chainlink.Request;
     using SafeERC20 for IERC20;
 
-    uint256 public cpiData;
-    int256 public immutable SCALE = 10**18;
+    /// @notice both of these variables are immutable to save gas
+    address public immutable oracle; /// 0xc57B33452b4F7BB189bB5AfaE9cc4aBa1f7a4FD8
+    bytes32 public immutable jobId; /// "d5270d1c311941d0b08bead21fea7747"
 
-    address public oracle; /// 0xc57B33452b4F7BB189bB5AfaE9cc4aBa1f7a4FD8
-    bytes32 private jobId; /// "d5270d1c311941d0b08bead21fea7747"
-    uint256 private fee;   /// 0.1 link
+    /// @notice amount in LINK paid to node operator for each request
+    uint256 public fee;
 
+    /// @notice address of the volt scaling price oracle
     IScalingPriceOracle public voltOracle;
 
     /// @param _oracle address of chainlink data provider
@@ -39,7 +37,7 @@ contract APIConsumer is ChainlinkClient, Ownable, Queue {
         address _oracle,
         bytes32 _jobid,
         uint256 _fee,
-        uint256[] memory initialQueue
+        uint24[] memory initialQueue
     )
         Ownable()
         Queue(initialQueue)
@@ -52,33 +50,26 @@ contract APIConsumer is ChainlinkClient, Ownable, Queue {
 
     /**
      * Create a Chainlink request to retrieve API response, find the target
-     * data, then multiply by 1000000000000000000 (to remove decimal places from data).
+     * data, then multiply by 1000 (to remove decimal places from data).
      */
-    function requestCPIData() onlyOwner external returns (bytes32 requestId) {
+    function requestCPIData() external onlyOwner returns (bytes32 requestId) {
         Chainlink.Request memory request = buildChainlinkRequest(jobId, address(this), this.fulfill.selector);
 
-        // Set the URL to perform the GET request on
-        request.add("get", "https://api.bls.gov/publicAPI/v2/timeseries/data/CUUR0000SA0?latest=true");
-
-        request.add("path", "Results.series.data.value");
-
-        // Multiply the result by 1000000000000000000 to remove decimals
-        request.addInt("times", SCALE);
-
-        // Sends the request
         return sendChainlinkRequestTo(oracle, request, fee);
     }
 
     /**
      * Receive the response in the form of uint256
-     */ 
+     */
+    /// TODO figure out if we need to enforce that there is a correct request ID here
+    /// it should, but still double check with chainlink
+    /// @param _requestId of the chainlink request
+    /// @param _cpiData latest CPI data
     function fulfill(bytes32 _requestId, uint256 _cpiData) external recordChainlinkFulfillment(_requestId) {
-        cpiData = _cpiData;
+        /// push CPI data to queue
+        _unshift(uint24(_cpiData));
 
-        /// push to queue
-        unshift(_cpiData);
-
-        /// calculate new change rate in basis points
+        /// calculate new annual CPI-U rate in basis points
         int256 aprBasisPoints = getAPRFromQueue();
 
         /// send data to Volt Price Oracle
@@ -86,13 +77,23 @@ contract APIConsumer is ChainlinkClient, Ownable, Queue {
     }
 
     /// @notice withdraw link tokens, available only to owner
-    function withdrawLink(address to, uint256 amount) onlyOwner external {
+    /// @param to recipient
+    /// @param amount sent to recipient
+    function withdrawLink(address to, uint256 amount) external onlyOwner {
         IERC20(chainlinkTokenAddress()).safeTransfer(to, amount);
     }
 
     /// @notice withdraw arbitrary tokens from contract, available only to owner
-    function withdrawToken(IERC20 token, address to, uint256 amount) onlyOwner external {
+    /// @param token asset to withdraw
+    /// @param to recipient
+    /// @param amount sent to recipient
+    function withdrawToken(IERC20 token, address to, uint256 amount) external onlyOwner {
         token.safeTransfer(to, amount);
     }
-    // - Implement a withdraw function to avoid locking your LINK in the contract
+
+    /// @notice function to set new LINK fee
+    /// @param newFee sent to node operator
+    function setFee(uint256 newFee) external onlyOwner {
+        fee = newFee;
+    }
 }

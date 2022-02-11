@@ -2,8 +2,6 @@
 pragma solidity ^0.8.4;
 
 import "./../Constants.sol";
-
-import "hardhat/console.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /// @notice contract to store a queue 12 things long
@@ -14,12 +12,12 @@ contract Queue {
     /// @notice index 0 is the start of the queue
     /// index 11 is end of the queue
     /// this queue has a fixed length of 12 with each index representing a month
-    uint256[12] public queue;
+    /// index 0 = most recent month
+    /// index 11 = furthest month in the past
+    uint24[12] public queue;
 
-    /// 0 = most recent month
-    /// 11 = month furthest in the past
-
-    constructor(uint256[] memory initialQueue) {
+    /// @param initialQueue this is the trailing twelve months of data
+    constructor(uint24[] memory initialQueue) {
         require(initialQueue.length == 12, "Queue: invalid length");
 
         for (uint256 i = 0; i < initialQueue.length; i++) {
@@ -46,18 +44,17 @@ contract Queue {
         }
     }
 
-
-    function getAPRFromQueue() public view returns (int256) {
-        int256 delta = int256(queue[0]) - int256(queue[11]);
-        int256 percentageChange = int256(delta) * int256(Constants.BASIS_POINTS_GRANULARITY) / int256(queue[11]);
-
-        return percentageChange;
+    /// @notice get APR from queue by measuring (current month - 12 months ago) / 12 months ago
+    /// @return percentageChange percentage change in basis points over past 12 months
+    function getAPRFromQueue() public view returns (int256 percentageChange) {
+        int256 delta = int24(queue[0]) - int24(queue[11]);
+        percentageChange = delta * int256(Constants.BASIS_POINTS_GRANULARITY) / int24(queue[11]);
     }
 
     /// @notice this is the only method needed as we will be using this queue to track CPI-U of the TTM
     /// add an element to the start of the queue and pop the last element off the queue
     /// @param elem the new element to add to the beginning of the queue
-    function unshift(uint256 elem) internal {
+    function _unshift(uint24 elem) internal {
         queue[11] = queue[10];
         queue[10] = queue[9];
         queue[9] = queue[8];
