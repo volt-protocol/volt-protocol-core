@@ -15,7 +15,9 @@ contract FeiDAOTimelock is Timelock, CoreRef {
     constructor(address core_, address admin_, uint delay_, uint minDelay_) 
         Timelock(admin_, delay_, minDelay_)
         CoreRef(core_)
-    {}
+    {
+        ICore(core_).init();
+    }
 
     /// @notice queue a transaction, with pausability
     function queueTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public override whenNotPaused returns (bytes32) {

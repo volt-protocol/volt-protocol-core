@@ -9,12 +9,12 @@ import {
 } from '@test/helpers';
 import { expect } from 'chai';
 import { Signer, utils } from 'ethers';
-import { Core, Fei, MockOracle, MockPCVDepositV2, WETH9, MintRedeemPausePSM } from '@custom-types/contracts';
+import { Core, MockOracle, MockPCVDepositV2, WETH9, PegStabilityModule, Volt } from '@custom-types/contracts';
 import { keccak256 } from 'ethers/lib/utils';
 
 const toBN = ethers.BigNumber.from;
 
-describe('MintRedeemPausePSM', function () {
+describe('PegStabilityModule', function () {
   let userAddress;
   let governorAddress;
   let minterAddress;
@@ -25,7 +25,7 @@ describe('MintRedeemPausePSM', function () {
   const mintFeeBasisPoints = 30;
   const redeemFeeBasisPoints = 30;
   const reservesThreshold = ethers.constants.WeiPerEther.mul(10);
-  const feiLimitPerSecond = ethers.constants.WeiPerEther.mul(10_000);
+  const voltLimitPerSecond = ethers.constants.WeiPerEther.mul(10_000);
   const bufferCap = ethers.constants.WeiPerEther.mul(10_000_000);
   const decimalsNormalizer = 0; // because the oracle price is scaled 1e18, need to divide out by that before testing
   const bpGranularity = 10_000;
@@ -33,9 +33,9 @@ describe('MintRedeemPausePSM', function () {
   const PSM_ADMIN_ROLE = keccak256(utils.toUtf8Bytes('PSM_ADMIN_ROLE'));
 
   let core: Core;
-  let fei: Fei;
+  let volt: Volt;
   let oracle: MockOracle;
-  let psm: MintRedeemPausePSM;
+  let psm: PegStabilityModule;
   let pcvDeposit: MockPCVDepositV2;
   let weth: WETH9;
 
@@ -77,13 +77,13 @@ describe('MintRedeemPausePSM', function () {
     guardianAddress = addresses.guardianAddress;
 
     core = await getCore();
-    fei = await ethers.getContractAt('Fei', await core.fei());
+    volt = await ethers.getContractAt('Volt', await core.volt());
     // eth costs 5k USD
     oracle = await (await ethers.getContractFactory('MockOracle')).deploy(5000);
     pcvDeposit = await (await ethers.getContractFactory('MockPCVDepositV2')).deploy(core.address, weth.address, 0, 0);
 
     psm = await (
-      await ethers.getContractFactory('MintRedeemPausePSM')
+      await ethers.getContractFactory('PegStabilityModule')
     ).deploy(
       {
         coreAddress: core.address,
@@ -95,7 +95,7 @@ describe('MintRedeemPausePSM', function () {
       mintFeeBasisPoints,
       redeemFeeBasisPoints,
       reservesThreshold,
-      feiLimitPerSecond,
+      voltLimitPerSecond,
       bufferCap,
       weth.address,
       pcvDeposit.address
@@ -109,7 +109,7 @@ describe('MintRedeemPausePSM', function () {
     // grant PSM admin role
     await core.grantRole(PSM_ADMIN_ROLE, psmAdminAddress);
 
-    await fei.connect(impersonatedSigners[minterAddress]).mint(psm.address, bufferCap);
+    await volt.connect(impersonatedSigners[minterAddress]).mint(psm.address, bufferCap);
 
     await hre.network.provider.send('hardhat_setBalance', [userAddress, '0x21E19E0C9BAB2400000']);
   });
@@ -132,7 +132,7 @@ describe('MintRedeemPausePSM', function () {
     });
 
     it('rateLimitPerSecond', async () => {
-      expect(await psm.rateLimitPerSecond()).to.be.equal(feiLimitPerSecond);
+      expect(await psm.rateLimitPerSecond()).to.be.equal(voltLimitPerSecond);
     });
 
     it('mintingBufferCap', async () => {
@@ -167,34 +167,96 @@ describe('MintRedeemPausePSM', function () {
       expect(await psm.hasSurplus()).to.be.false;
     });
 
+    it('mintpaused is false', async () => {
+      expect(await psm.mintPaused()).to.be.false;
+    });
+
+    it('redeempaused is false', async () => {
+      expect(await psm.redeemPaused()).to.be.false;
+    });
+
     it('CONTRACT_ADMIN_ROLE', async () => {
       expect(await psm.CONTRACT_ADMIN_ROLE()).to.be.equal(PSM_ADMIN_ROLE);
     });
 
-    it('resistantBalanceAndFei', async () => {
-      const [wethBalance, feiBalance] = await psm.resistantBalanceAndFei();
-      expect(feiBalance).to.be.equal(bufferCap);
+    it('resistantBalanceAndvolt', async () => {
+      const [wethBalance, voltBalance] = await psm.resistantBalanceAndVolt();
+      expect(voltBalance).to.be.equal(bufferCap);
       expect(wethBalance).to.be.equal(0);
     });
 
     it('getMaxMintAmountOut', async () => {
-      expect(await psm.getMaxMintAmountOut()).to.be.equal(bufferCap.add(await fei.balanceOf(psm.address)));
+      expect(await psm.getMaxMintAmountOut()).to.be.equal(bufferCap.add(await volt.balanceOf(psm.address)));
     });
   });
 
   describe('getMaxMintAmountOut', function () {
-    it('getMaxMintAmountOut updates when the PSM receives more FEI', async () => {
-      const startingMaxMintAmountOut = bufferCap.add(await fei.balanceOf(psm.address));
-      await fei.connect(impersonatedSigners[minterAddress]).mint(psm.address, 10);
+    it('getMaxMintAmountOut updates when the PSM receives more volt', async () => {
+      const startingMaxMintAmountOut = bufferCap.add(await volt.balanceOf(psm.address));
+      await volt.connect(impersonatedSigners[minterAddress]).mint(psm.address, 10);
       expect(await psm.getMaxMintAmountOut()).to.be.equal(startingMaxMintAmountOut.add(10));
     });
   });
 
+  describe('pause mint', function () {
+    it('governor can pause, mint fails', async () => {
+      await psm.connect(impersonatedSigners[governorAddress]).pauseMint();
+      expect(await psm.mintPaused()).to.be.true;
+      await expectRevert(
+        psm.connect(impersonatedSigners[userAddress]).mint(userAddress, 0, 0),
+        'PegStabilityModule: Minting paused'
+      );
+    });
+
+    it('governor can pause globally, mint fails', async () => {
+      await psm.connect(impersonatedSigners[governorAddress]).pause();
+      expect(await psm.paused()).to.be.true;
+      await expectRevert(psm.connect(impersonatedSigners[userAddress]).mint(userAddress, 0, 0), 'Pausable: paused');
+    });
+
+    it('governor can pause globally and for minting, mint fails', async () => {
+      await psm.connect(impersonatedSigners[governorAddress]).pause();
+      await psm.connect(impersonatedSigners[governorAddress]).pauseMint();
+
+      expect(await psm.paused()).to.be.true;
+      expect(await psm.mintPaused()).to.be.true;
+
+      await expectRevert(psm.connect(impersonatedSigners[userAddress]).mint(userAddress, 0, 0), 'Pausable: paused');
+    });
+  });
+
+  describe('pause redeem', function () {
+    it('governor can pause redeem, redemption fails', async () => {
+      await psm.connect(impersonatedSigners[governorAddress]).pauseRedeem();
+      expect(await psm.redeemPaused()).to.be.true;
+      await expectRevert(
+        psm.connect(impersonatedSigners[userAddress]).redeem(userAddress, 0, 0),
+        'PegStabilityModule: Redeem paused'
+      );
+    });
+
+    it('governor can pause globally, redemption fails', async () => {
+      await psm.connect(impersonatedSigners[governorAddress]).pause();
+      expect(await psm.paused()).to.be.true;
+      await expectRevert(psm.connect(impersonatedSigners[userAddress]).redeem(userAddress, 0, 0), 'Pausable: paused');
+    });
+
+    it('governor can pause globally and for redeem, redemption fails', async () => {
+      await psm.connect(impersonatedSigners[governorAddress]).pause();
+      await psm.connect(impersonatedSigners[governorAddress]).pauseRedeem();
+
+      expect(await psm.paused()).to.be.true;
+      expect(await psm.redeemPaused()).to.be.true;
+
+      await expectRevert(psm.connect(impersonatedSigners[userAddress]).redeem(userAddress, 0, 0), 'Pausable: paused');
+    });
+  });
+
   describe('Mint', function () {
-    describe('Sells Eth for FEI', function () {
-      it('exchanges 10 WEth for 50000 FEI', async () => {
+    describe('Sells Eth for volt', function () {
+      it('exchanges 10 WEth for 50000 volt', async () => {
         const ten = toBN(10).mul(ethers.constants.WeiPerEther);
-        const userStartingFeiBalance = await fei.balanceOf(userAddress);
+        const userStartingvoltBalance = await volt.balanceOf(userAddress);
         const psmStartingAssetBalance = await weth.balanceOf(psm.address);
         const expectedMintAmountOut = ten
           .mul(bpGranularity - mintFeeBasisPoints)
@@ -212,25 +274,25 @@ describe('MintRedeemPausePSM', function () {
         await psm.connect(impersonatedSigners[userAddress]).mint(userAddress, ten, expectedMintAmountOut);
 
         const endingUserWETHBalance = await weth.balanceOf(userAddress);
-        const userEndingFeiBalance = await fei.balanceOf(userAddress);
+        const userEndingvoltBalance = await volt.balanceOf(userAddress);
         const psmEndingWETHBalance = await weth.balanceOf(psm.address);
 
-        expect(userEndingFeiBalance.sub(userStartingFeiBalance)).to.be.equal(expectedMintAmountOut);
+        expect(userEndingvoltBalance.sub(userStartingvoltBalance)).to.be.equal(expectedMintAmountOut);
         expect(psmEndingWETHBalance.sub(psmStartingAssetBalance)).to.be.equal(ten);
 
-        const [wethBalance] = await psm.resistantBalanceAndFei();
+        const [wethBalance] = await psm.resistantBalanceAndVolt();
         expect(wethBalance).to.be.equal(ten);
 
-        // buffer has not been eaten into as the PSM holds FEI
+        // buffer has not been eaten into as the PSM holds volt
         expect(await psm.buffer()).to.be.equal(bufferCap);
         expect(startingUserAssetBalance.sub(endingUserWETHBalance)).to.be.equal(ten);
       });
 
-      it('exchanges 10 Eth for 48,750 FEI as fee is 250 bips and exchange rate is 1:5000', async () => {
+      it('exchanges 10 Eth for 48,750 volt as fee is 250 bips and exchange rate is 1:5000', async () => {
         const tenEth = toBN(10).mul(ethers.constants.WeiPerEther);
         const newMintFee = 250;
         const expectedMintAmountOut = toBN(48_750).mul(ethers.constants.WeiPerEther);
-        const userStartingFeiBalance = await fei.balanceOf(userAddress);
+        const userStartingvoltBalance = await volt.balanceOf(userAddress);
         const startingPSMWETHBalance = await weth.balanceOf(psm.address);
 
         await psm.connect(impersonatedSigners[governorAddress]).setMintFee(newMintFee);
@@ -244,22 +306,22 @@ describe('MintRedeemPausePSM', function () {
 
         await psm.connect(impersonatedSigners[userAddress]).mint(userAddress, tenEth, expectedMintAmountOut);
 
-        const userEndingFeiBalance = await fei.balanceOf(userAddress);
+        const userEndingvoltBalance = await volt.balanceOf(userAddress);
         const psmEndingWETHBalance = await weth.balanceOf(psm.address);
         const endingUserWETHBalance = await weth.balanceOf(userAddress);
 
-        expect(userEndingFeiBalance.sub(userStartingFeiBalance)).to.be.equal(expectedMintAmountOut);
+        expect(userEndingvoltBalance.sub(userStartingvoltBalance)).to.be.equal(expectedMintAmountOut);
         expect(psmEndingWETHBalance.sub(startingPSMWETHBalance)).to.be.equal(tenEth);
         expect(startingUserWETHBalance.sub(endingUserWETHBalance)).to.be.equal(tenEth);
-        // buffer has not been eaten into as the PSM holds FEI to pay out
+        // buffer has not been eaten into as the PSM holds volt to pay out
         expect(await psm.buffer()).to.be.equal(bufferCap);
       });
 
-      it('exchanges 1000 Eth for 4,985,000 FEI as fee is 300 bips and exchange rate is 1:5000', async () => {
+      it('exchanges 1000 Eth for 4,985,000 volt as fee is 300 bips and exchange rate is 1:5000', async () => {
         const oneThousandEth = toBN(1000).mul(ethers.constants.WeiPerEther);
         const newMintFee = 300;
         const expectedMintAmountOut = toBN(4_850_000).mul(ethers.constants.WeiPerEther);
-        const userStartingFeiBalance = await fei.balanceOf(userAddress);
+        const userStartingvoltBalance = await volt.balanceOf(userAddress);
         const startingPSMWETHBalance = await weth.balanceOf(psm.address);
 
         await psm.connect(impersonatedSigners[governorAddress]).setMintFee(newMintFee);
@@ -273,22 +335,22 @@ describe('MintRedeemPausePSM', function () {
 
         await psm.connect(impersonatedSigners[userAddress]).mint(userAddress, oneThousandEth, expectedMintAmountOut);
 
-        const userEndingFeiBalance = await fei.balanceOf(userAddress);
+        const userEndingvoltBalance = await volt.balanceOf(userAddress);
         const psmEndingWETHBalance = await weth.balanceOf(psm.address);
         const endingUserWETHBalance = await weth.balanceOf(userAddress);
 
-        expect(userEndingFeiBalance.sub(userStartingFeiBalance)).to.be.equal(expectedMintAmountOut);
+        expect(userEndingvoltBalance.sub(userStartingvoltBalance)).to.be.equal(expectedMintAmountOut);
         expect(psmEndingWETHBalance.sub(startingPSMWETHBalance)).to.be.equal(oneThousandEth);
         expect(startingUserWETHBalance.sub(endingUserWETHBalance)).to.be.equal(oneThousandEth);
-        // buffer has not been eaten into as the PSM holds FEI to pay out
+        // buffer has not been eaten into as the PSM holds volt to pay out
         expect(await psm.buffer()).to.be.equal(bufferCap);
       });
 
-      it('exchanges 4000 Eth for 19,400,000 FEI as fee is 300 bips and exchange rate is 1:5000', async () => {
+      it('exchanges 4000 Eth for 19,400,000 volt as fee is 300 bips and exchange rate is 1:5000', async () => {
         const fourThousandEth = toBN(4000).mul(ethers.constants.WeiPerEther);
         const newMintFee = 300;
         const expectedMintAmountOut = toBN(19_400_000).mul(ethers.constants.WeiPerEther);
-        const userStartingFeiBalance = await fei.balanceOf(userAddress);
+        const userStartingvoltBalance = await volt.balanceOf(userAddress);
         const startingPSMWETHBalance = await weth.balanceOf(psm.address);
 
         await psm.connect(impersonatedSigners[governorAddress]).setMintFee(newMintFee);
@@ -302,15 +364,15 @@ describe('MintRedeemPausePSM', function () {
 
         await psm.connect(impersonatedSigners[userAddress]).mint(userAddress, fourThousandEth, expectedMintAmountOut);
 
-        const userEndingFeiBalance = await fei.balanceOf(userAddress);
+        const userEndingvoltBalance = await volt.balanceOf(userAddress);
         const psmEndingWETHBalance = await weth.balanceOf(psm.address);
         const endingUserWETHBalance = await weth.balanceOf(userAddress);
 
-        expect(userEndingFeiBalance.sub(userStartingFeiBalance)).to.be.equal(expectedMintAmountOut);
+        expect(userEndingvoltBalance.sub(userStartingvoltBalance)).to.be.equal(expectedMintAmountOut);
         expect(psmEndingWETHBalance.sub(startingPSMWETHBalance)).to.be.equal(fourThousandEth);
         expect(startingUserWETHBalance.sub(endingUserWETHBalance)).to.be.equal(fourThousandEth);
-        expect(await fei.balanceOf(psm.address)).to.be.equal(0);
-        // buffer has been eaten into as the PSM holds FEI 10_000_000 and has a buffer of 10_000_000
+        expect(await volt.balanceOf(psm.address)).to.be.equal(0);
+        // buffer has been eaten into as the PSM holds volt 10_000_000 and has a buffer of 10_000_000
         expect(await psm.buffer()).to.be.equal(toBN(600_000).mul(ethers.constants.WeiPerEther));
       });
 
@@ -335,7 +397,7 @@ describe('MintRedeemPausePSM', function () {
         );
       });
 
-      it('should not mint when expected amount out is greater than minting buffer cap and all psm fei is used', async () => {
+      it('should not mint when expected amount out is greater than minting buffer cap and all psm volt is used', async () => {
         const fourThousandEth = toBN(5000).mul(ethers.constants.WeiPerEther);
         const expectedMintAmountOut = toBN(24_925_000).mul(ethers.constants.WeiPerEther);
 
@@ -383,7 +445,7 @@ describe('MintRedeemPausePSM', function () {
   });
 
   describe('Redeem', function () {
-    describe('Sells FEI for Eth', function () {
+    describe('Sells volt for Eth', function () {
       beforeEach(async () => {
         const wethAmount = toBN(5_000).mul(ethers.constants.WeiPerEther);
         await hre.network.provider.send('hardhat_setBalance', [userAddress, '0x21E19E0C9BAB2400000']);
@@ -397,23 +459,23 @@ describe('MintRedeemPausePSM', function () {
 
         await expectRevert(
           psm.connect(impersonatedSigners[userAddress]).redeem(userAddress, 10000, 0),
-          'EthPSM: Redeem paused'
+          'PegStabilityModule: Redeem paused'
         );
       });
 
-      it('exchanges 10,000,000 FEI for 97.5 Eth as fee is 250 bips and exchange rate is 1:10000', async () => {
+      it('exchanges 10,000,000 volt for 97.5 Eth as fee is 250 bips and exchange rate is 1:10000', async () => {
         await oracle.setExchangeRate(10_000);
         const tenM = toBN(10_000_000);
         const newRedeemFee = 250;
         await psm.connect(impersonatedSigners[governorAddress]).setRedeemFee(newRedeemFee);
 
-        const userStartingFeiBalance = await fei.balanceOf(userAddress);
+        const userStartingvoltBalance = await volt.balanceOf(userAddress);
         const psmStartingWETHBalance = await weth.balanceOf(psm.address);
         const userStartingWETHBalance = await weth.balanceOf(userAddress);
         const expectedAssetAmount = 975;
 
-        await fei.connect(impersonatedSigners[minterAddress]).mint(userAddress, tenM);
-        await fei.connect(impersonatedSigners[userAddress]).approve(psm.address, tenM);
+        await volt.connect(impersonatedSigners[minterAddress]).mint(userAddress, tenM);
+        await volt.connect(impersonatedSigners[userAddress]).approve(psm.address, tenM);
 
         const redeemAmountOut = await psm.getRedeemAmountOut(tenM);
         expect(redeemAmountOut).to.be.equal(expectedAssetAmount);
@@ -421,10 +483,10 @@ describe('MintRedeemPausePSM', function () {
         await psm.connect(impersonatedSigners[userAddress]).redeem(userAddress, tenM, expectedAssetAmount);
 
         const userEndingWETHBalance = await weth.balanceOf(userAddress);
-        const userEndingFeiBalance = await fei.balanceOf(userAddress);
+        const userEndingvoltBalance = await volt.balanceOf(userAddress);
         const psmEndingWETHBalance = await weth.balanceOf(psm.address);
 
-        expect(userEndingFeiBalance.sub(userStartingFeiBalance)).to.be.equal(0);
+        expect(userEndingvoltBalance.sub(userStartingvoltBalance)).to.be.equal(0);
         expect(psmStartingWETHBalance.sub(psmEndingWETHBalance)).to.be.equal(expectedAssetAmount);
         expect(userEndingWETHBalance.sub(userStartingWETHBalance)).to.be.equal(expectedAssetAmount);
       });
@@ -440,13 +502,13 @@ describe('MintRedeemPausePSM', function () {
         await psm.connect(impersonatedSigners[governorAddress]).unpauseRedeem();
         expect(await psm.redeemPaused()).to.be.false;
 
-        const userStartingFeiBalance = await fei.balanceOf(userAddress);
+        const userStartingvoltBalance = await volt.balanceOf(userAddress);
         const psmStartingWETHBalance = await weth.balanceOf(psm.address);
         const userStartingWETHBalance = await weth.balanceOf(userAddress);
         const expectedAssetAmount = 975;
 
-        await fei.connect(impersonatedSigners[minterAddress]).mint(userAddress, tenM);
-        await fei.connect(impersonatedSigners[userAddress]).approve(psm.address, tenM);
+        await volt.connect(impersonatedSigners[minterAddress]).mint(userAddress, tenM);
+        await volt.connect(impersonatedSigners[userAddress]).approve(psm.address, tenM);
 
         const redeemAmountOut = await psm.getRedeemAmountOut(tenM);
         expect(redeemAmountOut).to.be.equal(expectedAssetAmount);
@@ -454,43 +516,19 @@ describe('MintRedeemPausePSM', function () {
         await psm.connect(impersonatedSigners[userAddress]).redeem(userAddress, tenM, expectedAssetAmount);
 
         const userEndingWETHBalance = await weth.balanceOf(userAddress);
-        const userEndingFeiBalance = await fei.balanceOf(userAddress);
+        const userEndingvoltBalance = await volt.balanceOf(userAddress);
         const psmEndingWETHBalance = await weth.balanceOf(psm.address);
 
-        expect(userEndingFeiBalance.sub(userStartingFeiBalance)).to.be.equal(0);
+        expect(userEndingvoltBalance.sub(userStartingvoltBalance)).to.be.equal(0);
         expect(psmStartingWETHBalance.sub(psmEndingWETHBalance)).to.be.equal(expectedAssetAmount);
         expect(userEndingWETHBalance.sub(userStartingWETHBalance)).to.be.equal(expectedAssetAmount);
       });
 
-      it('redeem succeeds when regular pause is active', async () => {
+      it('redeem fails when regular pause is active', async () => {
         await psm.connect(impersonatedSigners[governorAddress]).pause();
         expect(await psm.paused()).to.be.true;
 
-        await oracle.setExchangeRate(10_000);
-        const tenM = toBN(10_000_000);
-        const newRedeemFee = 250;
-        await psm.connect(impersonatedSigners[governorAddress]).setRedeemFee(newRedeemFee);
-
-        const userStartingFeiBalance = await fei.balanceOf(userAddress);
-        const psmStartingWETHBalance = await weth.balanceOf(psm.address);
-        const userStartingWETHBalance = await weth.balanceOf(userAddress);
-        const expectedAssetAmount = 975;
-
-        await fei.connect(impersonatedSigners[minterAddress]).mint(userAddress, tenM);
-        await fei.connect(impersonatedSigners[userAddress]).approve(psm.address, tenM);
-
-        const redeemAmountOut = await psm.getRedeemAmountOut(tenM);
-        expect(redeemAmountOut).to.be.equal(expectedAssetAmount);
-
-        await psm.connect(impersonatedSigners[userAddress]).redeem(userAddress, tenM, expectedAssetAmount);
-
-        const userEndingWETHBalance = await weth.balanceOf(userAddress);
-        const userEndingFeiBalance = await fei.balanceOf(userAddress);
-        const psmEndingWETHBalance = await weth.balanceOf(psm.address);
-
-        expect(userEndingFeiBalance.sub(userStartingFeiBalance)).to.be.equal(0);
-        expect(psmStartingWETHBalance.sub(psmEndingWETHBalance)).to.be.equal(expectedAssetAmount);
-        expect(userEndingWETHBalance.sub(userStartingWETHBalance)).to.be.equal(expectedAssetAmount);
+        await expectRevert(psm.connect(impersonatedSigners[userAddress]).redeem(userAddress, 0, 0), 'Pausable: paused');
       });
 
       it('redeem fails when expected amount out is greater than actual amount out', async () => {
@@ -499,8 +537,8 @@ describe('MintRedeemPausePSM', function () {
 
         const expectedAssetAmount = 997;
 
-        await fei.connect(impersonatedSigners[minterAddress]).mint(userAddress, oneM);
-        await fei.connect(impersonatedSigners[userAddress]).approve(psm.address, oneM);
+        await volt.connect(impersonatedSigners[minterAddress]).mint(userAddress, oneM);
+        await volt.connect(impersonatedSigners[userAddress]).approve(psm.address, oneM);
 
         const redeemAmountOut = await psm.getRedeemAmountOut(oneM);
         expect(redeemAmountOut).to.be.equal(expectedAssetAmount);
@@ -512,7 +550,7 @@ describe('MintRedeemPausePSM', function () {
       });
 
       it('redeem fails when token is not approved to be spent by the PSM', async () => {
-        await fei.connect(impersonatedSigners[minterAddress]).mint(userAddress, 10_000_000);
+        await volt.connect(impersonatedSigners[minterAddress]).mint(userAddress, 10_000_000);
         await expectRevert(
           psm.connect(impersonatedSigners[userAddress]).redeem(userAddress, 1, 0),
           'ERC20: transfer amount exceeds allowance'
@@ -762,45 +800,28 @@ describe('MintRedeemPausePSM', function () {
           it('can pause as the guardian', async () => {
             await psm.connect(impersonatedSigners[guardianAddress]).pauseRedeem();
             expect(await psm.redeemPaused()).to.be.true;
-            await expectRevert(psm.redeem(userAddress, 0, 0), 'EthPSM: Redeem paused');
+            await expectRevert(psm.redeem(userAddress, 0, 0), 'PegStabilityModule: Redeem paused');
           });
 
           it('can pause and unpause as the guardian', async () => {
             await psm.connect(impersonatedSigners[guardianAddress]).pauseRedeem();
             expect(await psm.redeemPaused()).to.be.true;
-            await expectRevert(psm.redeem(userAddress, 0, 0), 'EthPSM: Redeem paused');
+            await expectRevert(psm.redeem(userAddress, 0, 0), 'PegStabilityModule: Redeem paused');
 
             await psm.connect(impersonatedSigners[guardianAddress]).unpauseRedeem();
             expect(await psm.redeemPaused()).to.be.false;
           });
 
-          it('cannot pause while paused', async () => {
-            await psm.connect(impersonatedSigners[guardianAddress]).pauseRedeem();
-            expect(await psm.redeemPaused()).to.be.true;
-            await expectRevert(
-              psm.connect(impersonatedSigners[guardianAddress]).pauseRedeem(),
-              'EthPSM: Redeem paused'
-            );
-          });
-
-          it('cannot unpause while unpaused', async () => {
-            expect(await psm.redeemPaused()).to.be.false;
-            await expectRevert(
-              psm.connect(impersonatedSigners[guardianAddress]).unpauseRedeem(),
-              'EthPSM: Redeem not paused'
-            );
-          });
-
           it('can pause redemptions as the governor', async () => {
             await psm.connect(impersonatedSigners[governorAddress]).pauseRedeem();
             expect(await psm.redeemPaused()).to.be.true;
-            await expectRevert(psm.redeem(userAddress, 0, 0), 'EthPSM: Redeem paused');
+            await expectRevert(psm.redeem(userAddress, 0, 0), 'PegStabilityModule: Redeem paused');
           });
 
           it('can pause redemptions as the PSM_ADMIN', async () => {
             await psm.connect(impersonatedSigners[psmAdminAddress]).pauseRedeem();
             expect(await psm.redeemPaused()).to.be.true;
-            await expectRevert(psm.redeem(userAddress, 0, 0), 'EthPSM: Redeem paused');
+            await expectRevert(psm.redeem(userAddress, 0, 0), 'PegStabilityModule: Redeem paused');
           });
 
           it('can not pause as non governor', async () => {
@@ -813,6 +834,51 @@ describe('MintRedeemPausePSM', function () {
           it('can not unpause as non governor', async () => {
             await expectRevert(
               psm.connect(impersonatedSigners[userAddress]).pauseRedeem(),
+              'CoreRef: Caller is not governor or guardian or admin'
+            );
+          });
+        });
+      });
+
+      describe('Mint Pausing', function () {
+        describe('pause', function () {
+          it('can pause as the guardian', async () => {
+            await psm.connect(impersonatedSigners[guardianAddress]).pauseMint();
+            expect(await psm.mintPaused()).to.be.true;
+            await expectRevert(psm.mint(userAddress, 0, 0), 'PegStabilityModule: Minting paused');
+          });
+
+          it('can pause and unpause as the guardian', async () => {
+            await psm.connect(impersonatedSigners[guardianAddress]).pauseMint();
+            expect(await psm.mintPaused()).to.be.true;
+            await expectRevert(psm.mint(userAddress, 0, 0), 'PegStabilityModule: Minting paused');
+
+            await psm.connect(impersonatedSigners[guardianAddress]).unpauseMint();
+            expect(await psm.mintPaused()).to.be.false;
+          });
+
+          it('can pause minting as the governor', async () => {
+            await psm.connect(impersonatedSigners[governorAddress]).pauseMint();
+            expect(await psm.mintPaused()).to.be.true;
+            await expectRevert(psm.mint(userAddress, 0, 0), 'PegStabilityModule: Minting paused');
+          });
+
+          it('can pause minting as the PSM_ADMIN', async () => {
+            await psm.connect(impersonatedSigners[psmAdminAddress]).pauseMint();
+            expect(await psm.mintPaused()).to.be.true;
+            await expectRevert(psm.mint(userAddress, 0, 0), 'PegStabilityModule: Minting paused');
+          });
+
+          it('can not pause as non governor', async () => {
+            await expectRevert(
+              psm.connect(impersonatedSigners[userAddress]).pauseMint(),
+              'CoreRef: Caller is not governor or guardian or admin'
+            );
+          });
+
+          it('can not unpause as non governor', async () => {
+            await expectRevert(
+              psm.connect(impersonatedSigners[userAddress]).unpauseMint(),
               'CoreRef: Caller is not governor or guardian or admin'
             );
           });

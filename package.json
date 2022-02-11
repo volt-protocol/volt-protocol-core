@@ -13,7 +13,7 @@
     "clean": "rm -rf build",
     "test": "npx hardhat test",
     "test:dependencies": "LOGGING=true NO_RESET=true npx hardhat test test/integration/tests/dependencies.ts",
-    "test:e2e": "ENABLE_MAINNET_FORKING=true RUN_E2E_TESTS=true npx hardhat test",
+    "test:e2e": "LOGGING=true ENABLE_MAINNET_FORKING=true RUN_E2E_TESTS=true npx hardhat test",
     "test:gas": "REPORT_GAS=true npx hardhat test",
     "test:all": "RUN_ALL_TESTS=true npx hardhat test",
     "lint": "eslint --config ./.eslintrc --ignore-path ./.eslintignore --ext .ts,.tsx .",
@@ -36,7 +36,7 @@
   "license": "AGPL-3.0-only",
   "dependencies": {
     "@balancer-labs/v2-pool-weighted": "^2.0.1",
-    "@chainlink/contracts": "^0.1.7",
+    "@chainlink/contracts": "^0.3.1",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@openzeppelin/contracts": "^4.4.2",
     "@openzeppelin/test-environment": "^0.1.7",

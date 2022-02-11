@@ -14,7 +14,7 @@ import {
   ERC20Dripper,
   ERC20Splitter,
   EthCompoundPCVDeposit,
-  Fei,
+  Volt,
   FeiDAO,
   GovernorAlpha,
   IAaveIncentivesController,
@@ -30,11 +30,10 @@ import {
   StakingTokenWrapper,
   Timelock,
   TribalChief,
-  Tribe,
+  Vcon,
   TribeReserveStabilizer,
   UniswapPCVDeposit
 } from './contracts';
-import { RestrictedPermissions } from './contracts/RestrictedPermissions';
 
 export type Env = {
   contracts: NamedContracts;
@@ -168,8 +167,10 @@ export type Config = {
 
 export interface MainnetContracts {
   core: Core;
-  tribe: Tribe;
-  fei: Fei;
+  tribe: Vcon;
+  fei: Volt;
+  Vcon: Vcon;
+  Volt: Volt;
   uniswapPCVDeposit: UniswapPCVDeposit;
   uniswapPCVController: ethers.Contract;
   chainlinkEthUsdOracle: ChainlinkOracleWrapper;
@@ -222,7 +223,6 @@ export interface MainnetContracts {
   feiDAO: FeiDAO;
   autoRewardsDistributor: AutoRewardsDistributor;
   rewardsDistributorAdmin: RewardsDistributorAdmin;
-  restrictedPermissions: RestrictedPermissions;
 }
 
 export interface MainnetContractAddresses {
@@ -256,7 +256,6 @@ export interface MainnetContractAddresses {
   tribalChiefOptimisticMultisig: string;
   stakingTokenWrapperRari: string;
   rariRewardsDistributorDelegator: string;
-  restrictedPermissions: string;
 }
 
 export type ContractAccessRights = {

@@ -9,19 +9,19 @@ import {
 } from '@test/helpers';
 import { expect } from 'chai';
 import { Signer, utils } from 'ethers';
-import { Core, MockERC20, Volt, MockOracle, PriceBoundPSM, MockPCVDepositV2 } from '@custom-types/contracts';
+import { Core, MockERC20, Volt, MockOracle, MockPCVDepositV2, FixedPricePSM } from '@custom-types/contracts';
 import { keccak256 } from 'ethers/lib/utils';
 
 const toBN = ethers.BigNumber.from;
 
-describe('PriceBoundPegStabilityModule', function () {
+describe('FixedPricePSM', function () {
   let userAddress;
   let governorAddress;
   let minterAddress;
   let pcvControllerAddress;
   let psmAdminAddress;
 
-  const mintFeeBasisPoints = 30;
+  const mintFeeBasisPoints = 0;
   const redeemFeeBasisPoints = 30;
   const reservesThreshold = ethers.constants.WeiPerEther.mul(10_000_000);
   const voltLimitPerSecond = ethers.constants.WeiPerEther.mul(10_000);
@@ -39,7 +39,7 @@ describe('PriceBoundPegStabilityModule', function () {
   let asset: MockERC20;
   let volt: Volt;
   let oracle: MockOracle;
-  let psm: PriceBoundPSM;
+  let psm: FixedPricePSM;
   let pcvDeposit: MockPCVDepositV2;
 
   before(async () => {
@@ -83,14 +83,14 @@ describe('PriceBoundPegStabilityModule', function () {
     pcvDeposit = await (await ethers.getContractFactory('MockPCVDepositV2')).deploy(core.address, asset.address, 0, 0);
 
     psm = await (
-      await ethers.getContractFactory('PriceBoundPSM')
+      await ethers.getContractFactory('FixedPricePSM')
     ).deploy(
       floorPrice,
       ceilingPrice,
       {
         coreAddress: core.address,
         oracleAddress: oracle.address,
-        backupOracle: oracle.address,
+        backupOracle: ZERO_ADDRESS,
         decimalsNormalizer,
         doInvert: false
       },
@@ -115,8 +115,8 @@ describe('PriceBoundPegStabilityModule', function () {
   });
 
   describe('after contract initialization, parameters are correct:', function () {
-    it('oracle address', async () => {
-      expect(await psm.oracle()).to.be.equal(oracle.address);
+    it('backup oracle address is correct', async () => {
+      expect(await psm.backupOracle()).to.be.equal(ZERO_ADDRESS);
     });
 
     it('mintFeeBasisPoints', async () => {
@@ -181,8 +181,8 @@ describe('PriceBoundPegStabilityModule', function () {
   });
 
   describe('Mint', function () {
-    describe('Sells Token for Volt', function () {
-      it('exchanges 10 DAI for 10 VOLT', async () => {
+    describe('Sells Token for volt', function () {
+      it('exchanges 10 DAI for 10 volt', async () => {
         const ten = toBN(10);
         const userStartingvoltBalance = await volt.balanceOf(userAddress);
         const psmStartingAssetBalance = await asset.balanceOf(psm.address);
@@ -335,47 +335,27 @@ describe('PriceBoundPegStabilityModule', function () {
         const oneK = toBN(1000);
         const newMintFee = 50;
         await psm.connect(impersonatedSigners[governorAddress]).setMintFee(newMintFee);
-        await psm.connect(impersonatedSigners[governorAddress]).setOracleCeilingBasisPoints(12_001);
 
         // set exchange rate to 1 dai to 1.2 volt
         await oracle.setExchangeRateScaledBase(ethers.constants.WeiPerEther.mul(12).div(10));
 
-        const userStartingvoltBalance = await volt.balanceOf(userAddress);
-        const psmStartingAssetBalance = await asset.balanceOf(psm.address);
-        const expectedMintAmountOut = 1194;
-
         await asset.mint(userAddress, oneK);
-        const startingUserAssetBalance = await asset.balanceOf(userAddress);
         await asset.connect(impersonatedSigners[userAddress]).approve(psm.address, oneK);
 
-        const mintAmountOut = await psm.getMintAmountOut(oneK);
-
-        expect(mintAmountOut).to.be.equal(expectedMintAmountOut);
-
-        await psm.connect(impersonatedSigners[userAddress]).mint(userAddress, oneK, expectedMintAmountOut);
-
-        const endingUserAssetBalance = await asset.balanceOf(userAddress);
-        const userEndingvoltBalance = await volt.balanceOf(userAddress);
-        const psmEndingAssetBalance = await asset.balanceOf(psm.address);
-
-        expect(startingUserAssetBalance.sub(endingUserAssetBalance)).to.be.equal(oneK);
-        expect(userEndingvoltBalance.sub(userStartingvoltBalance)).to.be.equal(expectedMintAmountOut);
-        expect(psmEndingAssetBalance.sub(psmStartingAssetBalance)).to.be.equal(oneK);
-
-        // buffer has not been eaten into as the PSM holds volt
-        expect(await psm.buffer()).to.be.equal(bufferCap);
+        await expectRevert(
+          psm.connect(impersonatedSigners[userAddress]).mint(userAddress, oneK, 0),
+          'PegStabilityModule: price out of bounds'
+        );
       });
 
       it('exchange and getMintAmountOut fails when new oracle ceiling is equal to the new exchange rate', async () => {
         const oneK = toBN(1000);
         const newMintFee = 300;
-        const expectedMintAmountOut = 1196;
 
         await psm.connect(impersonatedSigners[governorAddress]).setMintFee(newMintFee);
-        await psm.connect(impersonatedSigners[governorAddress]).setOracleCeilingBasisPoints(12_000);
 
-        // set exchange rate to 1 dai to 1.2 volt
-        await oracle.setExchangeRateScaledBase(ethers.constants.WeiPerEther.mul(12).div(10));
+        // set exchange rate to 1 dai to 1.1 volt
+        await oracle.setExchangeRateScaledBase(ethers.constants.WeiPerEther.mul(11).div(10));
 
         await asset.mint(userAddress, oneK);
         await asset.connect(impersonatedSigners[userAddress]).approve(psm.address, oneK);
@@ -383,29 +363,7 @@ describe('PriceBoundPegStabilityModule', function () {
         await expectRevert(psm.getMintAmountOut(oneK), 'PegStabilityModule: price out of bounds');
 
         await expectRevert(
-          psm.connect(impersonatedSigners[userAddress]).mint(userAddress, oneK, expectedMintAmountOut),
-          'PegStabilityModule: price out of bounds'
-        );
-      });
-
-      it('exchange and getMintAmountOut fails when new oracle floor is equal to the new exchange rate', async () => {
-        const oneK = toBN(1000);
-        const newMintFee = 300;
-        const expectedMintAmountOut = 1164;
-
-        await psm.connect(impersonatedSigners[governorAddress]).setMintFee(newMintFee);
-        await psm.connect(impersonatedSigners[governorAddress]).setOracleFloorBasisPoints(8_000);
-
-        // set exchange rate to 1 dai to .8 volt
-        await oracle.setExchangeRateScaledBase(ethers.constants.WeiPerEther.mul(8).div(10));
-
-        await asset.mint(userAddress, oneK);
-        await asset.connect(impersonatedSigners[userAddress]).approve(psm.address, oneK);
-
-        await expectRevert(psm.getMintAmountOut(oneK), 'PegStabilityModule: price out of bounds');
-
-        await expectRevert(
-          psm.connect(impersonatedSigners[userAddress]).mint(userAddress, oneK, expectedMintAmountOut),
+          psm.connect(impersonatedSigners[userAddress]).mint(userAddress, oneK, 0),
           'PegStabilityModule: price out of bounds'
         );
       });
@@ -631,6 +589,7 @@ describe('PriceBoundPegStabilityModule', function () {
       });
 
       it('redeem succeeds when user has enough funds and DAI is $1.019', async () => {
+        /// swap should still succeed when exchange rate is under $1.02
         await oracle.setExchangeRateScaledBase(ethers.constants.WeiPerEther.mul(1019).div(1000));
         await volt.connect(impersonatedSigners[minterAddress]).mint(userAddress, mintAmount);
         await volt.connect(impersonatedSigners[userAddress]).approve(psm.address, mintAmount);
@@ -639,11 +598,7 @@ describe('PriceBoundPegStabilityModule', function () {
         const startingUservoltBalance = await volt.balanceOf(userAddress);
         const startingUserAssetBalance = await asset.balanceOf(userAddress);
 
-        const expectedAssetAmount = mintAmount
-          .mul(bpGranularity - redeemFeeBasisPoints)
-          .div(bpGranularity)
-          .mul(ethers.constants.WeiPerEther)
-          .div(ethers.constants.WeiPerEther.mul(1019).div(1000));
+        const expectedAssetAmount = mintAmount.mul(bpGranularity - redeemFeeBasisPoints).div(bpGranularity);
         const actualAssetAmount = await psm.getRedeemAmountOut(mintAmount);
 
         expect(expectedAssetAmount).to.be.equal(actualAssetAmount);
@@ -669,11 +624,7 @@ describe('PriceBoundPegStabilityModule', function () {
         const startingUservoltBalance = await volt.balanceOf(userAddress);
         const startingUserAssetBalance = await asset.balanceOf(userAddress);
 
-        const expectedAssetAmount = pointOnevolt
-          .mul(bpGranularity - redeemFeeBasisPoints)
-          .div(bpGranularity)
-          .mul(ethers.constants.WeiPerEther)
-          .div(ethers.constants.WeiPerEther.mul(1019).div(1000));
+        const expectedAssetAmount = pointOnevolt.mul(bpGranularity - redeemFeeBasisPoints).div(bpGranularity);
         const actualAssetAmount = await psm.getRedeemAmountOut(pointOnevolt);
 
         expect(expectedAssetAmount).to.be.equal(actualAssetAmount);
@@ -699,11 +650,7 @@ describe('PriceBoundPegStabilityModule', function () {
         const startingUservoltBalance = await volt.balanceOf(userAddress);
         const startingUserAssetBalance = await asset.balanceOf(userAddress);
 
-        const expectedAssetAmount = pointOnevolt
-          .mul(bpGranularity - redeemFeeBasisPoints)
-          .div(bpGranularity)
-          .mul(ethers.constants.WeiPerEther)
-          .div(ethers.constants.WeiPerEther.mul(1019).div(1000));
+        const expectedAssetAmount = pointOnevolt.mul(bpGranularity - redeemFeeBasisPoints).div(bpGranularity);
         const actualAssetAmount = await psm.getRedeemAmountOut(pointOnevolt);
 
         expect(expectedAssetAmount).to.be.equal(actualAssetAmount);
@@ -728,11 +675,7 @@ describe('PriceBoundPegStabilityModule', function () {
         const startingUservoltBalance = await volt.balanceOf(userAddress);
         const startingUserAssetBalance = await asset.balanceOf(userAddress);
 
-        const expectedAssetAmount = mintAmount
-          .mul(bpGranularity - redeemFeeBasisPoints)
-          .div(bpGranularity)
-          .mul(ethers.constants.WeiPerEther)
-          .div(ethers.constants.WeiPerEther.mul(9801).div(10000));
+        const expectedAssetAmount = mintAmount.mul(bpGranularity - redeemFeeBasisPoints).div(bpGranularity);
 
         const actualAssetAmount = await psm.getRedeemAmountOut(mintAmount);
 
@@ -760,11 +703,7 @@ describe('PriceBoundPegStabilityModule', function () {
         const startingUservoltBalance = await volt.balanceOf(userAddress);
         const startingUserAssetBalance = await asset.balanceOf(userAddress);
 
-        const expectedAssetAmount = mintAmount
-          .mul(bpGranularity - 100)
-          .div(bpGranularity)
-          .mul(ethers.constants.WeiPerEther)
-          .div(ethers.constants.WeiPerEther.mul(9801).div(10000));
+        const expectedAssetAmount = mintAmount.mul(bpGranularity - 100).div(bpGranularity);
 
         const actualAssetAmount = await psm.getRedeemAmountOut(mintAmount);
 
@@ -782,7 +721,7 @@ describe('PriceBoundPegStabilityModule', function () {
         expect(await psm.buffer()).to.be.equal(bufferCap);
       });
 
-      it('redeem succeeds when user has enough funds, DAI is $0.5 and mint fee has been changed to 100 bips', async () => {
+      it('redeem succeeds when user has enough funds, DAI is $0.5 on chainlink oracle and mint fee has been changed to 100 bips and min floor price is $0.49', async () => {
         await psm.connect(impersonatedSigners[governorAddress]).setOracleFloorBasisPoints(4_900);
         await oracle.setExchangeRateScaledBase(ethers.constants.WeiPerEther.div(2));
 
@@ -794,11 +733,7 @@ describe('PriceBoundPegStabilityModule', function () {
         const startingUservoltBalance = await volt.balanceOf(userAddress);
         const startingUserAssetBalance = await asset.balanceOf(userAddress);
 
-        const expectedAssetAmount = mintAmount
-          .mul(bpGranularity - 100)
-          .div(bpGranularity)
-          .mul(ethers.constants.WeiPerEther)
-          .div(ethers.constants.WeiPerEther.div(2));
+        const expectedAssetAmount = mintAmount.mul(bpGranularity - 100).div(bpGranularity);
 
         const actualAssetAmount = await psm.getRedeemAmountOut(mintAmount);
 
@@ -814,6 +749,23 @@ describe('PriceBoundPegStabilityModule', function () {
         expect(endingUserAssetBalance).to.be.equal(startingUserAssetBalance.add(actualAssetAmount));
         expect(await volt.balanceOf(psm.address)).to.be.equal(mintAmount.add(startingPSMvoltBalance));
         expect(await psm.buffer()).to.be.equal(bufferCap);
+      });
+
+      it('redeem fails when user has enough funds, DAI is $0.5 on chainlink oracle and min floor price is $0.98', async () => {
+        await oracle.setExchangeRateScaledBase(ethers.constants.WeiPerEther.div(2));
+
+        await psm.connect(impersonatedSigners[governorAddress]).setRedeemFee(100);
+        await volt.connect(impersonatedSigners[minterAddress]).mint(userAddress, mintAmount);
+        await volt.connect(impersonatedSigners[userAddress]).approve(psm.address, mintAmount);
+
+        const expectedAssetAmount = mintAmount.mul(bpGranularity - 100).div(bpGranularity);
+
+        await expectRevert(psm.getRedeemAmountOut(mintAmount), 'PegStabilityModule: price out of bounds');
+
+        await expectRevert(
+          psm.connect(impersonatedSigners[userAddress]).redeem(userAddress, mintAmount, expectedAssetAmount),
+          'PegStabilityModule: price out of bounds'
+        );
       });
 
       it('redeem succeeds when user has enough funds, DAI is $0.5 and mint fee has been changed to 500 bips', async () => {
@@ -828,11 +780,7 @@ describe('PriceBoundPegStabilityModule', function () {
         const startingUservoltBalance = await volt.balanceOf(userAddress);
         const startingUserAssetBalance = await asset.balanceOf(userAddress);
 
-        const expectedAssetAmount = mintAmount
-          .mul(bpGranularity - 300)
-          .div(bpGranularity)
-          .mul(ethers.constants.WeiPerEther)
-          .div(ethers.constants.WeiPerEther.div(2));
+        const expectedAssetAmount = mintAmount.mul(bpGranularity - 300).div(bpGranularity);
 
         const actualAssetAmount = await psm.getRedeemAmountOut(mintAmount);
 

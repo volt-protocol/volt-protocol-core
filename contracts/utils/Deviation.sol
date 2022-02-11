@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /// @title contract that determines whether or not a new value is within
 /// an acceptable deviation threshold
-/// @author FEI Protocol, Elliot Friedman
+/// @author Elliot Friedman, FEI Protocol
 contract Deviation {
 
     using SafeCast for *;

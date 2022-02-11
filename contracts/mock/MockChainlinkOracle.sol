@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity ^0.6.0;
 
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 
@@ -15,7 +15,7 @@ contract MockChainlinkOracle is AggregatorV3Interface {
     uint256 _updatedAt;
     uint80 _answeredInRound;
 
-    constructor(int256 value, uint8 decimals) {
+    constructor(int256 value, uint8 decimals) public {
         _value = value;
         _decimals = decimals;
         _roundId = 42;
@@ -28,7 +28,7 @@ contract MockChainlinkOracle is AggregatorV3Interface {
       return _decimals;
     }
 
-    function description() external override pure returns (string memory) {
+    function description() external override view returns (string memory) {
       return "MockChainlinkOracle";
     }
 
@@ -66,7 +66,7 @@ contract MockChainlinkOracle is AggregatorV3Interface {
       _answeredInRound = answeredInRound;
     }
 
-    function version() external override pure returns (uint256) {
+    function version() external override view returns (uint256) {
       return 1;
     }
 }

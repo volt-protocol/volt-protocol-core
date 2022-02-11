@@ -16,11 +16,11 @@ interface ICore is IPermissions {
 
     function init() external;
 
-    // ----------- Governor only state changing api -----------
-
     function setVolt(address token) external;
 
     function setVcon(address token) external;
+
+    function allocateVcon(address user, uint256 amount) external;
 
     // ----------- Getters -----------
 

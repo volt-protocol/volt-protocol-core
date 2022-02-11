@@ -17,13 +17,13 @@ contract PSMRouter is IPSMRouter {
     IPegStabilityModule public immutable override psm;
     /// @notice reference to the FEI contract used. Does not reference core to save on gas
     /// Router can be redeployed if FEI address changes
-    IVolt public override immutable fei;
+    IVolt public override immutable volt;
 
-    constructor(IPegStabilityModule _psm, IVolt _fei) {
+    constructor(IPegStabilityModule _psm, IVolt _volt) {
         psm = _psm;
-        fei = _fei;
+        volt = _volt;
         IERC20(address(Constants.WETH)).approve(address(_psm), type(uint256).max);
-        _fei.approve(address(_psm), type(uint256).max);
+        _volt.approve(address(_psm), type(uint256).max);
     }
 
     modifier ensure(uint256 deadline) {
@@ -39,8 +39,8 @@ contract PSMRouter is IPSMRouter {
     }
 
     /// @notice view only pass through function to get amount of ETH out with given amount of FEI in
-    function getRedeemAmountOut(uint256 amountFeiIn) public override view returns (uint256 amountTokenOut) {
-        amountTokenOut = psm.getRedeemAmountOut(amountFeiIn);
+    function getRedeemAmountOut(uint256 amountVoltIn) public override view returns (uint256 amountTokenOut) {
+        amountTokenOut = psm.getRedeemAmountOut(amountVoltIn);
     }
 
     /// @notice the maximum mint amount out
@@ -115,7 +115,7 @@ contract PSMRouter is IPSMRouter {
     /// @notice helper function to deposit user FEI, unwrap weth and send eth to the user
     /// the PSM router receives the weth, then sends it to the specified recipient.
     function _redeem(address to, uint256 amountFeiIn, uint256 minAmountOut) internal returns (uint256 amountOut) {
-        IERC20(fei).safeTransferFrom(msg.sender, address(this), amountFeiIn);
+        IERC20(volt).safeTransferFrom(msg.sender, address(this), amountFeiIn);
         amountOut = psm.redeem(address(this), amountFeiIn, minAmountOut);
         
         Constants.WETH.withdraw(amountOut);

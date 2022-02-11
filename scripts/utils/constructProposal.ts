@@ -16,10 +16,14 @@ export default async function constructProposal(
 ): Promise<AlphaProposal> {
   logging && console.log(`Constructing proposal...`);
 
+  console.log('constructProposal 0');
   const proposalDescription = proposalInfo.description;
 
+  console.log('constructProposal 1');
   const proposalBuilder = proposals.builders.alpha();
+  console.log('constructProposal 2');
   proposalBuilder.maxActions = 40;
+  console.log('constructProposal 3');
 
   for (let i = 0; i < proposalInfo.commands.length; i += 1) {
     const command = proposalInfo.commands[i];
@@ -30,11 +34,15 @@ export default async function constructProposal(
 
     logging && console.log(`Adding proposal step: ${command.description}`);
   }
+  console.log('constructProposal 4');
 
   proposalBuilder.setDescription(`${proposalInfo.title}\n${proposalDescription.toString()}`); // Set proposal description
+  console.log('constructProposal 5');
 
   const proposal = proposalBuilder.build();
+  console.log('constructProposal 6');
   logging && console.log(await proposal.printProposalInfo());
+  console.log('constructProposal 7');
   return proposal;
 }
 

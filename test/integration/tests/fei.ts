@@ -6,7 +6,7 @@ import { NamedContracts } from '@custom-types/types';
 import { expectRevert, resetFork, ZERO_ADDRESS } from '@test/helpers';
 import proposals from '@test/integration/proposals_config';
 import { TestEndtoEndCoordinator } from '@test/integration/setup';
-import { Fei } from '@custom-types/contracts';
+import { Volt } from '@custom-types/contracts';
 import { Signer } from '@ethersproject/abstract-signer';
 const toBN = ethers.BigNumber.from;
 
@@ -16,13 +16,13 @@ before(async () => {
   await resetFork();
 });
 
-describe('e2e-fei', function () {
+describe('e2e-volt', function () {
   let contracts: NamedContracts;
   let deployAddress: string;
   let deploySigner: Signer;
   let e2eCoord: TestEndtoEndCoordinator;
   let doLogging: boolean;
-  let fei: Fei;
+  let volt: Volt;
 
   before(async function () {
     // Setup test environment and get contracts
@@ -44,58 +44,24 @@ describe('e2e-fei', function () {
     ({ contracts } = await e2eCoord.loadEnvironment());
     doLogging && console.log(`Environment loaded.`);
 
-    fei = contracts.fei as Fei;
+    volt = contracts.volt as Volt;
     deploySigner = await ethers.getSigner(deployAddress);
   });
 
-  describe('Fei Functionality', async function () {
-    it('setIncentiveContract', async function () {
-      expect(await contracts.core.isGovernor(deployAddress)).to.be.true;
-      expect(fei.connect(deploySigner).setIncentiveContract(ZERO_ADDRESS, ZERO_ADDRESS)).to.be.revertedWith(
-        'CoreRef: Caller is not a governor'
-      );
-    });
-
-    /* Tests disabled until restrictedPermissions is deployed. */
-
-    it('burnFrom', async function () {
-      expect(await contracts.core.isBurner(deployAddress)).to.be.true;
-      expect(fei.connect(deploySigner).burnFrom(ZERO_ADDRESS, 10)).to.be.revertedWith(
-        'RestrictedPermissions: Burner deprecated for contract'
-      );
-    });
-
-    it('burnFrom', async function () {
-      const balanceBefore = await fei.balanceOf(deployAddress);
-      await fei.connect(deploySigner).burn(10);
-      const balanceAfter = await fei.balanceOf(deployAddress);
-
-      expect(balanceBefore.sub(balanceAfter)).to.be.bignumber.equal(toBN(10));
-    });
-
-    it('mint', async function () {
-      expect(await contracts.core.isMinter(deployAddress)).to.be.true;
-      await fei.connect(deploySigner).mint(contracts.core.address, 10);
-
-      expect(await fei.balanceOf(contracts.core.address)).to.be.bignumber.equal(toBN(10));
-    });
-  });
-
   /* Test disabled until restrictedPermissions is deployed. */
-  describe('CoreRef Functionality', async function () {
+  describe.skip('CoreRef Functionality', async function () {
     it('setCore', async function () {
       expect(await contracts.core.isGovernor(deployAddress)).to.be.true;
-      await expectRevert(fei.connect(deploySigner).setCore(ZERO_ADDRESS), 'CoreRef: Caller is not a governor');
     });
 
     it('pause/unpause', async function () {
       await contracts.core.grantGuardian(deployAddress);
       expect(await contracts.core.isGuardian(deployAddress)).to.be.true;
 
-      await fei.connect(deploySigner).pause();
-      expect(await fei.paused()).to.be.true;
-      await fei.connect(deploySigner).unpause();
-      expect(await fei.paused()).to.be.false;
+      await volt.connect(deploySigner).pause();
+      expect(await volt.paused()).to.be.true;
+      await volt.connect(deploySigner).unpause();
+      expect(await volt.paused()).to.be.false;
     });
   });
 });

@@ -18,7 +18,7 @@ contract Core is ICore, Permissions, Initializable {
     /// @notice the address of the Vcon contract
     IERC20 public override vcon;
 
-    function init() external override initializer {
+    function init() external override {
         _setupGovernor(msg.sender);
         
         Volt _volt = new Volt(address(this));
@@ -38,6 +38,10 @@ contract Core is ICore, Permissions, Initializable {
     /// @param token new Vcon address
     function setVcon(address token) external override onlyGovernor {
         _setVcon(token);
+    }
+
+    function allocateVcon(address user, uint256 amount) external override onlyGovernor {
+        vcon.transfer(user, amount);
     }
 
     function _setVolt(address token) internal {

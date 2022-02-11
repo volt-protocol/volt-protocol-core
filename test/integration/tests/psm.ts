@@ -71,6 +71,7 @@ describe('e2e-peg-stability-module', function () {
     ({ contracts } = await e2eCoord.loadEnvironment());
     ({ dai, weth, daiPSM, ethPSM, ethPSMRouter, fei, core, daiPCVDripController, feiDAOTimelock } = contracts);
     doLogging && console.log(`Environment loaded.`);
+    doLogging && console.log(`Core address ${core.address}`);
     weth = contracts.weth as WETH9;
     await core.grantMinter(minterAddress);
 
@@ -309,7 +310,7 @@ describe('e2e-peg-stability-module', function () {
       });
     });
 
-    describe('mint', function () {
+    describe.only('mint', function () {
       const mintAmount = 10_000_000;
 
       beforeEach(async () => {
