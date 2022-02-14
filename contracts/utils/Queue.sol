@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
-import "./../Constants.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {Constants} from "./../Constants.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
-/// @notice contract to store a queue 12 things long
+/// @notice contract to store a queue with 12 items
 contract Queue {
-
     using SafeCast for *;
 
     /// @notice index 0 is the start of the queue
@@ -48,7 +47,7 @@ contract Queue {
     /// @return percentageChange percentage change in basis points over past 12 months
     function getAPRFromQueue() public view returns (int256 percentageChange) {
         int256 delta = int24(queue[0]) - int24(queue[11]);
-        percentageChange = delta * int256(Constants.BASIS_POINTS_GRANULARITY) / int24(queue[11]);
+        percentageChange = delta * Constants.BASIS_POINTS_GRANULARITY_INT / int24(queue[11]);
     }
 
     /// @notice this is the only method needed as we will be using this queue to track CPI-U of the TTM

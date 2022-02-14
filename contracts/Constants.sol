@@ -1,13 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.0;
 
-import "@uniswap/v2-periphery/contracts/interfaces/IWETH.sol";
+import {IWETH} from "@uniswap/v2-periphery/contracts/interfaces/IWETH.sol";
 
 library Constants {
     /// @notice the denominator for basis points granularity (10,000)
     uint256 public constant BASIS_POINTS_GRANULARITY = 10_000;
+
+    /// @notice the denominator for basis points granularity (10,000) as an int
+    int256 public constant BASIS_POINTS_GRANULARITY_INT = int256(BASIS_POINTS_GRANULARITY);
     
     uint256 public constant ONE_YEAR = 365.25 days;
+
+    int256 public constant ONE_YEAR_INT = int256(ONE_YEAR);
 
     /// @notice WETH9 address
     IWETH public constant WETH = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);

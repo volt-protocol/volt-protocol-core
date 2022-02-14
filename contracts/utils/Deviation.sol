@@ -1,13 +1,13 @@
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: GPL-3.0-or-later
+pragma solidity ^0.8.4;
 
-import "contracts/Constants.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {Constants} from "contracts/Constants.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /// @title contract that determines whether or not a new value is within
 /// an acceptable deviation threshold
 /// @author Elliot Friedman, FEI Protocol
 contract Deviation {
-
     using SafeCast for *;
 
     /// @notice event that is emitted when the threshold is changed
