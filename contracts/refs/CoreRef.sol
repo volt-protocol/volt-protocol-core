@@ -39,7 +39,7 @@ abstract contract CoreRef is ICoreRef, Pausable {
         require(!_initialized, "CoreRef: already initialized");
         _initialized = true;
 
-        _setContractAdminRole(ICore(coreAddress).GOVERN_ROLE());
+        _setContractAdminRole(keccak256("GOVERN_ROLE"));
     }
 
     modifier ifMinterSelf() {

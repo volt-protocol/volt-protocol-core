@@ -9,6 +9,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 // use default BigNumber
 chai.use(CBN(ethers.BigNumber));
 
+const scale = ethers.constants.WeiPerEther;
 const toBN = ethers.BigNumber.from;
 const { expect } = chai;
 const WETH9 = artifacts.readArtifactSync('WETH9');
@@ -252,6 +253,8 @@ const time = {
 
 export {
   // utils
+  toBN,
+  scale,
   ZERO_ADDRESS,
   MAX_UINT256,
   time,

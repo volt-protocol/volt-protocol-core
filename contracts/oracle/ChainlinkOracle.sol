@@ -9,19 +9,16 @@ import {ChainlinkClient, Chainlink} from "@chainlink/contracts/src/v0.8/Chainlin
 import {IScalingPriceOracle} from "./IScalingPriceOracle.sol";
 import {Queue} from "./../utils/Queue.sol";
 
-/**
- * Request testnet LINK and ETH here: https://faucets.chain.link/
- * Find information on LINK Token Contracts and get the latest ETH and LINK faucets here: https://docs.chain.link/docs/link-token-contracts/
- */
-
 /// @notice ChainlinkOracle contract to get the latest CPI data
 contract ChainlinkOracle is ChainlinkClient, Ownable, Queue {
     using Chainlink for Chainlink.Request;
     using SafeERC20 for IERC20;
 
-    /// @notice both of these variables are immutable to save gas
-    address public immutable oracle; /// 0xc57B33452b4F7BB189bB5AfaE9cc4aBa1f7a4FD8
-    bytes32 public immutable jobId; /// "d5270d1c311941d0b08bead21fea7747"
+    /// @notice address of chainlink oracle to send request
+    address public oracle;
+
+    /// @notice job id that retrieves the latest CPI data
+    bytes32 public jobId;
 
     /// @notice amount in LINK paid to node operator for each request
     uint256 public fee;
@@ -29,11 +26,13 @@ contract ChainlinkOracle is ChainlinkClient, Ownable, Queue {
     /// @notice address of the volt scaling price oracle
     IScalingPriceOracle public voltOracle;
 
+    /// @param _voltOracle address of the scaling price oracle
     /// @param _oracle address of chainlink data provider
     /// @param _jobid job id
     /// @param _fee fee paid to chainlink data provider
     /// @param initialQueue queue of previous twelve months of inflation data
     constructor(
+        IScalingPriceOracle _voltOracle,
         address _oracle,
         bytes32 _jobid,
         uint256 _fee,
@@ -42,10 +41,18 @@ contract ChainlinkOracle is ChainlinkClient, Ownable, Queue {
         Ownable()
         Queue(initialQueue)
     {
-        setPublicChainlinkToken();
+        uint256 chainId;
+        assembly {
+            chainId := chainid()
+        }
+
+        if (chainId == 1 || chainId == 42) { setPublicChainlinkToken(); }
+
         oracle = _oracle;
         jobId = _jobid;
         fee = _fee;
+
+        voltOracle = _voltOracle;
     }
 
     /**
@@ -58,11 +65,7 @@ contract ChainlinkOracle is ChainlinkClient, Ownable, Queue {
         return sendChainlinkRequestTo(oracle, request, fee);
     }
 
-    /**
-     * Receive the response in the form of uint256
-     */
-    /// TODO figure out if we need to enforce that there is a correct request ID here
-    /// it should, but still double check with chainlink
+    /// @notice Receive the response in the form of uint256
     /// @param _requestId of the chainlink request
     /// @param _cpiData latest CPI data
     function fulfill(bytes32 _requestId, uint256 _cpiData) external recordChainlinkFulfillment(_requestId) {
@@ -95,5 +98,23 @@ contract ChainlinkOracle is ChainlinkClient, Ownable, Queue {
     /// @param newFee sent to node operator
     function setFee(uint256 newFee) external onlyOwner {
         fee = newFee;
+    }
+
+    /// @notice function to set the job id
+    /// @param _jobId sent to node operator
+    function setJobID(bytes32 _jobId) external onlyOwner {
+        jobId = _jobId;
+    }
+
+    /// @notice function to set the scaling price oracle address
+    /// @param newScalingPriceOracle address
+    function setScalingPriceOracle(IScalingPriceOracle newScalingPriceOracle) external onlyOwner {
+        voltOracle = newScalingPriceOracle;
+    }
+
+    /// @notice function to set the chainlink oracle address that requests are made to
+    /// @param newChainlinkOracle new chainlink oracle
+    function setChainlinkOracleAddress(address newChainlinkOracle) external onlyOwner {
+        oracle = newChainlinkOracle;
     }
 }

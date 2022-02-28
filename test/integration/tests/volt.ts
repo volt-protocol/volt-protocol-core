@@ -8,7 +8,6 @@ import proposals from '@test/integration/proposals_config';
 import { TestEndtoEndCoordinator } from '@test/integration/setup';
 import { Volt } from '@custom-types/contracts';
 import { Signer } from '@ethersproject/abstract-signer';
-const toBN = ethers.BigNumber.from;
 
 before(async () => {
   chai.use(CBN(ethers.BigNumber));
@@ -16,7 +15,7 @@ before(async () => {
   await resetFork();
 });
 
-describe('e2e-volt', function () {
+describe.only('e2e-volt', function () {
   let contracts: NamedContracts;
   let deployAddress: string;
   let deploySigner: Signer;

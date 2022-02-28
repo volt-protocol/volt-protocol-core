@@ -3,8 +3,8 @@ pragma solidity ^0.8.4;
 
 import {Timed} from "./../utils/Timed.sol";
 import {Constants} from "./../Constants.sol";
-import {CoreRef} from "contracts/refs/CoreRef.sol";
-import {Deviation} from "contracts/utils/Deviation.sol";
+import {CoreRef} from "./../refs/CoreRef.sol";
+import {Deviation} from "./../utils/Deviation.sol";
 import {IScalingPriceOracle} from "./IScalingPriceOracle.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
@@ -33,11 +33,12 @@ contract ScalingPriceOracle is Timed, IScalingPriceOracle, CoreRef, Deviation {
         int256 _annualChangeRateBasisPoints,
         uint256 _maxDeviationThresholdBasisPoints,
         address coreAddress,
-        address _chainlinkCPIOracle
+        address _chainlinkCPIOracle,
+        uint256 duration /// this duration should be 28 days as that is the minimum period of time between CPI monthly updates
     )
         Deviation(_maxDeviationThresholdBasisPoints)
         CoreRef(coreAddress)
-        Timed(28 days) /// this duration should be 28 days as that is the minimum period of time between CPI monthly updates
+        Timed(duration)
     {
         annualChangeRateBasisPoints = _annualChangeRateBasisPoints;
         chainlinkCPIOracle = _chainlinkCPIOracle;

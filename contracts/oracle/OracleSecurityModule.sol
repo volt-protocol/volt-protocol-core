@@ -3,8 +3,8 @@ pragma solidity ^0.8.4;
 
 import "./../utils/Timed.sol";
 import "./IScalingPriceOracle.sol";
-import "contracts/refs/CoreRef.sol";
-import "contracts/utils/Deviation.sol";
+import "./../refs/CoreRef.sol";
+import "./../utils/Deviation.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 contract OracleSecurityModule is CoreRef, Timed, Deviation {
