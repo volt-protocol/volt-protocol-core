@@ -9,15 +9,15 @@ contract Queue {
     using SafeCast for *;
 
     /// @notice index 0 is the start of the queue
-    /// index 11 is end of the queue
+    /// index 12 is end of the queue
     /// this queue has a fixed length of 12 with each index representing a month
     /// index 0 = most recent month
-    /// index 11 = furthest month in the past
-    uint24[12] public queue;
+    /// index 12 = furthest month in the past
+    uint24[13] public queue;
 
     /// @param initialQueue this is the trailing twelve months of data
     constructor(uint24[] memory initialQueue) {
-        require(initialQueue.length == 12, "Queue: invalid length");
+        require(initialQueue.length == 13, "Queue: invalid length");
 
         for (uint256 i = 0; i < initialQueue.length; i++) {
             queue[i] = initialQueue[i];
@@ -40,20 +40,22 @@ contract Queue {
             value += queue[9];
             value += queue[10];
             value += queue[11];
+            value += queue[12];
         }
     }
 
     /// @notice get APR from queue by measuring (current month - 12 months ago) / 12 months ago
     /// @return percentageChange percentage change in basis points over past 12 months
     function getAPRFromQueue() public view returns (int256 percentageChange) {
-        int256 delta = int24(queue[0]) - int24(queue[11]);
-        percentageChange = delta * Constants.BASIS_POINTS_GRANULARITY_INT / int24(queue[11]);
+        int256 delta = int24(queue[0]) - int24(queue[12]);
+        percentageChange = delta * Constants.BASIS_POINTS_GRANULARITY_INT / int24(queue[12]);
     }
 
     /// @notice this is the only method needed as we will be using this queue to track CPI-U of the TTM
     /// add an element to the start of the queue and pop the last element off the queue
     /// @param elem the new element to add to the beginning of the queue
     function _unshift(uint24 elem) internal {
+        queue[12] = queue[11];
         queue[11] = queue[10];
         queue[10] = queue[9];
         queue[9] = queue[8];

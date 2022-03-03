@@ -17,7 +17,7 @@ describe('Queue', function () {
   });
 
   describe('apr basis points 10_000', function () {
-    const initialQueue = [240, 220, 210, 200, 190, 180, 170, 160, 150, 140, 130, 120];
+    const initialQueue = [240, 220, 210, 200, 190, 180, 170, 160, 150, 140, 130, 125, 120];
     beforeEach(async function () {
       const queueFactory = await ethers.getContractFactory('Queue');
       queue = await queueFactory.deploy(initialQueue);
@@ -38,14 +38,14 @@ describe('Queue', function () {
   });
 
   describe('apr basis points -10_000', function () {
-    const initialQueue = [1, 230, 220, 210, 200, 190, 180, 170, 160, 150, 140, 240];
+    const initialQueue = [1, 1, 230, 220, 210, 200, 190, 180, 170, 160, 150, 140, 240];
     beforeEach(async function () {
       const queueFactory = await ethers.getContractFactory('Queue');
       queue = await queueFactory.deploy(initialQueue);
     });
 
     it('queue returns initial APR correctly', async function () {
-      const expectedAPR = toBN(-239).mul(10_000).div(initialQueue[11]);
+      const expectedAPR = toBN(-239).mul(10_000).div(initialQueue[12]);
       expect(await queue.getAPRFromQueue()).to.be.equal(expectedAPR);
     });
 
@@ -59,7 +59,7 @@ describe('Queue', function () {
   });
 
   describe('apr basis points 833', function () {
-    const initialQueue = [130, 121, 123, 124, 125, 126, 127, 127, 128, 129, 129, 120];
+    const initialQueue = [130, 121, 123, 124, 125, 126, 127, 127, 127, 128, 129, 129, 120];
     beforeEach(async function () {
       const queueFactory = await ethers.getContractFactory('Queue');
       queue = await queueFactory.deploy(initialQueue);
@@ -80,7 +80,7 @@ describe('Queue', function () {
   });
 
   describe('apr basis points 1666', function () {
-    const initialQueue = [140, 129, 129, 128, 127, 127, 126, 125, 124, 123, 121, 120];
+    const initialQueue = [140, 129, 129, 128, 127, 127, 127, 126, 125, 124, 123, 121, 120];
     beforeEach(async function () {
       const queueFactory = await ethers.getContractFactory('Queue');
       queue = await queueFactory.deploy(initialQueue);
@@ -101,7 +101,7 @@ describe('Queue', function () {
   });
 
   describe('can properly push an item onto the queue', function () {
-    const initialQueue = [130, 129, 128, 127, 127, 126, 125, 124, 123, 122, 121, 120];
+    const initialQueue = [130, 129, 128, 127, 127, 127, 126, 125, 124, 123, 122, 121, 120];
     beforeEach(async function () {
       const queueFactory = await ethers.getContractFactory('MockQueue');
       queue = await queueFactory.deploy(initialQueue);
@@ -164,7 +164,7 @@ describe('Queue', function () {
     });
 
     it('APR is correct after pushing to queue', async function () {
-      const delta = toBN(await queue.queue(0)).sub(await queue.queue(11));
+      const delta = toBN(await queue.queue(0)).sub(await queue.queue(12));
 
       const expectedAPR = toBN(delta).mul(10_000).div(122);
       expect(await queue.getAPRFromQueue()).to.be.equal(expectedAPR);

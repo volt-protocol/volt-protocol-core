@@ -56,6 +56,7 @@ const jobId = utils.toUtf8Bytes('ada4e91dc26b47fa99d36d06473d567a');
 const fee = scale.div(10);
 
 const ttmInflationData = [
+  '261582',
   '263014',
   '264877',
   '267054',

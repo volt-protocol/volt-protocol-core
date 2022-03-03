@@ -12,10 +12,10 @@ import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.s
 /// @notice maintains roles, access control, Volt, Vcon, and the Vcon treasury
 contract Core is ICore, Permissions, Initializable {
 
-    /// @notice the address of the FEI contract
+    /// @notice the address of the VOLT contract
     IVolt public immutable override volt;
     
-    /// @notice the address of the Vcon contract
+    /// @notice the address of the VCON contract
     IERC20 public immutable override vcon;
 
     constructor() {
