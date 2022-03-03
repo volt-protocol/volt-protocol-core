@@ -26,8 +26,4 @@ contract Core is ICore, Permissions, Initializable {
     function init() external override initializer {
         _setupGovernor(msg.sender);
     }
-
-    function allocateVcon(address user, uint256 amount) external override onlyGovernor {
-        vcon.transfer(user, amount);
-    }
 }

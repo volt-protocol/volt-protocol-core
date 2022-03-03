@@ -16,8 +16,6 @@ interface ICore is IPermissions {
 
     function init() external;
 
-    function allocateVcon(address user, uint256 amount) external;
-
     // ----------- Getters -----------
 
     function volt() external view returns (IVolt);
