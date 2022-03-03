@@ -18,6 +18,15 @@ contract MockCore is Permissions, Initializable {
     /// @notice the address of the TRIBE contract
     IERC20 public vcon;
 
+    constructor() {
+        uint256 chainId;
+        assembly {
+            chainId := chainid()
+        }
+
+        require(chainId != 1, "MockCore: cannot deploy to mainnet");
+    }
+
     function init() external initializer {
         _setupGovernor(msg.sender);
 
@@ -28,7 +37,50 @@ contract MockCore is Permissions, Initializable {
         vcon = IERC20(address(_vcon));
     }
 
-    fallback(bytes calldata) external returns (bytes memory) {
-        return bytes("0x01");
+    /// @notice checks if address is a minter
+    /// @return true _address is a minter
+    // only virtual for testing mock override
+    function isMinter(address) external view virtual override returns (bool) {
+        return true;
+    }
+
+    /// @notice checks if address is a burner
+    /// @return true _address is a burner
+    // only virtual for testing mock override
+    function isBurner(address) external view virtual override returns (bool) {
+        return true;
+    }
+
+    /// @notice checks if address is a controller
+    /// @return true _address is a controller
+    // only virtual for testing mock override
+    function isPCVController(address)
+        external
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        return true;
+    }
+
+    /// @notice checks if address is a governor
+    /// @return true _address is a governor
+    // only virtual for testing mock override
+    function isGovernor(address)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        return true;
+    }
+
+    /// @notice checks if address is a guardian
+    /// @return true _address is a guardian
+    // only virtual for testing mock override
+    function isGuardian(address) public view virtual override returns (bool) {
+        return true;
     }
 }

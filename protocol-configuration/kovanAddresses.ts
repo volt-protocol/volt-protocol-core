@@ -3,30 +3,30 @@ import { KovanAddresses } from '../types/types'; // imported without custom path
 const KovanAddresses: KovanAddresses = {
   core: {
     artifactName: 'Core',
-    address: '0x2049D65e1FaB39e1710D43a2Fb008358071D8a03'
+    address: '0x45c39e3Ee6Ca7F123089D2D710E1780C2B9B7555'
   },
   timelock: {
     artifactName: 'FeiDAOTimelock',
-    address: '0x3Ba4dd6F9Dd0C8E8Bf1506873a320c21f5725BF5'
+    address: '0x8b1eB261236bb49163c4Ad271E65fe0f3254552d'
   },
   vcon: {
     artifactName: 'Vcon',
-    address: '0x32B8E39b27e3dfF6D62D03719449ffCd4E149dD5'
+    address: '0xE3059c733722b7720582600c97f6c68b49b6Fc95'
   },
   volt: {
-    artifactName: 'FeiDAOTimelock',
-    address: '0x8BC677fBe826314358381Bf8466b17D263Df5A53'
+    artifactName: 'Volt',
+    address: '0x02c525C310F8FA9dC0B2933d0d64f0f66dC4F3AF'
   },
   voltDAO: {
-    artifactName: 'FeiDAOTimelock',
-    address: '0x7A953E09De3202389Cc3F03B9605663388623bc2'
+    artifactName: 'FeiDAO',
+    address: '0x0fdeE12f105B805f8416194C83E3B30E2dC26216'
   },
   scalingPriceOracle: {
-    artifactName: 'FeiDAOTimelock',
-    address: '0xC06F61FFDAA8BC1FA564D9D124f364f968473a25'
+    artifactName: 'ScalingPriceOracle',
+    address: '0xd437b03c63b767b06ae9042d2d6713424a848c7a'
   },
   chainlinkOracle: {
-    artifactName: 'FeiDAOTimelock',
-    address: '0x00CE92D5DDf05b4a897BaA0D54188e448fdAb1c2'
+    artifactName: 'ChainlinkOracle',
+    address: '0x092234A520F4FaaF034dFb94ecF9f1C0FAc0f2F6'
   }
 };

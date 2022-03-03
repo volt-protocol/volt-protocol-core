@@ -25,6 +25,7 @@ describe('ScalingPriceOracle', function () {
   let governorSigner: SignerWithAddress;
   let guardianSigner: SignerWithAddress;
   let mockChainlinkOracle: MockChainlinkSingleUpdateOracle;
+  const duration = 86400 * 28;
 
   before(async function () {
     const { governorAddress, guardianAddress } = await getAddresses();
@@ -46,7 +47,13 @@ describe('ScalingPriceOracle', function () {
       nonce: transactionCount
     });
 
-    scalingPriceOracle = await scalingPriceOracleFactory.deploy(1_000, 1_000, core.address, mockChainLinkOracleAddress);
+    scalingPriceOracle = await scalingPriceOracleFactory.deploy(
+      1_000,
+      1_000,
+      core.address,
+      mockChainLinkOracleAddress,
+      duration
+    );
     mockChainlinkOracle = await mockChainLinkOracleFactory.deploy(scalingPriceOracle.address);
   });
 
@@ -140,7 +147,7 @@ describe('ScalingPriceOracle', function () {
   describe('negative scaling', function () {
     beforeEach(async function () {
       const scalingPriceOracleFactory = await ethers.getContractFactory('ScalingPriceOracle');
-      scalingPriceOracle = await scalingPriceOracleFactory.deploy(-1_000, 1_000, core.address, ZERO_ADDRESS);
+      scalingPriceOracle = await scalingPriceOracleFactory.deploy(-1_000, 1_000, core.address, ZERO_ADDRESS, duration);
     });
 
     it('getCurrentOraclePrice returns negative price correctly after time has passed', async function () {

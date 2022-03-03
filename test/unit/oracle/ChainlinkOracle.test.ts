@@ -17,8 +17,16 @@ describe('ChainlinkOracle', function () {
 
   beforeEach(async function () {
     [owner, chainlinkOperator] = await ethers.getSigners();
+    const mockScalingOracleFactory = await ethers.getContractFactory('MockScalingPriceOracle');
     const chainlinkOracleFactory = await ethers.getContractFactory('ChainlinkOracle');
-    chainlinkOracle = await chainlinkOracleFactory.deploy(chainlinkOperator.address, jobid, scale, initialQueue);
+    const mockOracle = await mockScalingOracleFactory.deploy(scale, 1_000, ZERO_ADDRESS);
+    chainlinkOracle = await chainlinkOracleFactory.deploy(
+      mockOracle.address,
+      chainlinkOperator.address,
+      jobid,
+      scale,
+      initialQueue
+    );
   });
 
   describe('apr basis points 10_000', function () {

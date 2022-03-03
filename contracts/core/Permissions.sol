@@ -135,23 +135,27 @@ contract Permissions is IPermissions, AccessControlEnumerable {
     /// @notice checks if address is a minter
     /// @param _address address to check
     /// @return true _address is a minter
-    function isMinter(address _address) external view override returns (bool) {
+    // only virtual for testing mock override
+    function isMinter(address _address) external view virtual override returns (bool) {
         return hasRole(MINTER_ROLE, _address);
     }
 
     /// @notice checks if address is a burner
     /// @param _address address to check
     /// @return true _address is a burner
-    function isBurner(address _address) external view override returns (bool) {
+    // only virtual for testing mock override
+    function isBurner(address _address) external view virtual override returns (bool) {
         return hasRole(BURNER_ROLE, _address);
     }
 
     /// @notice checks if address is a controller
     /// @param _address address to check
     /// @return true _address is a controller
+    // only virtual for testing mock override
     function isPCVController(address _address)
         external
         view
+        virtual
         override
         returns (bool)
     {
@@ -175,7 +179,8 @@ contract Permissions is IPermissions, AccessControlEnumerable {
     /// @notice checks if address is a guardian
     /// @param _address address to check
     /// @return true _address is a guardian
-    function isGuardian(address _address) public view override returns (bool) {
+    // only virtual for testing mock override
+    function isGuardian(address _address) public view virtual override returns (bool) {
         return hasRole(GUARDIAN_ROLE, _address);
     }
 

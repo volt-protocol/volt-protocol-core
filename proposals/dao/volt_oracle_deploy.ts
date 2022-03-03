@@ -51,7 +51,9 @@ const scalingPriceOracleUpdateTime = 100;
 /// address of the chainlink oracle addres that will service our contract
 const fiewKovanAddress = '0xa8EdF676c6296BdAD431D39Be198A889AF0b059b';
 
-const jobId = keccak256(utils.toUtf8Bytes('jobId'));
+const jobId = utils.toUtf8Bytes('ada4e91dc26b47fa99d36d06473d567a');
+
+const fee = scale.div(10);
 
 const ttmInflationData = [
   '263014',
@@ -86,7 +88,7 @@ export const deploy: DeployUpgradeFunc = async (deployAddress, addresses, loggin
     nonce: transactionCount + 2
   });
 
-  // Deploy core
+  // Deploy mock core
   const core = await (await ethers.getContractFactory('MockCore')).deploy();
   logging && console.log('core: ', core.address);
 
@@ -140,8 +142,8 @@ export const deploy: DeployUpgradeFunc = async (deployAddress, addresses, loggin
     scalingPriceOracle.address,
     fiewKovanAddress,
     jobId,
-    scale,
-    ttmInflationData
+    fee,
+    ttmInflationData.reverse()
   );
   logging && console.log('chainlinkOracle: ', chainlinkOracle.address);
 
