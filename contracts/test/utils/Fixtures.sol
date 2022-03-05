@@ -50,7 +50,7 @@ function getCore() returns (Core) {
     vm.startPrank(addresses.governorAddress);
 
     Core core = new Core();
-    core.init();
+    core.init(addresses.governorAddress);
     core.grantMinter(addresses.minterAddress);
     core.grantBurner(addresses.burnerAddress);
     core.grantPCVController(addresses.pcvControllerAddress);

@@ -2,10 +2,11 @@
 pragma solidity ^0.8.4;
 
 import {Timed} from "./../utils/Timed.sol";
-import {Constants} from "./../Constants.sol";
 import {CoreRef} from "./../refs/CoreRef.sol";
+import {Constants} from "./../Constants.sol";
 import {Deviation} from "./../utils/Deviation.sol";
 import {IScalingPriceOracle} from "./IScalingPriceOracle.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /// @notice contract that receives a chainlink price feed and then linearly interpolates that rate over
@@ -14,8 +15,12 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 contract ScalingPriceOracle is Timed, IScalingPriceOracle, CoreRef, Deviation {
     using SafeCast for *;
 
-    /// @notice current amount that oracle price is inflating/deflating by annually in basis points
-    int256 public override annualChangeRateBasisPoints;
+    /// @notice the time frame over which all changes in CPI data are applied
+    /// 28 days was chosen as that is the shortest length of a month
+    uint256 public constant override timeFrame = 28 days;
+
+    /// @notice current amount that oracle price is inflating/deflating by monthly in basis points
+    int256 public override monthlyChangeRateBasisPoints;
 
     /// @notice oracle price. starts off at 1e18
     uint256 public oraclePrice = 1e18;
@@ -26,28 +31,27 @@ contract ScalingPriceOracle is Timed, IScalingPriceOracle, CoreRef, Deviation {
     /// @notice event when Chainlink CPI oracle address is changed
     event ChainlinkCPIOracleUpdate(address oldChainLinkCPIOracle, address newChainlinkCPIOracle);
 
-    /// @notice event when the annual change rate is updated
-    event CPIAnnualChangeRateUpdate(int256 oldChangeRateBasisPoints, int256 newChangeRateBasisPoints);
+    /// @notice event when the monthly change rate is updated
+    event CPIMonthlyChangeRateUpdate(int256 oldChangeRateBasisPoints, int256 newChangeRateBasisPoints);
 
     constructor(
-        int256 _annualChangeRateBasisPoints,
+        int256 _monthlyChangeRateBasisPoints,
         uint256 _maxDeviationThresholdBasisPoints,
         address coreAddress,
-        address _chainlinkCPIOracle,
-        uint256 duration /// this duration should be 28 days as that is the minimum period of time between CPI monthly updates
+        address _chainlinkCPIOracle
     )
         Deviation(_maxDeviationThresholdBasisPoints)
         CoreRef(coreAddress)
-        Timed(duration)
+        Timed(timeFrame) /// this duration is 28 days as that is the minimum period of time between CPI monthly updates
     {
-        annualChangeRateBasisPoints = _annualChangeRateBasisPoints;
+        monthlyChangeRateBasisPoints = _monthlyChangeRateBasisPoints;
         chainlinkCPIOracle = _chainlinkCPIOracle;
 
         /// start the timer
         _initTimed();
     }
 
-    // ----------- Modifier -----------
+    // ----------- Modifiers -----------
 
     /// @notice restrict access to only the chainlink CPI Oracle
     modifier onlyChainlinkCPIOracle {
@@ -55,24 +59,26 @@ contract ScalingPriceOracle is Timed, IScalingPriceOracle, CoreRef, Deviation {
         _;
     }
 
-    // ----------- Getter -----------
+    // ----------- Getters -----------
 
     /// @notice get the current scaled oracle price
+    /// applies the change smoothly over a 28 day period
     function getCurrentOraclePrice() public view override returns (uint256) {
         int256 oraclePriceInt = oraclePrice.toInt256();
         return SafeCast.toUint256(
             oraclePriceInt +
-            (oraclePriceInt * annualChangeRateBasisPoints / Constants.BASIS_POINTS_GRANULARITY_INT * (block.timestamp - startTime).toInt256() / Constants.ONE_YEAR_INT)
+            (oraclePriceInt * monthlyChangeRateBasisPoints / Constants.BASIS_POINTS_GRANULARITY_INT * Math.min(block.timestamp - startTime, timeFrame).toInt256() / timeFrame.toInt256())
         );
     }
+
 
     /// @notice return interest accrued per second
     function getInterestAccruedPerSecond() public view returns (int256) {
         return (
             oraclePrice.toInt256() *
-            annualChangeRateBasisPoints /
+            monthlyChangeRateBasisPoints /
             Constants.BASIS_POINTS_GRANULARITY_INT /
-            Constants.ONE_YEAR_INT
+            timeFrame.toInt256()
         );
     }
 
@@ -91,34 +97,22 @@ contract ScalingPriceOracle is Timed, IScalingPriceOracle, CoreRef, Deviation {
     /// DO NOT USE unless chainlink data provider is down
     function updateOracleChangeRateGovernor(int256 newChangeRateBasisPoints) external onlyGovernor {
         require(
-            isWithinDeviationThreshold(annualChangeRateBasisPoints, newChangeRateBasisPoints),
+            isWithinDeviationThreshold(monthlyChangeRateBasisPoints, newChangeRateBasisPoints),
             "ScalingPriceOracle: new change rate is outside of allowable deviation"
         );
 
         /// compound interest at current rates
         _updateOraclePrice();
 
-        int256 oldChangeRateBasisPoints = annualChangeRateBasisPoints;
-        annualChangeRateBasisPoints = newChangeRateBasisPoints;
+        int256 oldChangeRateBasisPoints = monthlyChangeRateBasisPoints;
+        monthlyChangeRateBasisPoints = newChangeRateBasisPoints;
 
-        emit CPIAnnualChangeRateUpdate(oldChangeRateBasisPoints, newChangeRateBasisPoints);
-    }
-
-    /// @notice function to update the oracle price and change rate basis points in an emergency
-    /// ignores all compounding, checks and balances
-    /// DO NOT USE unless there is an emergency
-    /// @param newOraclePrice the new oracle price
-    function emergencyUpdateOraclePrice(uint256 newOraclePrice) external onlyGuardianOrGovernor {
-        int256 oldChangeRateBasisPoints = annualChangeRateBasisPoints;
-        oraclePrice = newOraclePrice;
-        annualChangeRateBasisPoints = 0;
-
-        emit CPIAnnualChangeRateUpdate(oldChangeRateBasisPoints, 0);
+        emit CPIMonthlyChangeRateUpdate(oldChangeRateBasisPoints, newChangeRateBasisPoints);
     }
 
     /// @notice function for priviledged roles to be able to upgrade the oracle system address
     /// @param newChainlinkCPIOracle new chainlink CPI oracle
-    function updateChainLinkCPIOracle(address newChainlinkCPIOracle) external onlyGovernorOrGuardianOrAdmin {
+    function updateChainLinkCPIOracle(address newChainlinkCPIOracle) external onlyGovernor {
         address oldChainlinkCPIOracle = chainlinkCPIOracle;
         chainlinkCPIOracle = newChainlinkCPIOracle;
 
@@ -127,33 +121,33 @@ contract ScalingPriceOracle is Timed, IScalingPriceOracle, CoreRef, Deviation {
 
     /// @notice function to compound interest after the time period has elapsed
     /// SHOULD NOT BE USED unless there is an upstream issue with our chainlink oracle that prevents data from flowing downstream
-    function compoundInterest() external onlyGovernorOrGuardianOrAdmin {
+    function compoundInterest() external onlyGuardianOrGovernor {
         _updateOraclePrice();
     }
 
     /// @notice function to update the timed duration
     /// @param newPeriod the new duration which the oracle price can be updated
-    function updatePeriod(uint256 newPeriod) external onlyGovernorOrAdmin {
+    function updatePeriod(uint256 newPeriod) external onlyGovernor {
         _setDuration(newPeriod);
     }
 
     // ----------- Chainlink CPI Oracle only state changing api -----------
 
     /// @notice function for chainlink oracle to be able to call in and change the rate
-    /// @param newChangeRateBasisPoints the new annual interest rate applied to the chainlink oracle price
+    /// @param newChangeRateBasisPoints the new monthly interest rate applied to the chainlink oracle price
     function oracleUpdateChangeRate(int256 newChangeRateBasisPoints) external onlyChainlinkCPIOracle {
         /// compound the interest with the current rate
         /// this also checks that we are after the timer has expired, and then resets it
         _updateOraclePrice();
 
         /// if the oracle target is the same as last time, save an SSTORE
-        if (newChangeRateBasisPoints == annualChangeRateBasisPoints) {
+        if (newChangeRateBasisPoints == monthlyChangeRateBasisPoints) {
             return ;
         }
 
-        int256 oldChangeRateBasisPoints = annualChangeRateBasisPoints;
-        annualChangeRateBasisPoints = newChangeRateBasisPoints;
+        int256 oldChangeRateBasisPoints = monthlyChangeRateBasisPoints;
+        monthlyChangeRateBasisPoints = newChangeRateBasisPoints;
 
-        emit CPIAnnualChangeRateUpdate(oldChangeRateBasisPoints, newChangeRateBasisPoints);
+        emit CPIMonthlyChangeRateUpdate(oldChangeRateBasisPoints, newChangeRateBasisPoints);
     }
 }

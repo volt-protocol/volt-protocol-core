@@ -12,18 +12,20 @@ import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.s
 /// @notice maintains roles, access control, Volt, Vcon, and the Vcon treasury
 contract Core is ICore, Permissions, Initializable {
 
+    /// @notice VOLT & VCON cannot be immutable as CoreRef in the VOLT contract
+    /// cannot be constructed while Core is being constructed.
+
     /// @notice the address of the VOLT contract
-    IVolt public immutable override volt;
+    IVolt public override volt;
     
     /// @notice the address of the VCON contract
-    IERC20 public immutable override vcon;
+    IERC20 public override vcon;
 
-    constructor() {
-        volt = new Volt(address(this));
-        vcon = IERC20(address(new Vcon(address(this), msg.sender)));
-    }
-
-    function init() external override initializer {
+    function init(address recipient) external override initializer {
         _setupGovernor(msg.sender);
+        volt = new Volt(address(this));
+        /// make the recipient the owner of all coins
+        /// grant minting abilities to the timelock
+        vcon = IERC20(address(new Vcon(recipient, msg.sender)));
     }
 }

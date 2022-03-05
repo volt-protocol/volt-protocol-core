@@ -12,11 +12,11 @@ import "../../refs/CoreRef.sol";
 */
 contract FeiDAOTimelock is Timelock, CoreRef {
 
-    constructor(address core_, address admin_, uint delay_, uint minDelay_) 
+    constructor(address recipient_, address core_, address admin_, uint delay_, uint minDelay_) 
         Timelock(admin_, delay_, minDelay_)
         CoreRef(core_)
     {
-        ICore(core_).init();
+        ICore(core_).init(recipient_);
     }
 
     /// @notice queue a transaction, with pausability

@@ -96,9 +96,10 @@ export const deploy: DeployUpgradeFunc = async (deployAddress, addresses, loggin
   await core.deployTransaction.wait();
 
   // deploy timelock
+  // grant all VCON tokens to deployer
   const timelock = await (
     await ethers.getContractFactory('FeiDAOTimelock')
-  ).deploy(core.address, futureDAOAddress, actualTimelockDelay, minTimelockDelay);
+  ).deploy(deployer.address, core.address, futureDAOAddress, actualTimelockDelay, minTimelockDelay);
   logging && console.log('timelock: ', timelock.address);
 
   await timelock.deployTransaction.wait();

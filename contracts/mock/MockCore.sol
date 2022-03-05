@@ -27,14 +27,17 @@ contract MockCore is Permissions, Initializable {
         require(chainId != 1, "MockCore: cannot deploy to mainnet");
     }
 
-    function init() external initializer {
-        _setupGovernor(msg.sender);
-
+    function init(address recipient) external initializer {
+        /// emulate the real core as much as possible
         Volt _volt = new Volt(address(this));
         volt = IVolt(_volt);
 
-        Vcon _vcon = new Vcon(address(this), msg.sender);
+        /// give all VCON to the recipient
+        /// grant timelock the minter role
+        Vcon _vcon = new Vcon(recipient, msg.sender);
         vcon = IERC20(address(_vcon));
+
+        _setupGovernor(msg.sender);
     }
 
     /// @notice checks if address is a minter

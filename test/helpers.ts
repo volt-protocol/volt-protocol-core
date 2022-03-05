@@ -123,7 +123,8 @@ async function getCore(): Promise<Core> {
   const coreFactory = new Core__factory(governorSigner);
   const core = await coreFactory.deploy();
 
-  await core.init();
+  /// send all tokens to timelock
+  await core.init(governorAddress);
   await core.grantMinter(minterAddress);
   await core.grantBurner(burnerAddress);
   await core.grantPCVController(pcvControllerAddress);
