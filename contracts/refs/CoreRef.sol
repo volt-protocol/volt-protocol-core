@@ -25,7 +25,7 @@ abstract contract CoreRef is ICoreRef, Pausable {
     bool private _initialized;
 
     constructor(address coreAddress) {
-        _initialize(coreAddress);
+        _initialize();
 
         _core = ICore(coreAddress);
         /// call out to core and get the volt and vcon addresses
@@ -34,12 +34,9 @@ abstract contract CoreRef is ICoreRef, Pausable {
     }
 
     /// @notice CoreRef constructor
-    /// @param coreAddress volt Core to reference
-    function _initialize(address coreAddress) internal {
+    function _initialize() internal {
         require(!_initialized, "CoreRef: already initialized");
         _initialized = true;
-
-        _setContractAdminRole(keccak256("GOVERN_ROLE"));
     }
 
     modifier ifMinterSelf() {

@@ -14,7 +14,7 @@ interface ICore is IPermissions {
 
     // ----------- Governor only state changing api -----------
 
-    function init(address) external;
+    function init() external;
 
     // ----------- Getters -----------
 

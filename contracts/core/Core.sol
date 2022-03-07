@@ -16,16 +16,17 @@ contract Core is ICore, Permissions, Initializable {
     /// cannot be constructed while Core is being constructed.
 
     /// @notice the address of the VOLT contract
-    IVolt public override volt;
+    IVolt public immutable override volt;
     
     /// @notice the address of the VCON contract
-    IERC20 public override vcon;
+    IERC20 public immutable override vcon;
 
-    function init(address recipient) external override initializer {
+    constructor(IVolt _volt, IERC20 _vcon) {
+        volt = _volt;
+        vcon = _vcon;
+    }
+
+    function init() external override initializer {
         _setupGovernor(msg.sender);
-        volt = new Volt(address(this));
-        /// make the recipient the owner of all coins
-        /// grant minting abilities to the timelock
-        vcon = IERC20(address(new Vcon(recipient, msg.sender)));
     }
 }
