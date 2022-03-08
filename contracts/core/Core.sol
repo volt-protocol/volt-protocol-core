@@ -13,14 +13,14 @@ import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.s
 contract Core is ICore, Permissions, Initializable {
 
     /// @notice the address of the VOLT contract
-    IVolt public immutable override volt;
+    IVolt public override volt;
     
     /// @notice the address of the VCON contract
-    IERC20 public immutable override vcon;
+    IERC20 public override vcon;
 
-    constructor(IVolt _volt, IERC20 _vcon) {
-        volt = _volt;
-        vcon = _vcon;
+    function init() external initializer {
+        volt = new Volt(address(this));
+        vcon = IERC20(address(new Vcon(msg.sender, msg.sender)));
         /// msg.sender already has all of the VCON + VCON Minting abilities, so grant them governor as well
         _setupGovernor(msg.sender);
     }

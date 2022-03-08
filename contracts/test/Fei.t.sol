@@ -11,8 +11,6 @@ import {DSTest} from "./utils/DSTest.sol";
 import {getCore, getAddresses, FeiTestAddresses} from "./utils/Fixtures.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 
-import "hardhat/console.sol";
-
 contract VoltTest is DSTest {
     IVolt private volt;
     ICore private core;
@@ -34,30 +32,9 @@ contract VoltTest is DSTest {
     function testMintsVolt() public {
         uint256 mintAmount = 100;
 
-      console.log("0");
         vm.prank(addresses.minterAddress);
-      console.log("1");
-      console.log("iscontract: ", Address.isContract(address(volt)));
-      console.log("volt address: ", address(volt));
         volt.mint(addresses.userAddress, mintAmount);
 
-      console.log("2");
         assertEq(volt.balanceOf(addresses.userAddress), mintAmount);
-      console.log("3");
-    }
-
-    function testLogBytecodehash() public {
-        bytes32 voltHash;
-        bytes32 vconHash;
-        address voltAddress = address(core.volt());
-        address vconAddress = address(core.vcon());
-
-        assembly {
-          voltHash := extcodehash(voltAddress)
-          vconHash := extcodehash(vconAddress)
-        }
-
-        emit log_bytes32(voltHash);
-        emit log_bytes32(vconHash);
     }
 }
