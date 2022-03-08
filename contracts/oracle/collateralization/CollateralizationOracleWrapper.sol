@@ -49,19 +49,17 @@ contract CollateralizationOracleWrapper is Timed, ICollateralizationOracleWrappe
     ) CoreRef(_core) Timed(_validityDuration) {}
 
     /// @notice CollateralizationOracleWrapper initializer
-    /// @param _core Fei Core for reference.
     /// @param _collateralizationOracle the CollateralizationOracle to inspect.
     /// @param _validityDuration the duration after which a reading becomes outdated.
     /// @param _deviationThresholdBasisPoints threshold for deviation after which
     ///        keepers should call the update() function.
     function initialize(
-        address _core,
         address _collateralizationOracle,
         uint256 _validityDuration,
         uint256 _deviationThresholdBasisPoints
     ) public {
         require(collateralizationOracle == address(0), "CollateralizationOracleWrapper: initialized");
-        CoreRef._initialize(_core);
+        CoreRef._initialize();
         _setDuration(_validityDuration);
         collateralizationOracle = _collateralizationOracle;
         deviationThresholdBasisPoints = _deviationThresholdBasisPoints;

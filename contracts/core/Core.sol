@@ -12,9 +12,6 @@ import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.s
 /// @notice maintains roles, access control, Volt, Vcon, and the Vcon treasury
 contract Core is ICore, Permissions, Initializable {
 
-    /// @notice VOLT & VCON cannot be immutable as CoreRef in the VOLT contract
-    /// cannot be constructed while Core is being constructed.
-
     /// @notice the address of the VOLT contract
     IVolt public immutable override volt;
     
@@ -24,9 +21,7 @@ contract Core is ICore, Permissions, Initializable {
     constructor(IVolt _volt, IERC20 _vcon) {
         volt = _volt;
         vcon = _vcon;
-    }
-
-    function init() external override initializer {
+        /// msg.sender already has all of the VCON + VCON Minting abilities, so grant them governor as well
         _setupGovernor(msg.sender);
     }
 }

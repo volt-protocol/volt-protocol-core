@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
-import {Core} from "../../core/Core.sol";
+import {Core, Vcon, Volt} from "../../core/Core.sol";
+import {CoreDeploy} from "../../core/CoreDeploy.sol";
+import {DSTest} from "./DSTest.sol";
 import {Vm} from "./Vm.sol";
+
+import "hardhat/console.sol";
 
 struct FeiTestAddresses {
   address userAddress;
@@ -46,11 +50,12 @@ function getCore() returns (Core) {
     Vm vm = Vm(HEVM_ADDRESS);
     FeiTestAddresses memory addresses = getAddresses();
 
+    CoreDeploy coreDeploy = new CoreDeploy();
+
     // Deploy Core from Governor address
     vm.startPrank(addresses.governorAddress);
+    Core core = coreDeploy.deploy();
 
-    Core core = new Core();
-    core.init(addresses.governorAddress);
     core.grantMinter(addresses.minterAddress);
     core.grantBurner(addresses.burnerAddress);
     core.grantPCVController(addresses.pcvControllerAddress);

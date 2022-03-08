@@ -129,7 +129,7 @@ contract TribalChief is CoreRef, ReentrancyGuard, Initializable {
     /// @param _core The Core contract address.
     /// @param _tribe The TRIBE token contract address.
     function initialize(address _core, IERC20 _tribe) external initializer {        
-        CoreRef._initialize(_core);    
+        CoreRef._initialize();    
         
         TRIBE = _tribe;
         _setContractAdminRole(keccak256("TRIBAL_CHIEF_ADMIN_ROLE"));
