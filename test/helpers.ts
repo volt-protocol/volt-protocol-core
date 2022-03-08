@@ -124,7 +124,7 @@ async function getCore(): Promise<Core> {
   const core = await coreFactory.deploy();
 
   /// send all tokens to timelock
-  await core.init(governorAddress);
+  await core.init();
   await core.grantMinter(minterAddress);
   await core.grantBurner(burnerAddress);
   await core.grantPCVController(pcvControllerAddress);
