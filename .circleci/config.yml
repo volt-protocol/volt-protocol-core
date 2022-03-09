@@ -24,6 +24,9 @@ jobs:
           name: Install dependencies
           command: npm install
       - run:
+          name: Set env vars
+          command: NODE_OPTIONS=--max-old-space-size=4096
+      - run:
           name: Compile contracts
           command: npm run compile
       - save_cache:
