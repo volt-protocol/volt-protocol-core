@@ -13,7 +13,7 @@
     "console:ropsten": "npx hardhat console --network ropsten",
     "clean": "rm -rf build && rm -rf out",
     "test:forge": "forge test",
-    "test": "NODE_OPTIONS=--max-old-space-size=4096 npx hardhat test",
+    "test": "npx hardhat test",
     "test:dependencies": "LOGGING=true NO_RESET=true npx hardhat test test/integration/tests/dependencies.ts",
     "test:e2e": "LOGGING=true ENABLE_MAINNET_FORKING=true RUN_E2E_TESTS=true npx hardhat test",
     "test:gas": "REPORT_GAS=true npx hardhat test",
