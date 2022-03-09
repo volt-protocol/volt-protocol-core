@@ -41,7 +41,10 @@ contract OracleSecurityModule is CoreRef, Timed, Deviation {
         uint256 oldRecordedValue = cachedValue;
 
         require(
-            isWithinDeviationThreshold(oldRecordedValue.toInt256(), newRecordedValue.toInt256()),
+            isWithinDeviationThreshold(
+                oldRecordedValue.toInt256(),
+                newRecordedValue.toInt256()
+            ),
             "OracleSecurityModule: deviation threshold exceeded"
         );
 
@@ -50,11 +53,19 @@ contract OracleSecurityModule is CoreRef, Timed, Deviation {
         emit CachedValueUpdate(oldRecordedValue, newRecordedValue);
     }
 
-    function adminUpdateCachedValue(uint256 newRecordedValue) external afterTimeInit onlyGovernorOrGuardianOrAdmin {
+    function adminUpdateCachedValue(uint256 newRecordedValue)
+        external
+        afterTimeInit
+        onlyGovernorOrGuardianOrAdmin
+    {
         uint256 oldRecordedValue = cachedValue;
 
         require(
-            maxAdminDeviation >= calculateDeviationThresholdBasisPoints(oldRecordedValue.toInt256(), newRecordedValue.toInt256()),
+            maxAdminDeviation >=
+                calculateDeviationThresholdBasisPoints(
+                    oldRecordedValue.toInt256(),
+                    newRecordedValue.toInt256()
+                ),
             "OracleSecurityModule: admin deviation threshold exceeded"
         );
 
@@ -65,5 +76,5 @@ contract OracleSecurityModule is CoreRef, Timed, Deviation {
 
     function updateDuration(uint256 newDuration) external onlyGovernor {
         _setDuration(newDuration);
-    } 
+    }
 }

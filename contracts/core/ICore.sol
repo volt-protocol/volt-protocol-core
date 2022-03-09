@@ -7,7 +7,6 @@ import "../volt/IVolt.sol";
 /// @title Core Interface
 /// @author Fei Protocol
 interface ICore is IPermissions {
-
     // ----------- Events -----------
     event VoltUpdate(address indexed _fei);
     event VconUpdate(address indexed _tribe);
