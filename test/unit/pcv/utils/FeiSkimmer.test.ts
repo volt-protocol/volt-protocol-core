@@ -31,7 +31,7 @@ describe('FeiSkimmer', function () {
     ({ userAddress, governorAddress, minterAddress } = await getAddresses());
     core = await getCore();
 
-    source = await (await ethers.getContractFactory('MockPCVDepositV2')).deploy(core.address, await core.fei(), 0, 0);
+    source = await (await ethers.getContractFactory('MockPCVDepositV2')).deploy(core.address, await core.volt(), 0, 0);
 
     skimmer = await (await ethers.getContractFactory('FeiSkimmer')).deploy(core.address, source.address, threshold);
   });
@@ -53,7 +53,7 @@ describe('FeiSkimmer', function () {
 
   describe('Skim', function () {
     it('is eligible and functional over threshold', async function () {
-      const fei = await ethers.getContractAt('IFei', await core.fei());
+      const fei = await ethers.getContractAt('Volt', await core.volt());
 
       await fei.connect(impersonatedSigners[minterAddress]).mint(source.address, ethers.constants.WeiPerEther.mul(2));
 

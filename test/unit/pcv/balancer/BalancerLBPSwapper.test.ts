@@ -10,9 +10,10 @@ import {
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { Signer } from 'ethers';
-import { BalancerLBPSwapper, Core, Fei, Tribe } from '@custom-types/contracts';
+import { BalancerLBPSwapper, Core, Volt, Vcon } from '@custom-types/contracts';
 import { MockVault } from '@custom-types/contracts/MockVault';
 import { MockWeightedPool } from '@custom-types/contracts/MockWeightedPool';
+import collateralizationAddresses from '@protocol/collateralizationOracle';
 
 const toBN = ethers.BigNumber.from;
 
@@ -23,8 +24,8 @@ describe('BalancerLBPSwapper', function () {
   let governorAddress: string;
   let minterAddress: string;
   let core: Core;
-  let fei: Fei;
-  let tribe: Tribe;
+  let fei: Volt;
+  let tribe: Vcon;
   let balancerLBPSwapper: BalancerLBPSwapper;
   let pool: MockWeightedPool;
   let vault: MockVault;
@@ -52,8 +53,8 @@ describe('BalancerLBPSwapper', function () {
 
     core = await getCore();
 
-    fei = await ethers.getContractAt('Fei', await core.fei());
-    tribe = await ethers.getContractAt('Tribe', await core.tribe());
+    fei = await ethers.getContractAt('Volt', await core.volt());
+    tribe = await ethers.getContractAt('Vcon', await core.vcon());
 
     const mockOracleFactory = await ethers.getContractFactory('MockOracle');
     const oracle = await mockOracleFactory.deploy(2); // 2 FEI price for TRIBE
@@ -238,6 +239,9 @@ describe('BalancerLBPSwapper', function () {
       });
 
       it('reverts', async function () {
+        await fei
+          .connect(impersonatedSigners[governorAddress])
+          .approve(balancerLBPSwapper.address, '1000000000000000000000000000000000000');
         await expectRevert(
           balancerLBPSwapper.connect(impersonatedSigners[governorAddress]).swap(),
           'BalancerLBPSwapper: not enough for new swap'
@@ -250,9 +254,9 @@ describe('BalancerLBPSwapper', function () {
         await fei
           .connect(impersonatedSigners[minterAddress])
           .mint(balancerLBPSwapper.address, ethers.constants.WeiPerEther.mul(2));
-        await core
+        await tribe
           .connect(impersonatedSigners[governorAddress])
-          .allocateTribe(balancerLBPSwapper.address, ethers.constants.WeiPerEther);
+          .mint(balancerLBPSwapper.address, ethers.constants.WeiPerEther);
 
         await increaseTime(await balancerLBPSwapper.remainingTime());
         await balancerLBPSwapper.connect(impersonatedSigners[governorAddress]).swap();
@@ -290,22 +294,6 @@ describe('BalancerLBPSwapper', function () {
             );
           });
         });
-
-        describe('Not enough tokenSpent', function () {
-          beforeEach(async function () {
-            await fei
-              .connect(impersonatedSigners[burnerAddress])
-              .burnFrom(balancerLBPSwapper.address, ethers.constants.WeiPerEther.mul(2));
-            await increaseTime(await balancerLBPSwapper.remainingTime());
-          });
-
-          it('reverts', async function () {
-            await expectRevert(
-              balancerLBPSwapper.connect(impersonatedSigners[governorAddress]).swap(),
-              'BalancerLBPSwapper: not enough for new swap'
-            );
-          });
-        });
       });
     });
   });
@@ -320,10 +308,9 @@ describe('BalancerLBPSwapper', function () {
         await fei
           .connect(impersonatedSigners[minterAddress])
           .mint(balancerLBPSwapper.address, ethers.constants.WeiPerEther.mul(2));
-
-        await core
+        await tribe
           .connect(impersonatedSigners[governorAddress])
-          .allocateTribe(balancerLBPSwapper.address, ethers.constants.WeiPerEther);
+          .mint(balancerLBPSwapper.address, ethers.constants.WeiPerEther);
       });
 
       it('should succeed, no time restriction', async function () {

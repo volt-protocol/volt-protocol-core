@@ -2,7 +2,7 @@ import { expectRevert, getAddresses, getCore, increaseTime, getImpersonatedSigne
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { Signer } from 'ethers';
-import { Core, Tribe, Fei, TribeReserveStabilizer } from '@custom-types/contracts';
+import { Core, Vcon, Volt, TribeReserveStabilizer } from '@custom-types/contracts';
 
 const toBN = ethers.BigNumber.from;
 
@@ -13,8 +13,8 @@ describe('TribeReserveStabilizer', function () {
   let pcvControllerAddress;
   let reserveStabilizer: TribeReserveStabilizer;
   let core: Core;
-  let fei: Fei;
-  let tribe: Tribe;
+  let fei: Volt;
+  let tribe: Vcon;
   let tribeMinter;
   let oracle;
   let collateralizationOracle;
@@ -41,8 +41,8 @@ describe('TribeReserveStabilizer', function () {
     ({ userAddress, governorAddress, minterAddress, pcvControllerAddress } = await getAddresses());
     core = await getCore();
 
-    fei = await ethers.getContractAt('Fei', await core.fei());
-    tribe = await ethers.getContractAt('Tribe', await core.tribe());
+    fei = await ethers.getContractAt('Volt', await core.volt());
+    tribe = await ethers.getContractAt('Vcon', await core.vcon());
     oracle = await (await ethers.getContractFactory('MockOracle')).deploy(400); // 400:1 oracle price
     collateralizationOracle = await (
       await ethers.getContractFactory('MockCollateralizationOracle')

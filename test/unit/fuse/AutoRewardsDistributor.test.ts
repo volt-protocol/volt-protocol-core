@@ -6,7 +6,7 @@ import { AutoRewardsDistributor } from '../../../types/contracts/AutoRewardsDist
 import { MockRewardsDistributor } from '../../../types/contracts/MockRewardsDistributor';
 import { MockTribalChief } from '../../../types/contracts/MockTribalChief';
 import { Core } from '../../../types/contracts/Core';
-import { Tribe } from '../../../types/contracts/Tribe';
+import { Vcon } from '../../../types/contracts/Vcon';
 
 const toBN = ethers.BigNumber.from;
 
@@ -20,7 +20,7 @@ describe('AutoRewardsDistributor', function () {
   let tribalChief: MockTribalChief;
   let rewardsDistributor: MockRewardsDistributor;
   let core: Core;
-  let tribe: Tribe;
+  let tribe: Vcon;
   let isBorrowIncentivized: boolean;
 
   const e18 = ethers.constants.WeiPerEther;
@@ -56,7 +56,7 @@ describe('AutoRewardsDistributor', function () {
     tribalChief = await (
       await ethers.getContractFactory('MockTribalChief')
     ).deploy(tribePerBlock, totalAllocPoint, poolAllocPoints);
-    tribe = await ethers.getContractAt('Tribe', await core.tribe());
+    tribe = await ethers.getContractAt('Vcon', await core.vcon());
     rewardsDistributor = await (await ethers.getContractFactory('MockRewardsDistributor')).deploy();
 
     autoRewardsDistributor = await (
@@ -142,7 +142,7 @@ describe('AutoRewardsDistributor', function () {
         tribalChief = await (
           await ethers.getContractFactory('MockTribalChief')
         ).deploy(tribePerBlock, totalAllocPoint, poolAllocPoints);
-        tribe = await ethers.getContractAt('Tribe', await core.tribe());
+        tribe = await ethers.getContractAt('Vcon', await core.vcon());
         rewardsDistributor = await (await ethers.getContractFactory('MockRewardsDistributor')).deploy();
 
         autoRewardsDistributor = await (

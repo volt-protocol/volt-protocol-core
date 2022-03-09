@@ -54,7 +54,6 @@ describe('CollateralizationOracleWrapper', function () {
     this.oracleWrapper = await ethers.getContractAt('CollateralizationOracleWrapper', proxyContract.address);
 
     await this.oracleWrapper.initialize(
-      this.core.address,
       this.oracle.address,
       '600', // 10 min validity duration
       '500' // 5% deviation threshold
@@ -92,7 +91,6 @@ describe('CollateralizationOracleWrapper', function () {
     it('reverts if already initialized', async function () {
       await expectRevert(
         this.oracleWrapper.initialize(
-          this.core.address,
           this.oracle.address,
           '600', // 10 min validity duration
           '500' // 5% deviation threshold

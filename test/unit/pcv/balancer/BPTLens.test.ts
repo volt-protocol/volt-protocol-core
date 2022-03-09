@@ -74,8 +74,8 @@ describe('BPTLens', function () {
     expect(await lens.balance()).to.be.bignumber.equal(ethers.constants.WeiPerEther);
   });
 
-  it('resistantBalanceAndFei', async function () {
-    const balances = await lens.resistantBalanceAndFei();
+  it('resistantBalanceAndVolt', async function () {
+    const balances = await lens.resistantBalanceAndVolt();
     expect(balances[0]).to.be.bignumber.equal(toBN('1414213562373095048'));
     expect(balances[1]).to.be.bignumber.equal(toBN('707106781186547524'));
   });

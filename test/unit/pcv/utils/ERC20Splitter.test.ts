@@ -29,21 +29,18 @@ describe('ERC20Splitter', function () {
   beforeEach(async function () {
     ({ userAddress, secondUserAddress, governorAddress } = await getAddresses());
     this.core = await getCore();
-    this.tribe = await ethers.getContractAt('Tribe', await this.core.tribe());
+    this.tribe = await ethers.getContractAt('Vcon', await this.core.vcon());
     this.erc20Splitter = await (
       await ethers.getContractFactory('ERC20Splitter')
     ).deploy(this.core.address, this.tribe.address, [userAddress, secondUserAddress], [9000, 1000]);
 
-    await this.core.connect(impersonatedSigners[governorAddress]).allocateTribe(this.erc20Splitter.address, '100000');
+    await this.tribe.connect(impersonatedSigners[governorAddress]).transfer(this.erc20Splitter.address, '100000');
   });
 
   it('Unpaused allocates TRIBE successfully', async function () {
     expect(await this.tribe.balanceOf(this.erc20Splitter.address)).to.be.equal('100000');
 
-    /*await expect(*/ await this.erc20Splitter.connect(impersonatedSigners[userAddress]).allocate(); /*, 'Allocate', {
-      caller: userAddress,
-      amount: '100000'
-    }); */
+    await this.erc20Splitter.connect(impersonatedSigners[userAddress]).allocate();
 
     expect(await this.tribe.balanceOf(this.erc20Splitter.address)).to.be.equal('0');
     expect(await this.tribe.balanceOf(userAddress)).to.be.equal('90000');

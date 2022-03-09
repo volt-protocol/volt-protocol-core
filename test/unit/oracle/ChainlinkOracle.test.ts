@@ -11,7 +11,7 @@ const scale = ethers.constants.WeiPerEther;
 describe('ChainlinkOracle', function () {
   const jobid = keccak256(utils.toUtf8Bytes('jobid'));
   let chainlinkOracle: Contract;
-  const initialQueue = [120, 130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 240];
+  const initialQueue = [120, 240];
   let owner: SignerWithAddress;
   let chainlinkOperator: SignerWithAddress;
 
