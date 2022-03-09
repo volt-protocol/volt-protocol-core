@@ -317,6 +317,7 @@ contract PegStabilityModule is
         override
         nonReentrant
         whenNotPaused
+        whileRedemptionsNotPaused
         returns (uint256 amountOut)
     {
         amountOut = _redeem(to, amountFeiIn, minAmountOut);
@@ -334,6 +335,7 @@ contract PegStabilityModule is
         override
         nonReentrant
         whenNotPaused
+        whileMintingNotPaused
         returns (uint256 amountFeiOut)
     {
         amountFeiOut = _mint(to, amountIn, minAmountOut);
