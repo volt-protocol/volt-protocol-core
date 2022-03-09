@@ -17,6 +17,7 @@ jobs:
             LAST_SUCCESSFUL_COMMIT=8109364d8b219e8a7f39b74e69b3c6891cda5dc1
             echo $LAST_SUCCESSFUL_COMMIT > /tmp/last-successful-commit
             echo $CIRCLE_SHA1 > /tmp/current-commit
+            echo "NODE_OPTIONS=--max-old-space-size=4096" > .env
       - restore_cache:
           keys:
             - build-cache-{{ .Branch }}-{{ checksum "/tmp/last-successful-commit" }}
@@ -25,9 +26,7 @@ jobs:
           command: npm install
       - run:
           name: Compile contracts
-          command: |
-            NODE_OPTIONS=--max-old-space-size=4096
-            npm run compile
+          command: npm run compile
       - save_cache:
           key: repo-{{ .Environment.CIRCLE_SHA1 }}
           paths:
@@ -56,7 +55,6 @@ jobs:
       - run:
           name: Run tests
           command: |
-            NODE_OPTIONS=--max-old-space-size=4096
             circleci tests glob "test/unit/**/*.ts" | circleci tests split --split-by=filesize > /tmp/tests-to-run
             npm run test $(cat /tmp/tests-to-run)
       - store_test_results:
@@ -76,7 +74,6 @@ jobs:
       - run:
           name: Run end-to-end tests
           command: |
-            NODE_OPTIONS=--max-old-space-size=4096
             circleci tests glob "test/integration/**/*.ts" | circleci tests split --split-by=filesize > /tmp/tests-to-run
             npm run test:e2e $(cat /tmp/tests-to-run)
       - store_test_results:
