@@ -5,8 +5,8 @@
   "description": "",
   "files": [],
   "scripts": {
-    "compile": "forge build",
-    "compile:hardhat": "npx hardhat compile",
+    "compile:forge": "forge build",
+    "compile": "npx hardhat compile",
     "coverage": "npx hardhat coverage",
     "console": "npx hardhat console",
     "console:rinkeby": "npx hardhat console --network rinkeby",
