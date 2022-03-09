@@ -34,7 +34,9 @@ contract Queue {
     /// @return percentageChange percentage change in basis points over past 12 months
     function getAPRFromQueue() public view returns (int256 percentageChange) {
         int256 delta = int128(queue[0]) - int128(queue[1]);
-        percentageChange = delta * Constants.BASIS_POINTS_GRANULARITY_INT / int128(queue[1]);
+        percentageChange =
+            (delta * Constants.BASIS_POINTS_GRANULARITY_INT) /
+            int128(queue[1]);
     }
 
     /// @notice this is the only method needed as we will be using this queue to track CPI-U of the TTM

@@ -29,10 +29,16 @@ contract ScalingPriceOracle is Timed, IScalingPriceOracle, CoreRef, Deviation {
     address public override chainlinkCPIOracle;
 
     /// @notice event when Chainlink CPI oracle address is changed
-    event ChainlinkCPIOracleUpdate(address oldChainLinkCPIOracle, address newChainlinkCPIOracle);
+    event ChainlinkCPIOracleUpdate(
+        address oldChainLinkCPIOracle,
+        address newChainlinkCPIOracle
+    );
 
     /// @notice event when the monthly change rate is updated
-    event CPIMonthlyChangeRateUpdate(int256 oldChangeRateBasisPoints, int256 newChangeRateBasisPoints);
+    event CPIMonthlyChangeRateUpdate(
+        int256 oldChangeRateBasisPoints,
+        int256 newChangeRateBasisPoints
+    );
 
     constructor(
         int256 _monthlyChangeRateBasisPoints,
@@ -54,8 +60,11 @@ contract ScalingPriceOracle is Timed, IScalingPriceOracle, CoreRef, Deviation {
     // ----------- Modifiers -----------
 
     /// @notice restrict access to only the chainlink CPI Oracle
-    modifier onlyChainlinkCPIOracle {
-        require(msg.sender == chainlinkCPIOracle, "ScalingPriceOracle: caller is not chainlink oracle");
+    modifier onlyChainlinkCPIOracle() {
+        require(
+            msg.sender == chainlinkCPIOracle,
+            "ScalingPriceOracle: caller is not chainlink oracle"
+        );
         _;
     }
 
@@ -65,21 +74,22 @@ contract ScalingPriceOracle is Timed, IScalingPriceOracle, CoreRef, Deviation {
     /// applies the change smoothly over a 28 day period
     function getCurrentOraclePrice() public view override returns (uint256) {
         int256 oraclePriceInt = oraclePrice.toInt256();
-        return SafeCast.toUint256(
-            oraclePriceInt +
-            (oraclePriceInt * monthlyChangeRateBasisPoints / Constants.BASIS_POINTS_GRANULARITY_INT * Math.min(block.timestamp - startTime, timeFrame).toInt256() / timeFrame.toInt256())
-        );
+        return
+            SafeCast.toUint256(
+                oraclePriceInt +
+                    ((((oraclePriceInt * monthlyChangeRateBasisPoints) /
+                        Constants.BASIS_POINTS_GRANULARITY_INT) *
+                        Math
+                            .min(block.timestamp - startTime, timeFrame)
+                            .toInt256()) / timeFrame.toInt256())
+            );
     }
-
 
     /// @notice return interest accrued per second
     function getInterestAccruedPerSecond() public view returns (int256) {
-        return (
-            oraclePrice.toInt256() *
-            monthlyChangeRateBasisPoints /
+        return ((oraclePrice.toInt256() * monthlyChangeRateBasisPoints) /
             Constants.BASIS_POINTS_GRANULARITY_INT /
-            timeFrame.toInt256()
-        );
+            timeFrame.toInt256());
     }
 
     // ----------- Helpers -----------
@@ -95,9 +105,15 @@ contract ScalingPriceOracle is Timed, IScalingPriceOracle, CoreRef, Deviation {
 
     /// @notice function for priviledged roles to be able to patch new data into the system
     /// DO NOT USE unless chainlink data provider is down
-    function updateOracleChangeRateGovernor(int256 newChangeRateBasisPoints) external onlyGovernor {
+    function updateOracleChangeRateGovernor(int256 newChangeRateBasisPoints)
+        external
+        onlyGovernor
+    {
         require(
-            isWithinDeviationThreshold(monthlyChangeRateBasisPoints, newChangeRateBasisPoints),
+            isWithinDeviationThreshold(
+                monthlyChangeRateBasisPoints,
+                newChangeRateBasisPoints
+            ),
             "ScalingPriceOracle: new change rate is outside of allowable deviation"
         );
 
@@ -107,16 +123,25 @@ contract ScalingPriceOracle is Timed, IScalingPriceOracle, CoreRef, Deviation {
         int256 oldChangeRateBasisPoints = monthlyChangeRateBasisPoints;
         monthlyChangeRateBasisPoints = newChangeRateBasisPoints;
 
-        emit CPIMonthlyChangeRateUpdate(oldChangeRateBasisPoints, newChangeRateBasisPoints);
+        emit CPIMonthlyChangeRateUpdate(
+            oldChangeRateBasisPoints,
+            newChangeRateBasisPoints
+        );
     }
 
     /// @notice function for priviledged roles to be able to upgrade the oracle system address
     /// @param newChainlinkCPIOracle new chainlink CPI oracle
-    function updateChainLinkCPIOracle(address newChainlinkCPIOracle) external onlyGovernor {
+    function updateChainLinkCPIOracle(address newChainlinkCPIOracle)
+        external
+        onlyGovernor
+    {
         address oldChainlinkCPIOracle = chainlinkCPIOracle;
         chainlinkCPIOracle = newChainlinkCPIOracle;
 
-        emit ChainlinkCPIOracleUpdate(oldChainlinkCPIOracle, newChainlinkCPIOracle);
+        emit ChainlinkCPIOracleUpdate(
+            oldChainlinkCPIOracle,
+            newChainlinkCPIOracle
+        );
     }
 
     /// @notice function to compound interest after the time period has elapsed
@@ -135,19 +160,25 @@ contract ScalingPriceOracle is Timed, IScalingPriceOracle, CoreRef, Deviation {
 
     /// @notice function for chainlink oracle to be able to call in and change the rate
     /// @param newChangeRateBasisPoints the new monthly interest rate applied to the chainlink oracle price
-    function oracleUpdateChangeRate(int256 newChangeRateBasisPoints) external onlyChainlinkCPIOracle {
+    function oracleUpdateChangeRate(int256 newChangeRateBasisPoints)
+        external
+        onlyChainlinkCPIOracle
+    {
         /// compound the interest with the current rate
         /// this also checks that we are after the timer has expired, and then resets it
         _updateOraclePrice();
 
         /// if the oracle target is the same as last time, save an SSTORE
         if (newChangeRateBasisPoints == monthlyChangeRateBasisPoints) {
-            return ;
+            return;
         }
 
         int256 oldChangeRateBasisPoints = monthlyChangeRateBasisPoints;
         monthlyChangeRateBasisPoints = newChangeRateBasisPoints;
 
-        emit CPIMonthlyChangeRateUpdate(oldChangeRateBasisPoints, newChangeRateBasisPoints);
+        emit CPIMonthlyChangeRateUpdate(
+            oldChangeRateBasisPoints,
+            newChangeRateBasisPoints
+        );
     }
 }

@@ -10,7 +10,9 @@ contract MockChainlinkSingleUpdateOracle {
         scalingPriceOracle = _scalingPriceOracle;
     }
 
-    function updateOracleAPRBasisPoints(int256 newChangeRateBasisPoints) external {
+    function updateOracleAPRBasisPoints(int256 newChangeRateBasisPoints)
+        external
+    {
         scalingPriceOracle.oracleUpdateChangeRate(newChangeRateBasisPoints);
     }
 }

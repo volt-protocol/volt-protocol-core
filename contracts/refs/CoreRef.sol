@@ -12,10 +12,10 @@ abstract contract CoreRef is ICoreRef, Pausable {
     ICore private immutable _core;
 
     /// @notice volt contract
-    IVolt public override immutable volt;
+    IVolt public immutable override volt;
 
     /// @notice vcon contract
-    IERC20 public override immutable vcon;
+    IERC20 public immutable override vcon;
 
     /// @notice a role used with a subset of governor permissions for this contract only
     bytes32 public override CONTRACT_ADMIN_ROLE;
@@ -65,8 +65,7 @@ abstract contract CoreRef is ICoreRef, Pausable {
 
     modifier onlyGovernorOrAdmin() {
         require(
-            _core.isGovernor(msg.sender) ||
-            isContractAdmin(msg.sender),
+            _core.isGovernor(msg.sender) || isContractAdmin(msg.sender),
             "CoreRef: Caller is not a governor or contract admin"
         );
         _;
@@ -82,8 +81,7 @@ abstract contract CoreRef is ICoreRef, Pausable {
 
     modifier onlyGuardianOrGovernor() {
         require(
-            _core.isGovernor(msg.sender) || 
-            _core.isGuardian(msg.sender),
+            _core.isGovernor(msg.sender) || _core.isGuardian(msg.sender),
             "CoreRef: Caller is not a guardian or governor"
         );
         _;
@@ -92,9 +90,10 @@ abstract contract CoreRef is ICoreRef, Pausable {
     modifier onlyGovernorOrGuardianOrAdmin() {
         require(
             _core.isGovernor(msg.sender) ||
-            _core.isGuardian(msg.sender) || 
-            isContractAdmin(msg.sender), 
-            "CoreRef: Caller is not governor or guardian or admin");
+                _core.isGuardian(msg.sender) ||
+                isContractAdmin(msg.sender),
+            "CoreRef: Caller is not governor or guardian or admin"
+        );
         _;
     }
 
@@ -104,12 +103,21 @@ abstract contract CoreRef is ICoreRef, Pausable {
     }
 
     /// @notice sets a new admin role for this contract
-    function setContractAdminRole(bytes32 newContractAdminRole) external override onlyGovernor {
+    function setContractAdminRole(bytes32 newContractAdminRole)
+        external
+        override
+        onlyGovernor
+    {
         _setContractAdminRole(newContractAdminRole);
     }
 
     /// @notice returns whether a given address has the admin role for this contract
-    function isContractAdmin(address _admin) public view override returns (bool) {
+    function isContractAdmin(address _admin)
+        public
+        view
+        override
+        returns (bool)
+    {
         return _core.hasRole(CONTRACT_ADMIN_ROLE, _admin);
     }
 
@@ -154,6 +162,9 @@ abstract contract CoreRef is ICoreRef, Pausable {
     function _setContractAdminRole(bytes32 newContractAdminRole) internal {
         bytes32 oldContractAdminRole = CONTRACT_ADMIN_ROLE;
         CONTRACT_ADMIN_ROLE = newContractAdminRole;
-        emit ContractAdminRoleUpdate(oldContractAdminRole, newContractAdminRole);
+        emit ContractAdminRoleUpdate(
+            oldContractAdminRole,
+            newContractAdminRole
+        );
     }
 }

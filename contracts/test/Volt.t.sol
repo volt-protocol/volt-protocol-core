@@ -19,14 +19,14 @@ contract VoltTest is DSTest {
     FeiTestAddresses public addresses = getAddresses();
 
     function setUp() public {
-      core = getCore();
+        core = getCore();
 
-      volt = core.volt();
+        volt = core.volt();
     }
 
     function testDeployedMetaData() public {
-      assertEq(volt.totalSupply(), 0);
-      assertTrue(core.isGovernor(addresses.governorAddress));
+        assertEq(volt.totalSupply(), 0);
+        assertTrue(core.isGovernor(addresses.governorAddress));
     }
 
     function testMintsVolt() public {

@@ -17,7 +17,7 @@ interface IChainlinkOracle {
 
     /// @notice address of the volt scaling price oracle
     function voltOracle() external view returns (IScalingPriceOracle);
-   
+
     /// @notice function to request data
     function requestCPIData() external returns (bytes32 requestId);
 
@@ -35,7 +35,11 @@ interface IChainlinkOracle {
     /// @param token asset to withdraw
     /// @param to recipient
     /// @param amount sent to recipient
-    function withdrawToken(IERC20 token, address to, uint256 amount) external;
+    function withdrawToken(
+        IERC20 token,
+        address to,
+        uint256 amount
+    ) external;
 
     /// @notice function to set new LINK fee
     /// @param newFee sent to node operator
@@ -47,7 +51,8 @@ interface IChainlinkOracle {
 
     /// @notice function to set the scaling price oracle address
     /// @param newScalingPriceOracle address
-    function setScalingPriceOracle(IScalingPriceOracle newScalingPriceOracle) external;
+    function setScalingPriceOracle(IScalingPriceOracle newScalingPriceOracle)
+        external;
 
     /// @notice function to set the chainlink oracle address that requests are made to
     /// @param newChainlinkOracle new chainlink oracle

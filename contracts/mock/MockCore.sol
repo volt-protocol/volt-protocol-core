@@ -11,10 +11,9 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 /// @author Fei Protocol
 /// @notice maintains roles, access control, fei, tribe, genesisGroup, and the TRIBE treasury
 contract MockCore is Permissions, Initializable {
-
     /// @notice the address of the FEI contract
     IVolt public volt;
-    
+
     /// @notice the address of the TRIBE contract
     IERC20 public vcon;
 
@@ -29,6 +28,8 @@ contract MockCore is Permissions, Initializable {
 
     function init(address recipient) external initializer {
         /// emulate the real core as much as possible
+        _setupGovernor(msg.sender);
+
         Volt _volt = new Volt(address(this));
         volt = IVolt(_volt);
 
@@ -70,13 +71,7 @@ contract MockCore is Permissions, Initializable {
     /// @notice checks if address is a governor
     /// @return true _address is a governor
     // only virtual for testing mock override
-    function isGovernor(address)
-        public
-        view
-        virtual
-        override
-        returns (bool)
-    {
+    function isGovernor(address) public view virtual override returns (bool) {
         return true;
     }
 

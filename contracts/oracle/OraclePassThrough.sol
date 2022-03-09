@@ -16,19 +16,26 @@ contract OraclePassThrough is CoreRef, IOraclePassThrough {
     ScalingPriceOracle public override scalingPriceOracle;
 
     /// @notice event emitted when the scaling price oracle is updated
-    event ScalingPriceOracleUpdate(ScalingPriceOracle oldScalingPriceOracle, ScalingPriceOracle newScalingPriceOracle);
+    event ScalingPriceOracleUpdate(
+        ScalingPriceOracle oldScalingPriceOracle,
+        ScalingPriceOracle newScalingPriceOracle
+    );
 
-    constructor(
-        address coreAddress,
-        ScalingPriceOracle _scalingPriceOracle
-    ) CoreRef(coreAddress) {
+    constructor(address coreAddress, ScalingPriceOracle _scalingPriceOracle)
+        CoreRef(coreAddress)
+    {
         scalingPriceOracle = _scalingPriceOracle;
     }
 
     // ----------- Getters -----------
 
     /// @notice function to get the current oracle price for the OracleRef contract
-    function read() external override view returns (Decimal.D256 memory price, bool valid) {
+    function read()
+        external
+        view
+        override
+        returns (Decimal.D256 memory price, bool valid)
+    {
         uint256 currentPrice = scalingPriceOracle.getCurrentOraclePrice();
 
         price = Decimal.from(currentPrice).div(1 ether);
@@ -36,7 +43,7 @@ contract OraclePassThrough is CoreRef, IOraclePassThrough {
     }
 
     /// @notice function to get the current oracle price for the entire system
-    function getCurrentOraclePrice() external override view returns (uint256) {
+    function getCurrentOraclePrice() external view override returns (uint256) {
         return scalingPriceOracle.getCurrentOraclePrice();
     }
 
@@ -44,10 +51,17 @@ contract OraclePassThrough is CoreRef, IOraclePassThrough {
 
     /// @notice function to update the scaling price oracle reference
     /// @param newScalingPriceOracle the new oracle to reference
-    function updateScalingPriceOracle(ScalingPriceOracle newScalingPriceOracle) external override onlyGovernor {
+    function updateScalingPriceOracle(ScalingPriceOracle newScalingPriceOracle)
+        external
+        override
+        onlyGovernor
+    {
         ScalingPriceOracle oldScalingPriceOracle = scalingPriceOracle;
         scalingPriceOracle = newScalingPriceOracle;
 
-        emit ScalingPriceOracleUpdate(oldScalingPriceOracle, newScalingPriceOracle);
+        emit ScalingPriceOracleUpdate(
+            oldScalingPriceOracle,
+            newScalingPriceOracle
+        );
     }
 }
