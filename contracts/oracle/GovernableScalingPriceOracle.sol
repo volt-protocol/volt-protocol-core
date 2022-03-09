@@ -6,8 +6,11 @@ import "contracts/utils/Deviation.sol";
 import "contracts/refs/CoreRef.sol";
 
 /// @author Elliot Friedman
-contract GovernableScalingPriceOracle is ScalingPriceOracle, Deviation, CoreRef {
-
+contract GovernableScalingPriceOracle is
+    ScalingPriceOracle,
+    Deviation,
+    CoreRef
+{
     constructor(
         uint256 _duration,
         int256 _annualChangeRateBasisPoints,
@@ -20,9 +23,15 @@ contract GovernableScalingPriceOracle is ScalingPriceOracle, Deviation, CoreRef 
     {}
 
     /// @notice function for priviledged roles to be able to upgrade the system
-    function updateOracleChangeRate(int256 _newChangeRateBasisPoints) external onlyGovernorOrGuardianOrAdmin {
+    function updateOracleChangeRate(int256 _newChangeRateBasisPoints)
+        external
+        onlyGovernorOrGuardianOrAdmin
+    {
         require(
-            isWithinDeviationThreshold(annualChangeRateBasisPoints, _newChangeRateBasisPoints),
+            isWithinDeviationThreshold(
+                annualChangeRateBasisPoints,
+                _newChangeRateBasisPoints
+            ),
             "GovernableScalingPriceOracle: new change rate is outside of allowable deviation"
         );
 

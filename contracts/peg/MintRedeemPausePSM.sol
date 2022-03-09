@@ -6,13 +6,12 @@ import "./PegStabilityModule.sol";
 /// @notice ETH PSM that allows separate pausing of mint and redeem
 /// by the guardian and governor
 contract MintRedeemPausePSM is PegStabilityModule {
-
     /// @notice boolean switch that indicates whether redemptions are paused
     bool public redeemPaused;
 
     /// @notice event that is emitted when redemptions are paused
     event RedemptionsPaused(address account);
-    
+
     /// @notice event that is emitted when redemptions are unpaused
     event RedemptionsUnpaused(address account);
 
@@ -25,47 +24,63 @@ contract MintRedeemPausePSM is PegStabilityModule {
         uint256 _mintingBufferCap,
         IERC20 _underlyingToken,
         IPCVDeposit _surplusTarget
-    ) PegStabilityModule(
-        params,
-        _mintFeeBasisPoints,
-        _redeemFeeBasisPoints,
-        _reservesThreshold,
-        _feiLimitPerSecond,
-        _mintingBufferCap,
-        _underlyingToken,
-        _surplusTarget
-    ) {}
+    )
+        PegStabilityModule(
+            params,
+            _mintFeeBasisPoints,
+            _redeemFeeBasisPoints,
+            _reservesThreshold,
+            _feiLimitPerSecond,
+            _mintingBufferCap,
+            _underlyingToken,
+            _surplusTarget
+        )
+    {}
 
     /// @notice modifier that allows execution when redemptions are not paused
-    modifier whileRedemptionsNotPaused {
+    modifier whileRedemptionsNotPaused() {
         require(!redeemPaused, "EthPSM: Redeem paused");
         _;
     }
 
     /// @notice modifier that allows execution when redemptions are paused
-    modifier whileRedemptionsPaused {
+    modifier whileRedemptionsPaused() {
         require(redeemPaused, "EthPSM: Redeem not paused");
         _;
     }
 
     /// @notice set secondary pausable methods to paused
-    function pauseRedeem() public onlyGovernorOrGuardianOrAdmin whileRedemptionsNotPaused {
+    function pauseRedeem()
+        public
+        onlyGovernorOrGuardianOrAdmin
+        whileRedemptionsNotPaused
+    {
         redeemPaused = true;
         emit RedemptionsPaused(msg.sender);
     }
 
     /// @notice set secondary pausable methods to unpaused
-    function unpauseRedeem() public onlyGovernorOrGuardianOrAdmin whileRedemptionsPaused {
+    function unpauseRedeem()
+        public
+        onlyGovernorOrGuardianOrAdmin
+        whileRedemptionsPaused
+    {
         redeemPaused = false;
         emit RedemptionsUnpaused(msg.sender);
     }
 
-    /// @notice override redeem function that allows secondary pausing 
+    /// @notice override redeem function that allows secondary pausing
     function redeem(
         address to,
         uint256 amountFeiIn,
         uint256 minAmountOut
-    ) external override nonReentrant whileRedemptionsNotPaused returns (uint256 amountOut) {
+    )
+        external
+        override
+        nonReentrant
+        whileRedemptionsNotPaused
+        returns (uint256 amountOut)
+    {
         amountOut = _redeem(to, amountFeiIn, minAmountOut);
     }
 }

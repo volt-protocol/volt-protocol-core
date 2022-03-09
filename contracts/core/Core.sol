@@ -11,16 +11,15 @@ import "../vcon/Vcon.sol";
 /// @author Fei Protocol
 /// @notice maintains roles, access control, Volt, Vcon, and the Vcon treasury
 contract Core is ICore, Permissions, Initializable {
-
     /// @notice the address of the FEI contract
     IVolt public override volt;
-    
+
     /// @notice the address of the Vcon contract
     IERC20 public override vcon;
 
     function init() external override initializer {
         _setupGovernor(msg.sender);
-        
+
         Volt _volt = new Volt(address(this));
         _setVolt(address(_volt));
 

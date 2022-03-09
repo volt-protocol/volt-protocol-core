@@ -7,7 +7,6 @@ import "../refs/CoreRef.sol";
 /// @title FEI stablecoin
 /// @author Fei Protocol
 contract Volt is IVolt, ERC20Burnable, CoreRef {
-    
     // solhint-disable-next-line var-name-mixedcase
     bytes32 public DOMAIN_SEPARATOR;
     // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
@@ -71,23 +70,22 @@ contract Volt is IVolt, ERC20Burnable, CoreRef {
         bytes32 s
     ) external override {
         require(deadline >= block.timestamp, "Fei: EXPIRED");
-        bytes32 digest =
-            keccak256(
-                abi.encodePacked(
-                    "\x19\x01",
-                    DOMAIN_SEPARATOR,
-                    keccak256(
-                        abi.encode(
-                            PERMIT_TYPEHASH,
-                            owner,
-                            spender,
-                            value,
-                            nonces[owner]++,
-                            deadline
-                        )
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                keccak256(
+                    abi.encode(
+                        PERMIT_TYPEHASH,
+                        owner,
+                        spender,
+                        value,
+                        nonces[owner]++,
+                        deadline
                     )
                 )
-            );
+            )
+        );
         address recoveredAddress = ecrecover(digest, v, r, s);
         require(
             recoveredAddress != address(0) && recoveredAddress == owner,
