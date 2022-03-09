@@ -407,8 +407,9 @@ contract PegStabilityModule is
     /// @notice helper function to get mint amount out based on current market prices
     /// @dev will revert if price is outside of bounds and bounded PSM is being used
     function _getMintAmountOut(uint256 amountIn)
-        private
+        internal
         view
+        virtual
         returns (uint256 amountFeiOut)
     {
         Decimal.D256 memory price = readOracle();
@@ -425,8 +426,9 @@ contract PegStabilityModule is
     /// @notice helper function to get redeem amount out based on current market prices
     /// @dev will revert if price is outside of bounds and bounded PSM is being used
     function _getRedeemAmountOut(uint256 amountFeiIn)
-        private
+        internal
         view
+        virtual
         returns (uint256 amountTokenOut)
     {
         Decimal.D256 memory price = readOracle();

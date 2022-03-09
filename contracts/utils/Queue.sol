@@ -13,7 +13,7 @@ contract Queue {
     uint128[2] public queue;
 
     /// @param initialQueue this is the trailing twelve months of data
-    constructor(uint24[] memory initialQueue) {
+    constructor(uint128[] memory initialQueue) {
         require(initialQueue.length == 2, "Queue: invalid length");
 
         for (uint256 i = 0; i < initialQueue.length; i++) {
@@ -42,7 +42,7 @@ contract Queue {
     /// @notice this is the only method needed as we will be using this queue to track CPI-U of the TTM
     /// add an element to the start of the queue and pop the last element off the queue
     /// @param elem the new element to add to the beginning of the queue
-    function _unshift(uint24 elem) internal {
+    function _unshift(uint128 elem) internal {
         queue[1] = queue[0];
 
         queue[0] = elem;

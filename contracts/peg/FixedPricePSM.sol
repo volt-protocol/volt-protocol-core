@@ -38,7 +38,6 @@ contract FixedPricePSM is PriceBoundPSM {
     function _getMintAmountOut(uint256 amountIn)
         internal
         view
-        virtual
         override
         returns (uint256 amountFeiOut)
     {
@@ -58,7 +57,6 @@ contract FixedPricePSM is PriceBoundPSM {
     function _getRedeemAmountOut(uint256 amountFeiIn)
         internal
         view
-        virtual
         override
         returns (uint256 amountTokenOut)
     {

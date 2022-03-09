@@ -36,7 +36,7 @@ contract ChainlinkOracle is ChainlinkClient, Ownable, Queue {
         address _oracle,
         bytes32 _jobid,
         uint256 _fee,
-        uint24[] memory initialQueue
+        uint128[] memory initialQueue
     ) Ownable() Queue(initialQueue) {
         uint256 chainId;
         assembly {
@@ -76,7 +76,7 @@ contract ChainlinkOracle is ChainlinkClient, Ownable, Queue {
         recordChainlinkFulfillment(_requestId)
     {
         /// push CPI data to queue
-        _unshift(uint24(_cpiData));
+        _unshift(uint128(_cpiData));
 
         /// calculate new annual CPI-U rate in basis points
         int256 aprBasisPoints = getAPRFromQueue();

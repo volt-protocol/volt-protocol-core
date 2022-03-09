@@ -4,9 +4,9 @@ pragma solidity ^0.8.4;
 import "./../utils/Queue.sol";
 
 contract MockQueue is Queue {
-    constructor(uint24[] memory initialQueue) Queue(initialQueue) {}
+    constructor(uint128[] memory initialQueue) Queue(initialQueue) {}
 
-    function unshift(uint24 elem) external returns (bool) {
+    function unshift(uint128 elem) external returns (bool) {
         _unshift(elem);
 
         return true;
