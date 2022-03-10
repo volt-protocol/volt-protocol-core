@@ -60,7 +60,6 @@ contract NonCustodialPSM is
         address oracleAddress;
         address backupOracle;
         int256 decimalsNormalizer;
-        bool doInvert;
     }
 
     /// @notice struct for passing constructor parameters related to MultiRateLimited
@@ -93,7 +92,7 @@ contract NonCustodialPSM is
             params.oracleAddress,
             params.backupOracle,
             params.decimalsNormalizer,
-            params.doInvert
+            true /// hardcode doInvert to true to allow swaps to work correctly
         )
         /// rate limited replenishable passes false as the last param as there can be no partial actions
         RateLimited(
@@ -354,11 +353,10 @@ contract NonCustodialPSM is
         Decimal.D256 memory price = readOracle();
         _validatePriceRange(price);
 
-        Decimal.D256 memory adjustedAmountIn = Decimal.from(amountIn);
+        Decimal.D256 memory adjustedAmountIn = price.mul(amountIn);
 
         amountVoltOut = adjustedAmountIn
             .mul(Constants.BASIS_POINTS_GRANULARITY - mintFeeBasisPoints)
-            .div(price)
             .div(Constants.BASIS_POINTS_GRANULARITY)
             .asUint256();
     }
@@ -384,8 +382,8 @@ contract NonCustodialPSM is
         );
 
         /// now turn the VOLT into the underlying token amounts
-        /// VOLT * VOLT price = how much stable token to pay out
-        amountTokenOut = adjustedAmountIn.mul(price).asUint256();
+        /// amount VOLT in / VOLT you receive for $1 = how much stable token to pay out
+        amountTokenOut = adjustedAmountIn.div(price).asUint256();
     }
 
     // ----------- Helper methods to change state -----------

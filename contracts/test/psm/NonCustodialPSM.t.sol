@@ -78,8 +78,7 @@ contract NonCustodialPSMTest is DSTest {
                 coreAddress: address(core),
                 oracleAddress: address(oracle),
                 backupOracle: address(0),
-                decimalsNormalizer: 0,
-                doInvert: false
+                decimalsNormalizer: 0
             });
 
         NonCustodialPSM.RateLimitedParams
@@ -182,7 +181,7 @@ contract NonCustodialPSMTest is DSTest {
     function testGetMintAmountOutAfterTime() public {
         /// assert that for 101 stables you get 100 VOLT after volt price increases 1%
         uint256 amountStableIn = 101_000;
-        uint256 expectedAmountVoltOut = 100_000;
+        uint256 expectedAmountVoltOut = 99999; /// subtract 1 for precision loss from doInvert
 
         /// advance the full time period to get the full 1% price increase
         vm.warp(28 days + block.timestamp);
@@ -193,7 +192,7 @@ contract NonCustodialPSMTest is DSTest {
     /// @notice pcv deposit receives underlying token on mint
     function testSwapUnderlyingForFeiAfterPriceIncrease() public {
         uint256 amountStableIn = 101_000;
-        uint256 amountVoltOut = 100_000;
+        uint256 amountVoltOut = 99999; /// subtract 1 for precision loss from doInvert
 
         vm.warp(28 days + block.timestamp);
 
@@ -542,6 +541,7 @@ contract NonCustodialPSMTest is DSTest {
         psm.mint(address(this), 101_000, 100_001);
 
         assertEq(oracle.getCurrentOraclePrice(), (1 ether * 101) / 100);
-        assertEq(psm.getMintAmountOut(101_000), 100_000);
+        /// subtract 1 for precision loss due to doInvert
+        assertEq(psm.getMintAmountOut(101_000), 100_000 - 1);
     }
 }
