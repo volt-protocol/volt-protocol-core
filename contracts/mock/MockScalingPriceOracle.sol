@@ -46,9 +46,6 @@ contract MockScalingPriceOracle is
         Timed(timeFrame) /// this duration is 28 days as that is the minimum period of time between CPI monthly updates
     {
         monthlyChangeRateBasisPoints = _monthlyChangeRateBasisPoints;
-
-        /// start the timer
-        _initTimed();
     }
 
     // ----------- Getters -----------
