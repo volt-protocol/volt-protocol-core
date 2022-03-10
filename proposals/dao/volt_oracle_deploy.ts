@@ -99,7 +99,7 @@ export const deploy: DeployUpgradeFunc = async (deployAddress, addresses, loggin
   // grant all VCON tokens to deployer
   const timelock = await (
     await ethers.getContractFactory('FeiDAOTimelock')
-  ).deploy(deployer.address, core.address, futureDAOAddress, actualTimelockDelay, minTimelockDelay);
+  ).deploy(core.address, futureDAOAddress, actualTimelockDelay, minTimelockDelay);
   logging && console.log('timelock: ', timelock.address);
 
   await timelock.deployTransaction.wait();
@@ -133,8 +133,7 @@ export const deploy: DeployUpgradeFunc = async (deployAddress, addresses, loggin
     annualChangeRateBasisPoints,
     maxDeviationThresholdBasisPoints,
     core.address,
-    futureChainlinkOracleAddress,
-    scalingPriceOracleUpdateTime
+    futureChainlinkOracleAddress
   );
   logging && console.log('scalingPriceOracle: ', scalingPriceOracle.address);
 
