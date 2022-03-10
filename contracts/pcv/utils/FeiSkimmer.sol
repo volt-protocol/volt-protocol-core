@@ -31,12 +31,12 @@ contract FeiSkimmer is CoreRef {
 
     /// @return true if Volt balance of source exceeds threshold
     function skimEligible() external view returns (bool) {
-        return volt.balanceOf(address(source)) > threshold;
+        return volt().balanceOf(address(source)) > threshold;
     }
 
     /// @notice skim Volt above the threshold from the source. Pausable. Requires skimEligible()
     function skim() external whenNotPaused {
-        IVolt _volt = volt; /// save gas by pushing this value onto the stack instead of reading from storage
+        IVolt _volt = volt(); /// save gas by pushing this value onto the stack instead of reading from storage
 
         uint256 voltTotal = _volt.balanceOf(address(source));
 

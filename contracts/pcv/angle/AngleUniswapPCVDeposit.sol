@@ -88,7 +88,7 @@ contract AngleUniswapPCVDeposit is UniswapPCVDeposit {
         poolManager = _poolManager;
         stakingRewards = _stakingRewards;
         require(
-            _poolManager.token() == address(volt),
+            _poolManager.token() == address(volt()),
             "AngleUniswapPCVDeposit: invalid poolManager"
         );
         require(
@@ -102,7 +102,7 @@ contract AngleUniswapPCVDeposit is UniswapPCVDeposit {
 
         // Approve FEI on StableMaster to be able to mint agTokens
         SafeERC20.safeApprove(
-            IERC20(address(volt)),
+            IERC20(address(volt())),
             address(_stableMaster),
             type(uint256).max
         );

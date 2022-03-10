@@ -77,7 +77,7 @@ contract BalancerPCVDepositWeightedPool is BalancerPCVDepositBase {
 
         // set cached values for token addresses & indexes
         bool tokenFound = false;
-        address _fei = address(volt);
+        address _fei = address(volt());
         for (uint256 i = 0; i < poolAssets.length; i++) {
             tokenOraclesMapping[IERC20(address(poolAssets[i]))] = _tokenOracles[
                 i

@@ -374,7 +374,7 @@ contract CollateralizationOracle is ICollateralizationOracle, CoreRef {
             }
         }
 
-        userCirculatingFei = volt.totalSupply() - _protocolControlledFei;
+        userCirculatingFei = volt().totalSupply() - _protocolControlledFei;
         protocolEquity =
             protocolControlledValue.toInt256() -
             userCirculatingFei.toInt256();

@@ -45,7 +45,7 @@ contract ConvexPCVDeposit is PCVDeposit {
         curvePool = ICurvePool(_curvePool);
 
         // cache some values for later gas optimizations
-        address feiAddress = address(volt);
+        address feiAddress = address(volt());
         bool foundFeiInPool = false;
         uint256 feiFoundAtIndex = 0;
         for (uint256 i = 0; i < N_COINS; i++) {

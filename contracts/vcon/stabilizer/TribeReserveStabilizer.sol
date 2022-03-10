@@ -69,7 +69,7 @@ contract TribeReserveStabilizer is
 
         // Setting token here because it isn't available until after CoreRef is constructed
         // This does skip the _setDecimalsNormalizerFromToken call in ReserveStabilizer constructor, but it isn't needed because TRIBE is 18 decimals
-        token = vcon;
+        token = vcon();
 
         tribeMinter = _tribeMinter;
     }
