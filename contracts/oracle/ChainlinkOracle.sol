@@ -2,11 +2,11 @@
 pragma solidity ^0.8.4;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ChainlinkClient, Chainlink} from "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {ChainlinkClient, Chainlink} from "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
 
 import {IScalingPriceOracle} from "./IScalingPriceOracle.sol";
 import {Constants} from "./../Constants.sol";
@@ -82,8 +82,7 @@ contract ChainlinkOracle is ChainlinkClient, Ownable, Initializable {
 
     /// ------------- Helpers -------------
 
-    /// @notice this is the only method needed as we will be using this array to track CPI-U of the TTM
-    /// add an element to the start of the array and pop the last element off
+    /// @notice this is the only method needed as we will be storing the most recent 2 months of data
     /// @param newMonth the new month to store
     function _addNewMonth(uint128 newMonth) internal {
         previousMonth = currentMonth;
