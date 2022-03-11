@@ -27,6 +27,11 @@ contract OraclePassThrough is CoreRef, IOraclePassThrough {
         scalingPriceOracle = _scalingPriceOracle;
     }
 
+    /// @notice updates the oracle price
+    /// @dev no-op, ScalingPriceOracle is updated automatically
+    /// added for backwards compatibility with OracleRef
+    function update() public {}
+
     // ----------- Getters -----------
 
     /// @notice function to get the current oracle price for the OracleRef contract

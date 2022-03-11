@@ -64,7 +64,7 @@ contract ReserveStabilizer is OracleRef, IReserveStabilizer, PCVDeposit {
     {
         updateOracle();
 
-        volt.transferFrom(msg.sender, address(this), feiAmount);
+        volt().transferFrom(msg.sender, address(this), feiAmount);
         _burnVoltHeld();
 
         amountOut = getAmountOut(feiAmount);

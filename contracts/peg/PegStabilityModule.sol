@@ -266,7 +266,7 @@ contract PegStabilityModule is
             "PegStabilityModule: Redeem not enough out"
         );
 
-        IERC20(volt).safeTransferFrom(msg.sender, address(this), amountFeiIn);
+        IERC20(volt()).safeTransferFrom(msg.sender, address(this), amountFeiIn);
 
         _transfer(to, amountOut);
 
@@ -290,12 +290,12 @@ contract PegStabilityModule is
         _transferFrom(msg.sender, address(this), amountIn);
 
         uint256 amountFeiToTransfer = Math.min(
-            volt.balanceOf(address(this)),
+            volt().balanceOf(address(this)),
             amountFeiOut
         );
         uint256 amountFeiToMint = amountFeiOut - amountFeiToTransfer;
 
-        IERC20(volt).safeTransfer(to, amountFeiToTransfer);
+        IERC20(volt()).safeTransfer(to, amountFeiToTransfer);
 
         if (amountFeiToMint > 0) {
             _mintVolt(to, amountFeiToMint);
@@ -371,7 +371,7 @@ contract PegStabilityModule is
 
     /// @notice the maximum mint amount out
     function getMaxMintAmountOut() external view override returns (uint256) {
-        return volt.balanceOf(address(this)) + buffer();
+        return volt().balanceOf(address(this)) + buffer();
     }
 
     /// @notice a flag for whether the current balance is above (true) or below (false) the reservesThreshold

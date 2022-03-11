@@ -38,7 +38,7 @@ contract UniswapPCVDeposit is IUniswapPCVDeposit, PCVDeposit, UniRef {
     ) UniRef(_core, _pair, _oracle, _backupOracle) {
         router = IUniswapV2Router02(_router);
 
-        _approveToken(address(volt));
+        _approveToken(address(volt()));
         _approveToken(token);
         _approveToken(_pair);
 
@@ -206,7 +206,7 @@ contract UniswapPCVDeposit is IUniswapPCVDeposit, PCVDeposit, UniRef {
         uint256 endOfTime = type(uint256).max;
         // No restrictions on withdrawal price
         (, uint256 amountWithdrawn) = router.removeLiquidity(
-            address(volt),
+            address(volt()),
             token,
             liquidity,
             0,
@@ -226,7 +226,7 @@ contract UniswapPCVDeposit is IUniswapPCVDeposit, PCVDeposit, UniRef {
         uint256 endOfTime = type(uint256).max;
         // Deposit price gated by slippage parameter
         router.addLiquidity(
-            address(volt),
+            address(volt()),
             token,
             feiAmount,
             tokenAmount,

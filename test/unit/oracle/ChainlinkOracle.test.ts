@@ -4,43 +4,49 @@ import { Contract, utils } from 'ethers';
 import { expectRevert, ZERO_ADDRESS } from '@test/helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { keccak256 } from 'ethers/lib/utils';
-
+import { getCore } from '@test/helpers';
+import { Core, MockERC20, MockScalingPriceOracle } from '@custom-types/contracts';
 const toBN = ethers.BigNumber.from;
 const scale = ethers.constants.WeiPerEther;
 
 describe('ChainlinkOracle', function () {
   const jobid = keccak256(utils.toUtf8Bytes('jobid'));
   let chainlinkOracle: Contract;
-  const initialQueue = [120, 240];
   let owner: SignerWithAddress;
   let chainlinkOperator: SignerWithAddress;
+  let core: Core;
+  let mockOracle: MockScalingPriceOracle;
+  const currentMonth = toBN(250);
+  const previousMonth = toBN(240);
 
   beforeEach(async function () {
+    core = await getCore();
     [owner, chainlinkOperator] = await ethers.getSigners();
     const mockScalingOracleFactory = await ethers.getContractFactory('MockScalingPriceOracle');
     const chainlinkOracleFactory = await ethers.getContractFactory('ChainlinkOracle');
-    const mockOracle = await mockScalingOracleFactory.deploy(scale, 1_000, ZERO_ADDRESS);
+    mockOracle = await mockScalingOracleFactory.deploy(scale, 1_000, core.address);
     chainlinkOracle = await chainlinkOracleFactory.deploy(
       mockOracle.address,
       chainlinkOperator.address,
       jobid,
       scale,
-      initialQueue
+      currentMonth,
+      previousMonth
     );
   });
 
-  describe('apr basis points 10_000', function () {
-    beforeEach(async function () {});
-
-    it('queue returns initial APR correctly', async function () {});
+  describe('apr basis points', function () {
+    it('returns initial APR correctly', async function () {
+      const expectedAPR = currentMonth.sub(previousMonth).mul(10_000).div(previousMonth);
+      const apr = await chainlinkOracle.getMonthlyAPR();
+      expect(apr).to.be.equal(expectedAPR);
+    });
   });
 
   describe('ACL', function () {
     beforeEach(async function () {});
     describe('requestCPIData', function () {
-      it.skip('succeeds when caller is owner', async function () {
-        await chainlinkOracle.connect(owner).requestCPIData();
-      });
+      it.skip('succeeds when caller is owner', async function () {});
 
       it('fails when caller is not owner', async function () {
         await expectRevert(
@@ -61,7 +67,21 @@ describe('ChainlinkOracle', function () {
     });
 
     describe('withdrawToken', function () {
-      it.skip('succeeds when caller is owner', async function () {});
+      let token: MockERC20;
+      const mintAmount = 100;
+
+      beforeEach(async function () {
+        token = await (await ethers.getContractFactory('MockERC20')).deploy();
+        await token.mint(chainlinkOracle.address, mintAmount);
+      });
+
+      it('succeeds when caller is owner', async function () {
+        await chainlinkOracle.connect(owner).withdrawToken(token.address, owner.address, mintAmount);
+
+        expect(await token.balanceOf(owner.address)).to.be.equal(mintAmount);
+        expect(await token.balanceOf(chainlinkOracle.address)).to.be.equal(0);
+      });
+
       it('fails when caller is not owner', async function () {
         await expectRevert(
           chainlinkOracle.connect(chainlinkOperator).withdrawToken(ZERO_ADDRESS, ZERO_ADDRESS, 10_000),
@@ -71,7 +91,11 @@ describe('ChainlinkOracle', function () {
     });
 
     describe('setFee', function () {
-      it.skip('succeeds when caller is owner', async function () {});
+      it('succeeds when caller is owner', async function () {
+        await chainlinkOracle.connect(owner).setFee(scale);
+        expect(await chainlinkOracle.fee()).to.be.equal(scale);
+      });
+
       it('fails when caller is not owner', async function () {
         await expectRevert(
           chainlinkOracle.connect(chainlinkOperator).setFee(scale.mul(10)),
