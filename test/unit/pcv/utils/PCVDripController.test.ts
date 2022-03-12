@@ -41,7 +41,7 @@ describe('PCVDripController', function () {
     ({ beneficiaryAddress1, userAddress, governorAddress } = await getAddresses());
 
     this.core = await getCore();
-    this.fei = await ethers.getContractAt('Fei', await this.core.fei());
+    this.fei = await ethers.getContractAt('Volt', await this.core.volt());
 
     this.sourcePCVDeposit = await (
       await ethers.getContractFactory('MockEthUniswapPCVDeposit')

@@ -3,7 +3,7 @@ import chai, { expect } from 'chai';
 import { ethers } from 'hardhat';
 import {
   Core,
-  Fei,
+  Volt,
   MockERC20,
   MockERC20__factory,
   MockCurve3pool,
@@ -16,7 +16,7 @@ chai.config.includeStack = true;
 
 describe('CurvePCVDepositPlainPool', function () {
   let core: Core;
-  let fei: Fei;
+  let fei: Volt;
   let stable1: MockERC20;
   let stable2: MockERC20;
   let curvePool: MockCurve3pool;
@@ -37,7 +37,7 @@ describe('CurvePCVDepositPlainPool', function () {
 
   beforeEach(async function () {
     core = await getCore();
-    fei = await ethers.getContractAt('Fei', await core.fei());
+    fei = await ethers.getContractAt('Volt', await core.volt());
     stable1 = await new MockERC20__factory(await getImpersonatedSigner(userAddress)).deploy();
     stable2 = await new MockERC20__factory(await getImpersonatedSigner(userAddress)).deploy();
     curvePool = await new MockCurve3pool__factory(await getImpersonatedSigner(userAddress)).deploy(
@@ -83,17 +83,17 @@ describe('CurvePCVDepositPlainPool', function () {
     });
   });
 
-  describe('resistantBalanceAndFei()', function () {
+  describe('resistantBalanceAndVolt()', function () {
     it('should report the resistant balance in USD and FEI', async function () {
-      expect((await deposit.resistantBalanceAndFei())[0]).to.be.equal('0');
-      expect((await deposit.resistantBalanceAndFei())[1]).to.be.equal('0');
+      expect((await deposit.resistantBalanceAndVolt())[0]).to.be.equal('0');
+      expect((await deposit.resistantBalanceAndVolt())[1]).to.be.equal('0');
       await curvePool.transfer(deposit.address, '10000');
-      expect((await deposit.resistantBalanceAndFei())[0]).to.be.equal('6667');
-      expect((await deposit.resistantBalanceAndFei())[1]).to.be.equal('3333');
+      expect((await deposit.resistantBalanceAndVolt())[0]).to.be.equal('6667');
+      expect((await deposit.resistantBalanceAndVolt())[1]).to.be.equal('3333');
       fei.connect(await getImpersonatedSigner(minterAddress)).mint(deposit.address, '10000');
       // no change, because the pool imbalance does not matter here
-      expect((await deposit.resistantBalanceAndFei())[0]).to.be.equal('6667');
-      expect((await deposit.resistantBalanceAndFei())[1]).to.be.equal('3333');
+      expect((await deposit.resistantBalanceAndVolt())[0]).to.be.equal('6667');
+      expect((await deposit.resistantBalanceAndVolt())[1]).to.be.equal('3333');
     });
   });
 

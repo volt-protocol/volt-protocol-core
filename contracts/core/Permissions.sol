@@ -9,7 +9,8 @@ import "./IPermissions.sol";
 contract Permissions is IPermissions, AccessControlEnumerable {
     bytes32 public constant override BURNER_ROLE = keccak256("BURNER_ROLE");
     bytes32 public constant override MINTER_ROLE = keccak256("MINTER_ROLE");
-    bytes32 public constant override PCV_CONTROLLER_ROLE = keccak256("PCV_CONTROLLER_ROLE");
+    bytes32 public constant override PCV_CONTROLLER_ROLE =
+        keccak256("PCV_CONTROLLER_ROLE");
     bytes32 public constant override GOVERN_ROLE = keccak256("GOVERN_ROLE");
     bytes32 public constant override GUARDIAN_ROLE = keccak256("GUARDIAN_ROLE");
 
@@ -33,7 +34,10 @@ contract Permissions is IPermissions, AccessControlEnumerable {
     }
 
     modifier onlyGuardian() {
-        require(isGuardian(msg.sender), "Permissions: Caller is not a guardian");
+        require(
+            isGuardian(msg.sender),
+            "Permissions: Caller is not a guardian"
+        );
         _;
     }
 
@@ -125,33 +129,51 @@ contract Permissions is IPermissions, AccessControlEnumerable {
         override
         onlyGuardian
     {
-        require(role != GOVERN_ROLE, "Permissions: Guardian cannot revoke governor");
+        require(
+            role != GOVERN_ROLE,
+            "Permissions: Guardian cannot revoke governor"
+        );
 
         // External call because this contract is appointed as a governor and has access to revoke
         this.revokeRole(role, account);
     }
 
-
     /// @notice checks if address is a minter
     /// @param _address address to check
     /// @return true _address is a minter
-    function isMinter(address _address) external view override returns (bool) {
+    // only virtual for testing mock override
+    function isMinter(address _address)
+        external
+        view
+        virtual
+        override
+        returns (bool)
+    {
         return hasRole(MINTER_ROLE, _address);
     }
 
     /// @notice checks if address is a burner
     /// @param _address address to check
     /// @return true _address is a burner
-    function isBurner(address _address) external view override returns (bool) {
+    // only virtual for testing mock override
+    function isBurner(address _address)
+        external
+        view
+        virtual
+        override
+        returns (bool)
+    {
         return hasRole(BURNER_ROLE, _address);
     }
 
     /// @notice checks if address is a controller
     /// @param _address address to check
     /// @return true _address is a controller
+    // only virtual for testing mock override
     function isPCVController(address _address)
         external
         view
+        virtual
         override
         returns (bool)
     {
@@ -175,7 +197,14 @@ contract Permissions is IPermissions, AccessControlEnumerable {
     /// @notice checks if address is a guardian
     /// @param _address address to check
     /// @return true _address is a guardian
-    function isGuardian(address _address) public view override returns (bool) {
+    // only virtual for testing mock override
+    function isGuardian(address _address)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
         return hasRole(GUARDIAN_ROLE, _address);
     }
 

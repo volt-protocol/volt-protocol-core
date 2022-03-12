@@ -46,7 +46,7 @@ describe('EthLidoPCVDeposit', function () {
 
     this.core = await getCore();
 
-    this.fei = await ethers.getContractAt('Fei', await this.core.fei());
+    this.fei = await ethers.getContractAt('Volt', await this.core.volt());
     this.steth = await (await ethers.getContractFactory('MockStEthToken')).deploy();
     this.stableswap = await (await ethers.getContractFactory('MockStEthStableSwap')).deploy(this.steth.address);
     await this.steth.mintAt(this.stableswap.address);

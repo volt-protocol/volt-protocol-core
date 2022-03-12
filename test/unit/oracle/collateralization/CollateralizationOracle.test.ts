@@ -31,7 +31,7 @@ describe('CollateralizationOracle', function () {
     ({ userAddress, governorAddress } = await getAddresses());
     this.core = await getCore();
     await this.core.connect(impersonatedSigners[governorAddress]).grantMinter(userAddress);
-    this.fei = await ethers.getContractAt('IFei', await this.core.fei());
+    this.fei = await ethers.getContractAt('Volt', await this.core.volt());
 
     // fake stablecoin
     this.oracle1 = await (await ethers.getContractFactory('MockOracleCoreRef')).deploy(this.core.address, 1);

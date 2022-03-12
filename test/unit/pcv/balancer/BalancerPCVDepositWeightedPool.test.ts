@@ -3,7 +3,6 @@ import chai, { expect } from 'chai';
 import CBN from 'chai-bn';
 import { ethers } from 'hardhat';
 import {
-  Fei,
   MockERC20,
   MockERC20__factory,
   MockOracle,
@@ -16,7 +15,8 @@ import {
   MockMerkleOrchard__factory,
   BalancerPCVDepositWeightedPool,
   BalancerPCVDepositWeightedPool__factory,
-  Core
+  Core,
+  Volt
 } from '@custom-types/contracts';
 import { expectApproxAbs } from '@test/helpers';
 
@@ -85,7 +85,7 @@ describe('BalancerPCVDepositWeightedPool', function () {
         await expect(deposit.deposit()).to.be.revertedWith('BalancerPCVDepositWeightedPool: slippage too high');
       });
 
-      it('succeeds if not paused - updates balance() and resistantBalanceAndFei()', async function () {
+      it('succeeds if not paused - updates balance() and resistantBalanceAndVolt()', async function () {
         // seed the deposit with BAL & WETH
         await weth.mint(deposit.address, '250'); // 1M$ of WETH
         await bal.mint(deposit.address, '40000'); // 1M$ of BAL
@@ -94,9 +94,9 @@ describe('BalancerPCVDepositWeightedPool', function () {
         await deposit.deposit();
         expectApproxAbs(await deposit.balance(), '80000', '10');
 
-        const resistantBalanceAndFei = await deposit.resistantBalanceAndFei();
-        expectApproxAbs(resistantBalanceAndFei[0], '80000', '10');
-        expect(resistantBalanceAndFei[1]).to.be.equal('0'); // no FEI
+        const resistantBalanceAndVolt = await deposit.resistantBalanceAndVolt();
+        expectApproxAbs(resistantBalanceAndVolt[0], '80000', '10');
+        expect(resistantBalanceAndVolt[1]).to.be.equal('0'); // no FEI
       });
     });
 
@@ -220,7 +220,7 @@ describe('BalancerPCVDepositWeightedPool', function () {
   });
 
   describe('With ETH and FEI', function () {
-    let fei: Fei;
+    let fei: Volt;
     let weth: MockWeth;
     let bal: MockERC20;
     let oracleFei: MockOracle;
@@ -229,7 +229,7 @@ describe('BalancerPCVDepositWeightedPool', function () {
 
     beforeEach(async function () {
       core = await getCore();
-      fei = await ethers.getContractAt('Fei', await core.fei());
+      fei = await ethers.getContractAt('Volt', await core.volt());
       weth = await new MockWeth__factory(await getImpersonatedSigner(userAddress)).deploy();
       bal = await new MockERC20__factory(await getImpersonatedSigner(userAddress)).deploy();
       oracleFei = await new MockOracle__factory(await getImpersonatedSigner(userAddress)).deploy('1');
@@ -265,8 +265,8 @@ describe('BalancerPCVDepositWeightedPool', function () {
         expectApproxAbs(await deposit.balance(), '1000', '1'); // [999, 1001]
         expectApproxAbs(await fei.balanceOf(poolAddress), '4000000', '1000'); // [3999000, 4001000]
         expectApproxAbs(await weth.balanceOf(poolAddress), '1000', '1'); // [999, 1001]
-        expectApproxAbs((await deposit.resistantBalanceAndFei())._resistantBalance, '1000', '1'); // [999, 1001]
-        expectApproxAbs((await deposit.resistantBalanceAndFei())._resistantFei, '4000000', '10000'); // [3990000, 4010000]
+        expectApproxAbs((await deposit.resistantBalanceAndVolt())._resistantBalance, '1000', '1'); // [999, 1001]
+        expectApproxAbs((await deposit.resistantBalanceAndVolt())._resistantFei, '4000000', '10000'); // [3990000, 4010000]
       });
     });
 
@@ -311,7 +311,7 @@ describe('BalancerPCVDepositWeightedPool', function () {
   });
 
   describe('With 3 tokens and FEI (4 tokens)', function () {
-    let fei: Fei;
+    let fei: Volt;
     let token1: MockERC20;
     let token2: MockERC20;
     let token3: MockERC20;
@@ -324,7 +324,7 @@ describe('BalancerPCVDepositWeightedPool', function () {
 
     beforeEach(async function () {
       core = await getCore();
-      fei = await ethers.getContractAt('Fei', await core.fei());
+      fei = await ethers.getContractAt('Volt', await core.volt());
       token1 = await new MockERC20__factory(await getImpersonatedSigner(userAddress)).deploy();
       token2 = await new MockERC20__factory(await getImpersonatedSigner(userAddress)).deploy();
       token3 = await new MockERC20__factory(await getImpersonatedSigner(userAddress)).deploy();
@@ -370,8 +370,8 @@ describe('BalancerPCVDepositWeightedPool', function () {
         expectApproxAbs(await token1.balanceOf(poolAddress), '1000', '10'); // [990, 1010]
         expectApproxAbs(await token2.balanceOf(poolAddress), '500', '10'); // [490, 510]
         expectApproxAbs(await token3.balanceOf(poolAddress), '250', '10'); // [240, 260]
-        expectApproxAbs((await deposit.resistantBalanceAndFei())._resistantBalance, '3000', '10'); // 300,000$ expressed in token1
-        expectApproxAbs((await deposit.resistantBalanceAndFei())._resistantFei, '100000', '100'); // [99,900, 100,100]
+        expectApproxAbs((await deposit.resistantBalanceAndVolt())._resistantBalance, '3000', '10'); // 300,000$ expressed in token1
+        expectApproxAbs((await deposit.resistantBalanceAndVolt())._resistantFei, '100000', '100'); // [99,900, 100,100]
       });
     });
 

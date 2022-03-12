@@ -16,7 +16,7 @@ describe('AngleUniswapPCVDeposit', function () {
     ({ userAddress, governorAddress, minterAddress, beneficiaryAddress1, pcvControllerAddress } = await getAddresses());
     this.core = await getCore();
 
-    this.fei = await ethers.getContractAt('Fei', await this.core.fei());
+    this.fei = await ethers.getContractAt('Volt', await this.core.volt());
     this.angle = await (await ethers.getContractFactory('MockERC20')).deploy();
     this.agEUR = await (await ethers.getContractFactory('MockERC20')).deploy();
     this.weth = await (await ethers.getContractFactory('MockWeth')).deploy();
@@ -62,7 +62,7 @@ describe('AngleUniswapPCVDeposit', function () {
       await this.pair
         .connect(await getImpersonatedSigner(userAddress))
         .transfer(this.pcvDeposit.address, LIQUIDITY_INCREMENT);
-      const resistantBalances = await this.pcvDeposit.resistantBalanceAndFei();
+      const resistantBalances = await this.pcvDeposit.resistantBalanceAndVolt();
 
       // Resistant balances should multiply to k and have price of 400
       // PCV deposit owns half of the LP

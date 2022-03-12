@@ -2,7 +2,7 @@ import { expectRevert, getAddresses, getCore, getImpersonatedSigner, increaseTim
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { Signer } from 'ethers';
-import { Core, Tribe, TribeMinter } from '@custom-types/contracts';
+import { Core, TribeMinter, Vcon } from '@custom-types/contracts';
 import chai from 'chai';
 import CBN from 'chai-bn';
 const toBN = ethers.BigNumber.from;
@@ -15,7 +15,7 @@ describe('TribeMinter', function () {
   let userAddress: string;
   let governorAddress: string;
   let core: Core;
-  let tribe: Tribe;
+  let tribe: Vcon;
   let tribeMinter: TribeMinter;
 
   const impersonatedSigners: { [key: string]: Signer } = {};
@@ -35,7 +35,7 @@ describe('TribeMinter', function () {
     ({ userAddress, governorAddress } = await getAddresses());
     core = await getCore();
 
-    tribe = await ethers.getContractAt('Tribe', await core.tribe());
+    tribe = await ethers.getContractAt('Vcon', await core.vcon());
 
     tribeMinter = await (
       await ethers.getContractFactory('TribeMinter')
@@ -122,7 +122,7 @@ describe('TribeMinter', function () {
     describe('Decrease Supply', function () {
       beforeEach(async function () {
         // Transferring TRIBE to user address and making it tribe treasury effectively decreases circulating supply
-        await core.connect(impersonatedSigners[governorAddress]).allocateTribe(userAddress, mintAmount);
+        await tribe.connect(impersonatedSigners[governorAddress]).transfer(userAddress, mintAmount);
         await tribeMinter.connect(impersonatedSigners[governorAddress]).setTribeTreasury(userAddress);
       });
 

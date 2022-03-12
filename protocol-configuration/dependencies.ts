@@ -4,9 +4,6 @@ const dependencies: DependencyMap = {
   collateralizationOracleGuardian: {
     contractDependencies: ['core', 'guardian', 'collateralizationOracleWrapper']
   },
-  restrictedPermissions: {
-    contractDependencies: ['fei', 'core']
-  },
   rariInfraTribeTimelock: {
     contractDependencies: ['tribe']
   },
@@ -106,8 +103,7 @@ const dependencies: DependencyMap = {
       'erc20Dripper',
       'tribalChief',
       'fuseAdmin',
-      'fuseGuardian',
-      'restrictedPermissions'
+      'fuseGuardian'
     ]
   },
   fei: {
@@ -145,7 +141,6 @@ const dependencies: DependencyMap = {
       'rariPool90FeiPCVDeposit',
       'rariPool91FeiPCVDeposit',
       'rariPool9FeiPCVDeposit',
-      'restrictedPermissions',
       'ethPSMFeiSkimmer',
       'daiPSMFeiSkimmer',
       'rariInfraFeiTimelock',

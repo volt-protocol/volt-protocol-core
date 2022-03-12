@@ -2,7 +2,7 @@ import { getCore, getAddresses, expectRevert, expectEvent, getImpersonatedSigner
 import { expect } from 'chai';
 import hre, { ethers } from 'hardhat';
 import { Signer } from 'ethers';
-import { Core, Fei, NamedStaticPCVDepositWrapper } from '@custom-types/contracts';
+import { Core, Volt, NamedStaticPCVDepositWrapper } from '@custom-types/contracts';
 const toBN = ethers.BigNumber.from;
 
 describe('NamedStaticPCVDepositWrapper', function () {
@@ -44,7 +44,7 @@ describe('NamedStaticPCVDepositWrapper', function () {
         usdAmount: balance, /// USD equivalent in this deposit, not including FEI value
         feiAmount: feiBalance, /// amount of FEI in this deposit
         underlyingTokenAmount: underlyingTokenAmount, /// amount of underlying token in this deposit
-        underlyingToken: await core.fei()
+        underlyingToken: await core.volt()
       }
     ]);
   });
@@ -71,7 +71,7 @@ describe('NamedStaticPCVDepositWrapper', function () {
 
     it('underlying token address should be correct', async function () {
       const { underlyingToken } = await deposit.pcvDeposits(0);
-      expect(underlyingToken).to.be.equal(await core.fei());
+      expect(underlyingToken).to.be.equal(await core.volt());
     });
 
     it('feiAmount should be correct', async function () {
@@ -86,14 +86,14 @@ describe('NamedStaticPCVDepositWrapper', function () {
     it('getAllUnderlying should be the correct address', async function () {
       const allUnderlying = await deposit.getAllUnderlying();
       expect(allUnderlying.length).to.be.equal(1);
-      expect(allUnderlying[0]).to.be.equal(await core.fei());
+      expect(allUnderlying[0]).to.be.equal(await core.volt());
     });
 
     it('should return stored values feiReportBalance and balance', async function () {
       expect(await deposit.balance()).to.be.equal(balance);
       expect(await deposit.feiReportBalance()).to.be.equal(feiBalance);
 
-      const resistantBalances = await deposit.resistantBalanceAndFei();
+      const resistantBalances = await deposit.resistantBalanceAndVolt();
 
       expect(resistantBalances[0]).to.be.equal(balance);
       expect(resistantBalances[1]).to.be.equal(feiBalance);
@@ -111,7 +111,7 @@ describe('NamedStaticPCVDepositWrapper', function () {
           feiAmount: feiBalance,
           underlyingTokenAmount: 1000,
           depositName: 'Visor Finance USDC/FEI Deposit',
-          underlyingToken: await core.fei()
+          underlyingToken: await core.volt()
         }),
         deposit,
         'BalanceUpdate',
@@ -133,7 +133,7 @@ describe('NamedStaticPCVDepositWrapper', function () {
           feiAmount: 0,
           underlyingTokenAmount: 1000,
           depositName: 'Visor Finance USDC/FEI Deposit',
-          underlyingToken: await core.fei()
+          underlyingToken: await core.volt()
         }),
         'NamedStaticPCVDepositWrapper: must supply either fei or usd amount'
       );
@@ -146,7 +146,7 @@ describe('NamedStaticPCVDepositWrapper', function () {
           feiAmount: 0,
           underlyingTokenAmount: 1000,
           depositName: 'Visor Finance USDC/FEI Deposit',
-          underlyingToken: await core.fei()
+          underlyingToken: await core.volt()
         }),
         'CoreRef: Caller is not a governor or contract admin'
       );
@@ -166,14 +166,14 @@ describe('NamedStaticPCVDepositWrapper', function () {
             feiAmount: feiBalance,
             underlyingTokenAmount: 1000,
             depositName: 'Visor Finance USDC/FEI Deposit',
-            underlyingToken: await core.fei()
+            underlyingToken: await core.volt()
           },
           {
             usdAmount: balance,
             feiAmount: feiBalance,
             underlyingTokenAmount: 1000,
             depositName: 'Visor Finance USDC/FEI Deposit',
-            underlyingToken: await core.fei()
+            underlyingToken: await core.volt()
           }
         ]),
         deposit,
@@ -198,7 +198,7 @@ describe('NamedStaticPCVDepositWrapper', function () {
             feiAmount: 0,
             underlyingTokenAmount: 1000,
             depositName: 'Visor Finance USDC/FEI Deposit',
-            underlyingToken: await core.fei()
+            underlyingToken: await core.volt()
           }
         ]),
         'NamedStaticPCVDepositWrapper: must supply either fei or usd amount'
@@ -213,7 +213,7 @@ describe('NamedStaticPCVDepositWrapper', function () {
             feiAmount: 0,
             underlyingTokenAmount: 1000,
             depositName: 'Visor Finance USDC/FEI Deposit',
-            underlyingToken: await core.fei()
+            underlyingToken: await core.volt()
           }
         ]),
         'CoreRef: Caller is not a governor or contract admin'
@@ -232,7 +232,7 @@ describe('NamedStaticPCVDepositWrapper', function () {
       expectEvent(
         await deposit
           .connect(impersonatedSigners[governorAddress])
-          .editDeposit(0, balance, feiBalance, newUnderlyingAmt, 'Visor Finance USDC/FEI Deposit', await core.fei()),
+          .editDeposit(0, balance, feiBalance, newUnderlyingAmt, 'Visor Finance USDC/FEI Deposit', await core.volt()),
         deposit,
         'BalanceUpdate',
         [startingBalance, balance, startingFeiBalance, feiBalance]
@@ -254,7 +254,14 @@ describe('NamedStaticPCVDepositWrapper', function () {
 
       await deposit
         .connect(impersonatedSigners[governorAddress])
-        .editDeposit(0, balance, feiBalance, underlyingTokenAmount, 'Visor Finance USDC/FEI Deposit', await core.fei());
+        .editDeposit(
+          0,
+          balance,
+          feiBalance,
+          underlyingTokenAmount,
+          'Visor Finance USDC/FEI Deposit',
+          await core.volt()
+        );
 
       const { feiAmount, usdAmount } = await deposit.pcvDeposits(0);
 
@@ -267,14 +274,14 @@ describe('NamedStaticPCVDepositWrapper', function () {
       await expectRevert(
         deposit
           .connect(impersonatedSigners[governorAddress])
-          .editDeposit(invalidIndex, balance, feiBalance, 100_000, 'Visor Finance USDC/FEI Deposit', await core.fei()),
+          .editDeposit(invalidIndex, balance, feiBalance, 100_000, 'Visor Finance USDC/FEI Deposit', await core.volt()),
         'NamedStaticPCVDepositWrapper: cannot edit index out of bounds'
       );
     });
 
     it('fails when non-governor-admin calls editDeposit', async function () {
       await expectRevert(
-        deposit.editDeposit(0, balance, feiBalance, 10, 'DPI UniV2 LP Token', await core.fei()),
+        deposit.editDeposit(0, balance, feiBalance, 10, 'DPI UniV2 LP Token', await core.volt()),
         'CoreRef: Caller is not a governor or contract admin'
       );
     });
@@ -288,14 +295,14 @@ describe('NamedStaticPCVDepositWrapper', function () {
           feiAmount: feiBalance,
           underlyingTokenAmount: 1000,
           depositName: 'Visor Finance USDC/FEI Deposit',
-          underlyingToken: await core.fei()
+          underlyingToken: await core.volt()
         },
         {
           usdAmount: balance,
           feiAmount: feiBalance,
           underlyingTokenAmount: 1000,
           depositName: 'Visor Finance USDC/FEI Deposit',
-          underlyingToken: await core.fei()
+          underlyingToken: await core.volt()
         }
       ]);
     });
@@ -331,7 +338,7 @@ describe('NamedStaticPCVDepositWrapper', function () {
         );
       }
 
-      const [endingBalance, endingFeiBalance] = await deposit.resistantBalanceAndFei();
+      const [endingBalance, endingFeiBalance] = await deposit.resistantBalanceAndVolt();
       const endingNumDeposits = await deposit.numDeposits();
 
       expect(endingBalance).to.be.equal(0);
@@ -350,7 +357,7 @@ describe('NamedStaticPCVDepositWrapper', function () {
         );
       }
 
-      const [endingBalance, endingFeiBalance] = await deposit.resistantBalanceAndFei();
+      const [endingBalance, endingFeiBalance] = await deposit.resistantBalanceAndVolt();
       const endingNumDeposits = await deposit.numDeposits();
 
       expect(endingBalance).to.be.equal(0);

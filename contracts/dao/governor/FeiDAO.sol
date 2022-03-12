@@ -22,7 +22,7 @@ contract FeiDAO is
     uint256 private _eta;
 
     constructor(
-        ERC20VotesComp vcon, 
+        ERC20VotesComp vcon,
         ICompoundTimelock timelock,
         address guardian
     )
@@ -39,7 +39,10 @@ contract FeiDAO is
     event QuorumUpdated(uint256 oldQuorum, uint256 newQuorum);
     event VotingDelayUpdated(uint256 oldVotingDelay, uint256 newVotingDelay);
     event VotingPeriodUpdated(uint256 oldVotingPeriod, uint256 newVotingPeriod);
-    event ProposalThresholdUpdated(uint256 oldProposalThreshold, uint256 newProposalThreshold);
+    event ProposalThresholdUpdated(
+        uint256 oldProposalThreshold,
+        uint256 newProposalThreshold
+    );
 
     function votingDelay() public view override returns (uint256) {
         return _votingDelay;
@@ -49,12 +52,7 @@ contract FeiDAO is
         return _votingPeriod;
     }
 
-    function quorum(uint256)
-        public
-        view
-        override
-        returns (uint256)
-    {
+    function quorum(uint256) public view override returns (uint256) {
         return _quorum;
     }
 
@@ -81,10 +79,16 @@ contract FeiDAO is
         emit QuorumUpdated(oldQuorum, newQuorum);
     }
 
-    function setProposalThreshold(uint256 newProposalThreshold) public onlyGovernance {
+    function setProposalThreshold(uint256 newProposalThreshold)
+        public
+        onlyGovernance
+    {
         uint256 oldProposalThreshold = _proposalThreshold;
         _proposalThreshold = newProposalThreshold;
-        emit ProposalThresholdUpdated(oldProposalThreshold, newProposalThreshold);
+        emit ProposalThresholdUpdated(
+            oldProposalThreshold,
+            newProposalThreshold
+        );
     }
 
     // The following functions are overrides required by Solidity.
@@ -125,10 +129,7 @@ contract FeiDAO is
         uint256[] memory values,
         bytes[] memory calldatas,
         bytes32 descriptionHash
-    )
-        internal
-        override(Governor, GovernorTimelockCompound)
-    {
+    ) internal override(Governor, GovernorTimelockCompound) {
         super._execute(proposalId, targets, values, calldatas, descriptionHash);
     }
 
@@ -137,11 +138,7 @@ contract FeiDAO is
         uint256[] memory values,
         bytes[] memory calldatas,
         bytes32 descriptionHash
-    )
-        internal
-        override(Governor, GovernorTimelockCompound)
-        returns (uint256)
-    {
+    ) internal override(Governor, GovernorTimelockCompound) returns (uint256) {
         return super._cancel(targets, values, calldatas, descriptionHash);
     }
 

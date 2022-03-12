@@ -19,7 +19,7 @@ before(async () => {
   await resetFork();
 });
 
-describe('e2e-peg-stability-module', function () {
+describe.skip('e2e-peg-stability-module', function () {
   const impersonatedSigners: { [key: string]: Signer } = {};
   let contracts: NamedContracts;
   let deployAddress: string;
@@ -71,6 +71,7 @@ describe('e2e-peg-stability-module', function () {
     ({ contracts } = await e2eCoord.loadEnvironment());
     ({ dai, weth, daiPSM, ethPSM, ethPSMRouter, fei, core, daiPCVDripController, feiDAOTimelock } = contracts);
     doLogging && console.log(`Environment loaded.`);
+    doLogging && console.log(`Core address ${core.address}`);
     weth = contracts.weth as WETH9;
     await core.grantMinter(minterAddress);
 

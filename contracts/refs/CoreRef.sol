@@ -8,39 +8,23 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 /// @author Fei Protocol
 /// @notice defines some modifiers and utilities around interacting with Core
 abstract contract CoreRef is ICoreRef, Pausable {
-    /// @notice reference to CoreRef
     ICore private immutable _core;
-
-    /// @notice volt contract
-    IVolt public override immutable volt;
-
-    /// @notice vcon contract
-    IERC20 public override immutable vcon;
+    IVolt private immutable _volt;
+    IERC20 private immutable _vcon;
 
     /// @notice a role used with a subset of governor permissions for this contract only
     bytes32 public override CONTRACT_ADMIN_ROLE;
 
-    /// @notice boolean to check whether or not the contract has been initialized.
-    /// cannot be initialized twice.
-    bool private _initialized;
-
     constructor(address coreAddress) {
-        _initialize(coreAddress);
-
         _core = ICore(coreAddress);
-        /// call out to core and get the volt and vcon addresses
-        volt = _core.volt();
-        vcon = _core.vcon();
-    }
 
-    /// @notice CoreRef constructor
-    /// @param coreAddress volt Core to reference
-    function _initialize(address coreAddress) internal {
-        require(!_initialized, "CoreRef: already initialized");
-        _initialized = true;
+        _volt = ICore(coreAddress).volt();
+        _vcon = ICore(coreAddress).vcon();
 
         _setContractAdminRole(ICore(coreAddress).GOVERN_ROLE());
     }
+
+    function _initialize() internal {} // no-op for backward compatibility
 
     modifier ifMinterSelf() {
         if (_core.isMinter(address(this))) {
@@ -68,8 +52,7 @@ abstract contract CoreRef is ICoreRef, Pausable {
 
     modifier onlyGovernorOrAdmin() {
         require(
-            _core.isGovernor(msg.sender) ||
-            isContractAdmin(msg.sender),
+            _core.isGovernor(msg.sender) || isContractAdmin(msg.sender),
             "CoreRef: Caller is not a governor or contract admin"
         );
         _;
@@ -85,8 +68,7 @@ abstract contract CoreRef is ICoreRef, Pausable {
 
     modifier onlyGuardianOrGovernor() {
         require(
-            _core.isGovernor(msg.sender) || 
-            _core.isGuardian(msg.sender),
+            _core.isGovernor(msg.sender) || _core.isGuardian(msg.sender),
             "CoreRef: Caller is not a guardian or governor"
         );
         _;
@@ -95,24 +77,98 @@ abstract contract CoreRef is ICoreRef, Pausable {
     modifier onlyGovernorOrGuardianOrAdmin() {
         require(
             _core.isGovernor(msg.sender) ||
-            _core.isGuardian(msg.sender) || 
-            isContractAdmin(msg.sender), 
-            "CoreRef: Caller is not governor or guardian or admin");
+                _core.isGuardian(msg.sender) ||
+                isContractAdmin(msg.sender),
+            "CoreRef: Caller is not governor or guardian or admin"
+        );
+        _;
+    }
+
+    // Named onlyTribeRole to prevent collision with OZ onlyRole modifier
+    modifier onlyTribeRole(bytes32 role) {
+        require(_core.hasRole(role, msg.sender), "UNAUTHORIZED");
+        _;
+    }
+
+    // Modifiers to allow any combination of roles
+    modifier hasAnyOfTwoRoles(bytes32 role1, bytes32 role2) {
+        require(
+            _core.hasRole(role1, msg.sender) ||
+                _core.hasRole(role2, msg.sender),
+            "UNAUTHORIZED"
+        );
+        _;
+    }
+
+    modifier hasAnyOfThreeRoles(
+        bytes32 role1,
+        bytes32 role2,
+        bytes32 role3
+    ) {
+        require(
+            _core.hasRole(role1, msg.sender) ||
+                _core.hasRole(role2, msg.sender) ||
+                _core.hasRole(role3, msg.sender),
+            "UNAUTHORIZED"
+        );
+        _;
+    }
+
+    modifier hasAnyOfFourRoles(
+        bytes32 role1,
+        bytes32 role2,
+        bytes32 role3,
+        bytes32 role4
+    ) {
+        require(
+            _core.hasRole(role1, msg.sender) ||
+                _core.hasRole(role2, msg.sender) ||
+                _core.hasRole(role3, msg.sender) ||
+                _core.hasRole(role4, msg.sender),
+            "UNAUTHORIZED"
+        );
+        _;
+    }
+
+    modifier hasAnyOfFiveRoles(
+        bytes32 role1,
+        bytes32 role2,
+        bytes32 role3,
+        bytes32 role4,
+        bytes32 role5
+    ) {
+        require(
+            _core.hasRole(role1, msg.sender) ||
+                _core.hasRole(role2, msg.sender) ||
+                _core.hasRole(role3, msg.sender) ||
+                _core.hasRole(role4, msg.sender) ||
+                _core.hasRole(role5, msg.sender),
+            "UNAUTHORIZED"
+        );
         _;
     }
 
     modifier onlyVolt() {
-        require(msg.sender == address(volt), "CoreRef: Caller is not VOLT");
+        require(msg.sender == address(_volt), "CoreRef: Caller is not VOLT");
         _;
     }
 
     /// @notice sets a new admin role for this contract
-    function setContractAdminRole(bytes32 newContractAdminRole) external override onlyGovernor {
+    function setContractAdminRole(bytes32 newContractAdminRole)
+        external
+        override
+        onlyGovernor
+    {
         _setContractAdminRole(newContractAdminRole);
     }
 
     /// @notice returns whether a given address has the admin role for this contract
-    function isContractAdmin(address _admin) public view override returns (bool) {
+    function isContractAdmin(address _admin)
+        public
+        view
+        override
+        returns (bool)
+    {
         return _core.hasRole(CONTRACT_ADMIN_ROLE, _admin);
     }
 
@@ -132,31 +188,46 @@ abstract contract CoreRef is ICoreRef, Pausable {
         return _core;
     }
 
-    /// @notice Volt balance of contract
-    /// @return Volt amount held
-    function voltBalance() public view override returns (uint256) {
-        return volt.balanceOf(address(this));
+    /// @notice address of the Fei contract referenced by Core
+    /// @return IFei implementation address
+    function volt() public view override returns (IVolt) {
+        return _volt;
     }
 
-    /// @notice VCON balance of contract
-    /// @return VCON amount held
+    /// @notice address of the Tribe contract referenced by Core
+    /// @return IERC20 implementation address
+    function vcon() public view override returns (IERC20) {
+        return _vcon;
+    }
+
+    /// @notice volt balance of contract
+    /// @return volt amount held
+    function voltBalance() public view override returns (uint256) {
+        return _volt.balanceOf(address(this));
+    }
+
+    /// @notice vcon balance of contract
+    /// @return vcon amount held
     function vconBalance() public view override returns (uint256) {
-        return vcon.balanceOf(address(this));
+        return _vcon.balanceOf(address(this));
     }
 
     function _burnVoltHeld() internal {
-        volt.burn(voltBalance());
+        _volt.burn(voltBalance());
     }
 
     function _mintVolt(address to, uint256 amount) internal virtual {
         if (amount != 0) {
-            volt.mint(to, amount);
+            _volt.mint(to, amount);
         }
     }
 
     function _setContractAdminRole(bytes32 newContractAdminRole) internal {
         bytes32 oldContractAdminRole = CONTRACT_ADMIN_ROLE;
         CONTRACT_ADMIN_ROLE = newContractAdminRole;
-        emit ContractAdminRoleUpdate(oldContractAdminRole, newContractAdminRole);
+        emit ContractAdminRoleUpdate(
+            oldContractAdminRole,
+            newContractAdminRole
+        );
     }
 }

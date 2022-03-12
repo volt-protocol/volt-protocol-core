@@ -43,7 +43,7 @@ describe('ReserveStabilizer', function () {
 
     this.core = await getCore();
 
-    this.fei = await ethers.getContractAt('Fei', await this.core.fei());
+    this.fei = await ethers.getContractAt('Volt', await this.core.volt());
     this.token = await (await ethers.getContractFactory('MockERC20')).deploy();
     this.oracle = await (await ethers.getContractFactory('MockOracle')).deploy(400); // 400:1 oracle price
     this.pcvDeposit = await (await ethers.getContractFactory('MockEthUniswapPCVDeposit')).deploy(userAddress);
