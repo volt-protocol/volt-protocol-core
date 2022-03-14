@@ -26,4 +26,10 @@ interface IOraclePassThrough {
     /// requires approval from both VOLT and FRAX governance to sign off on the change
     function updateScalingPriceOracle(ScalingPriceOracle newScalingPriceOracle)
         external;
+
+    /// @notice event emitted when the scaling price oracle is updated
+    event ScalingPriceOracleUpdate(
+        ScalingPriceOracle oldScalingPriceOracle,
+        ScalingPriceOracle newScalingPriceOracle
+    );
 }

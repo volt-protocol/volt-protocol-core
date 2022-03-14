@@ -29,12 +29,6 @@ contract OraclePassThrough is IOraclePassThrough {
     /// @notice sign offs on the new scaling price oracle changes by address
     mapping(address => mapping(ScalingPriceOracle => bool)) public signOffs;
 
-    /// @notice event emitted when the scaling price oracle is updated
-    event ScalingPriceOracleUpdate(
-        ScalingPriceOracle oldScalingPriceOracle,
-        ScalingPriceOracle newScalingPriceOracle
-    );
-
     constructor(
         ScalingPriceOracle _scalingPriceOracle,
         address _voltGovernor,
