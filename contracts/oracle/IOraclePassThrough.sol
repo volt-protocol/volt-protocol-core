@@ -22,6 +22,8 @@ interface IOraclePassThrough {
 
     // ----------- Governor only state changing api -----------
 
+    /// @notice function to update the pointer to the scaling price oracle
+    /// requires approval from both VOLT and FRAX governance to sign off on the change
     function updateScalingPriceOracle(ScalingPriceOracle newScalingPriceOracle)
         external;
 }

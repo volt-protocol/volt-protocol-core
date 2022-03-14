@@ -1,0 +1,150 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+pragma solidity ^0.8.4;
+
+import {Vm} from "./../utils/Vm.sol";
+import {DSTest} from "./../utils/DSTest.sol";
+import {getCore, getAddresses, FeiTestAddresses} from "./../utils/Fixtures.sol";
+import {MockScalingPriceOracle} from "../../mock/MockScalingPriceOracle.sol";
+import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
+import {ScalingPriceOracle} from "../../oracle/ScalingPriceOracle.sol";
+import {Decimal} from "./../../external/Decimal.sol";
+
+contract OraclePassThroughTest is DSTest {
+    using Decimal for Decimal.D256;
+
+    MockScalingPriceOracle private scalingPriceOracle;
+
+    OraclePassThrough private oraclePassThrough;
+
+    address public constant voltGovernor = address(0x10000);
+    address public constant fraxGovernor = address(0x1000);
+
+    /// @notice increase price by 3.09% per month
+    int256 public constant monthlyChangeRateBasisPoints = 309;
+
+    /// @notice the current month's CPI data
+    uint128 public constant currentMonth = 270000;
+
+    /// @notice the previous month's CPI data
+    uint128 public constant previousMonth = 261900;
+
+    /// @notice address of chainlink oracle to send request
+    address public immutable oracle = address(0);
+
+    /// @notice job id that retrieves the latest CPI data
+    bytes32 public immutable jobId =
+        keccak256(abi.encodePacked("Chainlink CPI-U job"));
+
+    /// @notice minimum of 1 link
+    uint256 public immutable minFee = 1e18;
+
+    /// @notice maximum of 10 link
+    uint256 public immutable maxFee = 1e19;
+
+    Vm public constant vm = Vm(HEVM_ADDRESS);
+    FeiTestAddresses public addresses = getAddresses();
+
+    function setUp() public {
+        /// warp to 1 to set isTimeStarted to true
+        vm.warp(1);
+
+        scalingPriceOracle = new MockScalingPriceOracle(
+            oracle,
+            jobId,
+            minFee,
+            maxFee,
+            currentMonth,
+            previousMonth
+        );
+
+        oraclePassThrough = new OraclePassThrough(
+            ScalingPriceOracle(address(scalingPriceOracle)),
+            voltGovernor,
+            fraxGovernor
+        );
+    }
+
+    function testSetup() public {
+        assertEq(oraclePassThrough.voltGovernor(), voltGovernor);
+        assertEq(oraclePassThrough.fraxGovernor(), fraxGovernor);
+        assertEq(
+            address(oraclePassThrough.scalingPriceOracle()),
+            address(scalingPriceOracle)
+        );
+    }
+
+    function testDataPassThroughSync() public {
+        assertEq(
+            oraclePassThrough.getCurrentOraclePrice(),
+            scalingPriceOracle.getCurrentOraclePrice()
+        );
+
+        (Decimal.D256 memory sPrice, bool sValid) = scalingPriceOracle.read();
+        assertEq(sPrice.value, scalingPriceOracle.getCurrentOraclePrice());
+        assertTrue(sValid);
+
+        (Decimal.D256 memory oPrice, bool oValid) = oraclePassThrough.read();
+        assertEq(oPrice.value, sPrice.value);
+        assertTrue(oValid);
+    }
+
+    function testUpdateScalingPriceOracleFailureNotGovernor() public {
+        vm.expectRevert(bytes("ScalingPriceOracle: not VOLT or FRAX"));
+
+        oraclePassThrough.updateScalingPriceOracle(
+            ScalingPriceOracle(address(scalingPriceOracle))
+        );
+    }
+
+    function testUpdateScalingPriceOracleFailureAlreadySignedoff() public {
+        vm.startPrank(voltGovernor);
+
+        oraclePassThrough.updateScalingPriceOracle(
+            ScalingPriceOracle(address(scalingPriceOracle))
+        );
+        vm.expectRevert(bytes("ScalingPriceOracle: change already signed off"));
+        oraclePassThrough.updateScalingPriceOracle(
+            ScalingPriceOracle(address(scalingPriceOracle))
+        );
+
+        vm.stopPrank();
+    }
+
+    function testUpdateScalingPriceOracleSuccess() public {
+        ScalingPriceOracle newScalingPriceOracle = ScalingPriceOracle(
+            address(
+                new MockScalingPriceOracle(
+                    oracle,
+                    jobId,
+                    minFee,
+                    maxFee,
+                    currentMonth,
+                    previousMonth
+                )
+            )
+        );
+
+        vm.prank(voltGovernor);
+        oraclePassThrough.updateScalingPriceOracle(newScalingPriceOracle);
+        assertTrue(
+            oraclePassThrough.signOffs(voltGovernor, newScalingPriceOracle)
+        );
+
+        vm.prank(fraxGovernor);
+        oraclePassThrough.updateScalingPriceOracle(newScalingPriceOracle);
+
+        /// assert that scaling price oracle was updated to new contract
+        assertEq(
+            address(newScalingPriceOracle),
+            address(oraclePassThrough.scalingPriceOracle())
+        );
+
+        /// assert that there is nothing left saved to storage from previous approvals
+        assertTrue(
+            !oraclePassThrough.signOffs(voltGovernor, newScalingPriceOracle)
+        );
+        assertTrue(
+            !oraclePassThrough.signOffs(fraxGovernor, newScalingPriceOracle)
+        );
+    }
+}

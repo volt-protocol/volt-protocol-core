@@ -48,13 +48,18 @@ contract NonCustodialPSMTest is DSTest {
 
         volt = core.volt();
         MockScalingPriceOracle mockScalingPriceOracle = new MockScalingPriceOracle(
-                monthlyChangeRateBasisPoints,
-                maxDeviationThresholdBasisPoints,
-                address(core)
+                address(0),
+                keccak256(abi.encodePacked("test")),
+                1 ether,
+                10 ether,
+                101,
+                100
             );
+
         oracle = new OraclePassThrough(
+            ScalingPriceOracle(address(mockScalingPriceOracle)),
             address(core),
-            ScalingPriceOracle(address(mockScalingPriceOracle))
+            address(core)
         );
         underlyingToken = new MockERC20();
         pcvDeposit = new MockPCVDepositV2(
@@ -185,6 +190,8 @@ contract NonCustodialPSMTest is DSTest {
 
         /// advance the full time period to get the full 1% price increase
         vm.warp(28 days + block.timestamp);
+
+        emit log_uint(block.timestamp);
 
         assertEq(psm.getMintAmountOut(amountStableIn), expectedAmountVoltOut);
     }

@@ -9,11 +9,25 @@ import {IOraclePassThrough} from "./IOraclePassThrough.sol";
 /// @notice contract that passes all price calls to the Scaling Price Oracle
 /// The Scaling Price Oracle can be changed if there is a decision to change how data is interpolated
 /// without needing all contracts in the system to be upgraded, only this contract will have to change where it points
-contract OraclePassThrough is CoreRef, IOraclePassThrough {
+/// @author Elliot Friedman
+contract OraclePassThrough is IOraclePassThrough {
     using Decimal for Decimal.D256;
+
+    /// ---------- Immutable Variables ----------
+
+    /// @notice address of the VOLT governor
+    address public immutable voltGovernor;
+
+    /// @notice address of the FRAX governor
+    address public immutable fraxGovernor;
+
+    /// ---------- Mutable Variables ----------
 
     /// @notice reference to the scaling price oracle
     ScalingPriceOracle public override scalingPriceOracle;
+
+    /// @notice sign offs on the new scaling price oracle changes by address
+    mapping(address => mapping(ScalingPriceOracle => bool)) public signOffs;
 
     /// @notice event emitted when the scaling price oracle is updated
     event ScalingPriceOracleUpdate(
@@ -21,10 +35,24 @@ contract OraclePassThrough is CoreRef, IOraclePassThrough {
         ScalingPriceOracle newScalingPriceOracle
     );
 
-    constructor(address coreAddress, ScalingPriceOracle _scalingPriceOracle)
-        CoreRef(coreAddress)
-    {
+    constructor(
+        ScalingPriceOracle _scalingPriceOracle,
+        address _voltGovernor,
+        address _fraxGovernor
+    ) {
         scalingPriceOracle = _scalingPriceOracle;
+        voltGovernor = _voltGovernor;
+        fraxGovernor = _fraxGovernor;
+    }
+
+    // ----------- Governance Modifier -----------
+
+    modifier onlyVoltOrFrax() {
+        require(
+            msg.sender == voltGovernor || msg.sender == fraxGovernor,
+            "ScalingPriceOracle: not VOLT or FRAX"
+        );
+        _;
     }
 
     /// @notice updates the oracle price
@@ -52,21 +80,38 @@ contract OraclePassThrough is CoreRef, IOraclePassThrough {
         return scalingPriceOracle.getCurrentOraclePrice();
     }
 
-    // ----------- Governor only state changing api -----------
+    // ----------- Governance only state changing api -----------
 
-    /// @notice function to update the scaling price oracle reference
-    /// @param newScalingPriceOracle the new oracle to reference
+    /// @notice function to update the pointer to the scaling price oracle
+    /// requires approval from both VOLT and FRAX governance to sign off on the change
     function updateScalingPriceOracle(ScalingPriceOracle newScalingPriceOracle)
         external
         override
-        onlyGovernor
+        onlyVoltOrFrax
     {
-        ScalingPriceOracle oldScalingPriceOracle = scalingPriceOracle;
-        scalingPriceOracle = newScalingPriceOracle;
-
-        emit ScalingPriceOracleUpdate(
-            oldScalingPriceOracle,
-            newScalingPriceOracle
+        require(
+            !signOffs[msg.sender][newScalingPriceOracle],
+            "ScalingPriceOracle: change already signed off"
         );
+
+        address oppositeGovernor = msg.sender == voltGovernor
+            ? fraxGovernor
+            : voltGovernor;
+
+        /// if other governor has signed off on this change, save an SSTORE
+        if (signOffs[oppositeGovernor][newScalingPriceOracle]) {
+            delete signOffs[oppositeGovernor][newScalingPriceOracle];
+
+            ScalingPriceOracle oldScalingPriceOracle = scalingPriceOracle;
+            scalingPriceOracle = newScalingPriceOracle;
+
+            emit ScalingPriceOracleUpdate(
+                oldScalingPriceOracle,
+                newScalingPriceOracle
+            );
+        } else {
+            /// if other governor has not signed off on this change, write to storage
+            signOffs[msg.sender][newScalingPriceOracle] = true;
+        }
     }
 }

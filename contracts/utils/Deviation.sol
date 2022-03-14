@@ -14,7 +14,7 @@ contract Deviation {
     event DeviationThresholdUpdate(uint256 oldThreshold, uint256 newThreshold);
 
     /// @notice the maximum update size relative to current, measured in basis points (1/10000)
-    uint256 public maxDeviationThresholdBasisPoints;
+    uint256 public immutable maxDeviationThresholdBasisPoints;
 
     constructor(uint256 _maxDeviationThresholdBasisPoints) {
         maxDeviationThresholdBasisPoints = _maxDeviationThresholdBasisPoints;
@@ -47,18 +47,5 @@ contract Deviation {
         return
             maxDeviationThresholdBasisPoints >=
             calculateDeviationThresholdBasisPoints(oldValue, newValue);
-    }
-
-    /// @notice internal function to set the new deviation threshold basis points
-    function _setNewDeviationThreshold(
-        uint256 _maxDeviationThresholdBasisPoints
-    ) internal {
-        uint256 oldDeviationThreshold = maxDeviationThresholdBasisPoints;
-        maxDeviationThresholdBasisPoints = _maxDeviationThresholdBasisPoints;
-
-        emit DeviationThresholdUpdate(
-            oldDeviationThreshold,
-            _maxDeviationThresholdBasisPoints
-        );
     }
 }
