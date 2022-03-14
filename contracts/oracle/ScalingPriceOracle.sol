@@ -7,7 +7,7 @@ import {Decimal} from "../external/Decimal.sol";
 import {Constants} from "./../Constants.sol";
 import {Deviation} from "./../utils/Deviation.sol";
 import {IScalingPriceOracle} from "./IScalingPriceOracle.sol";
-import {BokkyPooBahsDateTimeContract} from "./../calendar/BokkyPooBahsDateTimeContract.sol";
+import {BokkyPooBahsDateTimeContract} from "./../external/calendar/BokkyPooBahsDateTimeContract.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -146,24 +146,6 @@ contract ScalingPriceOracle is
 
         return SafeCast.toUint256(oraclePriceInt + priceDelta);
     }
-
-    /// @notice function to get the current oracle price for the OracleRef contract
-    function read()
-        external
-        view
-        override
-        returns (Decimal.D256 memory price, bool valid)
-    {
-        uint256 currentPrice = getCurrentOraclePrice();
-
-        price = Decimal.from(currentPrice).div(1 ether);
-        valid = true;
-    }
-
-    /// @notice updates the oracle price
-    /// @dev no-op, ScalingPriceOracle is updated automatically
-    /// added for backwards compatibility with OracleRef
-    function update() public {}
 
     /// @notice get APR from chainlink data by measuring (current month - previous month) / previous month
     /// @return percentageChange percentage change in basis points over past month

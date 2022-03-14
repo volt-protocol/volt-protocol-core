@@ -58,19 +58,16 @@ contract OraclePassThroughTest is DSTest {
         );
 
         oraclePassThrough = new OraclePassThrough(
-            ScalingPriceOracle(address(scalingPriceOracle)),
-            voltGovernor,
-            fraxGovernor
+            ScalingPriceOracle(address(scalingPriceOracle))
         );
     }
 
     function testSetup() public {
-        assertEq(oraclePassThrough.voltGovernor(), voltGovernor);
-        assertEq(oraclePassThrough.fraxGovernor(), fraxGovernor);
         assertEq(
             address(oraclePassThrough.scalingPriceOracle()),
             address(scalingPriceOracle)
         );
+        assertEq(oraclePassThrough.owner(), address(this));
     }
 
     function testDataPassThroughSync() public {
@@ -79,34 +76,18 @@ contract OraclePassThroughTest is DSTest {
             scalingPriceOracle.getCurrentOraclePrice()
         );
 
-        (Decimal.D256 memory sPrice, bool sValid) = scalingPriceOracle.read();
-        assertEq(sPrice.value, scalingPriceOracle.getCurrentOraclePrice());
-        assertTrue(sValid);
-
         (Decimal.D256 memory oPrice, bool oValid) = oraclePassThrough.read();
-        assertEq(oPrice.value, sPrice.value);
+        assertEq(oPrice.value, scalingPriceOracle.getCurrentOraclePrice());
         assertTrue(oValid);
     }
 
     function testUpdateScalingPriceOracleFailureNotGovernor() public {
-        vm.expectRevert(bytes("ScalingPriceOracle: not VOLT or FRAX"));
+        vm.startPrank(address(0));
+        vm.expectRevert(bytes("Ownable: caller is not the owner"));
 
         oraclePassThrough.updateScalingPriceOracle(
             ScalingPriceOracle(address(scalingPriceOracle))
         );
-    }
-
-    function testUpdateScalingPriceOracleFailureAlreadySignedoff() public {
-        vm.startPrank(voltGovernor);
-
-        oraclePassThrough.updateScalingPriceOracle(
-            ScalingPriceOracle(address(scalingPriceOracle))
-        );
-        vm.expectRevert(bytes("ScalingPriceOracle: change already signed off"));
-        oraclePassThrough.updateScalingPriceOracle(
-            ScalingPriceOracle(address(scalingPriceOracle))
-        );
-
         vm.stopPrank();
     }
 
@@ -124,27 +105,12 @@ contract OraclePassThroughTest is DSTest {
             )
         );
 
-        vm.prank(voltGovernor);
-        oraclePassThrough.updateScalingPriceOracle(newScalingPriceOracle);
-        assertTrue(
-            oraclePassThrough.signOffs(voltGovernor, newScalingPriceOracle)
-        );
-
-        vm.prank(fraxGovernor);
         oraclePassThrough.updateScalingPriceOracle(newScalingPriceOracle);
 
         /// assert that scaling price oracle was updated to new contract
         assertEq(
             address(newScalingPriceOracle),
             address(oraclePassThrough.scalingPriceOracle())
-        );
-
-        /// assert that there is nothing left saved to storage from previous approvals
-        assertTrue(
-            !oraclePassThrough.signOffs(voltGovernor, newScalingPriceOracle)
-        );
-        assertTrue(
-            !oraclePassThrough.signOffs(fraxGovernor, newScalingPriceOracle)
         );
     }
 }

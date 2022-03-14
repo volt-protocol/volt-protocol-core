@@ -60,12 +60,6 @@ contract ScalingPriceOracleTest is DSTest {
         assertEq(scalingPriceOracle.previousMonth(), previousMonth);
     }
 
-    function testReadGetCurrentOraclePriceEquivalence() public {
-        (Decimal.D256 memory price, bool valid) = scalingPriceOracle.read();
-        assertEq(price.value, scalingPriceOracle.getCurrentOraclePrice());
-        assertTrue(valid);
-    }
-
     function testReadGetCurrentOraclePriceAfterInterpolation() public {
         vm.warp(block.timestamp + 28 days);
         assertEq(10309e14, scalingPriceOracle.getCurrentOraclePrice());

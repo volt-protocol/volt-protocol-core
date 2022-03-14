@@ -57,9 +57,7 @@ contract NonCustodialPSMTest is DSTest {
             );
 
         oracle = new OraclePassThrough(
-            ScalingPriceOracle(address(mockScalingPriceOracle)),
-            address(core),
-            address(core)
+            ScalingPriceOracle(address(mockScalingPriceOracle))
         );
         underlyingToken = new MockERC20();
         pcvDeposit = new MockPCVDepositV2(

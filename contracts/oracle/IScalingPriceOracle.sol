@@ -26,12 +26,6 @@ interface IScalingPriceOracle {
     /// @notice oracle price. starts off at 1e18
     function oraclePrice() external view returns (uint256);
 
-    /// @notice function to get the current oracle price for the OracleRef contract
-    function read()
-        external
-        view
-        returns (Decimal.D256 memory price, bool valid);
-
     /// @notice event when the monthly change rate is updated
     event CPIMonthlyChangeRateUpdate(
         int256 oldChangeRateBasisPoints,
