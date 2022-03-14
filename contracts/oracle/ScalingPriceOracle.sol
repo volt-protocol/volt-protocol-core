@@ -115,6 +115,8 @@ contract ScalingPriceOracle is
         _oracleUpdateChangeRate(aprBasisPoints);
     }
 
+    // ----------- Math Helpers -----------
+
     function mul(int256 a, int256 b) internal pure returns (int256) {
         return a * b;
     }

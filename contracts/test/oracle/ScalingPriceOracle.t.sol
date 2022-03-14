@@ -109,10 +109,16 @@ contract ScalingPriceOracleTest is DSTest {
     }
 
     function testFulfillSucceedsTwentyPercent() public {
+        uint256 storedCurrentMonth = scalingPriceOracle.currentMonth();
+        uint256 newCurrentMonth = (currentMonth * 120) / 100;
+
         /// this will succeed as max allowable is 20%
-        scalingPriceOracle.fulfill((currentMonth * 120) / 100);
+        scalingPriceOracle.fulfill(newCurrentMonth);
 
         assertEq(scalingPriceOracle.monthlyChangeRateBasisPoints(), 2_000);
+        /// assert that all state transitions were done correctly with current and previous month
+        assertEq(scalingPriceOracle.previousMonth(), storedCurrentMonth);
+        assertEq(scalingPriceOracle.currentMonth(), newCurrentMonth);
     }
 
     function testFulfillFailureCalendar() public {
@@ -141,5 +147,20 @@ contract ScalingPriceOracleTest is DSTest {
         vm.expectRevert(bytes("ScalingPriceOracle: fee greater than max fee"));
 
         scalingPriceOracle.requestCPIData(maxFee + 1);
+    }
+
+    function testConstructionParamFailure() public {
+        vm.expectRevert(
+            bytes("ScalingPriceOracle: min should be less than max")
+        );
+
+        new MockScalingPriceOracle(
+            oracle,
+            jobId,
+            minFee,
+            minFee,
+            currentMonth,
+            previousMonth
+        );
     }
 }
