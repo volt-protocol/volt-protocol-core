@@ -125,10 +125,8 @@ contract ScalingPriceOracle is
         int256 timeDelta = Math
             .min(block.timestamp - startTime, timeFrame)
             .toInt256();
-        // solhint-disable-next-line function-max-lines
         int256 pricePercentageChange = (oraclePriceInt *
             monthlyChangeRateBasisPoints) / Constants.BP_INT;
-        // solhint-disable-next-line function-max-lines
         int256 priceDelta = (pricePercentageChange * timeDelta) /
             timeFrame.toInt256();
 
@@ -157,7 +155,6 @@ contract ScalingPriceOracle is
     /// @return percentageChange percentage change in basis points over past month
     function getMonthlyAPR() public view returns (int256 percentageChange) {
         int256 delta = int128(currentMonth) - int128(previousMonth);
-        // solhint-disable-next-line function-max-lines
         percentageChange = (delta * Constants.BP_INT) / int128(previousMonth);
     }
 
