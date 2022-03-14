@@ -19,10 +19,10 @@ import {ChainlinkClient, Chainlink} from "@chainlink/contracts/src/v0.8/Chainlin
 /// @author Elliot Friedman
 contract ScalingPriceOracle is
     Timed,
-    IScalingPriceOracle,
+    Deviation,
     ChainlinkClient,
-    BokkyPooBahsDateTimeContract,
-    Deviation
+    IScalingPriceOracle,
+    BokkyPooBahsDateTimeContract
 {
     using SafeCast for *;
     using SafeERC20 for IERC20;
