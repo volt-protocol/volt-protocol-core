@@ -115,6 +115,14 @@ contract ScalingPriceOracle is
         _oracleUpdateChangeRate(aprBasisPoints);
     }
 
+    function mul(int256 a, int256 b) internal pure returns (int256) {
+        return a * b;
+    }
+
+    function div(int256 a, int256 b) internal pure returns (int256) {
+        return a / b;
+    }
+
     // ----------- Getters -----------
 
     /// @notice get the current scaled oracle price
@@ -125,10 +133,14 @@ contract ScalingPriceOracle is
         int256 timeDelta = Math
             .min(block.timestamp - startTime, timeFrame)
             .toInt256();
-        int256 pricePercentageChange = (oraclePriceInt *
-            monthlyChangeRateBasisPoints) / Constants.BP_INT;
-        int256 priceDelta = (pricePercentageChange * timeDelta) /
-            timeFrame.toInt256();
+        int256 pricePercentageChange = div(
+            mul(oraclePriceInt, monthlyChangeRateBasisPoints),
+            Constants.BP_INT
+        );
+        int256 priceDelta = div(
+            mul(pricePercentageChange, timeDelta),
+            timeFrame.toInt256()
+        );
 
         return SafeCast.toUint256(oraclePriceInt + priceDelta);
     }
