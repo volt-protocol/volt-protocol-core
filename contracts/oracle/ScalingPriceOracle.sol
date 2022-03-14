@@ -87,7 +87,9 @@ contract ScalingPriceOracle is
             _minFee < _maxFee,
             "ScalingPriceOracle: min should be less than max"
         );
+
         uint256 chainId;
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             chainId := chainid()
         }
@@ -123,11 +125,12 @@ contract ScalingPriceOracle is
         int256 timeDelta = Math
             .min(block.timestamp - startTime, timeFrame)
             .toInt256();
+        // solhint-disable-next-line function-max-lines
         int256 pricePercentageChange = (oraclePriceInt *
-            monthlyChangeRateBasisPoints) /
-            Constants.BASIS_POINTS_GRANULARITY_INT;
+            monthlyChangeRateBasisPoints) / Constants.BP_INT;
+        // solhint-disable-next-line function-max-lines
         int256 priceDelta = (pricePercentageChange * timeDelta) /
-            (timeFrame.toInt256());
+            timeFrame.toInt256();
 
         return SafeCast.toUint256(oraclePriceInt + priceDelta);
     }
@@ -154,9 +157,8 @@ contract ScalingPriceOracle is
     /// @return percentageChange percentage change in basis points over past month
     function getMonthlyAPR() public view returns (int256 percentageChange) {
         int256 delta = int128(currentMonth) - int128(previousMonth);
-        percentageChange =
-            (delta * Constants.BASIS_POINTS_GRANULARITY_INT) /
-            int128(previousMonth);
+        // solhint-disable-next-line function-max-lines
+        percentageChange = (delta * Constants.BP_INT) / int128(previousMonth);
     }
 
     /// ------------- Public API To Request Chainlink Data -------------
