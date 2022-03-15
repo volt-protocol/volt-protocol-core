@@ -18,12 +18,13 @@ interface IScalingPriceOracle {
 
     /// @notice get the current scaled oracle price
     /// applies the change smoothly over a 28 day period
+    /// scaled by 18 decimals
     function getCurrentOraclePrice() external view returns (uint256);
 
     /// @notice current amount that oracle price is inflating/deflating by monthly in basis points
     function monthlyChangeRateBasisPoints() external view returns (int256);
 
-    /// @notice oracle price. starts off at 1e18
+    /// @notice oracle price. starts off at 1 scaled up by 18 decimals
     function oraclePrice() external view returns (uint256);
 
     /// @notice event when the monthly change rate is updated

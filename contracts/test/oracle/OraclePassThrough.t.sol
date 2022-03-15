@@ -16,9 +16,6 @@ contract OraclePassThroughTest is DSTest {
 
     OraclePassThrough private oraclePassThrough;
 
-    address public constant voltGovernor = address(0x10000);
-    address public constant fraxGovernor = address(0x1000);
-
     /// @notice increase price by 3.09% per month
     int256 public constant monthlyChangeRateBasisPoints = 309;
 
@@ -35,11 +32,8 @@ contract OraclePassThroughTest is DSTest {
     bytes32 public immutable jobId =
         keccak256(abi.encodePacked("Chainlink CPI-U job"));
 
-    /// @notice minimum of 1 link
-    uint256 public immutable minFee = 1e18;
-
-    /// @notice maximum of 10 link
-    uint256 public immutable maxFee = 1e19;
+    /// @notice fee of 10 link
+    uint256 public immutable fee = 1e19;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
     FeiTestAddresses public addresses = getAddresses();
@@ -51,8 +45,7 @@ contract OraclePassThroughTest is DSTest {
         scalingPriceOracle = new MockScalingPriceOracle(
             oracle,
             jobId,
-            minFee,
-            maxFee,
+            fee,
             currentMonth,
             previousMonth
         );
@@ -97,8 +90,7 @@ contract OraclePassThroughTest is DSTest {
                 new MockScalingPriceOracle(
                     oracle,
                     jobId,
-                    minFee,
-                    maxFee,
+                    fee,
                     currentMonth,
                     previousMonth
                 )

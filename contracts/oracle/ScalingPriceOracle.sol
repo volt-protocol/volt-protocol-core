@@ -62,31 +62,22 @@ contract ScalingPriceOracle is
     /// @notice job id that retrieves the latest CPI data
     bytes32 public immutable jobId;
 
-    /// @notice minimum amount in LINK paid to node operator for each request
-    uint256 public immutable minFee;
-
-    /// @notice maximum amount in LINK paid to node operator for each request
-    uint256 public immutable maxFee;
+    /// @notice amount in LINK paid to node operator for each request
+    uint256 public immutable fee;
 
     /// @param _oracle address of chainlink data provider
     /// @param _jobid job id
-    /// @param _minFee minimum fee paid to chainlink data provider
-    /// @param _maxFee maximum fee paid to chainlink data provider
+    /// @param _fee maximum fee paid to chainlink data provider
     /// @param _currentMonth current month's inflation data
     /// @param _previousMonth previous month's inflation data
     constructor(
         address _oracle,
         bytes32 _jobid,
-        uint256 _minFee,
-        uint256 _maxFee,
+        uint256 _fee,
         uint128 _currentMonth,
         uint128 _previousMonth
     ) Timed(timeFrame) Deviation(maxAllowableOracleDeviation) {
         /// this duration is 28 days as that is the minimum period of time between CPI monthly updates
-        require(
-            _minFee < _maxFee,
-            "ScalingPriceOracle: min should be less than max"
-        );
 
         uint256 chainId;
         // solhint-disable-next-line no-inline-assembly
@@ -100,8 +91,7 @@ contract ScalingPriceOracle is
 
         oracle = _oracle;
         jobId = _jobid;
-        minFee = _minFee;
-        maxFee = _maxFee;
+        fee = _fee;
 
         currentMonth = _currentMonth;
         previousMonth = _previousMonth;
@@ -115,34 +105,18 @@ contract ScalingPriceOracle is
         _oracleUpdateChangeRate(aprBasisPoints);
     }
 
-    // ----------- Math Helpers -----------
-
-    function mul(int256 a, int256 b) internal pure returns (int256) {
-        return a * b;
-    }
-
-    function div(int256 a, int256 b) internal pure returns (int256) {
-        return a / b;
-    }
-
     // ----------- Getters -----------
 
     /// @notice get the current scaled oracle price
     /// applies the change smoothly over a 28 day period
+    /// scaled by 18 decimals
+    // prettier-ignore
     function getCurrentOraclePrice() public view override returns (uint256) {
         int256 oraclePriceInt = oraclePrice.toInt256();
 
-        int256 timeDelta = Math
-            .min(block.timestamp - startTime, timeFrame)
-            .toInt256();
-        int256 pricePercentageChange = div(
-            mul(oraclePriceInt, monthlyChangeRateBasisPoints),
-            Constants.BP_INT
-        );
-        int256 priceDelta = div(
-            mul(pricePercentageChange, timeDelta),
-            timeFrame.toInt256()
-        );
+        int256 timeDelta = Math.min(block.timestamp - startTime, timeFrame).toInt256();
+        int256 pricePercentageChange = oraclePriceInt * monthlyChangeRateBasisPoints / Constants.BP_INT;
+        int256 priceDelta = pricePercentageChange * timeDelta / timeFrame.toInt256();
 
         return SafeCast.toUint256(oraclePriceInt + priceDelta);
     }
@@ -161,13 +135,11 @@ contract ScalingPriceOracle is
     /// @return requestId for this request
     /// only allows 1 request per month after the 14th day to chainlink
     /// callable by anyone after time period and 14th day of the month
-    function requestCPIData(uint256 fee)
+    function requestCPIData()
         external
         afterTimeInit
         returns (bytes32 requestId)
     {
-        require(fee >= minFee, "ScalingPriceOracle: fee less than min fee");
-        require(fee <= maxFee, "ScalingPriceOracle: fee greater than max fee");
         require(
             getDay(block.timestamp) > 14,
             "ScalingPriceOracle: cannot request data before the 15th"
@@ -229,20 +201,20 @@ contract ScalingPriceOracle is
         /// compound the interest with the current rate
         oraclePrice = getCurrentOraclePrice();
 
-        int256 currentChangeRateBasisPoints = monthlyChangeRateBasisPoints; /// save an SSTORE
+        int256 currentChangeRateBasisPoints = monthlyChangeRateBasisPoints; /// save 1 SSLOAD
+
+        /// emit even if there isn't an update
+        emit CPIMonthlyChangeRateUpdate(
+            currentChangeRateBasisPoints,
+            newChangeRateBasisPoints
+        );
 
         /// if the oracle change rate is the same as last time, save an SSTORE
         if (newChangeRateBasisPoints == currentChangeRateBasisPoints) {
             return;
         }
 
-        int256 oldChangeRateBasisPoints = currentChangeRateBasisPoints;
         monthlyChangeRateBasisPoints = newChangeRateBasisPoints;
-
-        emit CPIMonthlyChangeRateUpdate(
-            oldChangeRateBasisPoints,
-            newChangeRateBasisPoints
-        );
     }
 
     /// @notice this is the only method needed as we will be storing the most recent 2 months of data

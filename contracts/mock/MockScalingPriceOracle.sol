@@ -9,19 +9,11 @@ contract MockScalingPriceOracle is ScalingPriceOracle {
     constructor(
         address _oracle,
         bytes32 _jobid,
-        uint256 _minFee,
-        uint256 _maxFee,
+        uint256 _fee,
         uint128 _currentMonth,
         uint128 _previousMonth
     )
-        ScalingPriceOracle(
-            _oracle,
-            _jobid,
-            _minFee,
-            _maxFee,
-            _currentMonth,
-            _previousMonth
-        )
+        ScalingPriceOracle(_oracle, _jobid, _fee, _currentMonth, _previousMonth)
     {}
 
     function fulfill(uint256 _cpiData) external {

@@ -28,11 +28,8 @@ contract ScalingPriceOracleTest is DSTest {
     bytes32 public immutable jobId =
         keccak256(abi.encodePacked("Chainlink CPI-U job"));
 
-    /// @notice minimum of 1 link
-    uint256 public immutable minFee = 1e18;
-
-    /// @notice maximum of 10 link
-    uint256 public immutable maxFee = 1e19;
+    /// @notice fee of 10 link
+    uint256 public immutable fee = 1e19;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
     FeiTestAddresses public addresses = getAddresses();
@@ -44,8 +41,7 @@ contract ScalingPriceOracleTest is DSTest {
         scalingPriceOracle = new MockScalingPriceOracle(
             oracle,
             jobId,
-            minFee,
-            maxFee,
+            fee,
             currentMonth,
             previousMonth
         );
@@ -54,8 +50,7 @@ contract ScalingPriceOracleTest is DSTest {
     function testSetup() public {
         assertEq(scalingPriceOracle.oracle(), oracle);
         assertEq(scalingPriceOracle.jobId(), jobId);
-        assertEq(scalingPriceOracle.maxFee(), maxFee);
-        assertEq(scalingPriceOracle.minFee(), minFee);
+        assertEq(scalingPriceOracle.fee(), fee);
         assertEq(scalingPriceOracle.currentMonth(), currentMonth);
         assertEq(scalingPriceOracle.previousMonth(), previousMonth);
     }
@@ -77,7 +72,7 @@ contract ScalingPriceOracleTest is DSTest {
 
         vm.expectRevert(bytes("Timed: time not ended, init"));
 
-        scalingPriceOracle.requestCPIData(minFee);
+        scalingPriceOracle.requestCPIData();
     }
 
     function testFulfillMaxDeviationExceededFailureUp() public {
@@ -122,39 +117,6 @@ contract ScalingPriceOracleTest is DSTest {
             bytes("ScalingPriceOracle: cannot request data before the 15th")
         );
 
-        scalingPriceOracle.requestCPIData(maxFee);
-    }
-
-    function testFulfillFailureTooSmallFee() public {
-        /// warp to get past timed error
-        vm.warp(block.timestamp + 1647326509);
-
-        vm.expectRevert(bytes("ScalingPriceOracle: fee less than min fee"));
-
-        scalingPriceOracle.requestCPIData(minFee - 1);
-    }
-
-    function testFulfillFailureTooLargeFee() public {
-        /// warp to get past timed error
-        vm.warp(block.timestamp + 1647326509);
-
-        vm.expectRevert(bytes("ScalingPriceOracle: fee greater than max fee"));
-
-        scalingPriceOracle.requestCPIData(maxFee + 1);
-    }
-
-    function testConstructionParamFailure() public {
-        vm.expectRevert(
-            bytes("ScalingPriceOracle: min should be less than max")
-        );
-
-        new MockScalingPriceOracle(
-            oracle,
-            jobId,
-            minFee,
-            minFee,
-            currentMonth,
-            previousMonth
-        );
+        scalingPriceOracle.requestCPIData();
     }
 }

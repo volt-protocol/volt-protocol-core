@@ -27,13 +27,9 @@ contract Deviation {
         returns (uint256)
     {
         int256 delta = (a < b) ? (b - a) : (a - b);
-        if (delta < 0) {
-            delta = delta * -1;
-        }
 
-        uint256 absDelta = delta.toUint256();
         return
-            (absDelta * Constants.BASIS_POINTS_GRANULARITY) /
+            (uint256(delta) * Constants.BASIS_POINTS_GRANULARITY) /
             (a < 0 ? a * -1 : a).toUint256();
     }
 

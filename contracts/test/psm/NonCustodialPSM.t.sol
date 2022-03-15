@@ -50,8 +50,7 @@ contract NonCustodialPSMTest is DSTest {
         MockScalingPriceOracle mockScalingPriceOracle = new MockScalingPriceOracle(
                 address(0),
                 keccak256(abi.encodePacked("test")),
-                1 ether,
-                10 ether,
+                10e18,
                 101,
                 100
             );
@@ -188,8 +187,6 @@ contract NonCustodialPSMTest is DSTest {
 
         /// advance the full time period to get the full 1% price increase
         vm.warp(28 days + block.timestamp);
-
-        emit log_uint(block.timestamp);
 
         assertEq(psm.getMintAmountOut(amountStableIn), expectedAmountVoltOut);
     }
