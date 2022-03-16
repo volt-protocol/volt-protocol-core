@@ -21,7 +21,8 @@ contract ScalingPriceOracle is
     Timed,
     Deviation,
     ChainlinkClient,
-    IScalingPriceOracle
+    IScalingPriceOracle,
+    BokkyPooBahsDateTimeContract
 {
     using SafeCast for *;
     using SafeERC20 for IERC20;
@@ -139,6 +140,11 @@ contract ScalingPriceOracle is
         afterTimeInit
         returns (bytes32 requestId)
     {
+        require(
+            getDay(block.timestamp) > 14,
+            "ScalingPriceOracle: cannot request data before the 15th"
+        );
+
         Chainlink.Request memory request = buildChainlinkRequest(
             jobId,
             address(this),
