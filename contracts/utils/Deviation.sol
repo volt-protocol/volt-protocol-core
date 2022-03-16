@@ -26,10 +26,11 @@ contract Deviation {
         pure
         returns (uint256)
     {
-        int256 delta = (a < b) ? (b - a) : (a - b);
+        /// delta can only be positive
+        uint256 delta = ((a < b) ? (b - a) : (a - b)).toUint256();
 
         return
-            (uint256(delta) * Constants.BASIS_POINTS_GRANULARITY) /
+            (delta * Constants.BASIS_POINTS_GRANULARITY) /
             (a < 0 ? a * -1 : a).toUint256();
     }
 
