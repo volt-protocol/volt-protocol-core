@@ -1,0 +1,51 @@
+List of all days that updates will be allowed each year
+
+----------- Year 2022 -----------
+17th Apr 2022
+17th May 2022
+16th Jun 2022
+17th Jul 2022
+16th Aug 2022
+16th Sep 2022
+16th Oct 2022
+15th Nov 2022
+16th Dec 2022
+----------- Year 2023 -----------
+15th Jan 2023
+15th Feb 2023
+17th Mar 2023
+17th Apr 2023
+17th May 2023
+16th Jun 2023
+17th Jul 2023
+16th Aug 2023
+16th Sep 2023
+16th Oct 2023
+15th Nov 2023
+16th Dec 2023
+----------- Year 2024 -----------
+15th Jan 2024
+15th Feb 2024
+16th Mar 2024
+18th Apr 2024
+18th May 2024
+18th Jun 2024
+18th Jul 2024
+18th Aug 2024
+17th Sep 2024
+18th Oct 2024
+17th Nov 2024
+18th Dec 2024
+----------- Year 2025 -----------
+17th Jan 2025
+17th Feb 2025
+19th Mar 2025
+16th Apr 2025
+16th May 2025
+15th Jun 2025
+16th Jul 2025
+15th Aug 2025
+15th Sep 2025
+15th Oct 2025
+14th Nov 2025
+15th Dec 2025

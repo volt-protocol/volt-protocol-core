@@ -109,14 +109,4 @@ contract ScalingPriceOracleTest is DSTest {
         assertEq(scalingPriceOracle.previousMonth(), storedCurrentMonth);
         assertEq(scalingPriceOracle.currentMonth(), newCurrentMonth);
     }
-
-    function testFulfillFailureCalendar() public {
-        vm.warp(block.timestamp + 1647240109);
-
-        vm.expectRevert(
-            bytes("ScalingPriceOracle: cannot request data before the 15th")
-        );
-
-        scalingPriceOracle.requestCPIData();
-    }
 }
