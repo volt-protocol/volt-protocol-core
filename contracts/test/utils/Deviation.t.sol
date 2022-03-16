@@ -52,4 +52,11 @@ contract DeviationTest is DSTest {
 
         assertTrue(deviation.isWithinDeviationThreshold(x, y));
     }
+
+    function testOutsideDeviation() public {
+        int256 x = 275000;
+        int256 y = 577500;
+
+        assertTrue(!deviation.isWithinDeviationThreshold(x, y));
+    }
 }

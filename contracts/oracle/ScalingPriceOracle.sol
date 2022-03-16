@@ -101,7 +101,7 @@ contract ScalingPriceOracle is
         /// calculate new monthly CPI-U rate in basis points based on current and previous month
         int256 aprBasisPoints = getMonthlyAPR();
 
-        /// pass data to VOLT Price Oracle
+        /// store data and apply the change rate over the next month to the VOLT price
         _oracleUpdateChangeRate(aprBasisPoints);
     }
 
@@ -133,7 +133,7 @@ contract ScalingPriceOracle is
     /// @notice Create a Chainlink request to retrieve API response, find the target
     /// data, then multiply by 1000 (to remove decimal places from data).
     /// @return requestId for this request
-    /// only allows 1 request per month after the 14th day to chainlink
+    /// only allows 1 request per month after the 14th day
     /// callable by anyone after time period and 14th day of the month
     function requestCPIData()
         external

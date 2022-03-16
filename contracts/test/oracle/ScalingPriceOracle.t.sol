@@ -53,18 +53,30 @@ contract ScalingPriceOracleTest is DSTest {
         assertEq(scalingPriceOracle.fee(), fee);
         assertEq(scalingPriceOracle.currentMonth(), currentMonth);
         assertEq(scalingPriceOracle.previousMonth(), previousMonth);
+        assertEq(
+            scalingPriceOracle.getMonthlyAPR(),
+            monthlyChangeRateBasisPoints
+        );
     }
 
+    /// positive price action from oracle -- inflation case
     function testReadGetCurrentOraclePriceAfterInterpolation() public {
         vm.warp(block.timestamp + 28 days);
         assertEq(10309e14, scalingPriceOracle.getCurrentOraclePrice());
     }
 
-    function testGetMonthlyAPR() public {
-        assertEq(
-            monthlyChangeRateBasisPoints,
-            scalingPriceOracle.getMonthlyAPR()
+    /// negative price action from oracle -- deflation case
+    function testPriceDecreaseAfterInterpolation() public {
+        scalingPriceOracle = new MockScalingPriceOracle(
+            oracle,
+            jobId,
+            fee,
+            previousMonth, /// flip current and previous months so that rate is -3%
+            currentMonth
         );
+
+        vm.warp(block.timestamp + 28 days);
+        assertEq(97e16, scalingPriceOracle.getCurrentOraclePrice());
     }
 
     function testFulfillFailureTimed() public {
