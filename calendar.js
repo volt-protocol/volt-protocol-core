@@ -1,10 +1,8 @@
 /// Proof that we don't need to use the solidity calendar
 const secondsPerDay = 86400;
-const averageDaysPerMonthLeapYear = 30.5;
-const averageDaysPerMonthNonLeapYear = 30.4166666666;
+const averageDaysPerMonth = 30.4166666666;
 const scale = 1000;
 const secondsPerYear = Math.floor(secondsPerDay * 365);
-const secondsPerLeapYear = Math.floor(secondsPerDay * 366);
 
 /// source: https://stackoverflow.com/a/6078873
 function timeConverter(UNIX_timestamp) {
@@ -39,11 +37,7 @@ function main() {
     const unixtime = startingTime + yearDelta;
     const currentYear = new Date(unixtime * scale);
 
-    const isCurrentTimeLeapYear = currentYear.getFullYear() % 4 === 0;
-    const dates = getListOfDates(
-      isCurrentTimeLeapYear ? startingTime + secondsPerLeapYear * i : startingTime + secondsPerYear * i,
-      isCurrentTimeLeapYear ? averageDaysPerMonthLeapYear : averageDaysPerMonthNonLeapYear
-    );
+    const dates = getListOfDates(startingTime + secondsPerYear * i, averageDaysPerMonth);
 
     console.log(`----------- Year ${currentYear.getFullYear()} -----------`);
     dates.forEach((date) => {
