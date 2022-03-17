@@ -3,7 +3,7 @@ pragma solidity ^0.8.4;
 
 import {Decimal} from "../external/Decimal.sol";
 import {CoreRef} from "./../refs/CoreRef.sol";
-import {ScalingPriceOracle} from "./ScalingPriceOracle.sol";
+import {IScalingPriceOracle} from "./IScalingPriceOracle.sol";
 import {IOraclePassThrough} from "./IOraclePassThrough.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -15,9 +15,9 @@ contract OraclePassThrough is IOraclePassThrough, Ownable {
     using Decimal for Decimal.D256;
 
     /// @notice reference to the scaling price oracle
-    ScalingPriceOracle public override scalingPriceOracle;
+    IScalingPriceOracle public override scalingPriceOracle;
 
-    constructor(ScalingPriceOracle _scalingPriceOracle) Ownable() {
+    constructor(IScalingPriceOracle _scalingPriceOracle) Ownable() {
         scalingPriceOracle = _scalingPriceOracle;
     }
 
@@ -50,12 +50,12 @@ contract OraclePassThrough is IOraclePassThrough, Ownable {
 
     /// @notice function to update the pointer to the scaling price oracle
     /// requires approval from all parties on multisig to update
-    function updateScalingPriceOracle(ScalingPriceOracle newScalingPriceOracle)
+    function updateScalingPriceOracle(IScalingPriceOracle newScalingPriceOracle)
         external
         override
         onlyOwner
     {
-        ScalingPriceOracle oldScalingPriceOracle = scalingPriceOracle;
+        IScalingPriceOracle oldScalingPriceOracle = scalingPriceOracle;
         scalingPriceOracle = newScalingPriceOracle;
 
         emit ScalingPriceOracleUpdate(
