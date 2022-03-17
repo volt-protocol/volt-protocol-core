@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.0;
 
 import "../refs/CoreRef.sol";
@@ -125,7 +126,7 @@ contract FuseGuardian is CoreRef {
     {
         address cToken = comptroller.cTokensByUnderlying(underlying);
         require(cToken != address(0), "cToken doesn't exist");
-        _setMintPausedInternal(CToken(cToken), state);
+        return _setMintPausedInternal(CToken(cToken), state);
     }
 
     function _setMintPaused(CToken cToken, bool state)
@@ -165,7 +166,7 @@ contract FuseGuardian is CoreRef {
         onlyGovernorOrGuardianOrAdmin
         returns (bool)
     {
-        _setBorrowPausedInternal(CToken(cToken), state);
+        return _setBorrowPausedInternal(CToken(cToken), state);
     }
 
     function _setTransferPaused(bool state)
