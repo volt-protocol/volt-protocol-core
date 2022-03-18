@@ -9,7 +9,7 @@ import {
 } from '@test/helpers';
 import { expect } from 'chai';
 import { Signer, utils } from 'ethers';
-import { Core, Volt, MockOracle, PegStabilityModule, MockPCVDepositV2, IWETH9 } from '@custom-types/contracts';
+import { Core, Volt, MockOracle, PegStabilityModule, MockPCVDepositV2, WETH9 } from '@custom-types/contracts';
 import { keccak256 } from 'ethers/lib/utils';
 
 const toBN = ethers.BigNumber.from;
@@ -36,7 +36,7 @@ describe('PegStabilityModule', function () {
   let oracle: MockOracle;
   let psm: PegStabilityModule;
   let pcvDeposit: MockPCVDepositV2;
-  let weth: IWETH9;
+  let weth: WETH9;
 
   before(async () => {
     const addresses = await getAddresses();

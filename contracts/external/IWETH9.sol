@@ -19,7 +19,7 @@
 
 pragma solidity ^0.8.4;
 
-interface WETH9 {
+interface IWETH9 {
     function name() external returns (string memory);
 
     function symbol() external returns (string memory);
