@@ -1,6 +1,6 @@
-# Fei Protocol ·
+# VOLT Protocol ·
 
-Smart contract code for Fei Protocol and the FEI stablecoin
+Smart contract code for VOLT Protocol and the VOLT stablecoin
 
 ## Dependencies
  Note that this has only been tested on Linux; you may encounter issues running on other operating systems.

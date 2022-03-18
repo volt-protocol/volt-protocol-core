@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GNU Lesser General Public License 3.0
 pragma solidity ^0.8.4;
 
 // ----------------------------------------------------------------------------
