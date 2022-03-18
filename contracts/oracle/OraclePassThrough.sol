@@ -3,27 +3,21 @@ pragma solidity ^0.8.4;
 
 import {Decimal} from "../external/Decimal.sol";
 import {CoreRef} from "./../refs/CoreRef.sol";
-import {ScalingPriceOracle} from "./ScalingPriceOracle.sol";
+import {IScalingPriceOracle} from "./IScalingPriceOracle.sol";
 import {IOraclePassThrough} from "./IOraclePassThrough.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @notice contract that passes all price calls to the Scaling Price Oracle
 /// The Scaling Price Oracle can be changed if there is a decision to change how data is interpolated
 /// without needing all contracts in the system to be upgraded, only this contract will have to change where it points
-contract OraclePassThrough is CoreRef, IOraclePassThrough {
+/// @author Elliot Friedman
+contract OraclePassThrough is IOraclePassThrough, Ownable {
     using Decimal for Decimal.D256;
 
     /// @notice reference to the scaling price oracle
-    ScalingPriceOracle public override scalingPriceOracle;
+    IScalingPriceOracle public override scalingPriceOracle;
 
-    /// @notice event emitted when the scaling price oracle is updated
-    event ScalingPriceOracleUpdate(
-        ScalingPriceOracle oldScalingPriceOracle,
-        ScalingPriceOracle newScalingPriceOracle
-    );
-
-    constructor(address coreAddress, ScalingPriceOracle _scalingPriceOracle)
-        CoreRef(coreAddress)
-    {
+    constructor(IScalingPriceOracle _scalingPriceOracle) Ownable() {
         scalingPriceOracle = _scalingPriceOracle;
     }
 
@@ -43,7 +37,7 @@ contract OraclePassThrough is CoreRef, IOraclePassThrough {
     {
         uint256 currentPrice = scalingPriceOracle.getCurrentOraclePrice();
 
-        price = Decimal.from(currentPrice).div(1 ether);
+        price = Decimal.from(currentPrice).div(1e18);
         valid = true;
     }
 
@@ -52,16 +46,16 @@ contract OraclePassThrough is CoreRef, IOraclePassThrough {
         return scalingPriceOracle.getCurrentOraclePrice();
     }
 
-    // ----------- Governor only state changing api -----------
+    // ----------- Governance only state changing api -----------
 
-    /// @notice function to update the scaling price oracle reference
-    /// @param newScalingPriceOracle the new oracle to reference
-    function updateScalingPriceOracle(ScalingPriceOracle newScalingPriceOracle)
+    /// @notice function to update the pointer to the scaling price oracle
+    /// requires approval from all parties on multisig to update
+    function updateScalingPriceOracle(IScalingPriceOracle newScalingPriceOracle)
         external
         override
-        onlyGovernor
+        onlyOwner
     {
-        ScalingPriceOracle oldScalingPriceOracle = scalingPriceOracle;
+        IScalingPriceOracle oldScalingPriceOracle = scalingPriceOracle;
         scalingPriceOracle = newScalingPriceOracle;
 
         emit ScalingPriceOracleUpdate(

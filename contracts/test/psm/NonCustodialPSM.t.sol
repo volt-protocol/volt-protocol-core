@@ -48,12 +48,14 @@ contract NonCustodialPSMTest is DSTest {
 
         volt = core.volt();
         MockScalingPriceOracle mockScalingPriceOracle = new MockScalingPriceOracle(
-                monthlyChangeRateBasisPoints,
-                maxDeviationThresholdBasisPoints,
-                address(core)
+                address(0),
+                keccak256(abi.encodePacked("test")),
+                10e18,
+                101,
+                100
             );
+
         oracle = new OraclePassThrough(
-            address(core),
             ScalingPriceOracle(address(mockScalingPriceOracle))
         );
         underlyingToken = new MockERC20();

@@ -8,8 +8,7 @@ library Constants {
     uint256 public constant BASIS_POINTS_GRANULARITY = 10_000;
 
     /// @notice the denominator for basis points granularity (10,000) expressed as an int data type
-    int256 public constant BASIS_POINTS_GRANULARITY_INT =
-        int256(BASIS_POINTS_GRANULARITY);
+    int256 public constant BP_INT = int256(BASIS_POINTS_GRANULARITY);
 
     uint256 public constant ONE_YEAR = 365.25 days;
 

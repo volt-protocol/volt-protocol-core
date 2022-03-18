@@ -19,10 +19,10 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.
 /// On a mint, it transfers all proceeds to a PCV Deposit
 /// When funds are needed for a redemption, they are simply pulled from the PCV Deposit
 contract NonCustodialPSM is
-    INonCustodialPSM,
-    RateLimited,
     OracleRef,
-    ReentrancyGuard
+    RateLimited,
+    ReentrancyGuard,
+    INonCustodialPSM
 {
     using Decimal for Decimal.D256;
     using SafeCast for *;

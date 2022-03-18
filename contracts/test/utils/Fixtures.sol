@@ -5,8 +5,6 @@ import {Core, Vcon, Volt} from "../../core/Core.sol";
 import {DSTest} from "./DSTest.sol";
 import {Vm} from "./Vm.sol";
 
-import "hardhat/console.sol";
-
 struct FeiTestAddresses {
     address userAddress;
     address secondUserAddress;
