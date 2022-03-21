@@ -20,9 +20,9 @@ abstract contract MultiRateLimited is RateLimited, IMultiRateLimited {
     /// @notice the struct containing all information per rate limited address
     struct RateLimitData {
         uint32 lastBufferUsedTime;
-        uint144 bufferCap;
+        uint112 bufferCap;
+        uint112 bufferStored;
         uint112 rateLimitPerSecond;
-        uint144 bufferStored;
     }
 
     /// @notice rate limited address information
@@ -60,6 +60,14 @@ abstract contract MultiRateLimited is RateLimited, IMultiRateLimited {
 
         individualMaxRateLimitPerSecond = _individualMaxRateLimitPerSecond;
         individualMaxBufferCap = _individualMaxBufferCap;
+    }
+
+    modifier addressIsRegistered(address rateLimitedAddress) {
+        require(
+            rateLimitPerAddress[rateLimitedAddress].lastBufferUsedTime != 0,
+            "MultiRateLimited: rate limit address does not exist"
+        );
+        _;
     }
 
     // ----------- Governor and Admin only state changing api -----------
@@ -112,7 +120,7 @@ abstract contract MultiRateLimited is RateLimited, IMultiRateLimited {
     function addAddress(
         address rateLimitedAddress,
         uint112 _rateLimitPerSecond,
-        uint144 _bufferCap
+        uint112 _bufferCap
     ) external virtual override onlyGovernor {
         _addAddress(rateLimitedAddress, _rateLimitPerSecond, _bufferCap);
     }
@@ -124,11 +132,12 @@ abstract contract MultiRateLimited is RateLimited, IMultiRateLimited {
     function updateAddress(
         address rateLimitedAddress,
         uint112 _rateLimitPerSecond,
-        uint144 _bufferCap
+        uint112 _bufferCap
     )
         external
         virtual
         override
+        addressIsRegistered(rateLimitedAddress)
         hasAnyOfTwoRoles(TribeRoles.ADD_MINTER_ROLE, TribeRoles.GOVERNOR)
     {
         if (core().hasRole(TribeRoles.ADD_MINTER_ROLE, msg.sender)) {
@@ -161,7 +170,7 @@ abstract contract MultiRateLimited is RateLimited, IMultiRateLimited {
         _addAddress(
             rateLimitedAddress,
             uint112(individualMaxRateLimitPerSecond),
-            uint144(individualMaxBufferCap)
+            uint112(individualMaxBufferCap)
         );
     }
 
@@ -171,6 +180,7 @@ abstract contract MultiRateLimited is RateLimited, IMultiRateLimited {
         external
         virtual
         override
+        addressIsRegistered(rateLimitedAddress)
         onlyGuardianOrGovernor
     {
         uint256 oldRateLimitPerSecond = rateLimitPerAddress[rateLimitedAddress]
@@ -185,40 +195,6 @@ abstract contract MultiRateLimited is RateLimited, IMultiRateLimited {
         );
     }
 
-    /// @notice set the rate limit per second
-    /// @param rateLimitedAddress the address whose buffer will be set
-    /// @param newRateLimitPerSecond the new rate limit per second for this rateLimitedAddress
-    function setIndividualRateLimitPerSecond(
-        address rateLimitedAddress,
-        uint112 newRateLimitPerSecond
-    ) external virtual override onlyGovernor {
-        require(
-            newRateLimitPerSecond <= rateLimitPerSecond,
-            "MultiRateLimited: rateLimitPerSecond too high"
-        );
-
-        _updateIndividualBufferStored(rateLimitedAddress);
-        _setIndividualRateLimitPerSecond(
-            rateLimitedAddress,
-            newRateLimitPerSecond
-        );
-    }
-
-    /// @notice set the buffer cap
-    /// @param rateLimitedAddress the address whose buffer will be set
-    /// @param newBufferCap the new buffer cap for this rateLimitedAddress
-    function setIndividualBufferCap(
-        address rateLimitedAddress,
-        uint144 newBufferCap
-    ) external virtual override onlyGovernor {
-        require(
-            newBufferCap <= bufferCap,
-            "MultiRateLimited: new buffer cap is over global max"
-        );
-
-        _setIndividualBufferCap(rateLimitedAddress, newBufferCap);
-    }
-
     // ----------- Getters -----------
 
     /// @notice the amount of action used before hitting limit
@@ -229,7 +205,7 @@ abstract contract MultiRateLimited is RateLimited, IMultiRateLimited {
         public
         view
         override
-        returns (uint144)
+        returns (uint112)
     {
         RateLimitData memory rateLimitData = rateLimitPerAddress[
             rateLimitedAddress
@@ -237,7 +213,7 @@ abstract contract MultiRateLimited is RateLimited, IMultiRateLimited {
 
         uint256 elapsed = block.timestamp - rateLimitData.lastBufferUsedTime;
         return
-            uint144(
+            uint112(
                 Math.min(
                     rateLimitData.bufferStored +
                         (rateLimitData.rateLimitPerSecond * elapsed),
@@ -281,10 +257,8 @@ abstract contract MultiRateLimited is RateLimited, IMultiRateLimited {
     function _updateAddress(
         address rateLimitedAddress,
         uint112 _rateLimitPerSecond,
-        uint144 _bufferCap
+        uint112 _bufferCap
     ) internal {
-        uint112 oldRateLimitPerSecond = _rateLimitPerSecond;
-
         RateLimitData storage rateLimitData = rateLimitPerAddress[
             rateLimitedAddress
         ];
@@ -297,6 +271,8 @@ abstract contract MultiRateLimited is RateLimited, IMultiRateLimited {
             _rateLimitPerSecond <= MAX_RATE_LIMIT_PER_SECOND,
             "MultiRateLimited: rateLimitPerSecond too high"
         );
+
+        uint112 oldRateLimitPerSecond = rateLimitData.rateLimitPerSecond;
 
         rateLimitData.lastBufferUsedTime = block.timestamp.toUint32();
         rateLimitData.bufferCap = _bufferCap;
@@ -316,7 +292,7 @@ abstract contract MultiRateLimited is RateLimited, IMultiRateLimited {
     function _addAddress(
         address rateLimitedAddress,
         uint112 _rateLimitPerSecond,
-        uint144 _bufferCap
+        uint112 _bufferCap
     ) internal {
         require(
             _bufferCap <= bufferCap,
@@ -350,10 +326,10 @@ abstract contract MultiRateLimited is RateLimited, IMultiRateLimited {
     /// @notice the method that enforces the rate limit. Decreases buffer by "amount".
     /// @param rateLimitedAddress the address whose buffer will be depleted
     /// @param amount the amount to remove from the rateLimitedAddress's buffer
-    function _depleteBuffer(address rateLimitedAddress, uint256 amount)
-        internal
-        returns (uint256)
-    {
+    function _depleteIndividualBuffer(
+        address rateLimitedAddress,
+        uint256 amount
+    ) internal returns (uint256) {
         _depleteBuffer(amount);
 
         uint256 newBuffer = individualBuffer(rateLimitedAddress);
@@ -361,7 +337,7 @@ abstract contract MultiRateLimited is RateLimited, IMultiRateLimited {
         require(newBuffer != 0, "MultiRateLimited: no rate limit buffer");
         require(amount <= newBuffer, "MultiRateLimited: rate limit hit");
 
-        rateLimitPerAddress[rateLimitedAddress].bufferStored = uint144(
+        rateLimitPerAddress[rateLimitedAddress].bufferStored = uint112(
             newBuffer - amount
         );
 
@@ -376,66 +352,5 @@ abstract contract MultiRateLimited is RateLimited, IMultiRateLimited {
         );
 
         return amount;
-    }
-
-    /// @notice set a new rate limit per second for a given rateLimitedAddress
-    /// @param rateLimitedAddress the target address
-    /// @param newRateLimitPerSecond the new rate limit for the given rateLimitedAddress
-    function _setIndividualRateLimitPerSecond(
-        address rateLimitedAddress,
-        uint112 newRateLimitPerSecond
-    ) internal {
-        uint256 oldRateLimitPerSecond = rateLimitPerAddress[rateLimitedAddress]
-            .rateLimitPerSecond;
-        rateLimitPerAddress[rateLimitedAddress]
-            .rateLimitPerSecond = newRateLimitPerSecond;
-
-        emit IndividualRateLimitPerSecondUpdate(
-            rateLimitedAddress,
-            oldRateLimitPerSecond,
-            newRateLimitPerSecond
-        );
-    }
-
-    /// @notice helper function to set the buffer cap of rateLimitedAddress to new buffer cap
-    /// @param rateLimitedAddress the address to update buffer cap
-    /// @param newBufferCap the new buffer cap for the given address
-    function _setIndividualBufferCap(
-        address rateLimitedAddress,
-        uint144 newBufferCap
-    ) internal {
-        RateLimitData storage rateLimitData = rateLimitPerAddress[
-            rateLimitedAddress
-        ];
-
-        uint256 oldBufferCap = rateLimitData.bufferCap;
-
-        rateLimitData.bufferCap = newBufferCap;
-        rateLimitData.bufferStored = newBufferCap;
-        rateLimitData.lastBufferUsedTime = block.timestamp.toUint32();
-
-        emit IndividualBufferCapUpdate(
-            rateLimitedAddress,
-            oldBufferCap,
-            newBufferCap
-        );
-    }
-
-    /// @param rateLimitedAddress the address to reset buffer cap
-    function _resetIndividualBuffer(address rateLimitedAddress) internal {
-        rateLimitPerAddress[rateLimitedAddress]
-            .bufferStored = rateLimitPerAddress[rateLimitedAddress].bufferCap;
-    }
-
-    /// @param rateLimitedAddress the address to update the buffer cap
-    function _updateIndividualBufferStored(address rateLimitedAddress)
-        internal
-    {
-        RateLimitData storage rateLimitData = rateLimitPerAddress[
-            rateLimitedAddress
-        ];
-
-        rateLimitData.bufferStored = individualBuffer(rateLimitedAddress);
-        rateLimitData.lastBufferUsedTime = block.timestamp.toUint32();
     }
 }

@@ -11,24 +11,12 @@ import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract DeviationTest is DSTest {
     using SafeCast for *;
-
-    Deviation public deviation;
+    using Deviation for *;
 
     uint256 maxDeviationThresholdBasisPoints = 10_000;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
     FeiTestAddresses public addresses = getAddresses();
-
-    function setUp() public {
-        deviation = new Deviation(maxDeviationThresholdBasisPoints);
-    }
-
-    function testSetup() public {
-        assertEq(
-            maxDeviationThresholdBasisPoints,
-            deviation.maxDeviationThresholdBasisPoints()
-        );
-    }
 
     function testDeviation() public {
         int256 x = 275000;
@@ -42,7 +30,7 @@ contract DeviationTest is DSTest {
 
         assertEq(
             basisPoints,
-            deviation.calculateDeviationThresholdBasisPoints(x, y)
+            Deviation.calculateDeviationThresholdBasisPoints(x, y)
         );
     }
 
@@ -50,13 +38,17 @@ contract DeviationTest is DSTest {
         int256 x = 275000;
         int256 y = 270000;
 
-        assertTrue(deviation.isWithinDeviationThreshold(x, y));
+        assertTrue(
+            maxDeviationThresholdBasisPoints.isWithinDeviationThreshold(x, y)
+        );
     }
 
     function testOutsideDeviation() public {
         int256 x = 275000;
         int256 y = 577500;
 
-        assertTrue(!deviation.isWithinDeviationThreshold(x, y));
+        assertTrue(
+            !maxDeviationThresholdBasisPoints.isWithinDeviationThreshold(x, y)
+        );
     }
 }

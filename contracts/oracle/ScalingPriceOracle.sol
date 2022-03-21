@@ -19,12 +19,12 @@ import {ChainlinkClient, Chainlink} from "@chainlink/contracts/src/v0.8/Chainlin
 /// @author Elliot Friedman
 contract ScalingPriceOracle is
     Timed,
-    Deviation,
     ChainlinkClient,
     IScalingPriceOracle,
     BokkyPooBahsDateTimeContract
 {
     using SafeCast for *;
+    using Deviation for *;
     using SafeERC20 for IERC20;
     using Decimal for Decimal.D256;
     using Chainlink for Chainlink.Request;
@@ -76,7 +76,7 @@ contract ScalingPriceOracle is
         uint256 _fee,
         uint128 _currentMonth,
         uint128 _previousMonth
-    ) Timed(timeFrame) Deviation(maxAllowableOracleDeviation) {
+    ) Timed(timeFrame) {
         /// this duration is 28 days as that is the minimum period of time between CPI monthly updates
 
         uint256 chainId;
@@ -174,7 +174,7 @@ contract ScalingPriceOracle is
     /// update will fail if new values exceed deviation threshold of 20% monthly
     function _updateCPIData(uint256 _cpiData) internal {
         require(
-            isWithinDeviationThreshold(
+            maxAllowableOracleDeviation.isWithinDeviationThreshold(
                 currentMonth.toInt256(),
                 _cpiData.toInt256()
             ),
