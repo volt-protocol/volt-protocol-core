@@ -49,12 +49,12 @@ contract ScalingPriceOracle is
 
     /// @notice the time frame over which all changes in CPI data are applied
     /// 28 days was chosen as that is the shortest length of a month
-    uint256 public constant override timeFrame = 28 days;
+    uint256 public constant override TIMEFRAME = 28 days;
 
     /// @notice the maximum allowable deviation in basis points for a new chainlink oracle update
     /// only allow price changes by 20% in a month.
     /// Any change over this threshold in either direction will be rejected
-    uint256 public constant override maxAllowableOracleDeviation = 2_000;
+    uint256 public constant override MAXORACLEDEVIATION = 2_000;
 
     /// @notice address of chainlink oracle to send request
     address public immutable oracle;
@@ -76,9 +76,7 @@ contract ScalingPriceOracle is
         uint256 _fee,
         uint128 _currentMonth,
         uint128 _previousMonth
-    ) Timed(timeFrame) {
-        /// this duration is 28 days as that is the minimum period of time between CPI monthly updates
-
+    ) Timed(TIMEFRAME) {
         uint256 chainId;
         // solhint-disable-next-line no-inline-assembly
         assembly {
@@ -114,9 +112,9 @@ contract ScalingPriceOracle is
     function getCurrentOraclePrice() public view override returns (uint256) {
         int256 oraclePriceInt = oraclePrice.toInt256();
 
-        int256 timeDelta = Math.min(block.timestamp - startTime, timeFrame).toInt256();
+        int256 timeDelta = Math.min(block.timestamp - startTime, TIMEFRAME).toInt256();
         int256 pricePercentageChange = oraclePriceInt * monthlyChangeRateBasisPoints / Constants.BP_INT;
-        int256 priceDelta = pricePercentageChange * timeDelta / timeFrame.toInt256();
+        int256 priceDelta = pricePercentageChange * timeDelta / TIMEFRAME.toInt256();
 
         return SafeCast.toUint256(oraclePriceInt + priceDelta);
     }
@@ -174,7 +172,7 @@ contract ScalingPriceOracle is
     /// update will fail if new values exceed deviation threshold of 20% monthly
     function _updateCPIData(uint256 _cpiData) internal {
         require(
-            maxAllowableOracleDeviation.isWithinDeviationThreshold(
+            MAXORACLEDEVIATION.isWithinDeviationThreshold(
                 currentMonth.toInt256(),
                 _cpiData.toInt256()
             ),

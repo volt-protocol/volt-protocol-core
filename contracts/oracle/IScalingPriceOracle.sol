@@ -9,12 +9,12 @@ import {Decimal} from "../external/Decimal.sol";
 interface IScalingPriceOracle {
     /// @notice the time frame over which all changes in CPI data are applied
     /// 28 days was chosen as that is the shortest length of a month
-    function timeFrame() external view returns (uint256);
+    function TIMEFRAME() external view returns (uint256);
 
     /// @notice the maximum allowable deviation in basis points for a new chainlink oracle update
     /// only allow price changes by 20% in a month.
     /// Any change over this threshold in either direction will be rejected
-    function maxAllowableOracleDeviation() external view returns (uint256);
+    function MAXORACLEDEVIATION() external view returns (uint256);
 
     /// @notice get the current scaled oracle price
     /// applies the change smoothly over a 28 day period
