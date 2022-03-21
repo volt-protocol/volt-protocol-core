@@ -19,12 +19,10 @@ library Deviation {
         pure
         returns (uint256)
     {
-        /// delta can only be positive
-        uint256 delta = ((a < b) ? (b - a) : (a - b)).toUint256();
+        int256 delta = a - b;
+        int256 basisPoints = (delta * Constants.BP_INT) / a;
 
-        return
-            (delta * Constants.BASIS_POINTS_GRANULARITY) /
-            (a < 0 ? a * -1 : a).toUint256();
+        return (basisPoints < 0 ? basisPoints * -1 : basisPoints).toUint256();
     }
 
     /// @notice function to return whether or not the new price is within
