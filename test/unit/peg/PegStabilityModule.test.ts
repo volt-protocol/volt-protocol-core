@@ -9,7 +9,7 @@ import {
 } from '@test/helpers';
 import { expect } from 'chai';
 import { Signer, utils } from 'ethers';
-import { Core, Fei, MockOracle, PegStabilityModule, MockPCVDepositV2, WETH9 } from '@custom-types/contracts';
+import { Core, Volt, MockOracle, PegStabilityModule, MockPCVDepositV2, WETH9 } from '@custom-types/contracts';
 import { keccak256 } from 'ethers/lib/utils';
 
 const toBN = ethers.BigNumber.from;
@@ -24,7 +24,7 @@ describe('PegStabilityModule', function () {
   const mintFeeBasisPoints = 30;
   const redeemFeeBasisPoints = 30;
   const reservesThreshold = ethers.constants.WeiPerEther.mul(10);
-  const feiLimitPerSecond = ethers.constants.WeiPerEther.mul(10_000);
+  const voltLimitPerSecond = ethers.constants.WeiPerEther.mul(10_000);
   const bufferCap = ethers.constants.WeiPerEther.mul(10_000_000);
   const decimalsNormalizer = 0; // because the oracle price is scaled 1e18, need to divide out by that before testing
   const bpGranularity = 10_000;
@@ -32,7 +32,7 @@ describe('PegStabilityModule', function () {
   const PSM_ADMIN_ROLE = keccak256(utils.toUtf8Bytes('PSM_ADMIN_ROLE'));
 
   let core: Core;
-  let fei: Fei;
+  let volt: Volt;
   let oracle: MockOracle;
   let psm: PegStabilityModule;
   let pcvDeposit: MockPCVDepositV2;
@@ -74,7 +74,7 @@ describe('PegStabilityModule', function () {
     psmAdminAddress = addresses.beneficiaryAddress1;
 
     core = await getCore();
-    fei = await ethers.getContractAt('Fei', await core.fei());
+    volt = await ethers.getContractAt('Volt', await core.volt());
     // eth costs 5k USD
     oracle = await (await ethers.getContractFactory('MockOracle')).deploy(5000);
     pcvDeposit = await (await ethers.getContractFactory('MockPCVDepositV2')).deploy(core.address, weth.address, 0, 0);
@@ -92,7 +92,7 @@ describe('PegStabilityModule', function () {
       mintFeeBasisPoints,
       redeemFeeBasisPoints,
       reservesThreshold,
-      feiLimitPerSecond,
+      voltLimitPerSecond,
       bufferCap,
       weth.address,
       pcvDeposit.address
@@ -106,7 +106,7 @@ describe('PegStabilityModule', function () {
     // grant PSM admin role
     await core.grantRole(PSM_ADMIN_ROLE, psmAdminAddress);
 
-    await fei.connect(impersonatedSigners[minterAddress]).mint(psm.address, bufferCap);
+    await volt.connect(impersonatedSigners[minterAddress]).mint(psm.address, bufferCap);
 
     await hre.network.provider.send('hardhat_setBalance', [userAddress, '0x21E19E0C9BAB2400000']);
   });
@@ -129,7 +129,7 @@ describe('PegStabilityModule', function () {
     });
 
     it('rateLimitPerSecond', async () => {
-      expect(await psm.rateLimitPerSecond()).to.be.equal(feiLimitPerSecond);
+      expect(await psm.rateLimitPerSecond()).to.be.equal(voltLimitPerSecond);
     });
 
     it('mintingBufferCap', async () => {
@@ -168,30 +168,30 @@ describe('PegStabilityModule', function () {
       expect(await psm.CONTRACT_ADMIN_ROLE()).to.be.equal(PSM_ADMIN_ROLE);
     });
 
-    it('resistantBalanceAndFei', async () => {
-      const [wethBalance, feiBalance] = await psm.resistantBalanceAndFei();
-      expect(feiBalance).to.be.equal(bufferCap);
+    it('resistantBalanceAndvolt', async () => {
+      const [wethBalance, voltBalance] = await psm.resistantBalanceAndVolt();
+      expect(voltBalance).to.be.equal(bufferCap);
       expect(wethBalance).to.be.equal(0);
     });
 
     it('getMaxMintAmountOut', async () => {
-      expect(await psm.getMaxMintAmountOut()).to.be.equal(bufferCap.add(await fei.balanceOf(psm.address)));
+      expect(await psm.getMaxMintAmountOut()).to.be.equal(bufferCap.add(await volt.balanceOf(psm.address)));
     });
   });
 
   describe('getMaxMintAmountOut', function () {
-    it('getMaxMintAmountOut updates when the PSM receives more FEI', async () => {
-      const startingMaxMintAmountOut = bufferCap.add(await fei.balanceOf(psm.address));
-      await fei.connect(impersonatedSigners[minterAddress]).mint(psm.address, 10);
+    it('getMaxMintAmountOut updates when the PSM receives more volt', async () => {
+      const startingMaxMintAmountOut = bufferCap.add(await volt.balanceOf(psm.address));
+      await volt.connect(impersonatedSigners[minterAddress]).mint(psm.address, 10);
       expect(await psm.getMaxMintAmountOut()).to.be.equal(startingMaxMintAmountOut.add(10));
     });
   });
 
   describe('Mint', function () {
-    describe('Sells Eth for FEI', function () {
-      it('exchanges 10 WEth for 50000 FEI', async () => {
+    describe('Sells Eth for volt', function () {
+      it('exchanges 10 WEth for 50000 volt', async () => {
         const ten = toBN(10).mul(ethers.constants.WeiPerEther);
-        const userStartingFeiBalance = await fei.balanceOf(userAddress);
+        const userStartingvoltBalance = await volt.balanceOf(userAddress);
         const psmStartingAssetBalance = await weth.balanceOf(psm.address);
         const expectedMintAmountOut = ten
           .mul(bpGranularity - mintFeeBasisPoints)
@@ -209,25 +209,25 @@ describe('PegStabilityModule', function () {
         await psm.connect(impersonatedSigners[userAddress]).mint(userAddress, ten, expectedMintAmountOut);
 
         const endingUserWETHBalance = await weth.balanceOf(userAddress);
-        const userEndingFeiBalance = await fei.balanceOf(userAddress);
+        const userEndingvoltBalance = await volt.balanceOf(userAddress);
         const psmEndingWETHBalance = await weth.balanceOf(psm.address);
 
-        expect(userEndingFeiBalance.sub(userStartingFeiBalance)).to.be.equal(expectedMintAmountOut);
+        expect(userEndingvoltBalance.sub(userStartingvoltBalance)).to.be.equal(expectedMintAmountOut);
         expect(psmEndingWETHBalance.sub(psmStartingAssetBalance)).to.be.equal(ten);
 
-        const [wethBalance] = await psm.resistantBalanceAndFei();
+        const [wethBalance] = await psm.resistantBalanceAndVolt();
         expect(wethBalance).to.be.equal(ten);
 
-        // buffer has not been eaten into as the PSM holds FEI
+        // buffer has not been eaten into as the PSM holds volt
         expect(await psm.buffer()).to.be.equal(bufferCap);
         expect(startingUserAssetBalance.sub(endingUserWETHBalance)).to.be.equal(ten);
       });
 
-      it('exchanges 10 Eth for 48,750 FEI as fee is 250 bips and exchange rate is 1:5000', async () => {
+      it('exchanges 10 Eth for 48,750 volt as fee is 250 bips and exchange rate is 1:5000', async () => {
         const tenEth = toBN(10).mul(ethers.constants.WeiPerEther);
         const newMintFee = 250;
         const expectedMintAmountOut = toBN(48_750).mul(ethers.constants.WeiPerEther);
-        const userStartingFeiBalance = await fei.balanceOf(userAddress);
+        const userStartingvoltBalance = await volt.balanceOf(userAddress);
         const startingPSMWETHBalance = await weth.balanceOf(psm.address);
 
         await psm.connect(impersonatedSigners[governorAddress]).setMintFee(newMintFee);
@@ -243,22 +243,22 @@ describe('PegStabilityModule', function () {
           .to.emit(psm, 'Mint')
           .withArgs(userAddress, tenEth, expectedMintAmountOut);
 
-        const userEndingFeiBalance = await fei.balanceOf(userAddress);
+        const userEndingvoltBalance = await volt.balanceOf(userAddress);
         const psmEndingWETHBalance = await weth.balanceOf(psm.address);
         const endingUserWETHBalance = await weth.balanceOf(userAddress);
 
-        expect(userEndingFeiBalance.sub(userStartingFeiBalance)).to.be.equal(expectedMintAmountOut);
+        expect(userEndingvoltBalance.sub(userStartingvoltBalance)).to.be.equal(expectedMintAmountOut);
         expect(psmEndingWETHBalance.sub(startingPSMWETHBalance)).to.be.equal(tenEth);
         expect(startingUserWETHBalance.sub(endingUserWETHBalance)).to.be.equal(tenEth);
-        // buffer has not been eaten into as the PSM holds FEI to pay out
+        // buffer has not been eaten into as the PSM holds volt to pay out
         expect(await psm.buffer()).to.be.equal(bufferCap);
       });
 
-      it('exchanges 1000 Eth for 4,985,000 FEI as fee is 300 bips and exchange rate is 1:5000', async () => {
+      it('exchanges 1000 Eth for 4,985,000 volt as fee is 300 bips and exchange rate is 1:5000', async () => {
         const oneThousandEth = toBN(1000).mul(ethers.constants.WeiPerEther);
         const newMintFee = 300;
         const expectedMintAmountOut = toBN(4_850_000).mul(ethers.constants.WeiPerEther);
-        const userStartingFeiBalance = await fei.balanceOf(userAddress);
+        const userStartingvoltBalance = await volt.balanceOf(userAddress);
         const startingPSMWETHBalance = await weth.balanceOf(psm.address);
 
         await psm.connect(impersonatedSigners[governorAddress]).setMintFee(newMintFee);
@@ -272,22 +272,22 @@ describe('PegStabilityModule', function () {
 
         await psm.connect(impersonatedSigners[userAddress]).mint(userAddress, oneThousandEth, expectedMintAmountOut);
 
-        const userEndingFeiBalance = await fei.balanceOf(userAddress);
+        const userEndingvoltBalance = await volt.balanceOf(userAddress);
         const psmEndingWETHBalance = await weth.balanceOf(psm.address);
         const endingUserWETHBalance = await weth.balanceOf(userAddress);
 
-        expect(userEndingFeiBalance.sub(userStartingFeiBalance)).to.be.equal(expectedMintAmountOut);
+        expect(userEndingvoltBalance.sub(userStartingvoltBalance)).to.be.equal(expectedMintAmountOut);
         expect(psmEndingWETHBalance.sub(startingPSMWETHBalance)).to.be.equal(oneThousandEth);
         expect(startingUserWETHBalance.sub(endingUserWETHBalance)).to.be.equal(oneThousandEth);
-        // buffer has not been eaten into as the PSM holds FEI to pay out
+        // buffer has not been eaten into as the PSM holds volt to pay out
         expect(await psm.buffer()).to.be.equal(bufferCap);
       });
 
-      it('exchanges 4000 Eth for 19,400,000 FEI as fee is 300 bips and exchange rate is 1:5000', async () => {
+      it('exchanges 4000 Eth for 19,400,000 volt as fee is 300 bips and exchange rate is 1:5000', async () => {
         const fourThousandEth = toBN(4000).mul(ethers.constants.WeiPerEther);
         const newMintFee = 300;
         const expectedMintAmountOut = toBN(19_400_000).mul(ethers.constants.WeiPerEther);
-        const userStartingFeiBalance = await fei.balanceOf(userAddress);
+        const userStartingvoltBalance = await volt.balanceOf(userAddress);
         const startingPSMWETHBalance = await weth.balanceOf(psm.address);
 
         await psm.connect(impersonatedSigners[governorAddress]).setMintFee(newMintFee);
@@ -301,15 +301,15 @@ describe('PegStabilityModule', function () {
 
         await psm.connect(impersonatedSigners[userAddress]).mint(userAddress, fourThousandEth, expectedMintAmountOut);
 
-        const userEndingFeiBalance = await fei.balanceOf(userAddress);
+        const userEndingvoltBalance = await volt.balanceOf(userAddress);
         const psmEndingWETHBalance = await weth.balanceOf(psm.address);
         const endingUserWETHBalance = await weth.balanceOf(userAddress);
 
-        expect(userEndingFeiBalance.sub(userStartingFeiBalance)).to.be.equal(expectedMintAmountOut);
+        expect(userEndingvoltBalance.sub(userStartingvoltBalance)).to.be.equal(expectedMintAmountOut);
         expect(psmEndingWETHBalance.sub(startingPSMWETHBalance)).to.be.equal(fourThousandEth);
         expect(startingUserWETHBalance.sub(endingUserWETHBalance)).to.be.equal(fourThousandEth);
-        expect(await fei.balanceOf(psm.address)).to.be.equal(0);
-        // buffer has been eaten into as the PSM holds FEI 10_000_000 and has a buffer of 10_000_000
+        expect(await volt.balanceOf(psm.address)).to.be.equal(0);
+        // buffer has been eaten into as the PSM holds volt 10_000_000 and has a buffer of 10_000_000
         expect(await psm.buffer()).to.be.equal(toBN(600_000).mul(ethers.constants.WeiPerEther));
       });
 
@@ -334,7 +334,7 @@ describe('PegStabilityModule', function () {
         );
       });
 
-      it('should not mint when expected amount out is greater than minting buffer cap and all psm fei is used', async () => {
+      it('should not mint when expected amount out is greater than minting buffer cap and all psm volt is used', async () => {
         const fourThousandEth = toBN(5000).mul(ethers.constants.WeiPerEther);
         const expectedMintAmountOut = toBN(24_925_000).mul(ethers.constants.WeiPerEther);
 
@@ -382,7 +382,7 @@ describe('PegStabilityModule', function () {
   });
 
   describe('Redeem', function () {
-    describe('Sells FEI for Eth', function () {
+    describe('Sells volt for Eth', function () {
       beforeEach(async () => {
         const wethAmount = toBN(5_000).mul(ethers.constants.WeiPerEther);
         await hre.network.provider.send('hardhat_setBalance', [userAddress, '0x21E19E0C9BAB2400000']);
@@ -407,14 +407,14 @@ describe('PegStabilityModule', function () {
 
         await psm.connect(impersonatedSigners[governorAddress]).setRedeemFee(newRedeemFee);
 
-        const userStartingFeiBalance = await fei.balanceOf(userAddress);
+        const userStartingvoltBalance = await volt.balanceOf(userAddress);
         const psmStartingWETHBalance = await weth.balanceOf(psm.address);
         const userStartingWETHBalance = await weth.balanceOf(userAddress);
 
         const expectedAssetAmount = 975;
 
-        await fei.connect(impersonatedSigners[minterAddress]).mint(userAddress, tenM);
-        await fei.connect(impersonatedSigners[userAddress]).approve(psm.address, tenM);
+        await volt.connect(impersonatedSigners[minterAddress]).mint(userAddress, tenM);
+        await volt.connect(impersonatedSigners[userAddress]).approve(psm.address, tenM);
 
         const redeemAmountOut = await psm.getRedeemAmountOut(tenM);
         expect(redeemAmountOut).to.be.equal(expectedAssetAmount);
@@ -424,10 +424,10 @@ describe('PegStabilityModule', function () {
           .withArgs(userAddress, tenM, expectedAssetAmount);
 
         const userEndingWETHBalance = await weth.balanceOf(userAddress);
-        const userEndingFeiBalance = await fei.balanceOf(userAddress);
+        const userEndingvoltBalance = await volt.balanceOf(userAddress);
         const psmEndingWETHBalance = await weth.balanceOf(psm.address);
 
-        expect(userEndingFeiBalance.sub(userStartingFeiBalance)).to.be.equal(0);
+        expect(userEndingvoltBalance.sub(userStartingvoltBalance)).to.be.equal(0);
         expect(psmStartingWETHBalance.sub(psmEndingWETHBalance)).to.be.equal(expectedAssetAmount);
         expect(userEndingWETHBalance.sub(userStartingWETHBalance)).to.be.equal(expectedAssetAmount);
       });
@@ -438,8 +438,8 @@ describe('PegStabilityModule', function () {
 
         const expectedAssetAmount = 997;
 
-        await fei.connect(impersonatedSigners[minterAddress]).mint(userAddress, oneM);
-        await fei.connect(impersonatedSigners[userAddress]).approve(psm.address, oneM);
+        await volt.connect(impersonatedSigners[minterAddress]).mint(userAddress, oneM);
+        await volt.connect(impersonatedSigners[userAddress]).approve(psm.address, oneM);
 
         const redeemAmountOut = await psm.getRedeemAmountOut(oneM);
         expect(redeemAmountOut).to.be.equal(expectedAssetAmount);
@@ -451,7 +451,7 @@ describe('PegStabilityModule', function () {
       });
 
       it('redeem fails when token is not approved to be spent by the PSM', async () => {
-        await fei.connect(impersonatedSigners[minterAddress]).mint(userAddress, 10_000_000);
+        await volt.connect(impersonatedSigners[minterAddress]).mint(userAddress, 10_000_000);
         await expectRevert(
           psm.connect(impersonatedSigners[userAddress]).redeem(userAddress, 1, 0),
           'ERC20: transfer amount exceeds allowance'

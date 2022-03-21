@@ -1,6 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.0;
 
-import "./../staking/TribalChief.sol";
 import "../refs/CoreRef.sol";
 import "../fuse/rewards/IRewardsDistributorAdmin.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -79,9 +79,8 @@ contract MockRewardsDistributor is IRewardsDistributorAdmin, Ownable {
 
     /**
      * @notice Set COMP speed for a single market
-     * @param cToken The market whose COMP speed to update
      */
-    function _setCompSupplySpeed(address cToken, uint256 compSpeed)
+    function _setCompSupplySpeed(address, uint256 compSpeed)
         external
         override
         onlyOwner
@@ -92,9 +91,8 @@ contract MockRewardsDistributor is IRewardsDistributorAdmin, Ownable {
 
     /**
      * @notice Set COMP speed for a single market
-     * @param cToken The market whose COMP speed to update
      */
-    function _setCompBorrowSpeed(address cToken, uint256 compSpeed)
+    function _setCompBorrowSpeed(address, uint256 compSpeed)
         external
         override
         onlyOwner
@@ -129,9 +127,8 @@ contract MockRewardsDistributor is IRewardsDistributorAdmin, Ownable {
 
     /**
      * @notice view function to get the comp supply speeds from the rewards distributor contract
-     * @param cToken The market to view
      */
-    function compSupplySpeeds(address cToken)
+    function compSupplySpeeds(address)
         external
         view
         override
@@ -142,9 +139,8 @@ contract MockRewardsDistributor is IRewardsDistributorAdmin, Ownable {
 
     /**
      * @notice view function to get the comp borrow speeds from the rewards distributor contract
-     * @param cToken The market to view
      */
-    function compBorrowSpeeds(address cToken)
+    function compBorrowSpeeds(address)
         external
         view
         override

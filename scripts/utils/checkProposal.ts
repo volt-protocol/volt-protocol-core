@@ -21,13 +21,19 @@ if (!proposalName) {
  */
 async function checkProposal(proposalName: string) {
   // Get the upgrade setup, run and teardown scripts
+  console.log('checkProposal 0');
   const proposalFuncs: UpgradeFuncs = await import(`@proposals/dao/${proposalName}`);
 
+  console.log('checkProposal 1');
+
   const contracts = (await getAllContracts()) as unknown as NamedContracts;
+  console.log('checkProposal 2');
 
   const contractAddresses = getAllContractAddresses();
+  console.log('checkProposal 3');
 
   if (process.env.DO_SETUP) {
+    console.log('checkProposal 4');
     console.log('Setup');
     await proposalFuncs.setup(
       contractAddresses,
@@ -37,11 +43,15 @@ async function checkProposal(proposalName: string) {
     );
   }
 
+  console.log('checkProposal 5');
   const { feiDAO } = contracts;
+  console.log('checkProposal 6');
 
   const proposalNo = proposals[proposalName].proposalId;
+  console.log('checkProposal 7');
 
   await execProposal(voterAddress, feiDAO.address, proposals[proposalName].totalValue, proposalNo);
+  console.log('checkProposal 8');
 
   console.log('Teardown');
   await proposalFuncs.teardown(

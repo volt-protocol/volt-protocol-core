@@ -5,7 +5,7 @@ import { Signer } from 'ethers';
 import { TransactionResponse } from '@ethersproject/providers';
 import { Core, FeiDAO, Timelock } from '@custom-types/contracts';
 
-const Tribe = artifacts.readArtifactSync('Tribe');
+const Tribe = artifacts.readArtifactSync('Vcon');
 
 const toBN = ethers.BigNumber.from;
 
@@ -43,7 +43,7 @@ describe('FeiDAO', function () {
     });
 
     core = await getCore();
-    const tribeAddress = await core.tribe();
+    const tribeAddress = await core.vcon();
 
     // Deploy timelock with vanilla user admin
     const timelockDeployer = await ethers.getContractFactory('Timelock');
@@ -64,11 +64,13 @@ describe('FeiDAO', function () {
     await timelock.connect(await ethers.getSigner(timelock.address)).setPendingAdmin(feiDAO.address);
     await feiDAO.__acceptAdmin();
 
-    // Send > quorum TRIBE to user
-    await core.allocateTribe(userAddress, ethers.constants.WeiPerEther.mul(26_000_000).toString());
-
     // Self delegate user TRIBE
     const tribe = await ethers.getContractAt(Tribe.abi, tribeAddress);
+
+    // Send > quorum TRIBE to user
+    await tribe
+      .connect(impersonatedSigners[governorAddress])
+      .mint(userAddress, ethers.constants.WeiPerEther.mul(26_000_000).toString());
     await tribe.connect(impersonatedSigners[userAddress]).delegate(userAddress);
   });
 
@@ -92,7 +94,7 @@ describe('FeiDAO', function () {
     });
 
     it('token', async function () {
-      expect(await feiDAO.token()).to.be.equal(await core.tribe());
+      expect(await feiDAO.token()).to.be.equal(await core.vcon());
     });
 
     it('timelock', async function () {

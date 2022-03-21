@@ -40,6 +40,24 @@ contract PegStabilityModule is
     /// Governance can change this fee
     uint256 public override MAX_FEE = 300;
 
+    /// @notice boolean switch that indicates whether redemptions are paused
+    bool public redeemPaused;
+
+    /// @notice event that is emitted when redemptions are paused
+    event RedemptionsPaused(address account);
+
+    /// @notice event that is emitted when redemptions are unpaused
+    event RedemptionsUnpaused(address account);
+
+    /// @notice boolean switch that indicates whether minting is paused
+    bool public mintPaused;
+
+    /// @notice event that is emitted when minting is paused
+    event MintingPaused(address account);
+
+    /// @notice event that is emitted when minting is unpaused
+    event MintingUnpaused(address account);
+
     /// @notice struct for passing constructor parameters related to OracleRef
     struct OracleParams {
         address coreAddress;
@@ -78,6 +96,42 @@ contract PegStabilityModule is
         _setRedeemFee(_redeemFeeBasisPoints);
         _setSurplusTarget(_surplusTarget);
         _setContractAdminRole(keccak256("PSM_ADMIN_ROLE"));
+    }
+
+    /// @notice modifier that allows execution when redemptions are not paused
+    modifier whileRedemptionsNotPaused() {
+        require(!redeemPaused, "PegStabilityModule: Redeem paused");
+        _;
+    }
+
+    /// @notice modifier that allows execution when minting is not paused
+    modifier whileMintingNotPaused() {
+        require(!mintPaused, "PegStabilityModule: Minting paused");
+        _;
+    }
+
+    /// @notice set secondary pausable methods to paused
+    function pauseRedeem() external onlyGovernorOrGuardianOrAdmin {
+        redeemPaused = true;
+        emit RedemptionsPaused(msg.sender);
+    }
+
+    /// @notice set secondary pausable methods to unpaused
+    function unpauseRedeem() external onlyGovernorOrGuardianOrAdmin {
+        redeemPaused = false;
+        emit RedemptionsUnpaused(msg.sender);
+    }
+
+    /// @notice set secondary pausable methods to paused
+    function pauseMint() external onlyGovernorOrGuardianOrAdmin {
+        mintPaused = true;
+        emit MintingPaused(msg.sender);
+    }
+
+    /// @notice set secondary pausable methods to unpaused
+    function unpauseMint() external onlyGovernorOrGuardianOrAdmin {
+        mintPaused = false;
+        emit MintingUnpaused(msg.sender);
     }
 
     /// @notice withdraw assets from PSM to an external address
@@ -212,7 +266,7 @@ contract PegStabilityModule is
             "PegStabilityModule: Redeem not enough out"
         );
 
-        IERC20(volt).safeTransferFrom(msg.sender, address(this), amountFeiIn);
+        IERC20(volt()).safeTransferFrom(msg.sender, address(this), amountFeiIn);
 
         _transfer(to, amountOut);
 
@@ -236,12 +290,12 @@ contract PegStabilityModule is
         _transferFrom(msg.sender, address(this), amountIn);
 
         uint256 amountFeiToTransfer = Math.min(
-            volt.balanceOf(address(this)),
+            volt().balanceOf(address(this)),
             amountFeiOut
         );
         uint256 amountFeiToMint = amountFeiOut - amountFeiToTransfer;
 
-        IERC20(volt).safeTransfer(to, amountFeiToTransfer);
+        IERC20(volt()).safeTransfer(to, amountFeiToTransfer);
 
         if (amountFeiToMint > 0) {
             _mintVolt(to, amountFeiToMint);
@@ -263,6 +317,7 @@ contract PegStabilityModule is
         override
         nonReentrant
         whenNotPaused
+        whileRedemptionsNotPaused
         returns (uint256 amountOut)
     {
         amountOut = _redeem(to, amountFeiIn, minAmountOut);
@@ -280,6 +335,7 @@ contract PegStabilityModule is
         override
         nonReentrant
         whenNotPaused
+        whileMintingNotPaused
         returns (uint256 amountFeiOut)
     {
         amountFeiOut = _mint(to, amountIn, minAmountOut);
@@ -315,7 +371,7 @@ contract PegStabilityModule is
 
     /// @notice the maximum mint amount out
     function getMaxMintAmountOut() external view override returns (uint256) {
-        return volt.balanceOf(address(this)) + buffer();
+        return volt().balanceOf(address(this)) + buffer();
     }
 
     /// @notice a flag for whether the current balance is above (true) or below (false) the reservesThreshold
@@ -353,8 +409,9 @@ contract PegStabilityModule is
     /// @notice helper function to get mint amount out based on current market prices
     /// @dev will revert if price is outside of bounds and bounded PSM is being used
     function _getMintAmountOut(uint256 amountIn)
-        private
+        internal
         view
+        virtual
         returns (uint256 amountFeiOut)
     {
         Decimal.D256 memory price = readOracle();
@@ -371,8 +428,9 @@ contract PegStabilityModule is
     /// @notice helper function to get redeem amount out based on current market prices
     /// @dev will revert if price is outside of bounds and bounded PSM is being used
     function _getRedeemAmountOut(uint256 amountFeiIn)
-        private
+        internal
         view
+        virtual
         returns (uint256 amountTokenOut)
     {
         Decimal.D256 memory price = readOracle();

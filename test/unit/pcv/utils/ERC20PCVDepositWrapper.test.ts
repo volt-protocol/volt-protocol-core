@@ -40,7 +40,7 @@ describe('ERC20PCVDepositWrapper', function () {
 
     expect(await pcvDepositWrapper.balanceReportedIn()).to.be.equal(token.address);
     expect(await pcvDepositWrapper.balance()).to.be.equal(balance);
-    const resistantBalances = await pcvDepositWrapper.resistantBalanceAndFei();
+    const resistantBalances = await pcvDepositWrapper.resistantBalanceAndVolt();
 
     expect(resistantBalances[0]).to.be.equal(balance);
     expect(resistantBalances[1]).to.be.equal('0');
@@ -53,7 +53,7 @@ describe('ERC20PCVDepositWrapper', function () {
 
     expect(await pcvDepositWrapper.balanceReportedIn()).to.be.equal(token.address);
     expect(await pcvDepositWrapper.balance()).to.be.equal(balance);
-    const resistantBalances = await pcvDepositWrapper.resistantBalanceAndFei();
+    const resistantBalances = await pcvDepositWrapper.resistantBalanceAndVolt();
 
     expect(resistantBalances[0]).to.be.equal(balance);
     expect(resistantBalances[1]).to.be.equal(balance);

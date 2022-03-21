@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import hre, { ethers, artifacts } from 'hardhat';
 import { Signer } from 'ethers';
 
-const Tribe = artifacts.readArtifactSync('Tribe');
+const Tribe = artifacts.readArtifactSync('Vcon');
 const MockCoreRef = artifacts.readArtifactSync('MockCoreRef');
 const toBN = ethers.BigNumber.from;
 
@@ -45,7 +45,7 @@ describe('Core', function () {
       await getAddresses());
     this.core = await getCore();
 
-    this.tribe = await ethers.getContractAt(Tribe.abi, await this.core.tribe());
+    this.tribe = await ethers.getContractAt(Tribe.abi, await this.core.vcon());
 
     const coreRefFactory = await ethers.getContractFactory(MockCoreRef.abi, MockCoreRef.bytecode);
     this.coreRef = await coreRefFactory.deploy(this.core.address);
@@ -55,65 +55,6 @@ describe('Core', function () {
     this.governorRole = await this.core.GOVERN_ROLE();
     this.pcvControllerRole = await this.core.PCV_CONTROLLER_ROLE();
     this.guardianRole = await this.core.GUARDIAN_ROLE();
-  });
-
-  describe('Allocate Tribe', function () {
-    it('updates', async function () {
-      await expect(await this.core.connect(impersonatedSigners[governorAddress]).allocateTribe(userAddress, 1000))
-        .to.emit(this.core, 'TribeAllocation')
-        .withArgs(userAddress, 1000);
-
-      expect(await this.tribe.balanceOf(userAddress)).to.be.equal('1000');
-    });
-
-    it('not enough reverts', async function () {
-      const amount = await this.tribe.balanceOf(this.core.address);
-      await expectRevert(
-        this.core.connect(impersonatedSigners[governorAddress]).allocateTribe(userAddress, amount.add(toBN('1')), {}),
-        'Core: Not enough Tribe'
-      );
-    });
-
-    it('non governor reverts', async function () {
-      await expectRevert(
-        this.core.connect(impersonatedSigners[userAddress]).allocateTribe(userAddress, '1000', {}),
-        'Permissions: Caller is not a governor'
-      );
-    });
-  });
-
-  describe('Fei Update', function () {
-    it('updates', async function () {
-      await expect(await this.core.connect(impersonatedSigners[governorAddress]).setFei(userAddress, {}))
-        .to.emit(this.core, 'FeiUpdate')
-        .withArgs(userAddress);
-
-      expect(await this.core.fei()).to.be.equal(userAddress);
-    });
-
-    it('non governor reverts', async function () {
-      await expectRevert(
-        this.core.connect(impersonatedSigners[userAddress]).setFei(userAddress, {}),
-        'Permissions: Caller is not a governor'
-      );
-    });
-  });
-
-  describe('Tribe Update', function () {
-    it('updates', async function () {
-      await expect(await this.core.connect(impersonatedSigners[governorAddress]).setTribe(userAddress, {}))
-        .to.emit(this.core, 'TribeUpdate')
-        .withArgs(userAddress);
-
-      expect(await this.core.tribe()).to.be.equal(userAddress);
-    });
-
-    it('non governor reverts', async function () {
-      await expectRevert(
-        this.core.connect(impersonatedSigners[userAddress]).setTribe(userAddress, {}),
-        'Permissions: Caller is not a governor'
-      );
-    });
   });
 
   describe('Minter', function () {

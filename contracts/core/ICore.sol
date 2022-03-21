@@ -11,16 +11,6 @@ interface ICore is IPermissions {
     event VoltUpdate(address indexed _fei);
     event VconUpdate(address indexed _tribe);
 
-    // ----------- Governor only state changing api -----------
-
-    function init() external;
-
-    // ----------- Governor only state changing api -----------
-
-    function setVolt(address token) external;
-
-    function setVcon(address token) external;
-
     // ----------- Getters -----------
 
     function volt() external view returns (IVolt);

@@ -12,10 +12,13 @@ const toBN = ethers.BigNumber.from;
 // txData = The calldata for the DAO transaction to execute.
 // The address at MAINNET_PROPOSER will submit this tx to the GovernorAlpha
 export async function exec(txData, totalValue, addresses, proposalNo) {
+  console.log('exec 1');
   const { proposerAddress, voterAddress, governorAlphaAddress } = addresses;
+  console.log('exec 2');
 
   // Impersonate the proposer and voter with sufficient TRIBE for execution
   await hre.network.provider.request({ method: 'hardhat_impersonateAccount', params: [proposerAddress] });
+  console.log('exec 3');
 
   // Submit proposal to the DAO
   if (txData) {
@@ -29,12 +32,17 @@ export async function exec(txData, totalValue, addresses, proposalNo) {
     });
   }
 
+  console.log('exec 4');
   execProposal(voterAddress, governorAlphaAddress, totalValue, proposalNo);
+  console.log('exec 5');
 }
 
 export async function execProposal(voterAddress, governorAlphaAddress, totalValue, proposalNo) {
+  console.log('execProposals 0');
   const governor = await ethers.getContractAt('FeiDAO', governorAlphaAddress);
+  console.log('execProposals 1');
   const signer = await getImpersonatedSigner(voterAddress);
+  console.log('execProposals 2');
 
   console.log(`Proposal Number: ${proposalNo}`);
 

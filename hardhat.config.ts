@@ -13,6 +13,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 const rinkebyAlchemyApiKey = process.env.RINKEBY_ALCHEMY_API_KEY;
+const kovanAlchemyApiKey = process.env.KOVAN_ALCHEMY_API_KEY;
 const testnetPrivateKey = process.env.TESTNET_PRIVATE_KEY;
 const privateKey = process.env.ETH_PRIVATE_KEY;
 const runE2ETests = process.env.RUN_E2E_TESTS;
@@ -52,14 +53,20 @@ export default {
       chainId: 5777, // Any network (default: none)
       forking: enableMainnetForking
         ? {
-            url: `https://eth-mainnet.alchemyapi.io/v2/${mainnetAlchemyApiKey}`
-            // blockNumber: 13968350
+            url: `https://eth-mainnet.alchemyapi.io/v2/${mainnetAlchemyApiKey}`,
+            blockNumber: 13968350
           }
         : undefined
     },
 
     localhost: {
       url: 'http://127.0.0.1:8545'
+    },
+
+    kovan: {
+      url: `https://eth-kovan.alchemyapi.io/v2/${kovanAlchemyApiKey}`,
+      accounts: testnetPrivateKey ? [testnetPrivateKey] : [],
+      gasPrice: 20000000000
     },
 
     rinkeby: {

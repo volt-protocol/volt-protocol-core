@@ -5,15 +5,17 @@
   "description": "",
   "files": [],
   "scripts": {
+    "compile:forge": "forge build",
     "compile": "npx hardhat compile",
     "coverage": "npx hardhat coverage",
     "console": "npx hardhat console",
     "console:rinkeby": "npx hardhat console --network rinkeby",
     "console:ropsten": "npx hardhat console --network ropsten",
-    "clean": "rm -rf build",
+    "clean": "rm -rf build && rm -rf out",
+    "test:forge": "forge test",
     "test": "npx hardhat test",
     "test:dependencies": "LOGGING=true NO_RESET=true npx hardhat test test/integration/tests/dependencies.ts",
-    "test:e2e": "ENABLE_MAINNET_FORKING=true RUN_E2E_TESTS=true npx hardhat test",
+    "test:e2e": "LOGGING=true ENABLE_MAINNET_FORKING=true RUN_E2E_TESTS=true npx hardhat test",
     "test:gas": "REPORT_GAS=true npx hardhat test",
     "test:all": "RUN_ALL_TESTS=true npx hardhat test",
     "lint": "npm run lint:ts && npm run lint:sol",
@@ -22,8 +24,10 @@
     "lint:fix": "eslint --fix --config ./.eslintrc --ignore-path ./.eslintignore --ext .ts,.tsx .",
     "lint:sol": "solhint --ignore-path ./.solhintignore \"contracts/**/*.sol\"",
     "size-contracts": "npx hardhat size-contracts",
+    "setup:forge": "curl -L https://foundry.paradigm.xyz | bash && foundryup",
     "deploy:localhost": "npx hardhat run --network localhost scripts/deploy/migrations.ts",
     "deploy:main": "npx hardhat run --network mainnet scripts/deploy/migrations.ts",
+    "deploy:kovan": "LOGGING=true npx hardhat run --network kovan scripts/deploy/migrations.ts",
     "deploy:fip": "IS_FIP=true npm run deploy:main",
     "deploy:fuse": "DEPLOY_FILE=compoundPCVDeposit npx hardhat run --network mainnet scripts/deploy/migrations.ts",
     "deploy:timelock": "DEPLOY_FILE=optimisticTimelockDeploy npx hardhat run --network mainnet scripts/deploy/migrations.ts",
@@ -40,7 +44,8 @@
   "license": "AGPL-3.0-only",
   "dependencies": {
     "@balancer-labs/v2-pool-weighted": "^2.0.1",
-    "@chainlink/contracts": "^0.1.7",
+    "@chainlink/contracts": "^0.3.1",
+    "@ethersproject/providers": "^5.5.3",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@openzeppelin/contracts": "^4.4.2",
     "@openzeppelin/test-environment": "^0.1.7",
@@ -63,7 +68,7 @@
     "@typechain/hardhat": "^2.3.0",
     "@types/chai": "^4.3.0",
     "@types/mocha": "^9.0.0",
-    "@types/node": "^17.0.8",
+    "@types/node": "^17.0.21",
     "@typescript-eslint/eslint-plugin": "^4.31.2",
     "@typescript-eslint/parser": "^4.31.2",
     "chai-bn": "^0.3.0",
@@ -95,7 +100,6 @@
       "prettier --config .prettierrc './**/*.ts' --write"
     ],
     "*.{sol}": [
-      "solhint --ignore-path ./.solhintignore \"contracts/**/*.sol\"",
       "prettier --config ./contracts/.prettierrc --write 'contracts/**/*.sol'"
     ]
   }

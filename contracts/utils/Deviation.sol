@@ -1,11 +1,12 @@
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: GPL-3.0-or-later
+pragma solidity ^0.8.4;
 
-import "contracts/Constants.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {Constants} from "./../Constants.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /// @title contract that determines whether or not a new value is within
 /// an acceptable deviation threshold
-/// @author FEI Protocol, Elliot Friedman
+/// @author Elliot Friedman, FEI Protocol
 contract Deviation {
     using SafeCast for *;
 
@@ -13,7 +14,7 @@ contract Deviation {
     event DeviationThresholdUpdate(uint256 oldThreshold, uint256 newThreshold);
 
     /// @notice the maximum update size relative to current, measured in basis points (1/10000)
-    uint256 public maxDeviationThresholdBasisPoints;
+    uint256 public immutable maxDeviationThresholdBasisPoints;
 
     constructor(uint256 _maxDeviationThresholdBasisPoints) {
         maxDeviationThresholdBasisPoints = _maxDeviationThresholdBasisPoints;
@@ -25,14 +26,11 @@ contract Deviation {
         pure
         returns (uint256)
     {
-        int256 delta = (a < b) ? (b - a) : (a - b);
-        if (delta < 0) {
-            delta = delta * -1;
-        }
+        /// delta can only be positive
+        uint256 delta = ((a < b) ? (b - a) : (a - b)).toUint256();
 
-        uint256 absDelta = delta.toUint256();
         return
-            (absDelta * Constants.BASIS_POINTS_GRANULARITY) /
+            (delta * Constants.BASIS_POINTS_GRANULARITY) /
             (a < 0 ? a * -1 : a).toUint256();
     }
 
@@ -46,18 +44,5 @@ contract Deviation {
         return
             maxDeviationThresholdBasisPoints >=
             calculateDeviationThresholdBasisPoints(oldValue, newValue);
-    }
-
-    /// @notice internal function to set the new deviation threshold basis points
-    function _setNewDeviationThreshold(
-        uint256 _maxDeviationThresholdBasisPoints
-    ) internal {
-        uint256 oldDeviationThreshold = maxDeviationThresholdBasisPoints;
-        maxDeviationThresholdBasisPoints = _maxDeviationThresholdBasisPoints;
-
-        emit DeviationThresholdUpdate(
-            oldDeviationThreshold,
-            _maxDeviationThresholdBasisPoints
-        );
     }
 }

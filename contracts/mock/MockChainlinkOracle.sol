@@ -1,7 +1,38 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
-import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
+interface AggregatorV3Interface {
+    function decimals() external view returns (uint8);
+
+    function description() external view returns (string memory);
+
+    function version() external view returns (uint256);
+
+    // getRoundData and latestRoundData should both raise "No data present"
+    // if they do not have data to report, instead of returning unset values
+    // which could be misinterpreted as actual reported values.
+    function getRoundData(uint80 _roundId)
+        external
+        view
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        );
+
+    function latestRoundData()
+        external
+        view
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        );
+}
 
 contract MockChainlinkOracle is AggregatorV3Interface {
     // fixed value
@@ -9,14 +40,14 @@ contract MockChainlinkOracle is AggregatorV3Interface {
     uint8 public _decimals;
 
     // mocked data
-    uint80 _roundId;
-    uint256 _startedAt;
-    uint256 _updatedAt;
-    uint80 _answeredInRound;
+    uint80 private _roundId;
+    uint256 private _startedAt;
+    uint256 private _updatedAt;
+    uint80 private _answeredInRound;
 
-    constructor(int256 value, uint8 decimals) {
+    constructor(int256 value, uint8 __decimals) {
         _value = value;
-        _decimals = decimals;
+        _decimals = __decimals;
         _roundId = 42;
         _startedAt = 1620651856;
         _updatedAt = 1620651856;
