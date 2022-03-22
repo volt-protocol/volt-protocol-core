@@ -41,11 +41,6 @@ const MainnetAddresses: MainnetAddresses = {
     address: '0xf8c2b645988b7658E7748BA637fE25bdD46A704A',
     category: AddressCategory.Core
   },
-  ratioPCVControllerV2: {
-    artifactName: 'RatioPCVControllerV2',
-    address: '0x221fff24FB66dA3c722c7C5B856956a6a30C0179',
-    category: AddressCategory.Core
-  },
   tribe: {
     artifactName: 'Vcon',
     address: '0xc7283b66Eb1EB5FB86327f08e1B5816b0720212B',
@@ -361,11 +356,6 @@ const MainnetAddresses: MainnetAddresses = {
     address: '0x0735e14D28eD395048d5Fa4a8dbe6e6EB9fc0470',
     category: AddressCategory.PCV
   },
-  creamDepositWrapper: {
-    artifactName: 'ERC20PCVDepositWrapper',
-    address: '0x3a1838Ac9EcA864054bebB82C32455Dd7d7Fc89c',
-    category: AddressCategory.PCV
-  },
   ethLidoPCVDepositWrapper: {
     artifactName: 'PCVDepositWrapper',
     address: '0xA271fF86426c7fdAaAE72603e6Ce68c892d69ED7',
@@ -490,31 +480,6 @@ const MainnetAddresses: MainnetAddresses = {
     artifactName: 'PCVDepositWrapper',
     address: '0xCCe230c087F31032fc17621a2CF5E425A0b80C96',
     category: AddressCategory.PCV
-  },
-  wethDepositWrapper: {
-    artifactName: 'ERC20PCVDepositWrapper',
-    address: '0x5E9fA7d783A7F7d4626cE450C8Bd2EbBB26dfdB2',
-    category: AddressCategory.PCV
-  },
-  dpiDepositWrapper: {
-    artifactName: 'ERC20PCVDepositWrapper',
-    address: '0xB250926E75b1CC6c53E77bb9426Baac14aB1e24c',
-    category: AddressCategory.PCV
-  },
-  raiDepositWrapper: {
-    artifactName: 'ERC20PCVDepositWrapper',
-    address: '0x7339cA4Ac94020b83A34f5edFA6e0F26986c434b',
-    category: AddressCategory.PCV
-  },
-  agEurDepositWrapper: {
-    artifactName: 'ERC20PCVDepositWrapper',
-    address: '0x485d23ce5725ecdE46ca9033012984D90b514FFd',
-    category: AddressCategory.PCV
-  },
-  collateralizationOracle: {
-    artifactName: 'CollateralizationOracle',
-    address: '0xFF6f59333cfD8f4Ebc14aD0a0E181a83e655d257',
-    category: AddressCategory.Collateralization
   },
   collateralizationOracleGuardian: {
     artifactName: 'CollateralizationOracleGuardian',
@@ -666,16 +631,6 @@ const MainnetAddresses: MainnetAddresses = {
     address: '0x0BEC570466B466aB689Ad33F1Ce5238CA43C8003',
     category: AddressCategory.Rewards
   },
-  rariPool8Comptroller: {
-    artifactName: 'Unitroller',
-    address: '0xc54172e34046c1653d1920d40333dd358c7a1af4',
-    category: AddressCategory.FeiRari
-  },
-  rariPool8MasterOracle: {
-    artifactName: 'IMasterOracle',
-    address: '0x4d10BC156FBaD2474a94f792fe0D6c3261469cdd',
-    category: AddressCategory.FeiRari
-  },
   curveLPTokenOracle: {
     artifactName: 'unknown',
     address: '0xa9f3faac3b8eDF7b3DCcFDBBf25033D6F5fc02F3',
@@ -684,61 +639,6 @@ const MainnetAddresses: MainnetAddresses = {
   gUniFuseOracle: {
     artifactName: 'unknown',
     address: '0xEa3633b38C747ceA231aDB74b511DC2eD3992B43',
-    category: AddressCategory.FeiRari
-  },
-  rariPool8Dai: {
-    artifactName: 'CErc20Delegator',
-    address: '0x7e9cE3CAa9910cc048590801e64174957Ed41d43',
-    category: AddressCategory.FeiRari
-  },
-  rariPool8DaiIrm: {
-    artifactName: 'unknown',
-    address: '0xede47399e2aa8f076d40dc52896331cba8bd40f7',
-    category: AddressCategory.FeiRari
-  },
-  rariPool8Eth: {
-    artifactName: 'CErc20Delegator',
-    address: '0xbB025D470162CC5eA24daF7d4566064EE7f5F111',
-    category: AddressCategory.FeiRari
-  },
-  rariPool8EthIrm: {
-    artifactName: 'unknown',
-    address: '0xbab47e4b692195bf064923178a90ef999a15f819',
-    category: AddressCategory.FeiRari
-  },
-  rariPool8Fei: {
-    artifactName: 'CErc20Delegator',
-    address: '0xd8553552f8868C1Ef160eEdf031cF0BCf9686945',
-    category: AddressCategory.FeiRari
-  },
-  rariPool8FeiIrm: {
-    artifactName: 'unknown',
-    address: '0x8f47be5692180079931e2f983db6996647aba0a5',
-    category: AddressCategory.FeiRari
-  },
-  rariPool8Tribe: {
-    artifactName: 'CErc20Delegator',
-    address: '0xFd3300A9a74b3250F1b2AbC12B47611171910b07',
-    category: AddressCategory.FeiRari
-  },
-  rariPool8TribeIrm: {
-    artifactName: 'unknown',
-    address: '0x075538650a9c69ac8019507a7dd1bd879b12c1d7',
-    category: AddressCategory.FeiRari
-  },
-  rariPool8CTokenImpl: {
-    artifactName: 'unknown',
-    address: '0x67Db14E73C2Dce786B5bbBfa4D010dEab4BBFCF9',
-    category: AddressCategory.FeiRari
-  },
-  rariPool8Fei3Crv: {
-    artifactName: 'CErc20Delegator',
-    address: '0xBFB6f7532d2DB0fE4D83aBb001c5C2B0842AF4dB',
-    category: AddressCategory.FeiRari
-  },
-  rariPool146Comptroller: {
-    artifactName: 'Unitroller',
-    address: '0x88F7c23EA6C4C404dA463Bc9aE03b012B32DEf9e',
     category: AddressCategory.FeiRari
   },
   rariPool146FuseAdmin: {
@@ -901,11 +801,6 @@ const MainnetAddresses: MainnetAddresses = {
     address: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
     category: AddressCategory.External
   },
-  liquityFusePoolLusd: {
-    artifactName: 'CErc20Delegator',
-    address: '0x5052BfbB7972E702179f3Eeed43B9213819b681a',
-    category: AddressCategory.External
-  },
   lqty: {
     artifactName: 'IERC20',
     address: '0x6DEA81C8171D0bA574754EF6F8b412F2Ed88c54D',
@@ -914,76 +809,6 @@ const MainnetAddresses: MainnetAddresses = {
   lusd: {
     artifactName: 'IERC20',
     address: '0x5f98805A4E8be255a32880FDeC7F6728C6568bA0',
-    category: AddressCategory.External
-  },
-  rariPool18Fei: {
-    artifactName: 'CErc20Delegator',
-    address: '0x17b1A2E012cC4C31f83B90FF11d3942857664efc',
-    category: AddressCategory.External
-  },
-  rariPool19Dpi: {
-    artifactName: 'CErc20Delegator',
-    address: '0xf06f65a6b7d2c401fcb8b3273d036d21fe2a5963',
-    category: AddressCategory.External
-  },
-  rariPool19Fei: {
-    artifactName: 'CErc20Delegator',
-    address: '0x04281F6715Dea6A8EbBCE143D86ea506FF326531',
-    category: AddressCategory.External
-  },
-  rariPool22Fei: {
-    artifactName: 'CErc20Delegator',
-    address: '0x653A32ED7AaA3DB37520125CDB45c17AdB3fdF01',
-    category: AddressCategory.External
-  },
-  rariPool24Fei: {
-    artifactName: 'CErc20Delegator',
-    address: '0xb5A817E5354736eafe3A0C85620433eE75daA649',
-    category: AddressCategory.External
-  },
-  rariPool25Fei: {
-    artifactName: 'CErc20Delegator',
-    address: '0xE468D0244D75b9b18B27cb682AeC3ab35d33663B',
-    category: AddressCategory.External
-  },
-  rariPool26Fei: {
-    artifactName: 'CErc20Delegator',
-    address: '0x38ee94FcF276Cee403f4645341f80e671d25b352',
-    category: AddressCategory.External
-  },
-  rariPool27Fei: {
-    artifactName: 'CErc20Delegator',
-    address: '0xda396c927e3e6BEf77A98f372CE431b49EdEc43D',
-    category: AddressCategory.External
-  },
-  rariPool6Fei: {
-    artifactName: 'CErc20Delegator',
-    address: '0x185Ab80A77D362447415a5B347D7CD86ecaCC87C',
-    category: AddressCategory.External
-  },
-  rariPool7Fei: {
-    artifactName: 'CErc20Delegator',
-    address: '0xE640E9beC342B86266B2bD79F3847e7958cb30C4',
-    category: AddressCategory.External
-  },
-  rariPool9Fei: {
-    artifactName: 'CErc20Delegator',
-    address: '0x11A9F6ae6B36B4b820777D05B90Cd6CCCB1CDa31',
-    category: AddressCategory.External
-  },
-  rariPool9Rai: {
-    artifactName: 'CErc20Delegator',
-    address: '0x752F119bD4Ee2342CE35E2351648d21962c7CAfE',
-    category: AddressCategory.External
-  },
-  reptb: {
-    artifactName: 'IERC20',
-    address: '0x6c806eDDAd78A5505Fce27B18C6f859fc9739BEc',
-    category: AddressCategory.External
-  },
-  reflexerStableAssetFusePoolRai: {
-    artifactName: 'CErc20Delegator',
-    address: '0x752F119bD4Ee2342CE35E2351648d21962c7CAfE',
     category: AddressCategory.External
   },
   rgt: {
@@ -1131,21 +956,6 @@ const MainnetAddresses: MainnetAddresses = {
     address: '0x60B63eF8f461355207fE1d8102dda938bbd8c3fB',
     category: AddressCategory.Deprecated
   },
-  ethOTCEscrow: {
-    artifactName: 'OtcEscrow',
-    address: '0x6Cfed416f0729d5754f13fDDf297789079208E2e',
-    category: AddressCategory.Deprecated
-  },
-  ethPCVDripper: {
-    artifactName: 'IPCVDeposit',
-    address: '0xDa079A280FC3e33Eb11A78708B369D5Ca2da54fE',
-    category: AddressCategory.Deprecated
-  },
-  feiBalOtcEscrow: {
-    artifactName: 'OtcEscrow',
-    address: '0x7fB1f6Cb94f01Ba03d2af5cC13c4c1E74b9b9Ecc',
-    category: AddressCategory.Deprecated
-  },
   feiBuybackLens: {
     artifactName: 'BPTLens',
     address: '0x107460564896377BA6CdcC7516c7eAb65E32E360',
@@ -1159,11 +969,6 @@ const MainnetAddresses: MainnetAddresses = {
   feiLusdLBPSwapper: {
     artifactName: 'BalancerLBPSwapper',
     address: '0x5fc76F8Fc3AF2b19D45AC841252dcE711ed448ff',
-    category: AddressCategory.Deprecated
-  },
-  feiOTCEscrow: {
-    artifactName: 'OtcEscrow',
-    address: '0x9B9fE1b732839a53948B02E5164c0A50fdf11e06',
     category: AddressCategory.Deprecated
   },
   feiRewardsDistributor: {
@@ -1254,31 +1059,6 @@ const MainnetAddresses: MainnetAddresses = {
   tribalChiefOptimisticTimelock: {
     artifactName: 'Timelock',
     address: '0x27Fae9E49AD955A24bB578B66Cdc962b5029fbA9',
-    category: AddressCategory.Deprecated
-  },
-  tribeBalOtcEscrow: {
-    artifactName: 'OtcEscrow',
-    address: '0xfFdEe6b0261d70278f5A3093A375c282eF8266Db',
-    category: AddressCategory.Deprecated
-  },
-  tribeOTCEscrow: {
-    artifactName: 'OtcEscrow',
-    address: '0xe2fE8041429e4bd51c40F92C6cDb699527171298',
-    category: AddressCategory.Deprecated
-  },
-  tribeRagequit: {
-    artifactName: 'TRIBERagequit',
-    address: '0xE77d572F04904fFea40899FD907F7ADd6Ea5228A',
-    category: AddressCategory.Deprecated
-  },
-  uniswapOracle: {
-    artifactName: 'unknown', // UniswapOracle
-    address: '0x087F35bd241e41Fc28E43f0E8C58d283DD55bD65',
-    category: AddressCategory.Deprecated
-  },
-  uniswapPCVController: {
-    artifactName: 'unknown',
-    address: '0x0760dfe09bd6d04d0df9a60c51f01ecedceb5132',
     category: AddressCategory.Deprecated
   },
   uniswapRouter: {
