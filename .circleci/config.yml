@@ -78,25 +78,25 @@ jobs:
             source /home/circleci/.bashrc
             export PATH=$PATH:/home/circleci/.foundry/bin; npm run clean && npm run compile && npm run test && npm run test:integration:latest
 
-  e2e-test:
-    working_directory: ~/repo
-    docker:
-      - image: circleci/node:14
-    parallelism: 5
-    resource_class: xlarge
-    steps:
-      - restore_cache:
-          keys:
-            - repo-{{ .Environment.CIRCLE_SHA1 }}
-      - run:
-          name: Run end-to-end tests
-          command: |
-            circleci tests glob "test/integration/**/*.ts" | circleci tests split --split-by=filesize > /tmp/tests-to-run
-            npm run test:e2e $(cat /tmp/tests-to-run)
-      - store_test_results:
-            path: test-results
-      - store_artifacts:
-            path: test-results
+  # e2e-test:
+  #   working_directory: ~/repo
+  #   docker:
+  #     - image: circleci/node:14
+  #   parallelism: 5
+  #   resource_class: xlarge
+  #   steps:
+  #     - restore_cache:
+  #         keys:
+  #           - repo-{{ .Environment.CIRCLE_SHA1 }}
+  #     - run:
+  #         name: Run end-to-end tests
+  #         command: |
+  #           circleci tests glob "test/integration/**/*.ts" | circleci tests split --split-by=filesize > /tmp/tests-to-run
+  #           npm run test:e2e $(cat /tmp/tests-to-run)
+  #     - store_test_results:
+  #           path: test-results
+  #     - store_artifacts:
+  #           path: test-results
 
 workflows:
   main:
@@ -108,6 +108,9 @@ workflows:
       - test:
           requires:
             - build
-      - e2e-test:
+      - test-forge:
           requires:
             - build
+      # - e2e-test:
+      #     requires:
+      #       - build
