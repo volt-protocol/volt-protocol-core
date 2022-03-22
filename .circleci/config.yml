@@ -30,6 +30,7 @@ jobs:
           key: repo-{{ .Environment.CIRCLE_SHA1 }}
           paths:
             - ~/repo
+
   lint:
     working_directory: ~/repo
     docker:
@@ -41,6 +42,7 @@ jobs:
       - run:
           name: Run linter
           command: npm run lint
+
   test:
     working_directory: ~/repo
     docker:
