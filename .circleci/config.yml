@@ -15,7 +15,7 @@ jobs:
           command: npm install
       - run:
           name: Compile contracts
-          command: npm run compile
+          command: npm run compile:hardhat
       - save_cache:
           key: repo-{{ .Environment.CIRCLE_SHA1 }}
           paths:
