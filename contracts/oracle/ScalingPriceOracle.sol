@@ -15,7 +15,7 @@ import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ChainlinkClient, Chainlink} from "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
 
 /// @notice contract that receives a chainlink price feed and then linearly interpolates that rate over
-/// a 1 month period into the VOLT price. Interest is compounded monthly when the rate is updated
+/// a 28 day period into the VOLT price. Interest is compounded monthly when the rate is updated
 /// @author Elliot Friedman
 contract ScalingPriceOracle is
     Timed,
