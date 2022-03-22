@@ -13,7 +13,6 @@ import {ICore} from "../../core/ICore.sol";
 import {Core} from "../../core/Core.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {NonCustodialPSM, GlobalRateLimitedMinter} from "./../../peg/NonCustodialPSM.sol";
-import {PegStabilityModule} from "./../../peg/PegStabilityModule.sol";
 import {Vm} from "./../utils/Vm.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {getCore, getAddresses, FeiTestAddresses} from "./../utils/Fixtures.sol";

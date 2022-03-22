@@ -9,7 +9,6 @@ const dependencies: DependencyMap = {
       'optimisticMinter',
       'pcvEquityMinter',
       'pcvGuardian',
-      'ratioPCVControllerV2',
       'tribe',
       'tribeMinter',
       'feiDAOTimelock',
