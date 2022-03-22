@@ -10,9 +10,6 @@ jobs:
       - run:
           name: 'Update NPM'
           command: sudo npm install -g npm@6.13.4
-      - restore_cache:
-          keys:
-            - build-cache-{{ .Branch }}-{{ checksum "/tmp/last-successful-commit" }}
       - run:
           name: Install dependencies
           command: npm install
