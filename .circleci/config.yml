@@ -10,12 +10,15 @@ jobs:
       - run:
           name: 'Update NPM'
           command: sudo npm install -g npm@6.13.4
+      - restore_cache:
+          keys:
+            - build-cache-{{ .Branch }}-{{ checksum "/tmp/last-successful-commit" }}
       - run:
           name: Install dependencies
           command: npm install
       - run:
           name: Compile contracts
-          command: npm run compile:hardhat
+          command: npm run compile
       - save_cache:
           key: repo-{{ .Environment.CIRCLE_SHA1 }}
           paths:
@@ -26,6 +29,9 @@ jobs:
     docker:
       - image: circleci/node:14
     steps:
+      - restore_cache:
+          keys:
+            - repo-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Run linter
           command: npm run lint
@@ -37,6 +43,9 @@ jobs:
     parallelism: 16
     resource_class: large
     steps:
+      - restore_cache:
+          keys:
+            - repo-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Run tests
           command: |
@@ -54,6 +63,9 @@ jobs:
     resource_class: xlarge
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - repo-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Setup env
           command: echo "export PATH=$PATH:$(pwd)/.circleci" >> /home/circleci/.bashrc
@@ -76,6 +88,9 @@ jobs:
     parallelism: 5
     resource_class: xlarge
     steps:
+      - restore_cache:
+          keys:
+            - repo-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Run end-to-end tests
           command: |
