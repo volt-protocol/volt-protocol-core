@@ -55,8 +55,8 @@ jobs:
 
   test-forge:
     working_directory: ~/repo
-    machine:
-      - image: cimg/base:2022.02
+    docker:
+      - image: cimg/node:16.14
     resource_class: xlarge
     steps:
       - checkout
@@ -69,12 +69,9 @@ jobs:
       - run:
           name: Finish setting up env
           command: echo "export PATH=$PATH:$(pwd)/.foundry/bin" >> /home/circleci/.bashrc
-      - run:
+      - run: 
           name: Install Foundry
-          command: curl -L https://foundry.paradigm.xyz | bash; source /home/circleci/.bashrc; export PATH=$PATH:/home/circleci/.foundry/bin;
-      - run:
-          name: Setup path
-          command: PATH=$PATH:/home/circleci/.foundry/bin $HOME/.foundry/bin/foundryup
+          command: curl -L https://foundry.paradigm.xyz | bash; source /home/circleci/.bashrc; $HOME/.foundry/bin/foundryup
       - run:
           name: Run tests
           command: |
