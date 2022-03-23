@@ -7,18 +7,11 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 /// @title contract that determines whether or not a new value is within
 /// an acceptable deviation threshold
 /// @author Elliot Friedman, FEI Protocol
-contract Deviation {
+library Deviation {
     using SafeCast for *;
 
     /// @notice event that is emitted when the threshold is changed
     event DeviationThresholdUpdate(uint256 oldThreshold, uint256 newThreshold);
-
-    /// @notice the maximum update size relative to current, measured in basis points (1/10000)
-    uint256 public immutable maxDeviationThresholdBasisPoints;
-
-    constructor(uint256 _maxDeviationThresholdBasisPoints) {
-        maxDeviationThresholdBasisPoints = _maxDeviationThresholdBasisPoints;
-    }
 
     /// @notice return the percent deviation between a and b in basis points terms
     function calculateDeviationThresholdBasisPoints(int256 a, int256 b)
@@ -26,21 +19,19 @@ contract Deviation {
         pure
         returns (uint256)
     {
-        /// delta can only be positive
-        uint256 delta = ((a < b) ? (b - a) : (a - b)).toUint256();
+        int256 delta = a - b;
+        int256 basisPoints = (delta * Constants.BP_INT) / a;
 
-        return
-            (delta * Constants.BASIS_POINTS_GRANULARITY) /
-            (a < 0 ? a * -1 : a).toUint256();
+        return (basisPoints < 0 ? basisPoints * -1 : basisPoints).toUint256();
     }
 
     /// @notice function to return whether or not the new price is within
     /// the acceptable deviation threshold
-    function isWithinDeviationThreshold(int256 oldValue, int256 newValue)
-        public
-        view
-        returns (bool)
-    {
+    function isWithinDeviationThreshold(
+        uint256 maxDeviationThresholdBasisPoints,
+        int256 oldValue,
+        int256 newValue
+    ) public pure returns (bool) {
         return
             maxDeviationThresholdBasisPoints >=
             calculateDeviationThresholdBasisPoints(oldValue, newValue);

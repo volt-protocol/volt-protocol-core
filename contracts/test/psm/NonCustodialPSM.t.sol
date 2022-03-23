@@ -115,7 +115,7 @@ contract NonCustodialPSMTest is DSTest {
         rateLimitedMinter.addAddress(
             address(psm),
             uint112(rps),
-            uint144(bufferCap)
+            uint112(bufferCap)
         );
 
         /// mint FEI to the user

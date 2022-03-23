@@ -44,7 +44,7 @@ contract GlobalRateLimitedMinter is MultiRateLimited, IGlobalRateLimitedMinter {
         override
         whenNotPaused
     {
-        _depleteBuffer(msg.sender, amount);
+        _depleteIndividualBuffer(msg.sender, amount);
         _mintVolt(to, amount);
     }
 
@@ -60,7 +60,7 @@ contract GlobalRateLimitedMinter is MultiRateLimited, IGlobalRateLimitedMinter {
     {
         uint256 amount = Math.min(individualBuffer(msg.sender), buffer());
 
-        _depleteBuffer(msg.sender, amount);
+        _depleteIndividualBuffer(msg.sender, amount);
         _mintVolt(to, amount);
     }
 }

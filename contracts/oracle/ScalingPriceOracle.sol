@@ -15,16 +15,16 @@ import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ChainlinkClient, Chainlink} from "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
 
 /// @notice contract that receives a chainlink price feed and then linearly interpolates that rate over
-/// a 1 month period into the VOLT price. Interest is compounded monthly when the rate is updated
+/// a 28 day period into the VOLT price. Interest is compounded monthly when the rate is updated
 /// @author Elliot Friedman
 contract ScalingPriceOracle is
     Timed,
-    Deviation,
     ChainlinkClient,
     IScalingPriceOracle,
     BokkyPooBahsDateTimeContract
 {
     using SafeCast for *;
+    using Deviation for *;
     using SafeERC20 for IERC20;
     using Decimal for Decimal.D256;
     using Chainlink for Chainlink.Request;
@@ -76,9 +76,7 @@ contract ScalingPriceOracle is
         uint256 _fee,
         uint128 _currentMonth,
         uint128 _previousMonth
-    ) Timed(TIMEFRAME) Deviation(MAXORACLEDEVIATION) {
-        /// duration is 28 days as that is the minimum period of time between CPI monthly updates
-
+    ) Timed(TIMEFRAME) {
         uint256 chainId;
         // solhint-disable-next-line no-inline-assembly
         assembly {
@@ -174,7 +172,7 @@ contract ScalingPriceOracle is
     /// update will fail if new values exceed deviation threshold of 20% monthly
     function _updateCPIData(uint256 _cpiData) internal {
         require(
-            isWithinDeviationThreshold(
+            MAXORACLEDEVIATION.isWithinDeviationThreshold(
                 currentMonth.toInt256(),
                 _cpiData.toInt256()
             ),
