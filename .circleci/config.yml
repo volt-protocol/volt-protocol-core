@@ -11,25 +11,16 @@ jobs:
           name: 'Update NPM'
           command: sudo npm install -g npm@6.13.4
       - run:
-          name: 'Set caching variables'
-          command: |
-            LAST_SUCCESSFUL_BUILD_URL="https://circleci.com/api/v1.1/project/github/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/tree/master?filter=successful&limit=1"
-            LAST_SUCCESSFUL_COMMIT=8109364d8b219e8a7f39b74e69b3c6891cda5dc1
-            echo $LAST_SUCCESSFUL_COMMIT > /tmp/last-successful-commit
-            echo $CIRCLE_SHA1 > /tmp/current-commit
-      - restore_cache:
-          keys:
-            - build-cache-{{ .Branch }}-{{ checksum "/tmp/last-successful-commit" }}
-      - run:
           name: Install dependencies
           command: npm install
       - run:
           name: Compile contracts
-          command: npm run compile
+          command: npm run compile:hardhat
       - save_cache:
           key: repo-{{ .Environment.CIRCLE_SHA1 }}
           paths:
             - ~/repo
+
   lint:
     working_directory: ~/repo
     docker:
@@ -41,6 +32,7 @@ jobs:
       - run:
           name: Run linter
           command: npm run lint
+
   test:
     working_directory: ~/repo
     docker:
@@ -55,30 +47,36 @@ jobs:
           name: Run tests
           command: |
             circleci tests glob "test/unit/**/*.ts" | circleci tests split --split-by=filesize > /tmp/tests-to-run
-            npm run test $(cat /tmp/tests-to-run)
+            npm run test:hardhat $(cat /tmp/tests-to-run)
       - store_test_results:
             path: test-results
       - store_artifacts:
             path: test-results
-  e2e-test:
+
+  test-forge:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:14
-    parallelism: 5
+      - image: cimg/node:16.14
     resource_class: xlarge
     steps:
+      - checkout
       - restore_cache:
           keys:
             - repo-{{ .Environment.CIRCLE_SHA1 }}
       - run:
-          name: Run end-to-end tests
+          name: Setup env
+          command: echo "export PATH=$PATH:$(pwd)/.circleci" >> /home/circleci/.bashrc
+      - run:
+          name: Finish setting up env
+          command: echo "export PATH=$PATH:$(pwd)/.foundry/bin" >> /home/circleci/.bashrc
+      - run: 
+          name: Install Foundry
+          command: curl -L https://foundry.paradigm.xyz | bash; source /home/circleci/.bashrc; $HOME/.foundry/bin/foundryup
+      - run:
+          name: Run tests
           command: |
-            circleci tests glob "test/integration/**/*.ts" | circleci tests split --split-by=filesize > /tmp/tests-to-run
-            npm run test:e2e $(cat /tmp/tests-to-run)
-      - store_test_results:
-            path: test-results
-      - store_artifacts:
-            path: test-results
+            source /home/circleci/.bashrc
+            export PATH=$PATH:/home/circleci/.foundry/bin; npm run clean && npm run compile && npm run test
 
 workflows:
   main:
@@ -90,6 +88,6 @@ workflows:
       - test:
           requires:
             - build
-      - e2e-test:
+      - test-forge:
           requires:
             - build
