@@ -4,8 +4,8 @@ pragma solidity ^0.8.4;
 import {Vm} from "./../utils/Vm.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {getCore, getAddresses, FeiTestAddresses} from "./../utils/Fixtures.sol";
-import {MockScalingPriceOracle} from "../../mock/MockScalingPriceOracle.sol";
-import {Decimal} from "./../../external/Decimal.sol";
+import {MockScalingPriceOracle} from "../../../mock/MockScalingPriceOracle.sol";
+import {Decimal} from "./../../../external/Decimal.sol";
 
 contract ScalingPriceOracleTest is DSTest {
     using Decimal for Decimal.D256;

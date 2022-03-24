@@ -4,10 +4,10 @@ pragma solidity ^0.8.4;
 import {Vm} from "./../utils/Vm.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {getCore, getAddresses, FeiTestAddresses} from "./../utils/Fixtures.sol";
-import {MockScalingPriceOracle} from "../../mock/MockScalingPriceOracle.sol";
-import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
-import {ScalingPriceOracle} from "../../oracle/ScalingPriceOracle.sol";
-import {Decimal} from "./../../external/Decimal.sol";
+import {MockScalingPriceOracle} from "../../../mock/MockScalingPriceOracle.sol";
+import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
+import {ScalingPriceOracle} from "../../../oracle/ScalingPriceOracle.sol";
+import {Decimal} from "./../../../external/Decimal.sol";
 
 contract OraclePassThroughTest is DSTest {
     using Decimal for Decimal.D256;
