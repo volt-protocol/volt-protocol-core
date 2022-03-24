@@ -2,7 +2,7 @@ import { time, expectRevert, expectApprox, getAddresses, getCore } from '@test/h
 import { expect } from 'chai';
 import hre, { ethers } from 'hardhat';
 import { Contract, Signer } from 'ethers';
-import { Core, Volt, GlobalRateLimitedMinter, MockMinter } from '@custom-types/contracts';
+import { Core, Volt, GlobalRateLimitedMinter } from '@custom-types/contracts';
 
 const scale = ethers.constants.WeiPerEther;
 
@@ -10,7 +10,7 @@ describe('GlobalRateLimitedMinterBuffer', function () {
   let userAddress;
   let governorAddress;
   let globalRateLimitedMinter: GlobalRateLimitedMinter;
-  let authorizedMinter: MockMinter;
+  let authorizedMinter: Contract;
   let core: Core;
   let fei: Volt;
 
@@ -222,7 +222,7 @@ describe('GlobalRateLimitedMinterBuffer', function () {
   });
 
   describe('Second Minter', function () {
-    let secondAuthorizedMinter: MockMinter;
+    let secondAuthorizedMinter: Contract;
 
     beforeEach(async function () {
       secondAuthorizedMinter = await (

@@ -14,21 +14,12 @@
     "paths": {
       "@contracts/*" : ["contracts/*"],
       "@custom-types/*" : ["types/*"], // @types is reserved
-      "@scripts/*" : ["scripts/*"],
-      "@test/*" : ["test/*"],
-      "@proposals/*" : ["proposals/*"],
-      "@protocol/*" : ["protocol-configuration/*"],
+      "@test/*" : ["test/*"]
     }
   },
   "include": [
     "test/*", "test/**/*",
-    "scripts/*", "scripts/**/*",
-    "proposals/*", "proposals/**/*",
-    "./types/contracts/*", "./types/contracts/**/*",
-  ],
-  "exclude": [
-    "scripts/deploy/old/*",
-    "proposals/dao/old/*"
+    "./types/contracts/*", "./types/contracts/**/*"
   ],
   "files": ["./hardhat.config.ts"],
 }
