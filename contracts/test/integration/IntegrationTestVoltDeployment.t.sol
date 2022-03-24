@@ -14,9 +14,7 @@ import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposi
 import {getCore, getAddresses, FeiTestAddresses} from "./../unit/utils/Fixtures.sol";
 import {NonCustodialPSM, GlobalRateLimitedMinter} from "./../../peg/NonCustodialPSM.sol";
 
-import "hardhat/console.sol";
-
-// First create Core
+// Create Core
 // Global Rate Limited Minter
 // Oracle System
 // - Scaling Price Oracle
@@ -154,6 +152,11 @@ contract IntegrationTestVoltDeployment is DSTest, StdLib {
     }
 
     /// @notice PSM is set up correctly and view functions are working
+    function testGetMintAmountOutMintAmount() public {
+        assertEq(psm.getMintAmountOut(mintAmount), mintAmount);
+    }
+
+    /// @notice PSM is set up correctly and view functions are working
     function testGetMintAmountOutAfterTime() public {
         /// assert that for 101 stables you get 100 VOLT after volt price increases 1%
         uint256 amountFeiIn = 101_000;
@@ -198,7 +201,7 @@ contract IntegrationTestVoltDeployment is DSTest, StdLib {
         assertEq(endingUserVoltBalance - startingUserVoltBalance, mintAmount);
         assertEq(
             endingPCVDepositFeiBalance - startingPCVDepositFeiBalance,
-            mintAmount
+            mintAmount - 1 /// goes down by 1 because of cToken pricing rounding down
         );
     }
 
