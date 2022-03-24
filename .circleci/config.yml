@@ -76,8 +76,6 @@ jobs:
           name: Run tests
           command: |
             source /home/circleci/.bashrc
-            echo "test deploy"
-            echo $MAINNET_ALCHEMY_API_KEY
             export PATH=$PATH:/home/circleci/.foundry/bin; npm run clean && npm run compile && npm run test && npm run test:integration
 
 workflows:
