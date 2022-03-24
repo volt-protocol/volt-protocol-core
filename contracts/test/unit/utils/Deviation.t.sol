@@ -3,8 +3,8 @@ pragma solidity ^0.8.4;
 
 import {Vm} from "./../utils/Vm.sol";
 import "./../utils/DSTest.sol";
-import {Constants} from "./../../Constants.sol";
-import {Deviation} from "./../../utils/Deviation.sol";
+import {Constants} from "./../../../Constants.sol";
+import {Deviation} from "./../../../utils/Deviation.sol";
 import {getCore, getAddresses, FeiTestAddresses} from "./../utils/Fixtures.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";

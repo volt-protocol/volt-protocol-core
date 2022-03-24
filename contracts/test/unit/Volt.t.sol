@@ -3,10 +3,10 @@ pragma solidity ^0.8.4;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {IVolt} from "../volt/Volt.sol";
-import {Volt} from "../volt/Volt.sol";
-import {ICore} from "../core/ICore.sol";
-import {Core} from "../core/Core.sol";
+import {IVolt} from "../../volt/Volt.sol";
+import {Volt} from "../../volt/Volt.sol";
+import {ICore} from "../../core/ICore.sol";
+import {Core} from "../../core/Core.sol";
 import {Vm} from "./utils/Vm.sol";
 import {DSTest} from "./utils/DSTest.sol";
 import {getCore, getAddresses, FeiTestAddresses} from "./utils/Fixtures.sol";
