@@ -43,6 +43,10 @@ contract DeviationTest is DSTest {
         );
     }
 
+    function testWithinDeviationFuzz(int128 x, int128 y) public view {
+        maxDeviationThresholdBasisPoints.isWithinDeviationThreshold(x, y);
+    }
+
     function testOutsideDeviation() public {
         int256 x = 275000;
         int256 y = 577500;

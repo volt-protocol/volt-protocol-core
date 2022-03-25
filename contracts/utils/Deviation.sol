@@ -15,7 +15,7 @@ library Deviation {
 
     /// @notice return the percent deviation between a and b in basis points terms
     function calculateDeviationThresholdBasisPoints(int256 a, int256 b)
-        public
+        internal
         pure
         returns (uint256)
     {
@@ -31,7 +31,7 @@ library Deviation {
         uint256 maxDeviationThresholdBasisPoints,
         int256 oldValue,
         int256 newValue
-    ) public pure returns (bool) {
+    ) internal pure returns (bool) {
         return
             maxDeviationThresholdBasisPoints >=
             calculateDeviationThresholdBasisPoints(oldValue, newValue);

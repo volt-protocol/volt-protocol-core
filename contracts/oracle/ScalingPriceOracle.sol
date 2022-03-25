@@ -10,7 +10,6 @@ import {IScalingPriceOracle} from "./IScalingPriceOracle.sol";
 import {BokkyPooBahsDateTimeContract} from "./../external/calendar/BokkyPooBahsDateTimeContract.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ChainlinkClient, Chainlink} from "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
 
@@ -25,7 +24,6 @@ contract ScalingPriceOracle is
 {
     using SafeCast for *;
     using Deviation for *;
-    using SafeERC20 for IERC20;
     using Decimal for Decimal.D256;
     using Chainlink for Chainlink.Request;
 
@@ -116,7 +114,7 @@ contract ScalingPriceOracle is
         int256 pricePercentageChange = oraclePriceInt * monthlyChangeRateBasisPoints / Constants.BP_INT;
         int256 priceDelta = pricePercentageChange * timeDelta / TIMEFRAME.toInt256();
 
-        return SafeCast.toUint256(oraclePriceInt + priceDelta);
+        return (oraclePriceInt + priceDelta).toUint256();
     }
 
     /// @notice get APR from chainlink data by measuring (current month - previous month) / previous month
