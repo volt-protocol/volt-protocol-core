@@ -92,7 +92,7 @@ abstract contract RateLimited is CoreRef {
         2. Reverts
         Depending on whether doPartialAction is true or false
     */
-    function _depleteBuffer(uint256 amount) internal returns (uint256) {
+    function _depleteBuffer(uint256 amount) internal virtual returns (uint256) {
         uint256 newBuffer = buffer();
 
         uint256 usedAmount = amount;
