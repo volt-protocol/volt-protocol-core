@@ -45,7 +45,6 @@ contract ScalingPriceOracle is
 
     /// ---------- Mutable Variable for Oracle v2 Spec ----------
     /// @notice the time frame over which all changes in CPI data are applied
-    /// @notice
     uint256 private interpolationLength;
 
     /// ---------- Immutable Variables ----------
@@ -140,7 +139,7 @@ contract ScalingPriceOracle is
         uint256 month = getMonth(timestamp);
 
         // Not sure if this is more gas efficient?
-        // uint256 (year, month, day) = timestampToDate(timestamp);
+        // (uint256 year, uint256 month, uint256 day) = timestampToDate(timestamp);
 
         if (getDay(timestamp) > 14) {
             return addMonths(timestampFromDate(year, month, 15), 1);
