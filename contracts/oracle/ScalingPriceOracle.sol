@@ -43,6 +43,11 @@ contract ScalingPriceOracle is
     /// @notice the previous month's CPI data
     uint128 public previousMonth;
 
+    /// ---------- Mutable Variable for Oracle v2 Spec ----------
+    /// @notice the time frame over which all changes in CPI data are applied
+    /// @notice
+    uint256 private interpolationLength;
+
     /// ---------- Immutable Variables ----------
 
     /// @notice the time frame over which all changes in CPI data are applied
@@ -94,6 +99,9 @@ contract ScalingPriceOracle is
 
         _initTimed();
 
+        /// update endInterpolationTime (end timestamp for interpolation)
+        _updateEndTimestamp();
+
         /// calculate new monthly CPI-U rate in basis points based on current and previous month
         int256 aprBasisPoints = getMonthlyAPR();
 
@@ -110,9 +118,9 @@ contract ScalingPriceOracle is
     function getCurrentOraclePrice() public view override returns (uint256) {
         int256 oraclePriceInt = oraclePrice.toInt256();
 
-        int256 timeDelta = Math.min(block.timestamp - startTime, TIMEFRAME).toInt256();
+        int256 timeDelta = Math.min(block.timestamp - startTime, interpolationLength).toInt256();
         int256 pricePercentageChange = oraclePriceInt * monthlyChangeRateBasisPoints / Constants.BP_INT;
-        int256 priceDelta = pricePercentageChange * timeDelta / TIMEFRAME.toInt256();
+        int256 priceDelta = pricePercentageChange * timeDelta / interpolationLength.toInt256();
 
         return (oraclePriceInt + priceDelta).toUint256();
     }
@@ -177,6 +185,9 @@ contract ScalingPriceOracle is
             "ScalingPriceOracle: Chainlink data outside of deviation threshold"
         );
 
+        /// update endInterpolationTime
+        _updateEndTimestamp();
+
         /// store CPI data, removes stale data
         _addNewMonth(uint128(_cpiData));
 
@@ -219,5 +230,15 @@ contract ScalingPriceOracle is
         previousMonth = currentMonth;
 
         currentMonth = newMonth;
+    }
+
+    /// @notice update new endInterpolationTime
+    function _updateEndTimestamp() internal {
+        uint256 timestamp = block.timestamp;
+        uint256 year = getYear(timestamp);
+        uint256 month = getMonth(timestamp);
+        interpolationLength =
+            addMonths(timestampFromDate(year, month, 15), 1) -
+            startTime;
     }
 }
