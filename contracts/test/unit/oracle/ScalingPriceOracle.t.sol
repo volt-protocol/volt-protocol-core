@@ -5,10 +5,9 @@ import {Vm} from "./../utils/Vm.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {getCore, getAddresses, FeiTestAddresses} from "./../utils/Fixtures.sol";
 import {MockScalingPriceOracle} from "../../../mock/MockScalingPriceOracle.sol";
-import {BokkyPooBahsDateTimeContract} from "../../../external/calendar/BokkyPooBahsDateTimeContract.sol";
 import {Decimal} from "./../../../external/Decimal.sol";
 
-contract ScalingPriceOracleTest is DSTest, BokkyPooBahsDateTimeContract {
+contract ScalingPriceOracleTest is DSTest {
     using Decimal for Decimal.D256;
 
     MockScalingPriceOracle private scalingPriceOracle;
