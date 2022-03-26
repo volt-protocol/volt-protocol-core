@@ -45,13 +45,7 @@ contract ScalingPriceOracle is
 
     /// ---------- Mutable Variable for Oracle v2 Spec ----------
     /// @notice the time frame over which all changes in CPI data are applied
-    uint256 private interpolationLength;
-
-    /// ---------- Immutable Variables ----------
-
-    /// @notice the time frame over which all changes in CPI data are applied
-    /// 28 days was chosen as that is the shortest length of a month
-    uint256 public constant override TIMEFRAME = 28 days;
+    uint256 public override TIMEFRAME = 28 days;
 
     /// @notice the maximum allowable deviation in basis points for a new chainlink oracle update
     /// only allow price changes by 20% in a month.
@@ -117,9 +111,9 @@ contract ScalingPriceOracle is
     function getCurrentOraclePrice() public view override returns (uint256) {
         int256 oraclePriceInt = oraclePrice.toInt256();
 
-        int256 timeDelta = Math.min(block.timestamp - startTime, interpolationLength).toInt256();
+        int256 timeDelta = Math.min(block.timestamp - startTime, TIMEFRAME).toInt256();
         int256 pricePercentageChange = oraclePriceInt * monthlyChangeRateBasisPoints / Constants.BP_INT;
-        int256 priceDelta = pricePercentageChange * timeDelta / interpolationLength.toInt256();
+        int256 priceDelta = pricePercentageChange * timeDelta / TIMEFRAME.toInt256();
 
         return (oraclePriceInt + priceDelta).toUint256();
     }
@@ -250,6 +244,6 @@ contract ScalingPriceOracle is
 
     /// @notice update new endInterpolationTime
     function _updateInterpolationSpan() internal {
-        interpolationLength = _getNextEndTimestamp() - startTime;
+        TIMEFRAME = _getNextEndTimestamp() - startTime;
     }
 }
