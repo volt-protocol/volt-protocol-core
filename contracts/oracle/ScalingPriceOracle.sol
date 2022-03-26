@@ -138,7 +138,15 @@ contract ScalingPriceOracle is
         uint256 timestamp = block.timestamp;
         uint256 year = getYear(timestamp);
         uint256 month = getMonth(timestamp);
-        return addMonths(timestampFromDate(year, month, 15), 1);
+
+        // Not sure if this is more gas efficient?
+        // uint256 (year, month, day) = timestampToDate(timestamp);
+
+        if (getDay(timestamp) > 14) {
+            return addMonths(timestampFromDate(year, month, 15), 1);
+        } else {
+            return timestampFromDate(year, month, 15);
+        }
     }
 
     /// ------------- Public API To Request Chainlink Data -------------
