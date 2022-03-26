@@ -99,8 +99,8 @@ contract ScalingPriceOracle is
 
         _initTimed();
 
-        /// update endInterpolationTime (end timestamp for interpolation)
-        _updateEndTimestamp();
+        /// update interpolation span (time between startTime and 15th of next month)
+        _updateInterpolationSpan();
 
         /// calculate new monthly CPI-U rate in basis points based on current and previous month
         int256 aprBasisPoints = getMonthlyAPR();
@@ -130,6 +130,15 @@ contract ScalingPriceOracle is
     function getMonthlyAPR() public view returns (int256 percentageChange) {
         int256 delta = int128(currentMonth) - int128(previousMonth);
         percentageChange = (delta * Constants.BP_INT) / int128(previousMonth);
+    }
+
+    /// @notice getNextEndTimestamp
+    /// @return next end timestamp for interpolation period
+    function _getNextEndTimestamp() public view returns (uint256) {
+        uint256 timestamp = block.timestamp;
+        uint256 year = getYear(timestamp);
+        uint256 month = getMonth(timestamp);
+        return addMonths(timestampFromDate(year, month, 15), 1);
     }
 
     /// ------------- Public API To Request Chainlink Data -------------
@@ -186,7 +195,7 @@ contract ScalingPriceOracle is
         );
 
         /// update endInterpolationTime
-        _updateEndTimestamp();
+        _updateInterpolationSpan();
 
         /// store CPI data, removes stale data
         _addNewMonth(uint128(_cpiData));
@@ -233,12 +242,7 @@ contract ScalingPriceOracle is
     }
 
     /// @notice update new endInterpolationTime
-    function _updateEndTimestamp() internal {
-        uint256 timestamp = block.timestamp;
-        uint256 year = getYear(timestamp);
-        uint256 month = getMonth(timestamp);
-        interpolationLength =
-            addMonths(timestampFromDate(year, month, 15), 1) -
-            startTime;
+    function _updateInterpolationSpan() internal {
+        interpolationLength = _getNextEndTimestamp() - startTime;
     }
 }

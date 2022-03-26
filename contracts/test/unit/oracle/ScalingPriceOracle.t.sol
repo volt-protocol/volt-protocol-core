@@ -5,9 +5,10 @@ import {Vm} from "./../utils/Vm.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {getCore, getAddresses, FeiTestAddresses} from "./../utils/Fixtures.sol";
 import {MockScalingPriceOracle} from "../../../mock/MockScalingPriceOracle.sol";
+import {BokkyPooBahsDateTimeContract} from "../../../external/calendar/BokkyPooBahsDateTimeContract.sol";
 import {Decimal} from "./../../../external/Decimal.sol";
 
-contract ScalingPriceOracleTest is DSTest {
+contract ScalingPriceOracleTest is DSTest, BokkyPooBahsDateTimeContract {
     using Decimal for Decimal.D256;
 
     MockScalingPriceOracle private scalingPriceOracle;
@@ -61,7 +62,7 @@ contract ScalingPriceOracleTest is DSTest {
 
     /// positive price action from oracle -- inflation case
     function testReadGetCurrentOraclePriceAfterInterpolation() public {
-        vm.warp(block.timestamp + 28 days);
+        vm.warp(scalingPriceOracle._nextTimestamp());
         assertEq(10309e14, scalingPriceOracle.getCurrentOraclePrice());
     }
 
@@ -74,8 +75,7 @@ contract ScalingPriceOracleTest is DSTest {
             previousMonth, /// flip current and previous months so that rate is -3%
             currentMonth
         );
-
-        vm.warp(block.timestamp + 28 days);
+        vm.warp(scalingPriceOracle._nextTimestamp());
         assertEq(97e16, scalingPriceOracle.getCurrentOraclePrice());
     }
 
