@@ -9,14 +9,14 @@ From a high level, the oracle system reads in CPI data from chainlink, and then 
 The oracle system reads data in from chainlink, calculates the percentage change in prices from last month to the current month in basis points, then that data is stored and linearly interpolated over the course of the next 28 days. The reason 28 days was chosen as a timeframe to interpolate changes over is because it is the shortest month, so even during February, there will be no issues with changes being interpolated over a longer or shorter time period than is available before the next monthly change rate.
 
 
-## VOLT System Architecture ![](VoltSystem.png)
+## VOLT System Architecture ![Volt System Architecture](VoltSystem.png)
 
 ## Oracle System
 
 The VOLT Oracle System consists of two contracts. The first is the ScalingPriceOracle, which receives the monthly inflation data from Chainlink, and then applies that change with a linear interpolation over a 28 day timeframe. This contract is ungoverned and immutable. This contract outputs the system redemption price. The next contract is the Oracle Pass Through, which stores a reference to the ScalingPriceOracle and passes all calls for the current oracle price through to the ScalingPriceOracle. The Oracle Pass Through is governed by a 2/2 multisig that has both VOLT and FRAX on it so that both respective teams must agree on any change to the ScalingPriceOracle before those changes can go into effect.
 The Peg Stability Module and all fuse oracles will pull price data from the ScalingPriceOracle through a pass through contract called the OraclePassThrough contract. The Oracle pass through contract will pull data directly from the ScalingPriceOracle and is in place so that Fuse Oracles and the Peg Stability Module do not need governance actions to upgrade their oracle if logic is changed in the underlying ScalingPriceOracle.
 
-## VOLT Oracle Architecture ![](VoltOracleSystem.png)
+## VOLT Oracle Architecture ![VOLT Oracle Architecture](VoltOracleSystem.png)
 
 ## Scaling Price Oracle
 Immutable contract that can only receive Chainlink CPI data and apply the change over the course of a month. This is a non governable contract.
