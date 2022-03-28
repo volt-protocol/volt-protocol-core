@@ -127,7 +127,7 @@ contract ScalingPriceOracle is
 
     /// @notice getNextEndTimestamp
     /// @return next end timestamp for interpolation period
-    function _getNextEndTimestamp() public view returns (uint256) {
+    function getNextEndTimestamp() public view returns (uint256) {
         uint256 timestamp = block.timestamp;
         uint256 year = getYear(timestamp);
         uint256 month = getMonth(timestamp);
@@ -244,6 +244,6 @@ contract ScalingPriceOracle is
 
     /// @notice update new endInterpolationTime
     function _updateInterpolationSpan() internal {
-        TIMEFRAME = _getNextEndTimestamp() - startTime;
+        TIMEFRAME = getNextEndTimestamp() - startTime;
     }
 }
