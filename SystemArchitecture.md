@@ -19,7 +19,7 @@ The Peg Stability Module and all fuse oracles will pull price data from the Scal
 ## VOLT Oracle Architecture ![VOLT Oracle Architecture](VOLTOracleSystem.png)
 
 ## Scaling Price Oracle
-Immutable contract that can only receive Chainlink CPI data and apply the change over the course of a month. This is a non governable contract.
+Immutable contract that can only receive Chainlink CPI data and linearly apply the change over 28 days. This is a non governable contract.
 
 This contract receives the change rate in basis points from a request to Chainlink for CPI data and then smoothly applies that change to the VOLT target price over the course of 28 days. The price is linearly interpolated in basis point terms from the start of the period until 28 days in. Once new data comes in from the Chainlink CPI Oracle, the price compounds the previous month's changes which most accurately represents how the CPI works as changes over time compound to exponentially increase prices in the real economy.
 
