@@ -24,7 +24,7 @@ contract MockScalingPriceOracle is ScalingPriceOracle {
         _setDuration(duration);
     }
 
-    function _nextTimestamp() external view returns (uint256 endTimestamp) {
-        return _getNextEndTimestamp();
+    function nextTimestamp() external view returns (uint256 endTimestamp) {
+        return getNextEndTimestamp();
     }
 }
