@@ -74,7 +74,7 @@ contract ScalingPriceOracleTest is DSTest {
             previousMonth, /// flip current and previous months so that rate is -3%
             currentMonth
         );
-        vm.warp(scalingPriceOracle._nextTimestamp());
+        vm.warp(scalingPriceOracle.nextTimestamp());
         assertEq(97e16, scalingPriceOracle.getCurrentOraclePrice());
     }
 
