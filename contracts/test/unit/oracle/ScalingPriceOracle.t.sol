@@ -61,7 +61,7 @@ contract ScalingPriceOracleTest is DSTest {
 
     /// positive price action from oracle -- inflation case
     function testReadGetCurrentOraclePriceAfterInterpolation() public {
-        vm.warp(scalingPriceOracle._nextTimestamp());
+        vm.warp(scalingPriceOracle.nextTimestamp());
         assertEq(10309e14, scalingPriceOracle.getCurrentOraclePrice());
     }
 
