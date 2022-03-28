@@ -15,7 +15,9 @@ VOLT Protocol [Whitepaper](https://github.com/volt-protocol/whitepaper/blob/main
  - curl -L https://foundry.paradigm.xyz | bash && foundryup
 
 ## Usage
- - run `npm run test` to run unit tests
+ - run `npm run test` to run forge unit tests
+ - run `npm run test:integration` to run forge integration tests
+ - run `npm run test:hardhat` to run hardhat unit tests
  - run `npm run test:all` to run all tests
  - run `npm run lint` to lint ts files and sol files
  - run `npm lint:all` to lint ts AND js files
