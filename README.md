@@ -1,18 +1,21 @@
-# VOLT Protocol ·
+# VOLT Protocol
 
-Smart contract code for VOLT Protocol and the VOLT stablecoin
+Smart contract code for VOLT Protocol and the VOLT stablecoin, an inflation resistant stablecoin and unit of account.
+
+VOLT Protocol [Whitepaper](https://github.com/volt-protocol/whitepaper/blob/main/volt.md)
 
 ## Dependencies
  Note that this has only been tested on Linux; you may encounter issues running on other operating systems.
  
  - Node v12 or v16 (you can manage Node versions easily with [NVM](https://github.com/nvm-sh/nvm))
+ - Foundry
 
 ## Installation
  - run `npm install` in the root directory
+ - curl -L https://foundry.paradigm.xyz | bash && foundryup
 
 ## Usage
  - run `npm run test` to run unit tests
- - run `npm run test:e2e` to run end-to-end/integration tests
  - run `npm run test:all` to run all tests
  - run `npm run lint` to lint ts files and sol files
  - run `npm lint:all` to lint ts AND js files
@@ -32,5 +35,5 @@ Smart contract code for VOLT Protocol and the VOLT stablecoin
 See the [docs](https://docs.fei.money)
 
 ## License
-Fei Protocol is under [the AGPL v3 license](https://github.com/fei-protocol/fei-protocol-core/tree/7160dda163d45e6d6c7092ef021c365e0031a71f/LICENSE.md)
+
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
-import {Core, Vcon, Volt} from "../../../core/Core.sol";
+import {Core, Vcon, Volt, IERC20} from "../../../core/Core.sol";
 import {DSTest} from "./DSTest.sol";
 import {Vm} from "./Vm.sol";
 
@@ -50,7 +50,9 @@ function getCore() returns (Core) {
     vm.startPrank(addresses.governorAddress);
     Core core = new Core();
     core.init();
+    Vcon vcon = new Vcon(addresses.governorAddress, addresses.governorAddress);
 
+    core.setVcon(IERC20(address(vcon)));
     core.grantMinter(addresses.minterAddress);
     core.grantBurner(addresses.burnerAddress);
     core.grantPCVController(addresses.pcvControllerAddress);
