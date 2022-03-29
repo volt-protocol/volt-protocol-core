@@ -26,7 +26,7 @@ This contract receives the change rate in basis points from a request to Chainli
 Algorithm for determining the change rate in basis points from the previous month to this month:
 `(current month CPI - previous month CPI) / previous month CPI`
 
-The price of VOLT will start at $1 when the system goes live. Over time, changes in the price will compound assuming there is inflation over long periods of time. The price compounding in this contract works because there is a single variable in the contract called `oraclePrice` which starts off at 1e18. Then, over the course of the month, the price increases by the percentage it was told to increase by the Chainlink CPI Oracle. At the start of the new period when the Chainlink CPI Oracle calls in to update the price, the `oraclePrice` variable is set to the result of the algorithm, which if the inflation rate over the last month was 1%, and the month's starting price was 1e18, the `oraclePrice` variable will get set to 1.01e18 once the OracleUpdateChangeRate is called on the ScalingPriceOracle.
+The price of VOLT will start at $1 when the system goes live. Over time, changes in the price will compound assuming there is inflation. The price compounding in this contract works through a single variable in the contract called `oraclePrice` which starts off at 1e18, which is really just 1 scaled up by 18 decimals. Then, over the course of the month, the price increases by the percentage it was told to increase by the Chainlink CPI Oracle. At the start of the new period when the Chainlink CPI Oracle calls in to update the price, the `oraclePrice` variable is set to the result of the algorithm, which if the inflation rate over the last month was 1%, and the month's starting price was 1e18, the `oraclePrice` variable will get set to 1.01e18 once the function _oracleUpdateChangeRate is called in the ScalingPriceOracle.
 
 **Algorithm**: `current price + current price * monthly change / 10_000 * Min(seconds passed since last update, 28 days) / 28 days`
 
@@ -53,3 +53,7 @@ The Non Custodial Peg Stability Module allows minting through the Global Rate Li
 ## Fuse PCV Deposits
 
 There are two Protocol Controlled Value deposits into Fuse. The first is FEI denominated and all PCV FEI will be deposited into this contract. When users sell their VOLT to the PSM, the PSM pulls FEI from this fuse deposit and exchanges it for VOLT. When users buy VOLT, all FEI proceeds are deposited into this PCV deposit and lent out. The second deposit is denominated in VOLT. All VOLT that exists as debt to the system will be VOLT that has been minted into this PCV deposit.
+
+## Audits
+
+VOLT has currently undergone an audit from Zellic. Code4rena and Spearbit audits are pending.
