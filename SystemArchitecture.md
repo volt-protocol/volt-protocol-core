@@ -8,6 +8,8 @@ From a high level, the oracle system reads in CPI data from chainlink, and then 
 
 The oracle system reads data in from chainlink, calculates the percentage change in prices from last month to the current month in basis points, then that data is stored and linearly interpolated over the course of the next 28 days. The reason 28 days was chosen as a timeframe to interpolate changes over is because it is the shortest month, so even during February, there will be no issues with changes being interpolated over a longer or shorter time period than is available before the next monthly change rate.
 
+### Notes On LERP
+The 28 day linear interpolation timeframe leaves the possibility for the price to not increase for 1-3 days after the change has finished interpolating. This could cause an increase in VOLT borrow demand during that period of time as the cost of inflation does not exist for borrowers during this window. Alternative solutions have been evaluated, however, it is not clear that these solutions are strictly better as there are likely tradeoffs such as increased gas costs for reading the VOLT price from the oracle. This issue of increased borrow demand for a short period of time is only exploitable by users with a large bankroll that are trying to get leverage for a very short period of time, and are not selling and buying back the VOLT as the trading fees would likely eat into any cost savings. This cost savings would be equivalent to 6 basis points, which is small enough to ignore.
 
 ## VOLT System Architecture ![Volt System Architecture](VOLTSystem.png)
 
@@ -46,7 +48,7 @@ The Non Custodial Peg Stability Module (PSM) is a contract which allows exchange
  * `mint()` - buy VOLT with a stablecoin at current redemption price plus a fee
  * `redeem()` - sell VOLT back to the protocol for the current redemption price
 
-The Non Custodial Peg Stability Module is forked off of TRIBE DAO's implementation of the Peg Stability module. The main differences in VOLT's PSM is that it is non custodial, meaning it does not custody any PCV itself, rather, it atomically deposits all proceeds from selling VOLT to the FEI Fuse PCV Deposit. This allows the VOLT protocol to continually accrue interest from PCV and have no opportunity cost of capital sitting idly in the Peg Stability Module.
+The Non Custodial Peg Stability Module is forked off of TRIBE DAO's implementation of the Peg Stability module. The main differences in VOLT's PSM is that it is non custodial, meaning it does not custody any PCV itself, rather, it atomically deposits all proceeds from selling VOLT into the FEI Fuse PCV Deposit. This allows the VOLT protocol to continually accrue interest from PCV and have no opportunity cost of capital sitting idly in the Peg Stability Module.
 
 The Non Custodial Peg Stability Module allows minting through the Global Rate Limited Minter by calling out and minting when it does not have a sufficient VOLT balance.
 

@@ -11,7 +11,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 /// @title abstract contract for putting a rate limit on how fast an address can perform an action e.g. Minting
 /// there are two buffers, one buffer which is each individual addresses's current buffer,
 /// and then there is a global buffer which is the buffer that each individual address must respect as well
-/// @author Fei Protocol
+/// @author Elliot Friedman, Fei Protocol
 /// this contract was made abstract so that other contracts that already construct an instance of CoreRef
 /// do not collide with this one
 abstract contract MultiRateLimited is RateLimited, IMultiRateLimited {
