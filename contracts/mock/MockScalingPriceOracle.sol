@@ -19,8 +19,4 @@ contract MockScalingPriceOracle is ScalingPriceOracle {
     function fulfill(uint256 _cpiData) external {
         _updateCPIData(_cpiData);
     }
-
-    function updateDuration(uint256 duration) external {
-        _setDuration(duration);
-    }
 }
