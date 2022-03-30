@@ -355,8 +355,6 @@ contract NonCustodialPSM is
         returns (uint256 amountVoltOut)
     {
         Decimal.D256 memory price = readOracle();
-        _validatePriceRange(price);
-
         Decimal.D256 memory adjustedAmountIn = price.mul(amountIn);
 
         amountVoltOut = adjustedAmountIn
@@ -376,8 +374,6 @@ contract NonCustodialPSM is
         returns (uint256 amountTokenOut)
     {
         Decimal.D256 memory price = readOracle();
-        _validatePriceRange(price);
-
         /// get amount of VOLT being provided being redeemed after fees
         Decimal.D256 memory adjustedAmountIn = Decimal.from(
             (amountVoltIn *
@@ -449,13 +445,4 @@ contract NonCustodialPSM is
 
         emit PCVDepositUpdate(oldTarget, newPCVDeposit);
     }
-
-    // ----------- Hooks -----------
-
-    /// @notice overriden function in the price bound PSM
-    function _validatePriceRange(Decimal.D256 memory price)
-        internal
-        view
-        virtual
-    {}
 }
