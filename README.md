@@ -58,7 +58,7 @@ There are two Protocol Controlled Value deposits into Fuse. The first is FEI den
 
 ## Audits
 
-VOLT has currently undergone an audit from Zellic. Code4rena and Spearbit audits are pending.
+VOLT has undergone extensive internal review within the TRIBE DAO and has undergone an audit from Zellic. Code4rena and Spearbit audits are pending.
 
 ## Whitepaper
 VOLT Protocol [Whitepaper](https://github.com/volt-protocol/whitepaper/blob/main/volt.md)
