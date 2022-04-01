@@ -16,10 +16,8 @@ const rinkebyAlchemyApiKey = process.env.RINKEBY_ALCHEMY_API_KEY;
 const kovanAlchemyApiKey = process.env.KOVAN_ALCHEMY_API_KEY;
 const testnetPrivateKey = process.env.TESTNET_PRIVATE_KEY;
 const privateKey = process.env.ETH_PRIVATE_KEY;
-const runE2ETests = process.env.RUN_E2E_TESTS;
 const enableMainnetForking = process.env.ENABLE_MAINNET_FORKING;
 const mainnetAlchemyApiKey = process.env.MAINNET_ALCHEMY_API_KEY;
-const runAllTests = process.env.RUN_ALL_TESTS;
 const useJSONTestReporter = process.env.REPORT_TEST_RESULTS_AS_JSON;
 
 if (!(process.env.NODE_OPTIONS && process.env.NODE_OPTIONS.includes('max-old-space-size'))) {
@@ -104,10 +102,6 @@ export default {
     ]
   },
 
-  paths: {
-    tests: runAllTests ? './test/' : runE2ETests ? './test/integration/' : './test/unit/'
-  },
-
   mocha: {
     timeout: 1000000,
     reporter: useJSONTestReporter ? 'mocha-multi-reporters' : undefined,
@@ -122,10 +116,5 @@ export default {
     outDir: './types/contracts/',
     target: 'ethers-v5',
     alwaysGenerateOverloads: false // should overloads with full signatures like deposit(uint256) be generated always, even if there are no overloads?
-  },
-
-  proposals: {
-    governor: '0x0BEF27FEB58e857046d630B2c03dFb7bae567494',
-    votingToken: '0xc7283b66Eb1EB5FB86327f08e1B5816b0720212B'
   }
 } as HardhatUserConfig;
