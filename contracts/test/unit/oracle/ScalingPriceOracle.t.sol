@@ -7,10 +7,14 @@ import {getCore, getAddresses, FeiTestAddresses} from "./../utils/Fixtures.sol";
 import {MockScalingPriceOracle} from "../../../mock/MockScalingPriceOracle.sol";
 import {MockChainlinkToken} from "../../../mock/MockChainlinkToken.sol";
 import {Decimal} from "./../../../external/Decimal.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
+
+import {console} from "hardhat/console.sol";
 
 contract ScalingPriceOracleTest is DSTest {
     using Decimal for Decimal.D256;
+    using SafeCast for *;
 
     MockScalingPriceOracle private scalingPriceOracle;
 
@@ -157,6 +161,40 @@ contract ScalingPriceOracleTest is DSTest {
         scalingPriceOracle.requestCPIData();
         scalingPriceOracle.fulfill(newCurrentMonth);
         assertEq(scalingPriceOracle.oraclePrice(), (1.2e18 * 120) / 100);
+    }
+
+    function testFulfillSucceedsTwentyPercentTwelveMonths() public {
+        vm.warp(block.timestamp + 46 days);
+        uint256 newCurrentMonth = (currentMonth * 120) / 100;
+        uint256 price = scalingPriceOracle.getCurrentOraclePrice();
+
+        for (uint256 i = 0; i < 12; i++) {
+            uint256 storedCurrentMonth = scalingPriceOracle.currentMonth();
+
+            vm.warp(block.timestamp + 31 days);
+            scalingPriceOracle.requestCPIData();
+            /// this will succeed as max allowable is 20%
+            scalingPriceOracle.fulfill(newCurrentMonth);
+            assertEq(scalingPriceOracle.getCurrentOraclePrice(), price);
+
+            uint256 expectedChangeRateBasisPoints = ((scalingPriceOracle
+                .currentMonth() - scalingPriceOracle.previousMonth()) *
+                10_000) / scalingPriceOracle.previousMonth();
+
+            assertEq(
+                scalingPriceOracle.monthlyChangeRateBasisPoints(),
+                expectedChangeRateBasisPoints.toInt256()
+            );
+            assertEq(scalingPriceOracle.previousMonth(), storedCurrentMonth);
+            assertEq(scalingPriceOracle.currentMonth(), newCurrentMonth);
+
+            assertEq(scalingPriceOracle.oraclePrice(), price);
+
+            newCurrentMonth =
+                (newCurrentMonth * (10_000 + expectedChangeRateBasisPoints)) /
+                10_000;
+            price = (price * (10_000 + expectedChangeRateBasisPoints)) / 10_000;
+        }
     }
 
     function testFulfillFailureCalendar() public {
