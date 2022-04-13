@@ -47,19 +47,4 @@ contract MockScalingPriceOracle is ScalingPriceOracle {
 
         token.transfer(to, amount);
     }
-
-    /// @notice Create a Chainlink request to retrieve API response, find the target
-    /// data, then multiply by 1000 (to remove decimal places from data).
-    /// @return requestId for this request
-    /// only allows 1 request per month after the 14th day
-    /// callable by anyone after time period and 14th day of the month
-    function requestCPIData() external override returns (bytes32 requestId) {
-        Chainlink.Request memory request = buildChainlinkRequest(
-            jobId,
-            address(this),
-            ScalingPriceOracle.fulfill.selector
-        );
-
-        return sendChainlinkRequestTo(oracle, request, fee);
-    }
 }
