@@ -1,46 +1,49 @@
 import { ethers } from 'hardhat';
-import deployOracles from './oracleDeploy';
+import { expect } from 'chai';
+import config from './Config';
+import { Core, NonCustodialPSM, GlobalRateLimitedMinter, ERC20CompoundPCVDeposit, Volt } from '@custom-types/contracts';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
-const toBN = ethers.BigNumber.from;
+const {
+  MAINNET_DEPLOYMENT,
+  /// addresses
+  FEI,
+  POOL_8_FEI,
+  ZERO_ADDRESS,
+  MULTISIG_ADDRESS,
+  ORACLE_PASS_THROUGH_ADDRESS,
+  SCALING_PRICE_ORACLE_ADDRESS,
+  /// fees
+  MINT_FEE_BASIS_POINTS,
+  REDEEM_FEE_BASIS_POINTS,
+  /// grlm/psm constants
+  PSM_BUFFER_CAP,
+  MAX_BUFFER_CAP,
+  RATE_LIMIT_PER_SECOND,
+  MAX_RATE_LIMIT_PER_SECOND,
+  GLOBAL_MAX_RATE_LIMIT_PER_SECOND,
+  MAX_BUFFER_CAP_MULTI_RATE_LIMITED,
+  PER_ADDRESS_MAX_RATE_LIMIT_PER_SECOND,
+  DEPLOYER_VOLT_AMOUNT
+} = config;
 
-const mintFeeBasisPoints = 200;
-const redeemFeeBasisPoints = 0;
-
-const maxBufferCap = '10000000000000000000000000';
-const rateLimitPerSecond = '10000000000000000000000';
-const maxRateLimitPerSecond = '100000000000000000000000';
-
-const globalMaxRateLimitPerSecond = '100000000000000000000000';
-const perAddressMaxRateLimitPerSecond = '15000000000000000000000';
-
-const maxBufferCapMultiRateLimited = toBN('100000000000000000000000000');
-
-const FEI = '0x956F47F50A910163D8BF957Cf5846D573E7f87CA';
-const POOL_8_FEI = '0xd8553552f8868C1Ef160eEdf031cF0BCf9686945';
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-
-const psmBufferCap = '10000000000000000000000000';
-
-/// Order of deployment operations
+/// ~~~ Oracle Contracts Deployment ~~~
 
 /// 1. Scaling Price Oracle
 /// 2. Oracle Pass Through
-/// 3. Core
-/// 4. GlobalRateLimitedMinter
-/// 5. MockERC20 /// On mainnet deploy this will default to FEI and will not need a deployment
-/// 6. PCVDeposit
-/// 7. Non Custodial PSM
+
+/// ~~~ Core Contracts ~~~
+/// 1. Core
+/// 2. GlobalRateLimitedMinter
+/// 3. PCVDeposit
+/// 4. Non Custodial PSM
 
 /// Grant PSM the PCV Controller Role
 /// Grant GlobalRateLimitedMinter the Minter Role
 /// Give the PSM a rate limited buffer stream in the GlobalRateLimitedMinter
 
-const mainnetDeployment = process.env.MAINNET_DEPLOYMENT;
-
 async function main() {
   const deployer = (await ethers.getSigners())[0];
-
-  const { scalingPriceOracle, oraclePassThrough } = await deployOracles();
 
   const CoreFactory = await ethers.getContractFactory('Core');
   const core = await CoreFactory.deploy();
@@ -52,17 +55,18 @@ async function main() {
   const GlobalRateLimitedMinterFactory = await ethers.getContractFactory('GlobalRateLimitedMinter');
   const globalRateLimitedMinter = await GlobalRateLimitedMinterFactory.deploy(
     core.address,
-    globalMaxRateLimitPerSecond,
-    perAddressMaxRateLimitPerSecond,
-    maxRateLimitPerSecond,
-    maxBufferCap,
-    maxBufferCapMultiRateLimited
+    GLOBAL_MAX_RATE_LIMIT_PER_SECOND,
+    PER_ADDRESS_MAX_RATE_LIMIT_PER_SECOND,
+    MAX_RATE_LIMIT_PER_SECOND,
+    MAX_BUFFER_CAP,
+    MAX_BUFFER_CAP_MULTI_RATE_LIMITED
   );
   await globalRateLimitedMinter.deployed();
 
   let underlyingToken;
   let pcvDeposit;
-  if (mainnetDeployment) {
+
+  if (MAINNET_DEPLOYMENT) {
     console.log('Mainnet Deployment');
     const compoundPCVDepositFactory = await ethers.getContractFactory('ERC20CompoundPCVDeposit');
     pcvDeposit = await compoundPCVDepositFactory.deploy(core.address, POOL_8_FEI);
@@ -82,20 +86,20 @@ async function main() {
 
   const oracleParams = {
     coreAddress: core.address,
-    oracleAddress: oraclePassThrough.address,
+    oracleAddress: ORACLE_PASS_THROUGH_ADDRESS,
     backupOracle: ZERO_ADDRESS,
     decimalsNormalizer: 0
   };
 
   const rateLimitedParams = {
-    maxRateLimitPerSecond: maxRateLimitPerSecond,
-    rateLimitPerSecond: rateLimitPerSecond,
-    bufferCap: maxBufferCap
+    maxRateLimitPerSecond: MAX_RATE_LIMIT_PER_SECOND,
+    rateLimitPerSecond: RATE_LIMIT_PER_SECOND,
+    bufferCap: MAX_BUFFER_CAP
   };
 
   const psmParams = {
-    mintFeeBasisPoints,
-    redeemFeeBasisPoints,
+    mintFeeBasisPoints: MINT_FEE_BASIS_POINTS,
+    redeemFeeBasisPoints: REDEEM_FEE_BASIS_POINTS,
     underlyingToken: underlyingToken.address,
     pcvDeposit: pcvDeposit.address,
     rateLimitedMinter: globalRateLimitedMinter.address
@@ -106,20 +110,89 @@ async function main() {
 
   await core.grantPCVController(nonCustodialPSM.address);
   await core.grantMinter(globalRateLimitedMinter.address);
+
   /// do not replenish minting abilities for PSM or deployer
-  await globalRateLimitedMinter.addAddress(nonCustodialPSM.address, 0, psmBufferCap);
-  await globalRateLimitedMinter.addAddress(deployer.address, 0, toBN(psmBufferCap).mul(12).div(10));
+  await globalRateLimitedMinter.addAddress(nonCustodialPSM.address, 0, PSM_BUFFER_CAP);
+  await globalRateLimitedMinter.addAddress(deployer.address, 0, DEPLOYER_VOLT_AMOUNT);
+  await globalRateLimitedMinter.mintMaxAllowableVolt(MULTISIG_ADDRESS);
+
+  await core.grantGovernor(MULTISIG_ADDRESS);
+  await core.revokeGovernor(deployer.address);
+
+  if (MAINNET_DEPLOYMENT) {
+    await validateDeployment(nonCustodialPSM, core, globalRateLimitedMinter, pcvDeposit, deployer);
+  }
 
   console.log('\n ~~~~~ Deployed Contracts Successfully ~~~~~ \n');
 
   console.log(`Core:                     ${core.address}`);
   console.log(`⚡VOLT⚡:                 ${volt}`);
-  console.log(`OraclePassThrough:        ${oraclePassThrough.address}`);
-  console.log(`ScalingPriceOracle:       ${scalingPriceOracle.address}`);
   console.log(`GlobalRateLimitedMinter:  ${globalRateLimitedMinter.address}`);
   console.log(`UnderlyingToken:          ${underlyingToken.address}`);
   console.log(`MockPCVDepositV2:         ${pcvDeposit.address}`);
   console.log(`Non Custodial PSM:        ${nonCustodialPSM.address}`);
+}
+
+async function validateDeployment(
+  nonCustodialPSM: NonCustodialPSM,
+  core: Core,
+  globalRateLimitedMinter: GlobalRateLimitedMinter,
+  pcvDeposit: ERC20CompoundPCVDeposit,
+  deployer: SignerWithAddress
+) {
+  const volt = await ethers.getContractAt('Volt', await core.volt());
+  /// validate oracle deployment
+  const scalingPriceOracle = await ethers.getContractAt('ScalingPriceOracle', SCALING_PRICE_ORACLE_ADDRESS);
+  const oraclePassThrough = await ethers.getContractAt('OraclePassThrough', ORACLE_PASS_THROUGH_ADDRESS);
+
+  expect(await oraclePassThrough.scalingPriceOracle()).to.be.equal(SCALING_PRICE_ORACLE_ADDRESS);
+  expect(await oraclePassThrough.getCurrentOraclePrice()).to.be.equal(await scalingPriceOracle.getCurrentOraclePrice());
+
+  /// assert that deployer doesn't have governor or any privileged roles
+  expect(await core.isGovernor(deployer.address)).to.be.false;
+  expect(await core.isPCVController(deployer.address)).to.be.false;
+  expect(await core.isMinter(deployer.address)).to.be.false;
+
+  /// ensure GlobalRateLimitedMinter is minter
+  expect(await core.isMinter(globalRateLimitedMinter.address)).to.be.true;
+  /// ensure Non Custodial PSM is PCV Controller
+  expect(await core.isPCVController(nonCustodialPSM.address)).to.be.true;
+
+  /// assert volt and core are properly linked together
+  expect(await volt.core()).to.be.equal(core.address);
+  expect(await core.volt()).to.be.equal(volt.address);
+
+  /// Non Custodial PSM
+  expect(await nonCustodialPSM.underlyingToken()).to.be.equal(FEI);
+  expect(await nonCustodialPSM.volt()).to.be.equal(volt.address);
+  expect(await nonCustodialPSM.redeemFeeBasisPoints()).to.be.equal(REDEEM_FEE_BASIS_POINTS);
+  expect(await nonCustodialPSM.mintFeeBasisPoints()).to.be.equal(MINT_FEE_BASIS_POINTS);
+  expect(await nonCustodialPSM.pcvDeposit()).to.be.equal(pcvDeposit.address);
+  expect(await nonCustodialPSM.rateLimitedMinter()).to.be.equal(globalRateLimitedMinter.address);
+  expect(await nonCustodialPSM.core()).to.be.equal(core.address);
+  /// unpaused
+  expect(await nonCustodialPSM.paused()).to.be.false;
+  expect(await nonCustodialPSM.redeemPaused()).to.be.false;
+  expect(await nonCustodialPSM.mintPaused()).to.be.false;
+
+  /// pcvDeposit
+  expect(await pcvDeposit.token()).to.be.equal(FEI);
+  expect(await pcvDeposit.cToken()).to.be.equal(POOL_8_FEI);
+  expect(await pcvDeposit.core()).to.be.equal(core.address);
+
+  /// GlobalRateLimitedMinter
+  expect(await globalRateLimitedMinter.core()).to.be.equal(core.address);
+  expect((await globalRateLimitedMinter.rateLimitPerAddress(deployer.address)).bufferCap).to.be.equal(
+    DEPLOYER_VOLT_AMOUNT
+  );
+  expect(await globalRateLimitedMinter.individualBuffer(deployer.address)).to.be.equal(0);
+  expect(await globalRateLimitedMinter.individualBuffer(nonCustodialPSM.address)).to.be.equal(PSM_BUFFER_CAP);
+  expect(await globalRateLimitedMinter.individualMaxRateLimitPerSecond()).to.be.equal(MAX_RATE_LIMIT_PER_SECOND);
+  expect(await globalRateLimitedMinter.individualMaxBufferCap()).to.be.equal(MAX_BUFFER_CAP);
+  expect(await globalRateLimitedMinter.doPartialAction()).to.be.false;
+  expect(await globalRateLimitedMinter.bufferCap()).to.be.equal(MAX_BUFFER_CAP_MULTI_RATE_LIMITED);
+  expect(await globalRateLimitedMinter.rateLimitPerSecond()).to.be.equal(PER_ADDRESS_MAX_RATE_LIMIT_PER_SECOND);
+  expect(await globalRateLimitedMinter.MAX_RATE_LIMIT_PER_SECOND()).to.be.equal(MAX_RATE_LIMIT_PER_SECOND);
 }
 
 main()

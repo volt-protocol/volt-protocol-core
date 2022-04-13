@@ -1,52 +1,42 @@
+import { Contract } from 'ethers';
 import { ethers } from 'hardhat';
+import config from './Config';
 
-const toBN = ethers.BigNumber.from;
-const currentMonthInflationData = process.env.CURRENT_MONTH_INFLATION;
-const previousMonthInflationData = process.env.PREVIOUS_MONTH_INFLATION;
-const chainlinkFee = toBN('10000000000000000000');
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-const oracleAddress = process.env.ORACLE_ADDRESS !== undefined ? process.env.ORACLE_ADDRESS : ZERO_ADDRESS;
-const jobId = ethers.utils.toUtf8Bytes('6f7fb4abcedb485ab27eb7bb39caf827');
+const {
+  JOB_ID,
+  CHAINLINK_ORACLE_ADDRESS,
+  CHAINLINK_FEE,
+  /// bls cpi-u inflation data
+  CURRENT_MONTH_INFLATION_DATA,
+  PREVIOUS_MONTH_INFLATION_DATA
+} = config;
 
-async function deployOracles(): Promise<{
-  oraclePassThrough: any;
-  scalingPriceOracle: any;
-}> {
-  if (!currentMonthInflationData || !previousMonthInflationData) {
-    throw new Error('Invalid inflation data');
-  }
-
+async function deployOracles() {
   const ScalingPriceOracleFactory = await ethers.getContractFactory('ScalingPriceOracle');
   const OraclePassThroughFactory = await ethers.getContractFactory('OraclePassThrough');
 
   const scalingPriceOracle = await ScalingPriceOracleFactory.deploy(
-    oracleAddress,
-    jobId,
-    chainlinkFee,
-    currentMonthInflationData,
-    previousMonthInflationData
+    CHAINLINK_ORACLE_ADDRESS,
+    JOB_ID,
+    CHAINLINK_FEE,
+    CURRENT_MONTH_INFLATION_DATA,
+    PREVIOUS_MONTH_INFLATION_DATA
   );
   await scalingPriceOracle.deployed();
 
   const oraclePassThrough = await OraclePassThroughFactory.deploy(scalingPriceOracle.address);
   await oraclePassThrough.deployed();
 
-  if (process.env.DEPLOY_ORACLE) {
-    console.log('\n ~~~~~ Deployed Oracle Contracts Successfully ~~~~~ \n');
-    console.log(`OraclePassThrough:        ${oraclePassThrough.address}`);
-    console.log(`ScalingPriceOracle:       ${scalingPriceOracle.address}`);
-  }
+  console.log('\n ~~~~~ Deployed Oracle Contracts Successfully ~~~~~ \n');
+  console.log(`OraclePassThrough:        ${oraclePassThrough.address}`);
+  console.log(`ScalingPriceOracle:       ${scalingPriceOracle.address}`);
 
   return { oraclePassThrough, scalingPriceOracle };
 }
 
-export default deployOracles;
-
-if (process.env.DEPLOY_ORACLE) {
-  deployOracles()
-    .then(() => process.exit(0))
-    .catch((err) => {
-      console.log(err);
-      process.exit(1);
-    });
-}
+deployOracles()
+  .then(() => process.exit(0))
+  .catch((err) => {
+    console.log(err);
+    process.exit(1);
+  });

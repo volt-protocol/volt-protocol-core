@@ -122,6 +122,34 @@ contract ScalingPriceOracleTest is DSTest {
         assertEq(scalingPriceOracle.currentMonth(), newCurrentMonth);
     }
 
+    function testFulfillSucceedsTwentyPercentTwoMonths() public {
+        uint256 storedCurrentMonth = scalingPriceOracle.currentMonth();
+        uint256 newCurrentMonth = (currentMonth * 120) / 100;
+
+        /// this will succeed as max allowable is 20%
+        scalingPriceOracle.fulfill(newCurrentMonth);
+
+        assertEq(scalingPriceOracle.monthlyChangeRateBasisPoints(), 2_000);
+        /// assert that all state transitions were done correctly with current and previous month
+        assertEq(scalingPriceOracle.previousMonth(), storedCurrentMonth);
+        assertEq(scalingPriceOracle.currentMonth(), newCurrentMonth);
+
+        vm.warp(block.timestamp + 28 days);
+        newCurrentMonth = (newCurrentMonth * 120) / 100;
+
+        /// this will succeed as max allowable is 20%
+        scalingPriceOracle.fulfill(newCurrentMonth);
+        assertEq(scalingPriceOracle.oraclePrice(), 1.2e18);
+
+        vm.warp(block.timestamp + 28 days);
+        assertEq(
+            scalingPriceOracle.getCurrentOraclePrice(),
+            (1.2e18 * 120) / 100
+        );
+        scalingPriceOracle.fulfill(newCurrentMonth);
+        assertEq(scalingPriceOracle.oraclePrice(), (1.2e18 * 120) / 100);
+    }
+
     function testFulfillFailureCalendar() public {
         vm.warp(block.timestamp + 1647240109);
 

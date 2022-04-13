@@ -133,6 +133,8 @@ contract ScalingPriceOracle is
     /// callable by anyone after time period and 14th day of the month
     function requestCPIData()
         external
+        virtual
+        /// virtual for overriding in mock
         afterTimeInit
         returns (bytes32 requestId)
     {
