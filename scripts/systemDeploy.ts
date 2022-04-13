@@ -1,7 +1,7 @@
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
 import config from './Config';
-import { Core, NonCustodialPSM, GlobalRateLimitedMinter, ERC20CompoundPCVDeposit, Volt } from '@custom-types/contracts';
+import { Core, NonCustodialPSM, GlobalRateLimitedMinter, ERC20CompoundPCVDeposit } from '@custom-types/contracts';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 const {
@@ -158,6 +158,7 @@ async function validateDeployment(
   /// ensure Non Custodial PSM is PCV Controller
   expect(await core.isPCVController(nonCustodialPSM.address)).to.be.true;
 
+  expect(await volt.balanceOf(MULTISIG_ADDRESS)).to.be.equal(DEPLOYER_VOLT_AMOUNT);
   /// assert volt and core are properly linked together
   expect(await volt.core()).to.be.equal(core.address);
   expect(await core.volt()).to.be.equal(volt.address);

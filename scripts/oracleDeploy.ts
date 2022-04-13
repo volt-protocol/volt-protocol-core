@@ -1,4 +1,3 @@
-import { Contract } from 'ethers';
 import { ethers } from 'hardhat';
 import config from './Config';
 
