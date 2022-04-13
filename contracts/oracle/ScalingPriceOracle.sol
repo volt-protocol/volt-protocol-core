@@ -143,6 +143,9 @@ contract ScalingPriceOracle is
             "ScalingPriceOracle: cannot request data before the 15th"
         );
 
+        /// compound the interest with the current rate before startTime changes due to afterTimeInit
+        oraclePrice = getCurrentOraclePrice();
+
         Chainlink.Request memory request = buildChainlinkRequest(
             jobId,
             address(this),
@@ -196,9 +199,6 @@ contract ScalingPriceOracle is
     ///   compounds interest accumulated over period
     ///   set new change rate in basis points for next period
     function _oracleUpdateChangeRate(int256 newChangeRateBasisPoints) internal {
-        /// compound the interest with the current rate
-        oraclePrice = getCurrentOraclePrice();
-
         int256 currentChangeRateBasisPoints = monthlyChangeRateBasisPoints; /// save 1 SSLOAD
 
         /// emit even if there isn't an update

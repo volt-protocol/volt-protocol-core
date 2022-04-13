@@ -5,9 +5,9 @@ import {Vm} from "./../utils/Vm.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {getCore, getAddresses, FeiTestAddresses} from "./../utils/Fixtures.sol";
 import {MockScalingPriceOracle} from "../../../mock/MockScalingPriceOracle.sol";
+import {MockChainlinkToken} from "../../../mock/MockChainlinkToken.sol";
 import {Decimal} from "./../../../external/Decimal.sol";
-
-import {console} from "hardhat/console.sol";
+import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 
 contract ScalingPriceOracleTest is DSTest {
     using Decimal for Decimal.D256;
@@ -37,6 +37,10 @@ contract ScalingPriceOracleTest is DSTest {
     FeiTestAddresses public addresses = getAddresses();
 
     function setUp() public {
+        /// set this code at address 0 so _rawRequest in ChainlinkClient succeeds
+        MockChainlinkToken token = new MockChainlinkToken();
+        vm.etch(address(0), address(token).code);
+
         /// warp to 1 to set isTimeStarted to true
         vm.warp(1);
 
@@ -139,6 +143,7 @@ contract ScalingPriceOracleTest is DSTest {
         vm.warp(block.timestamp + 28 days);
         newCurrentMonth = (newCurrentMonth * 120) / 100;
 
+        scalingPriceOracle.requestCPIData();
         /// this will succeed as max allowable is 20%
         scalingPriceOracle.fulfill(newCurrentMonth);
         assertEq(scalingPriceOracle.oraclePrice(), 1.2e18);
@@ -148,12 +153,13 @@ contract ScalingPriceOracleTest is DSTest {
             scalingPriceOracle.getCurrentOraclePrice(),
             (1.2e18 * 120) / 100
         );
+
+        scalingPriceOracle.requestCPIData();
         scalingPriceOracle.fulfill(newCurrentMonth);
         assertEq(scalingPriceOracle.oraclePrice(), (1.2e18 * 120) / 100);
     }
 
     function testFulfillFailureCalendar() public {
-        console.log("here: ", block.timestamp + 1647240109);
         vm.warp(block.timestamp + 1647240109);
 
         vm.expectRevert(
