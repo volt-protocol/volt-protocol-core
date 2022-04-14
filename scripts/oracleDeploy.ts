@@ -29,8 +29,6 @@ async function deployOracles() {
   console.log('\n ~~~~~ Deployed Oracle Contracts Successfully ~~~~~ \n');
   console.log(`OraclePassThrough:        ${oraclePassThrough.address}`);
   console.log(`ScalingPriceOracle:       ${scalingPriceOracle.address}`);
-
-  return { oraclePassThrough, scalingPriceOracle };
 }
 
 deployOracles()
