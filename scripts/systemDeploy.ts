@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
-import config from './Config';
+import config from './config';
 import { Core, NonCustodialPSM, GlobalRateLimitedMinter, ERC20CompoundPCVDeposit } from '@custom-types/contracts';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
@@ -27,12 +27,8 @@ const {
   DEPLOYER_VOLT_AMOUNT
 } = config;
 
-/// ~~~ Oracle Contracts Deployment ~~~
-
-/// 1. Scaling Price Oracle
-/// 2. Oracle Pass Through
-
 /// ~~~ Core Contracts ~~~
+
 /// 1. Core
 /// 2. GlobalRateLimitedMinter
 /// 3. PCVDeposit

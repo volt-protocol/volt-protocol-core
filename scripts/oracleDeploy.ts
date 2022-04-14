@@ -1,5 +1,5 @@
 import { ethers } from 'hardhat';
-import config from './Config';
+import config from './config';
 
 const {
   JOB_ID,
@@ -9,6 +9,11 @@ const {
   CURRENT_MONTH_INFLATION_DATA,
   PREVIOUS_MONTH_INFLATION_DATA
 } = config;
+
+/// ~~~ Oracle Contracts ~~~
+
+/// 1. Scaling Price Oracle
+/// 2. Oracle Pass Through
 
 async function deployOracles() {
   const ScalingPriceOracleFactory = await ethers.getContractFactory('ScalingPriceOracle');
