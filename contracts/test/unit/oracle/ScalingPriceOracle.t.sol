@@ -127,6 +127,18 @@ contract ScalingPriceOracleTest is DSTest {
         scalingPriceOracle.fulfill((currentMonth * 79) / 100);
     }
 
+    function testRequestSucceeds() public {
+        vm.warp(block.timestamp + 45 days);
+        uint256 oraclePrice = scalingPriceOracle.getCurrentOraclePrice();
+
+        /// this will succeed and compound interest
+        scalingPriceOracle.requestCPIData();
+
+        uint256 storedPrice = scalingPriceOracle.oraclePrice();
+
+        assertEq(oraclePrice, storedPrice);
+    }
+
     function testFulfillSucceedsTwentyPercent() public {
         uint256 storedCurrentMonth = scalingPriceOracle.currentMonth();
         uint256 newCurrentMonth = (currentMonth * 120) / 100;
