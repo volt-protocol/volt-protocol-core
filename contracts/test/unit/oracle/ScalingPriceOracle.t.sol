@@ -108,6 +108,14 @@ contract ScalingPriceOracleTest is DSTest {
         scalingPriceOracle.fulfill((currentMonth * 121) / 100);
     }
 
+    function testFulfillFailsWhenNotChainlinkOracle() public {
+        vm.warp(block.timestamp + 45 days);
+        bytes32 requestId = scalingPriceOracle.requestCPIData();
+        vm.expectRevert(bytes("Source must be the oracle of the request"));
+
+        scalingPriceOracle.fulfill(requestId, currentMonth);
+    }
+
     function testFulfillMaxDeviationExceededFailureDown() public {
         vm.expectRevert(
             bytes(
@@ -147,9 +155,10 @@ contract ScalingPriceOracleTest is DSTest {
         vm.warp(block.timestamp + 28 days);
         newCurrentMonth = (newCurrentMonth * 120) / 100;
 
-        scalingPriceOracle.requestCPIData();
+        bytes32 requestId = scalingPriceOracle.requestCPIData();
+        vm.prank(address(0));
         /// this will succeed as max allowable is 20%
-        scalingPriceOracle.fulfill(newCurrentMonth);
+        scalingPriceOracle.fulfill(requestId, newCurrentMonth);
         assertEq(scalingPriceOracle.oraclePrice(), 1.2e18);
 
         vm.warp(block.timestamp + 28 days);
@@ -158,8 +167,9 @@ contract ScalingPriceOracleTest is DSTest {
             (1.2e18 * 120) / 100
         );
 
-        scalingPriceOracle.requestCPIData();
-        scalingPriceOracle.fulfill(newCurrentMonth);
+        requestId = scalingPriceOracle.requestCPIData();
+        vm.prank(address(0));
+        scalingPriceOracle.fulfill(requestId, newCurrentMonth);
         assertEq(scalingPriceOracle.oraclePrice(), (1.2e18 * 120) / 100);
     }
 
@@ -172,9 +182,11 @@ contract ScalingPriceOracleTest is DSTest {
             uint256 storedCurrentMonth = scalingPriceOracle.currentMonth();
 
             vm.warp(block.timestamp + 31 days);
-            scalingPriceOracle.requestCPIData();
+            bytes32 requestId = scalingPriceOracle.requestCPIData();
+            /// prank to allow request to be fulfilled
+            vm.prank(address(0));
             /// this will succeed as max allowable is 20%
-            scalingPriceOracle.fulfill(newCurrentMonth);
+            scalingPriceOracle.fulfill(requestId, newCurrentMonth);
             assertEq(scalingPriceOracle.getCurrentOraclePrice(), price);
 
             uint256 expectedChangeRateBasisPoints = ((scalingPriceOracle
