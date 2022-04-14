@@ -7,8 +7,6 @@ import {getCore, getAddresses, FeiTestAddresses} from "./../utils/Fixtures.sol";
 import {MockScalingPriceOracle} from "../../../mock/MockScalingPriceOracle.sol";
 import {Decimal} from "./../../../external/Decimal.sol";
 
-import {console} from "hardhat/console.sol";
-
 contract ScalingPriceOracleTest is DSTest {
     using Decimal for Decimal.D256;
 
@@ -153,7 +151,6 @@ contract ScalingPriceOracleTest is DSTest {
     }
 
     function testFulfillFailureCalendar() public {
-        console.log("here: ", block.timestamp + 1647240109);
         vm.warp(block.timestamp + 1647240109);
 
         vm.expectRevert(

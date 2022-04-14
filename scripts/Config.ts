@@ -8,8 +8,8 @@ const config = {
   SCALING_PRICE_ORACLE_ADDRESS: '', // TODO fill this in once deployed
   MULTISIG_ADDRESS: '0x016177eDbB6809338Fda77b493cA01EA6D7Fc0D4',
   JOB_ID: ethers.utils.toUtf8Bytes('6f7fb4abcedb485ab27eb7bb39caf827'),
-  CURRENT_MONTH_INFLATION_DATA: '287504',
-  PREVIOUS_MONTH_INFLATION_DATA: '283716',
+  CURRENT_MONTH_INFLATION_DATA: '287504', // March 2022 Inflation Data
+  PREVIOUS_MONTH_INFLATION_DATA: '283716', // February 2022 Inflation Data
   MINT_FEE_BASIS_POINTS: 10, // Fee tentatively set at 10 basis points
   REDEEM_FEE_BASIS_POINTS: 0,
   DEPLOYER_VOLT_AMOUNT: ethers.utils.parseEther('42000000'), // 42m
