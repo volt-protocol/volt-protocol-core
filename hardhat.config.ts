@@ -64,7 +64,7 @@ export default {
     kovan: {
       url: `https://eth-kovan.alchemyapi.io/v2/${kovanAlchemyApiKey}`,
       accounts: testnetPrivateKey ? [testnetPrivateKey] : [],
-      gasPrice: 20000000000
+      gasPrice: 20000000000 // gas price that is paid for kovan transactions. currently 20 gigawei
     },
 
     rinkeby: {
@@ -75,7 +75,7 @@ export default {
     mainnet: {
       url: `https://eth-mainnet.alchemyapi.io/v2/${mainnetAlchemyApiKey}`,
       accounts: privateKey ? [privateKey] : [],
-      gasPrice: 70000000000
+      gasPrice: 70000000000 // gas price that is paid for mainnet transactions. currently 70 gigawei
     }
   },
 
