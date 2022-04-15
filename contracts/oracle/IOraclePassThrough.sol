@@ -18,7 +18,7 @@ interface IOraclePassThrough {
         returns (Decimal.D256 memory price, bool valid);
 
     /// @notice function to get the current oracle price for the entire system
-    function getCurrentOraclePrice() external view returns (uint256);
+    function currPegPrice() external view returns (uint256);
 
     // ----------- Governor only state changing api -----------
 
