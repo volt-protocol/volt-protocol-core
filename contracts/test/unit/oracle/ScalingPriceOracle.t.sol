@@ -5,10 +5,14 @@ import {Vm} from "./../utils/Vm.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {getCore, getAddresses, FeiTestAddresses} from "./../utils/Fixtures.sol";
 import {MockScalingPriceOracle} from "../../../mock/MockScalingPriceOracle.sol";
+import {MockChainlinkToken} from "../../../mock/MockChainlinkToken.sol";
 import {Decimal} from "./../../../external/Decimal.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 
 contract ScalingPriceOracleTest is DSTest {
     using Decimal for Decimal.D256;
+    using SafeCast for *;
 
     MockScalingPriceOracle private scalingPriceOracle;
 
@@ -35,6 +39,10 @@ contract ScalingPriceOracleTest is DSTest {
     FeiTestAddresses public addresses = getAddresses();
 
     function setUp() public {
+        /// set this code at address 0 so _rawRequest in ChainlinkClient succeeds
+        MockChainlinkToken token = new MockChainlinkToken();
+        vm.etch(address(0), address(token).code);
+
         /// warp to 1 to set isTimeStarted to true
         vm.warp(1);
 
@@ -98,6 +106,14 @@ contract ScalingPriceOracleTest is DSTest {
         scalingPriceOracle.fulfill((currentMonth * 121) / 100);
     }
 
+    function testFulfillFailsWhenNotChainlinkOracle() public {
+        vm.warp(block.timestamp + 45 days);
+        bytes32 requestId = scalingPriceOracle.requestCPIData();
+        vm.expectRevert(bytes("Source must be the oracle of the request"));
+
+        scalingPriceOracle.fulfill(requestId, currentMonth);
+    }
+
     function testFulfillMaxDeviationExceededFailureDown() public {
         vm.expectRevert(
             bytes(
@@ -107,6 +123,18 @@ contract ScalingPriceOracleTest is DSTest {
 
         /// this will fail as it is 21% inflation and max allowable is 20%
         scalingPriceOracle.fulfill((currentMonth * 79) / 100);
+    }
+
+    function testRequestSucceeds() public {
+        vm.warp(block.timestamp + 45 days);
+        uint256 oraclePrice = scalingPriceOracle.getCurrentOraclePrice();
+
+        /// this will succeed and compound interest
+        scalingPriceOracle.requestCPIData();
+
+        uint256 storedPrice = scalingPriceOracle.oraclePrice();
+
+        assertEq(oraclePrice, storedPrice);
     }
 
     function testFulfillSucceedsTwentyPercent() public {
@@ -120,6 +148,75 @@ contract ScalingPriceOracleTest is DSTest {
         /// assert that all state transitions were done correctly with current and previous month
         assertEq(scalingPriceOracle.previousMonth(), storedCurrentMonth);
         assertEq(scalingPriceOracle.currentMonth(), newCurrentMonth);
+    }
+
+    function testFulfillSucceedsTwentyPercentTwoMonths() public {
+        uint256 storedCurrentMonth = scalingPriceOracle.currentMonth();
+        uint256 newCurrentMonth = (currentMonth * 120) / 100;
+
+        /// this will succeed as max allowable is 20%
+        scalingPriceOracle.fulfill(newCurrentMonth);
+
+        assertEq(scalingPriceOracle.monthlyChangeRateBasisPoints(), 2_000);
+        /// assert that all state transitions were done correctly with current and previous month
+        assertEq(scalingPriceOracle.previousMonth(), storedCurrentMonth);
+        assertEq(scalingPriceOracle.currentMonth(), newCurrentMonth);
+
+        vm.warp(block.timestamp + 28 days);
+        newCurrentMonth = (newCurrentMonth * 120) / 100;
+
+        bytes32 requestId = scalingPriceOracle.requestCPIData();
+        vm.prank(address(0));
+        /// this will succeed as max allowable is 20%
+        scalingPriceOracle.fulfill(requestId, newCurrentMonth);
+        assertEq(scalingPriceOracle.oraclePrice(), 1.2e18);
+
+        vm.warp(block.timestamp + 28 days);
+        assertEq(
+            scalingPriceOracle.getCurrentOraclePrice(),
+            (1.2e18 * 120) / 100
+        );
+
+        requestId = scalingPriceOracle.requestCPIData();
+        vm.prank(address(0));
+        scalingPriceOracle.fulfill(requestId, newCurrentMonth);
+        assertEq(scalingPriceOracle.oraclePrice(), (1.2e18 * 120) / 100);
+    }
+
+    function testFulfillSucceedsTwentyPercentTwelveMonths() public {
+        vm.warp(block.timestamp + 46 days);
+        uint256 newCurrentMonth = (currentMonth * 120) / 100;
+        uint256 price = scalingPriceOracle.getCurrentOraclePrice();
+
+        for (uint256 i = 0; i < 12; i++) {
+            uint256 storedCurrentMonth = scalingPriceOracle.currentMonth();
+
+            vm.warp(block.timestamp + 31 days);
+            bytes32 requestId = scalingPriceOracle.requestCPIData();
+            /// prank to allow request to be fulfilled
+            vm.prank(address(0));
+            /// this will succeed as max allowable is 20%
+            scalingPriceOracle.fulfill(requestId, newCurrentMonth);
+            assertEq(scalingPriceOracle.getCurrentOraclePrice(), price);
+
+            uint256 expectedChangeRateBasisPoints = ((scalingPriceOracle
+                .currentMonth() - scalingPriceOracle.previousMonth()) *
+                10_000) / scalingPriceOracle.previousMonth();
+
+            assertEq(
+                scalingPriceOracle.monthlyChangeRateBasisPoints(),
+                expectedChangeRateBasisPoints.toInt256()
+            );
+            assertEq(scalingPriceOracle.previousMonth(), storedCurrentMonth);
+            assertEq(scalingPriceOracle.currentMonth(), newCurrentMonth);
+
+            assertEq(scalingPriceOracle.oraclePrice(), price);
+
+            newCurrentMonth =
+                (newCurrentMonth * (10_000 + expectedChangeRateBasisPoints)) /
+                10_000;
+            price = (price * (10_000 + expectedChangeRateBasisPoints)) / 10_000;
+        }
     }
 
     function testFulfillFailureCalendar() public {
