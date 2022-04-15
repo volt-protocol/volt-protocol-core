@@ -532,6 +532,7 @@ contract NonCustodialPSMTest is DSTest {
         vm.expectRevert(bytes("PegStabilityModule: Redeem not enough out"));
         psm.redeem(address(this), 100_000, 101_001);
 
+        assertEq(oracle.getCurrentOraclePrice(), (1 ether * 101) / 100);
         assertEq(oracle.currPegPrice(), (1 ether * 101) / 100);
     }
 
@@ -542,6 +543,7 @@ contract NonCustodialPSMTest is DSTest {
         vm.expectRevert(bytes("PegStabilityModule: Mint not enough out"));
         psm.mint(address(this), 101_000, 100_001);
 
+        assertEq(oracle.getCurrentOraclePrice(), (1 ether * 101) / 100);
         assertEq(oracle.currPegPrice(), (1 ether * 101) / 100);
         /// subtract 1 for precision loss due to doInvert
         assertEq(psm.getMintAmountOut(101_000), 100_000 - 1);

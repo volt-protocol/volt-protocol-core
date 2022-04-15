@@ -142,6 +142,7 @@ async function validateDeployment(
   const oraclePassThrough = await ethers.getContractAt('OraclePassThrough', ORACLE_PASS_THROUGH_ADDRESS);
 
   expect(await oraclePassThrough.scalingPriceOracle()).to.be.equal(SCALING_PRICE_ORACLE_ADDRESS);
+  expect(await oraclePassThrough.getCurrentOraclePrice()).to.be.equal(await scalingPriceOracle.getCurrentOraclePrice());
   expect(await oraclePassThrough.currPegPrice()).to.be.equal(await scalingPriceOracle.getCurrentOraclePrice());
 
   /// assert that deployer doesn't have governor or any privileged roles

@@ -68,6 +68,10 @@ contract OraclePassThroughTest is DSTest {
             oraclePassThrough.currPegPrice(),
             scalingPriceOracle.getCurrentOraclePrice()
         );
+        assertEq(
+            oraclePassThrough.getCurrentOraclePrice(),
+            scalingPriceOracle.getCurrentOraclePrice()
+        );
 
         (Decimal.D256 memory oPrice, bool oValid) = oraclePassThrough.read();
         assertEq(oPrice.value, scalingPriceOracle.getCurrentOraclePrice());
