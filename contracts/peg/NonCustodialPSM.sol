@@ -282,6 +282,7 @@ contract NonCustodialPSM is
             address(pcvDeposit),
             amountIn
         );
+        pcvDeposit.deposit();
 
         uint256 amountFeiToTransfer = Math.min(
             volt().balanceOf(address(this)),

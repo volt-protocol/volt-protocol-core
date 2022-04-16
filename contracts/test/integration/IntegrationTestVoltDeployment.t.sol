@@ -193,7 +193,6 @@ contract IntegrationTestVoltDeployment is DSTest, StdLib {
 
         fei.approve(address(psm), mintAmount);
         psm.mint(address(this), mintAmount, mintAmount);
-        rariFEIPCVDeposit.deposit();
 
         uint256 endingUserVoltBalance = volt.balanceOf(address(this));
         uint256 endingPCVDepositFeiBalance = rariFEIPCVDeposit.balance();
@@ -218,7 +217,6 @@ contract IntegrationTestVoltDeployment is DSTest, StdLib {
 
         fei.approve(address(psm), amountFeiIn);
         psm.mint(address(this), amountFeiIn, amountVoltOut);
-        rariFEIPCVDeposit.deposit();
 
         uint256 endingUserVoltBalance = volt.balanceOf(address(this));
         uint256 endingPCVDepositFeiBalance = rariFEIPCVDeposit.balance();
@@ -246,7 +244,6 @@ contract IntegrationTestVoltDeployment is DSTest, StdLib {
 
         volt.approve(address(psm), amountVoltIn);
         psm.redeem(address(this), amountVoltIn, amountFeiOut);
-        rariFEIPCVDeposit.deposit();
 
         uint256 endingUserVoltBalance = volt.balanceOf(address(this));
         uint256 endingPCVDepositFeiBalance = rariFEIPCVDeposit.balance();
