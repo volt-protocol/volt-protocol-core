@@ -143,6 +143,7 @@ async function validateDeployment(
 
   expect(await oraclePassThrough.scalingPriceOracle()).to.be.equal(SCALING_PRICE_ORACLE_ADDRESS);
   expect(await oraclePassThrough.getCurrentOraclePrice()).to.be.equal(await scalingPriceOracle.getCurrentOraclePrice());
+  expect(await oraclePassThrough.currPegPrice()).to.be.equal(await scalingPriceOracle.getCurrentOraclePrice());
 
   /// assert that deployer doesn't have governor or any privileged roles
   expect(await core.isGovernor(deployer.address)).to.be.false;

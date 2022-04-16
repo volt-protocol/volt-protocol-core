@@ -65,6 +65,10 @@ contract OraclePassThroughTest is DSTest {
 
     function testDataPassThroughSync() public {
         assertEq(
+            oraclePassThrough.currPegPrice(),
+            scalingPriceOracle.getCurrentOraclePrice()
+        );
+        assertEq(
             oraclePassThrough.getCurrentOraclePrice(),
             scalingPriceOracle.getCurrentOraclePrice()
         );
