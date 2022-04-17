@@ -1,4 +1,5 @@
 import { HardhatUserConfig } from 'hardhat/config';
+import '@nomiclabs/hardhat-etherscan';
 import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
 import '@typechain/hardhat';
@@ -41,6 +42,11 @@ if (useJSONTestReporter) {
 }
 
 export default {
+  etherscan: {
+    // Your API key for Etherscan
+    // Obtain one at https://etherscan.io/
+    apiKey: ''
+  },
   gasReporter: {
     enabled: !!process.env.REPORT_GAS
   },
@@ -75,7 +81,7 @@ export default {
     mainnet: {
       url: `https://eth-mainnet.alchemyapi.io/v2/${mainnetAlchemyApiKey}`,
       accounts: privateKey ? [privateKey] : [],
-      gasPrice: 70000000000 // gas price that is paid for mainnet transactions. currently 70 gigawei
+      gasPrice: 25000000000 // gas price that is paid for mainnet transactions. currently 25 gigawei
     }
   },
 
