@@ -88,8 +88,14 @@ VOLT Protocol [Whitepaper](https://github.com/volt-protocol/whitepaper/blob/main
  automatically
  - run `npm run prettier` to run prettier and format all files
  - run `npm run coverage:hardhat` to run smart-contract coverage based off of all tests
- - run `npm run calldata` to generage calldata for a proposal
+ - run `npm run calldata` to generate calldata for a proposal
  - run `npm run check-proposal` to run tests for a specific dao proposal
  - run `npm run compile` to compile smart contracts, if needed
 
-
+## Deployment
+ - Setup your environment variables as found in `.env.example`
+ - Copy `.env.example` to `.env`
+ - run `npx hardhat node` to to run Hardhat Network locally
+ - run `npx hardhat --network <insert network> run scripts/oracleDeploy.ts` to deploy oracle contracts 
+ - Fill in `scripts/config.ts` file with newly deployed oracle contracts
+ - run `npx hardhat --network <insert network> run scripts/systemDeploy.ts` to deploy the core contracts
