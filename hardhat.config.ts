@@ -45,7 +45,7 @@ export default {
   etherscan: {
     // Your API key for Etherscan
     // Obtain one at https://etherscan.io/
-    apiKey: ''
+    apiKey: process.env.ETHERSCAN_KEY
   },
   gasReporter: {
     enabled: !!process.env.REPORT_GAS
