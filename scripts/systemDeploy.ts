@@ -6,6 +6,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 const {
   CORE,
+  VOLT,
   GLOBAL_RATE_LIMITED_MINTER,
   PCV_DEPOSIT,
   NON_CUSTODIAL_PSM,
@@ -160,6 +161,13 @@ async function verifyEtherscan() {
   });
 }
 
+async function verifyEtherscanVolt() {
+  await hre.run('verify:verify', {
+    address: VOLT,
+    constructorArguments: [CORE]
+  });
+}
+
 async function validateAfterDeployment() {
   const core = await ethers.getContractAt('Core', CORE);
   const globalRateLimitedMinter = await ethers.getContractAt('GlobalRateLimitedMinter', GLOBAL_RATE_LIMITED_MINTER);
@@ -188,8 +196,8 @@ async function validateDeployment(
   expect(await oraclePassThrough.currPegPrice()).to.be.equal(await scalingPriceOracle.getCurrentOraclePrice());
 
   /// assert that deployer doesn't have governor or any privileged roles
-  expect(await core.getRoleMemberCount(await core.GOVERNOR_ROLE)).to.be.equal(1);
-  expect(await core.getRoleMemberCount(await core.MINTER_ROLE)).to.be.equal(1);
+  expect(await core.getRoleMemberCount(await core.GOVERN_ROLE())).to.be.equal(2); // core and deployer are governor
+  expect(await core.getRoleMemberCount(await core.MINTER_ROLE())).to.be.equal(1); // only GRLM is minter
   expect(await core.isGovernor(deployer.address)).to.be.true;
   expect(await core.isPCVController(deployer.address)).to.be.false;
   expect(await core.isMinter(deployer.address)).to.be.false;
@@ -236,7 +244,7 @@ async function validateDeployment(
   expect(await globalRateLimitedMinter.MAX_RATE_LIMIT_PER_SECOND()).to.be.equal(MAX_RATE_LIMIT_PER_SECOND);
 }
 
-validateAfterDeployment()
+verifyEtherscanVolt()
   .then(() => process.exit(0))
   .catch((err) => {
     console.log(err);

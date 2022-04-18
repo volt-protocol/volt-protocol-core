@@ -33,7 +33,7 @@ contract ScalingPriceOracle is
     int256 public override monthlyChangeRateBasisPoints;
 
     /// @notice oracle price. starts off at 1e18 and compounds monthly
-    uint256 public override oraclePrice = 1014576136473304509;
+    uint256 public override oraclePrice = 1e18;
 
     /// ---------- Mutable CPI Variables Packed Into Single Storage Slot to Save an SSTORE & SLOAD ----------
 
