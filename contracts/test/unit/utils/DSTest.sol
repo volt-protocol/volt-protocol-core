@@ -134,6 +134,37 @@ contract DSTest {
         }
     }
 
+    function calculateDeviationThresholdBasisPoints(int256 a, int256 b)
+        internal
+        pure
+        returns (int256)
+    {
+        int256 delta = a - b;
+        int256 basisPoints = (delta * 10_000) / a;
+
+        return basisPoints < 0 ? basisPoints * -1 : basisPoints;
+    }
+
+    function assertApproxEq(
+        int256 a,
+        int256 b,
+        int8 allowableDeviation
+    ) internal {
+        if (a != b) {
+            int256 deviation = calculateDeviationThresholdBasisPoints(a, b);
+            if (deviation > allowableDeviation) {
+                emit log(
+                    "Error: a == b not satisfied, deviation exceeded [int]"
+                );
+                emit log_named_int("  Expected", b);
+                emit log_named_int("    Actual", a);
+                emit log_named_int("   Max Dev", allowableDeviation);
+                emit log_named_int("actual Dev", deviation);
+                fail();
+            }
+        }
+    }
+
     function assertEq(
         int256 a,
         int256 b,
