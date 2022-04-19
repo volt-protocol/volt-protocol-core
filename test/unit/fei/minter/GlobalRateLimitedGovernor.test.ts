@@ -114,16 +114,16 @@ describe('GlobalRateLimitedMinterGovernor', function () {
   });
 
   describe('Non governor actions', function () {
-    describe('Add Minter', function () {
-      beforeEach(async function () {
-        await globalRateLimitedMinter
-          .connect(impersonatedSigners[governorAddress])
-          .removeAddress(authorizedMinter.address);
+    beforeEach(async function () {
+      await globalRateLimitedMinter
+        .connect(impersonatedSigners[governorAddress])
+        .removeAddress(authorizedMinter.address);
 
-        await core.createRole(ADD_MINTER_ROLE, GOVERN_ROLE);
-        await core.grantRole(ADD_MINTER_ROLE, governorAddress);
-      });
+      await core.createRole(ADD_MINTER_ROLE, GOVERN_ROLE);
+      await core.grantRole(ADD_MINTER_ROLE, governorAddress);
+    });
 
+    describe('Add Minter with Caps', function () {
       it('cannot add the same address twice', async function () {
         await globalRateLimitedMinter
           .connect(impersonatedSigners[governorAddress])
@@ -142,6 +142,56 @@ describe('GlobalRateLimitedMinterGovernor', function () {
           globalRateLimitedMinter
             .connect(impersonatedSigners[userAddress])
             .addAddressWithCaps(authorizedMinter.address),
+          'UNAUTHORIZED'
+        );
+      });
+    });
+
+    describe('Add Minter Under Caps', function () {
+      let rateLimitPerSecond;
+      let bufferCap;
+
+      beforeEach(async function () {
+        rateLimitPerSecond = await globalRateLimitedMinter.individualMaxRateLimitPerSecond();
+        bufferCap = await globalRateLimitedMinter.individualMaxBufferCap();
+      });
+
+      it('cannot add the same address twice', async function () {
+        await globalRateLimitedMinter
+          .connect(impersonatedSigners[governorAddress])
+          .addAddressUnderCaps(authorizedMinter.address, rateLimitPerSecond, bufferCap);
+
+        await expectRevert(
+          globalRateLimitedMinter
+            .connect(impersonatedSigners[governorAddress])
+            .addAddressUnderCaps(authorizedMinter.address, rateLimitPerSecond, bufferCap),
+          'MultiRateLimited: address already added'
+        );
+      });
+
+      it('cannot add an address over max individual rate limit per second', async function () {
+        await expectRevert(
+          globalRateLimitedMinter
+            .connect(impersonatedSigners[governorAddress])
+            .addAddressUnderCaps(authorizedMinter.address, rateLimitPerSecond.add(1), bufferCap),
+          'MultiRateLimited: rlps exceeds role amt'
+        );
+      });
+
+      it('cannot add an address over max buffer cap', async function () {
+        await expectRevert(
+          globalRateLimitedMinter
+            .connect(impersonatedSigners[governorAddress])
+            .addAddressUnderCaps(authorizedMinter.address, rateLimitPerSecond, bufferCap.add(1)),
+          'MultiRateLimited: buffercap exceeds role amt'
+        );
+      });
+
+      it('non-governor reverts', async function () {
+        await expectRevert(
+          globalRateLimitedMinter
+            .connect(impersonatedSigners[userAddress])
+            .addAddressUnderCaps(authorizedMinter.address, rateLimitPerSecond, bufferCap),
           'UNAUTHORIZED'
         );
       });
@@ -218,6 +268,8 @@ describe('GlobalRateLimitedMinterGovernor', function () {
     });
 
     it('minor minter add role succeeds', async function () {
+      const startingBufferStored = (await globalRateLimitedMinter.rateLimitPerAddress(authorizedMinter.address))
+        .bufferStored;
       await globalRateLimitedMinter
         .connect(impersonatedSigners[governorAddress])
         .updateAddress(authorizedMinter.address, maxRateLimitPerSecond, maxBufferCap);
@@ -227,7 +279,7 @@ describe('GlobalRateLimitedMinterGovernor', function () {
       );
 
       expect(rateLimitPerSecond).to.be.equal(maxRateLimitPerSecond);
-      expect(bufferStored).to.be.equal(maxBufferCap);
+      expect(bufferStored).to.be.equal(startingBufferStored);
       expect(bufferCap).to.be.equal(maxBufferCap);
     });
 
