@@ -8,8 +8,8 @@ import {IPCVDepositBalances} from "../pcv/IPCVDepositBalances.sol";
 import {IVolt} from "../volt/IVolt.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-/// @notice the PSM router is an ungoverned, non custodial contract that allows user to seamlessly wrap and unwrap their WETH
-/// for trading against the PSM.
+/// @notice the PSM router is an ungoverned, non custodial contract that allows user to convert their DAI to FEI
+/// by interacting with the FEI/DAI PSM and then convert that FEI to VOLT, and vice versa.
 contract PSMRouter is IPSMRouter {
     using SafeERC20 for IERC20;
 
@@ -49,13 +49,8 @@ contract PSMRouter is IPSMRouter {
         _fei.approve(address(_voltPsm), type(uint256).max);
 
         // FEI PSM approvals only interacts with FEI/DAI
-        _fei.approve(address(_voltPsm), type(uint256).max);
-        _dai.approve(address(_voltPsm), type(uint256).max);
-    }
-
-    modifier ensure(uint256 deadline) {
-        require(deadline >= block.timestamp, "PSMRouter: order expired");
-        _;
+        _fei.approve(address(_feiPsm), type(uint256).max);
+        _dai.approve(address(_feiPsm), type(uint256).max);
     }
 
     // ----------- Public View-Only API ----------
@@ -91,27 +86,13 @@ contract PSMRouter is IPSMRouter {
     /// @notice Mints VOLT to the given address, with a minimum amount required
     /// @dev This converts DAI to FEI using the FEI PSM and then mints VOLT using the VOLT PSM
     /// @param to The address to mint VOLT to
-    /// @param minAmountOut The minimum amount of VOLT to mint
+    /// @param minVoltAmountOut The minimum amount of VOLT to mint
     function mint(
         address to,
-        uint256 minAmountOut,
+        uint256 minVoltAmountOut,
         uint256 daiAmountIn
     ) external override returns (uint256) {
-        return _mint(to, minAmountOut, daiAmountIn);
-    }
-
-    /// @notice Mints VOLT to the given address, with a minimum amount required
-    /// @dev This converts DAI to FEI using the FEI PSM and then mints VOLT using the VOLT PSM
-    /// @param to The address to mint fei to
-    /// @param minAmountOut The minimum amount of fei to mint
-    /// @param deadline The deadline for this order to be filled
-    function mint(
-        address to,
-        uint256 minAmountOut,
-        uint256 deadline,
-        uint256 daiAmountIn
-    ) external ensure(deadline) returns (uint256) {
-        return _mint(to, minAmountOut, daiAmountIn);
+        return _mint(to, minVoltAmountOut, daiAmountIn);
     }
 
     /// @notice Redeems Volt for Dai
@@ -121,31 +102,13 @@ contract PSMRouter is IPSMRouter {
     /// Send the DAI to the specified recipient
     /// @param to the address to receive the DAI
     /// @param amountVoltIn the amount of VOLT to redeem
-    /// @param minAmountOut the minimum amount of DAI to receive
+    /// @param minDaiAmountOut the minimum amount of DAI to receive
     function redeem(
         address to,
         uint256 amountVoltIn,
-        uint256 minAmountOut
+        uint256 minDaiAmountOut
     ) external override returns (uint256) {
-        return _redeem(to, amountVoltIn, minAmountOut);
-    }
-
-    /// @notice Redeems Volt for Dai
-    /// First pull user Volt into this contract
-    /// Then call redeem on the PSM to turn the Volt into FEI
-    /// Call the FEI/DAI PSM to convert the FEI to DAI
-    /// Send the DAI to the specified recipient
-    /// @param to the address to receive the DAI
-    /// @param amountVoltIn the amount of VOLT to redeem
-    /// @param minAmountOut the minimum amount of DAI to receive
-    /// @param deadline The deadline for this order to be filled
-    function redeem(
-        address to,
-        uint256 amountVoltIn,
-        uint256 minAmountOut,
-        uint256 deadline
-    ) external ensure(deadline) returns (uint256) {
-        return _redeem(to, amountVoltIn, minAmountOut);
+        return _redeem(to, amountVoltIn, minDaiAmountOut);
     }
 
     // ---------- Internal Methods ----------
@@ -153,21 +116,13 @@ contract PSMRouter is IPSMRouter {
     /// @notice helper function to wrap eth and handle mint call to PSM
     function _mint(
         address _to,
-        uint256 _minAmountOut,
+        uint256 _minVoltAmountOut,
         uint256 _daiAmountIn
     ) internal returns (uint256 amountOut) {
         dai.safeTransferFrom(msg.sender, address(this), _daiAmountIn);
-        uint256 amountFeiOut = feiPsm.mint(
-            address(voltPsm),
-            _daiAmountIn,
-            _minAmountOut
-        );
+        uint256 amountFeiOut = feiPsm.mint(address(this), _daiAmountIn, 0);
 
-        amountOut = voltPsm.mint(
-            _to,
-            amountFeiOut,
-            voltPsm.getMintAmountOut(amountFeiOut)
-        );
+        amountOut = voltPsm.mint(_to, amountFeiOut, _minVoltAmountOut);
     }
 
     /// @notice helper function to deposit user VOLT, convert to FEI and send DAI back to the user
@@ -175,19 +130,11 @@ contract PSMRouter is IPSMRouter {
     function _redeem(
         address _to,
         uint256 _amountVoltIn,
-        uint256 _minAmountOut
+        uint256 _minDaiAmountOut
     ) internal returns (uint256 amountOut) {
         IERC20(volt).safeTransferFrom(msg.sender, address(this), _amountVoltIn);
-        uint256 amountFeiOut = voltPsm.redeem(
-            address(this),
-            _amountVoltIn,
-            _minAmountOut
-        );
+        uint256 amountFeiOut = voltPsm.redeem(address(this), _amountVoltIn, 0);
 
-        amountOut = feiPsm.redeem(
-            _to,
-            amountFeiOut,
-            voltPsm.getRedeemAmountOut(amountFeiOut)
-        );
+        amountOut = feiPsm.redeem(_to, amountFeiOut, _minDaiAmountOut);
     }
 }
