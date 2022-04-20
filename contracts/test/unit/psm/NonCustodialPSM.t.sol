@@ -2,6 +2,7 @@
 pragma solidity ^0.8.4;
 
 import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {MockPCVDepositV2} from "../../../mock/MockPCVDepositV2.sol";
 import {IPCVDeposit} from "../../../pcv/IPCVDeposit.sol";
@@ -18,6 +19,8 @@ import {DSTest} from "./../utils/DSTest.sol";
 import {getCore, getAddresses, FeiTestAddresses} from "./../utils/Fixtures.sol";
 
 contract NonCustodialPSMTest is DSTest {
+    using SafeCast for *;
+
     GlobalRateLimitedMinter private rateLimitedMinter;
     NonCustodialPSM private psm;
     ICore private core;
@@ -352,6 +355,47 @@ contract NonCustodialPSMTest is DSTest {
         uint256 bufferEnd = psm.bufferStored();
 
         assertEq(bufferEnd - bufferStart, mintAmount);
+    }
+
+    /// @notice replenishable rate limited minter buffer on the PSM gets increased on mint
+    function testBufferReplenishmentDoesNotCompound() public {
+        vm.prank(addresses.governorAddress);
+        volt.mint(address(this), mintAmount * 10);
+        volt.approve(address(psm), mintAmount * 10);
+        /// drain buffer
+        psm.redeem(address(this), mintAmount, mintAmount);
+
+        // approve token for minting
+        underlyingToken.approve(address(psm), mintAmount);
+
+        vm.warp(block.timestamp + 100); // replenish buffer by 1m
+
+        uint256 delta = block.timestamp - psm.lastBufferUsedTime();
+        uint256 individualMintAmount = 100_000e18;
+
+        uint256 bufferStart = psm.buffer();
+        uint256 bufferStored = psm.bufferStored();
+        assertEq(bufferStart, rps * delta);
+
+        psm.mint(address(this), individualMintAmount, 0);
+
+        uint256 currBuffer = psm.buffer();
+        bufferStored = psm.bufferStored();
+        assertApproxEq(
+            currBuffer.toInt256(),
+            (rps * delta + individualMintAmount).toInt256(),
+            1
+        ); /// allow 1 basis point of deviation between expected and actual
+
+        psm.mint(address(this), individualMintAmount, 0);
+
+        bufferStored = psm.bufferStored();
+        uint256 bufferEnd = psm.buffer();
+        assertApproxEq(
+            bufferEnd.toInt256(),
+            (rps * delta + individualMintAmount * 2).toInt256(),
+            1
+        ); /// allow 1 basis point of deviation between expected and actual
     }
 
     /// @notice redeem fails without approval
