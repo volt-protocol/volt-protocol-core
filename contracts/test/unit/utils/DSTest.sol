@@ -13,9 +13,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import {Deviation} from "../../../utils/Deviation.sol";
+
 pragma solidity >=0.4.23;
 
 contract DSTest {
+    using Deviation for *;
+
     event log(string);
     event logs(bytes);
 
@@ -134,32 +138,22 @@ contract DSTest {
         }
     }
 
-    function calculateDeviationThresholdBasisPoints(int256 a, int256 b)
-        internal
-        pure
-        returns (int256)
-    {
-        int256 delta = a - b;
-        int256 basisPoints = (delta * 10_000) / a;
-
-        return basisPoints < 0 ? basisPoints * -1 : basisPoints;
-    }
-
     function assertApproxEq(
         int256 a,
         int256 b,
-        int8 allowableDeviation
+        uint8 allowableDeviation
     ) internal {
         if (a != b) {
-            int256 deviation = calculateDeviationThresholdBasisPoints(a, b);
+            uint256 deviation = Deviation
+                .calculateDeviationThresholdBasisPoints(a, b);
             if (deviation > allowableDeviation) {
                 emit log(
                     "Error: a == b not satisfied, deviation exceeded [int]"
                 );
                 emit log_named_int("  Expected", b);
                 emit log_named_int("    Actual", a);
-                emit log_named_int("   Max Dev", allowableDeviation);
-                emit log_named_int("actual Dev", deviation);
+                emit log_named_int("   Max Dev", int8(allowableDeviation));
+                emit log_named_int("actual Dev", int256(deviation));
                 fail();
             }
         }
