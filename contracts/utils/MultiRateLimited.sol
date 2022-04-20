@@ -162,7 +162,7 @@ abstract contract MultiRateLimited is RateLimited, IMultiRateLimited {
     /// @notice add an authorized rateLimitedAddress contract
     /// @param rateLimitedAddress the new address to add as a rateLimitedAddress
     /// gives the newly added contract the maximum allowable rate limit per second and buffer cap
-    function addAddressWithCaps(address rateLimitedAddress)
+    function addAddressMinterRole(address rateLimitedAddress)
         external
         override
         onlyTribeRole(TribeRoles.ADD_MINTER_ROLE)
@@ -177,7 +177,7 @@ abstract contract MultiRateLimited is RateLimited, IMultiRateLimited {
     /// @notice add an authorized rateLimitedAddress contract
     /// @param rateLimitedAddress the new address to add as a rateLimitedAddress
     /// gives the newly added contract the maximum allowable rate limit per second and buffer cap
-    function addAddressUnderCaps(
+    function addAddressMinterRole(
         address rateLimitedAddress,
         uint112 _rateLimitPerSecond,
         uint112 _bufferCap

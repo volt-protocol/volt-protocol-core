@@ -127,12 +127,12 @@ describe('GlobalRateLimitedMinterGovernor', function () {
       it('cannot add the same address twice', async function () {
         await globalRateLimitedMinter
           .connect(impersonatedSigners[governorAddress])
-          .addAddressWithCaps(authorizedMinter.address);
+          ['addAddressMinterRole(address)'](authorizedMinter.address);
 
         await expectRevert(
           globalRateLimitedMinter
             .connect(impersonatedSigners[governorAddress])
-            .addAddressWithCaps(authorizedMinter.address),
+            ['addAddressMinterRole(address)'](authorizedMinter.address),
           'MultiRateLimited: address already added'
         );
       });
@@ -141,7 +141,7 @@ describe('GlobalRateLimitedMinterGovernor', function () {
         await expectRevert(
           globalRateLimitedMinter
             .connect(impersonatedSigners[userAddress])
-            .addAddressWithCaps(authorizedMinter.address),
+            ['addAddressMinterRole(address)'](authorizedMinter.address),
           'UNAUTHORIZED'
         );
       });
@@ -159,12 +159,12 @@ describe('GlobalRateLimitedMinterGovernor', function () {
       it('cannot add the same address twice', async function () {
         await globalRateLimitedMinter
           .connect(impersonatedSigners[governorAddress])
-          .addAddressUnderCaps(authorizedMinter.address, rateLimitPerSecond, bufferCap);
+          ['addAddressMinterRole(address,uint112,uint112)'](authorizedMinter.address, rateLimitPerSecond, bufferCap);
 
         await expectRevert(
           globalRateLimitedMinter
             .connect(impersonatedSigners[governorAddress])
-            .addAddressUnderCaps(authorizedMinter.address, rateLimitPerSecond, bufferCap),
+            ['addAddressMinterRole(address,uint112,uint112)'](authorizedMinter.address, rateLimitPerSecond, bufferCap),
           'MultiRateLimited: address already added'
         );
       });
@@ -173,7 +173,11 @@ describe('GlobalRateLimitedMinterGovernor', function () {
         await expectRevert(
           globalRateLimitedMinter
             .connect(impersonatedSigners[governorAddress])
-            .addAddressUnderCaps(authorizedMinter.address, rateLimitPerSecond.add(1), bufferCap),
+            ['addAddressMinterRole(address,uint112,uint112)'](
+              authorizedMinter.address,
+              rateLimitPerSecond.add(1),
+              bufferCap
+            ),
           'MultiRateLimited: rlps exceeds role amt'
         );
       });
@@ -182,7 +186,11 @@ describe('GlobalRateLimitedMinterGovernor', function () {
         await expectRevert(
           globalRateLimitedMinter
             .connect(impersonatedSigners[governorAddress])
-            .addAddressUnderCaps(authorizedMinter.address, rateLimitPerSecond, bufferCap.add(1)),
+            ['addAddressMinterRole(address,uint112,uint112)'](
+              authorizedMinter.address,
+              rateLimitPerSecond,
+              bufferCap.add(1)
+            ),
           'MultiRateLimited: buffercap exceeds role amt'
         );
       });
@@ -191,7 +199,7 @@ describe('GlobalRateLimitedMinterGovernor', function () {
         await expectRevert(
           globalRateLimitedMinter
             .connect(impersonatedSigners[userAddress])
-            .addAddressUnderCaps(authorizedMinter.address, rateLimitPerSecond, bufferCap),
+            ['addAddressMinterRole(address,uint112,uint112)'](authorizedMinter.address, rateLimitPerSecond, bufferCap),
           'UNAUTHORIZED'
         );
       });
