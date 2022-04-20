@@ -18,8 +18,6 @@ import {Deviation} from "../../../utils/Deviation.sol";
 pragma solidity >=0.4.23;
 
 contract DSTest {
-    using Deviation for *;
-
     event log(string);
     event logs(bytes);
 
