@@ -127,12 +127,12 @@ describe('GlobalRateLimitedMinterGovernor', function () {
       it('cannot add the same address twice', async function () {
         await globalRateLimitedMinter
           .connect(impersonatedSigners[governorAddress])
-          ['addAddressMinterRole(address)'](authorizedMinter.address);
+          ['addAddressAsMinter(address)'](authorizedMinter.address);
 
         await expectRevert(
           globalRateLimitedMinter
             .connect(impersonatedSigners[governorAddress])
-            ['addAddressMinterRole(address)'](authorizedMinter.address),
+            ['addAddressAsMinter(address)'](authorizedMinter.address),
           'MultiRateLimited: address already added'
         );
       });
@@ -141,7 +141,7 @@ describe('GlobalRateLimitedMinterGovernor', function () {
         await expectRevert(
           globalRateLimitedMinter
             .connect(impersonatedSigners[userAddress])
-            ['addAddressMinterRole(address)'](authorizedMinter.address),
+            ['addAddressAsMinter(address)'](authorizedMinter.address),
           'UNAUTHORIZED'
         );
       });
@@ -159,12 +159,12 @@ describe('GlobalRateLimitedMinterGovernor', function () {
       it('cannot add the same address twice', async function () {
         await globalRateLimitedMinter
           .connect(impersonatedSigners[governorAddress])
-          ['addAddressMinterRole(address,uint112,uint112)'](authorizedMinter.address, rateLimitPerSecond, bufferCap);
+          ['addAddressAsMinter(address,uint112,uint112)'](authorizedMinter.address, rateLimitPerSecond, bufferCap);
 
         await expectRevert(
           globalRateLimitedMinter
             .connect(impersonatedSigners[governorAddress])
-            ['addAddressMinterRole(address,uint112,uint112)'](authorizedMinter.address, rateLimitPerSecond, bufferCap),
+            ['addAddressAsMinter(address,uint112,uint112)'](authorizedMinter.address, rateLimitPerSecond, bufferCap),
           'MultiRateLimited: address already added'
         );
       });
@@ -173,7 +173,7 @@ describe('GlobalRateLimitedMinterGovernor', function () {
         await expectRevert(
           globalRateLimitedMinter
             .connect(impersonatedSigners[governorAddress])
-            ['addAddressMinterRole(address,uint112,uint112)'](
+            ['addAddressAsMinter(address,uint112,uint112)'](
               authorizedMinter.address,
               rateLimitPerSecond.add(1),
               bufferCap
@@ -186,7 +186,7 @@ describe('GlobalRateLimitedMinterGovernor', function () {
         await expectRevert(
           globalRateLimitedMinter
             .connect(impersonatedSigners[governorAddress])
-            ['addAddressMinterRole(address,uint112,uint112)'](
+            ['addAddressAsMinter(address,uint112,uint112)'](
               authorizedMinter.address,
               rateLimitPerSecond,
               bufferCap.add(1)
@@ -199,7 +199,7 @@ describe('GlobalRateLimitedMinterGovernor', function () {
         await expectRevert(
           globalRateLimitedMinter
             .connect(impersonatedSigners[userAddress])
-            ['addAddressMinterRole(address,uint112,uint112)'](authorizedMinter.address, rateLimitPerSecond, bufferCap),
+            ['addAddressAsMinter(address,uint112,uint112)'](authorizedMinter.address, rateLimitPerSecond, bufferCap),
           'UNAUTHORIZED'
         );
       });
