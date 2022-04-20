@@ -47,11 +47,6 @@ contract IntegrationTestPSMRouter is DSTest {
 
         vm.prank(0x9759A6Ac90977b93B58547b4A71c78317f391A28); // dai ward address
         dai.mint(address(this), mintAmount);
-
-        if (voltPsm.paused()) {
-            vm.prank(0x25dCffa22EEDbF0A69F6277e24C459108c186ecB);
-            voltPsm.unpause();
-        }
     }
 
     function testGetRedeemAmountOut() public {
@@ -73,6 +68,11 @@ contract IntegrationTestPSMRouter is DSTest {
     }
 
     function testMint() public {
+        if (voltPsm.paused()) {
+            vm.prank(0x25dCffa22EEDbF0A69F6277e24C459108c186ecB);
+            voltPsm.unpause();
+        }
+
         dai.approve(address(router), mintAmount);
         router.mint(address(this), 98, 100);
 
@@ -80,6 +80,11 @@ contract IntegrationTestPSMRouter is DSTest {
     }
 
     function testRedeem() public {
+        if (voltPsm.paused()) {
+            vm.prank(0x25dCffa22EEDbF0A69F6277e24C459108c186ecB);
+            voltPsm.unpause();
+        }
+
         volt.approve(address(router), mintAmount);
         router.redeem(address(this), 100, 100);
 
@@ -87,16 +92,31 @@ contract IntegrationTestPSMRouter is DSTest {
     }
 
     function testMintFailWithoutApproval() public {
+        if (voltPsm.paused()) {
+            vm.prank(0x25dCffa22EEDbF0A69F6277e24C459108c186ecB);
+            voltPsm.unpause();
+        }
+
         vm.expectRevert(bytes("Dai/insufficient-allowance"));
         router.mint(address(this), 98, 100);
     }
 
     function testRedeemFailWithoutApproval() public {
+        if (voltPsm.paused()) {
+            vm.prank(0x25dCffa22EEDbF0A69F6277e24C459108c186ecB);
+            voltPsm.unpause();
+        }
+
         vm.expectRevert(bytes("ERC20: transfer amount exceeds allowance"));
         router.redeem(address(this), 98, 100);
     }
 
     function testMintFailWhenMintOutNotEnough() public {
+        if (voltPsm.paused()) {
+            vm.prank(0x25dCffa22EEDbF0A69F6277e24C459108c186ecB);
+            voltPsm.unpause();
+        }
+
         dai.approve(address(router), mintAmount);
 
         vm.expectRevert(bytes("PegStabilityModule: Mint not enough out"));
@@ -104,6 +124,11 @@ contract IntegrationTestPSMRouter is DSTest {
     }
 
     function testRedeemFailWhenRedeemOutNotEnough() public {
+        if (voltPsm.paused()) {
+            vm.prank(0x25dCffa22EEDbF0A69F6277e24C459108c186ecB);
+            voltPsm.unpause();
+        }
+
         volt.approve(address(router), mintAmount);
 
         vm.expectRevert(bytes("PegStabilityModule: Redeem not enough out"));
@@ -111,9 +136,6 @@ contract IntegrationTestPSMRouter is DSTest {
     }
 
     function testMintFailWhenContractPaused() public {
-        vm.prank(0x25dCffa22EEDbF0A69F6277e24C459108c186ecB);
-        voltPsm.pause();
-
         dai.approve(address(router), mintAmount);
         vm.expectRevert(bytes("Pausable: paused"));
 
@@ -121,9 +143,6 @@ contract IntegrationTestPSMRouter is DSTest {
     }
 
     function testRedeemFailWhenContractPaused() public {
-        vm.prank(0x25dCffa22EEDbF0A69F6277e24C459108c186ecB);
-        voltPsm.pause();
-
         volt.approve(address(router), mintAmount);
         vm.expectRevert(bytes("Pausable: paused"));
 
