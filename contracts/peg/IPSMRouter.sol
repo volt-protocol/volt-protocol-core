@@ -45,12 +45,13 @@ interface IPSMRouter {
     /// Then makes a call to the FEI/DAI PSM to convert the DAI to FEI
     /// Then calls the VOLT/FEI PSM to convert the FEI to VOLT
     /// Send the VOLT to the specified recipient
-    /// @param _to The address to mint VOLT to
-    /// @param _minAmountOut The minimum amount of VOLT to mint
+    /// @param to The address to mint VOLT to
+    /// @param daiAmountIn The amount of dai sent to the contract
+    /// @param minAmountVoltOut The minimum amount of VOLT to mint
     function mint(
-        address _to,
-        uint256 _minAmountOut,
-        uint256 daiAmountIn
+        address to,
+        uint256 daiAmountIn,
+        uint256 minAmountVoltOut
     ) external returns (uint256);
 
     /// @notice Redeems Volt for Dai

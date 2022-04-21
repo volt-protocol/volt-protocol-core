@@ -87,8 +87,8 @@ contract PSMRouter is IPSMRouter {
     /// @param minVoltAmountOut The minimum amount of VOLT to mint
     function mint(
         address to,
-        uint256 minVoltAmountOut,
-        uint256 daiAmountIn
+        uint256 daiAmountIn,
+        uint256 minVoltAmountOut
     ) external override returns (uint256 amountOut) {
         dai.safeTransferFrom(msg.sender, address(this), daiAmountIn);
         uint256 amountFeiOut = feiPsm.mint(address(this), daiAmountIn, 0);
