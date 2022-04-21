@@ -2,9 +2,7 @@
 pragma solidity ^0.8.4;
 
 import {IPSMRouter} from "./IPSMRouter.sol";
-import {NonCustodialPSM, INonCustodialPSM} from "./NonCustodialPSM.sol";
-import {RateLimited} from "../utils/RateLimited.sol";
-import {IPCVDepositBalances} from "../pcv/IPCVDepositBalances.sol";
+import {INonCustodialPSM} from "./NonCustodialPSM.sol";
 import {IVolt} from "../volt/IVolt.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -91,8 +89,11 @@ contract PSMRouter is IPSMRouter {
         address to,
         uint256 minVoltAmountOut,
         uint256 daiAmountIn
-    ) external override returns (uint256) {
-        return _mint(to, minVoltAmountOut, daiAmountIn);
+    ) external override returns (uint256 amountOut) {
+        dai.safeTransferFrom(msg.sender, address(this), daiAmountIn);
+        uint256 amountFeiOut = feiPsm.mint(address(this), daiAmountIn, 0);
+
+        amountOut = voltPsm.mint(to, amountFeiOut, minVoltAmountOut);
     }
 
     /// @notice Redeems Volt for Dai
@@ -107,34 +108,10 @@ contract PSMRouter is IPSMRouter {
         address to,
         uint256 amountVoltIn,
         uint256 minDaiAmountOut
-    ) external override returns (uint256) {
-        return _redeem(to, amountVoltIn, minDaiAmountOut);
-    }
+    ) external override returns (uint256 amountOut) {
+        IERC20(volt).safeTransferFrom(msg.sender, address(this), amountVoltIn);
+        uint256 amountFeiOut = voltPsm.redeem(address(this), amountVoltIn, 0);
 
-    // ---------- Internal Methods ----------
-
-    /// @notice helper function to wrap eth and handle mint call to PSM
-    function _mint(
-        address _to,
-        uint256 _minVoltAmountOut,
-        uint256 _daiAmountIn
-    ) internal returns (uint256 amountOut) {
-        dai.safeTransferFrom(msg.sender, address(this), _daiAmountIn);
-        uint256 amountFeiOut = feiPsm.mint(address(this), _daiAmountIn, 0);
-
-        amountOut = voltPsm.mint(_to, amountFeiOut, _minVoltAmountOut);
-    }
-
-    /// @notice helper function to deposit user VOLT, convert to FEI and send DAI back to the user
-    /// the PSM router receives the DAI, then sends it to the specified recipient.
-    function _redeem(
-        address _to,
-        uint256 _amountVoltIn,
-        uint256 _minDaiAmountOut
-    ) internal returns (uint256 amountOut) {
-        IERC20(volt).safeTransferFrom(msg.sender, address(this), _amountVoltIn);
-        uint256 amountFeiOut = voltPsm.redeem(address(this), _amountVoltIn, 0);
-
-        amountOut = feiPsm.redeem(_to, amountFeiOut, _minDaiAmountOut);
+        amountOut = feiPsm.redeem(to, amountFeiOut, minDaiAmountOut);
     }
 }
