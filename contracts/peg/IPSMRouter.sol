@@ -29,9 +29,6 @@ interface IPSMRouter {
         view
         returns (uint256 amountVoltOut);
 
-    /// @notice the maximum mint amount out
-    function getMaxMintAmountOut() external view returns (uint256);
-
     /// @notice calculate the amount of underlying out for a given `amountVoltIn` of VOLT
     function getRedeemAmountOut(uint256 amountVoltIn)
         external

@@ -70,10 +70,6 @@ contract IntegrationTestPSMRouter is DSTest {
         assertEq(voltPsm.getMintAmountOut(100), 98); // the amount VOLT we get from VOLT/FAI PSM
     }
 
-    function testGetMaxMintAmountOut() public {
-        assertEq(voltPsm.getMaxMintAmountOut(), 9976629603360290327059111);
-    }
-
     function testMint() public unpausePsm {
         dai.approve(address(router), mintAmount);
         router.mint(address(this), 100, 98);
