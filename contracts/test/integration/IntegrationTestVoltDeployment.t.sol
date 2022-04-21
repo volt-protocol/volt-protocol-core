@@ -227,7 +227,7 @@ contract IntegrationTestVoltDeployment is DSTest, StdLib {
         );
         assertEq(
             endingPCVDepositFeiBalance - startingPCVDepositFeiBalance,
-            amountFeiIn - 1
+            amountFeiIn
         );
     }
 
@@ -251,7 +251,7 @@ contract IntegrationTestVoltDeployment is DSTest, StdLib {
         assertEq(startingUserVoltBalance - endingUserVoltBalance, amountVoltIn);
         assertEq(
             startingPCVDepositFeiBalance - endingPCVDepositFeiBalance,
-            amountFeiOut - 1
+            amountFeiOut
         );
     }
 

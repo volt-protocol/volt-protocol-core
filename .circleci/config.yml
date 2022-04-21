@@ -6,7 +6,7 @@ jobs:
       - image: circleci/node:14
     resource_class: xlarge
     steps:
-      - checkout 
+      - checkout
       - run:
           name: 'Update NPM'
           command: sudo npm install -g npm@6.13.4
@@ -49,9 +49,9 @@ jobs:
             circleci tests glob "test/unit/**/*.ts" | circleci tests split --split-by=filesize > /tmp/tests-to-run
             npm run test:hardhat $(cat /tmp/tests-to-run)
       - store_test_results:
-            path: test-results
+          path: test-results
       - store_artifacts:
-            path: test-results
+          path: test-results
 
   test-forge:
     working_directory: ~/repo
@@ -69,7 +69,7 @@ jobs:
       - run:
           name: Finish setting up env
           command: echo "export PATH=$PATH:$(pwd)/.foundry/bin" >> /home/circleci/.bashrc
-      - run: 
+      - run:
           name: Install Foundry
           command: curl -L https://foundry.paradigm.xyz | bash; source /home/circleci/.bashrc; $HOME/.foundry/bin/foundryup
       - run:
@@ -82,7 +82,7 @@ workflows:
   main:
     jobs:
       - build
-      - lint: 
+      - lint:
           requires:
             - build
       - test:
