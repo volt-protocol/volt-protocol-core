@@ -7,7 +7,6 @@ import {PSMRouter} from "./../../peg/PSMRouter.sol";
 import {INonCustodialPSM} from "./../../peg/NonCustodialPSM.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {console} from "hardhat/console.sol";
 
 interface INonCustodialPSMTest is INonCustodialPSM {
     function pause() external;
