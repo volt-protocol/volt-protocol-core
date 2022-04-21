@@ -50,7 +50,6 @@ export default {
   gasReporter: {
     enabled: !!process.env.REPORT_GAS
   },
-
   networks: {
     hardhat: {
       gas: 12e6,
@@ -64,6 +63,7 @@ export default {
     },
 
     localhost: {
+      accounts: testnetPrivateKey ? [testnetPrivateKey] : [],
       url: 'http://127.0.0.1:8545'
     },
 
@@ -81,7 +81,7 @@ export default {
     mainnet: {
       url: `https://eth-mainnet.alchemyapi.io/v2/${mainnetAlchemyApiKey}`,
       accounts: privateKey ? [privateKey] : [],
-      gasPrice: 25000000000 // gas price that is paid for mainnet transactions. currently 25 gigawei
+      gasPrice: 80000000000 // gas price that is paid for mainnet transactions. currently 80 gigawei
     }
   },
 
