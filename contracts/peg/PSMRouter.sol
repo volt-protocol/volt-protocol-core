@@ -74,11 +74,6 @@ contract PSMRouter is IPSMRouter {
         amountOut = feiPsm.getRedeemAmountOut(amountFeiOut);
     }
 
-    /// @notice the maximum mint amount out
-    function getMaxMintAmountOut() external view override returns (uint256) {
-        return voltPsm.getMaxMintAmountOut();
-    }
-
     // ---------- Public State-Changing API ----------
 
     /// @notice Mints VOLT to the given address, with a minimum amount required
