@@ -15,8 +15,16 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
 
     address public immutable safeAddress;
 
-    constructor(address _core, address _safeAddress) CoreRef(_core) {
+    constructor(
+        address _core,
+        address _safeAddress,
+        address[] memory _whitelistAddresses
+    ) CoreRef(_core) {
         safeAddress = _safeAddress;
+
+        for (uint256 i = 0; i < _whitelistAddresses.length; i++) {
+            _setWhitelistAddress(_whitelistAddresses[i]);
+        }
     }
 
     // ---------- Read-Only API ----------
