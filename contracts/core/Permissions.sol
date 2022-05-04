@@ -11,6 +11,8 @@ contract Permissions is IPermissions, AccessControlEnumerable {
     bytes32 public constant override MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant override PCV_CONTROLLER_ROLE =
         keccak256("PCV_CONTROLLER_ROLE");
+    bytes32 public constant override PCV_GUARD_ROLE =
+        keccak256("PCV_GUARD_ROLE");
     bytes32 public constant override GOVERN_ROLE = keccak256("GOVERN_ROLE");
     bytes32 public constant override GUARDIAN_ROLE = keccak256("GUARDIAN_ROLE");
 
@@ -37,6 +39,14 @@ contract Permissions is IPermissions, AccessControlEnumerable {
         require(
             isGuardian(msg.sender),
             "Permissions: Caller is not a guardian"
+        );
+        _;
+    }
+
+    modifier onlyGuardianOrGovernor() {
+        require(
+            isGuardian(msg.sender) || isGovernor(msg.sender),
+            "Permissions: Caller is neither governor nor guardian"
         );
         _;
     }
@@ -75,6 +85,12 @@ contract Permissions is IPermissions, AccessControlEnumerable {
         grantRole(PCV_CONTROLLER_ROLE, pcvController);
     }
 
+    /// @notice grants controller role to address
+    /// @param pcvGuard new guard
+    function grantPCVGuard(address pcvGuard) external override onlyGovernor {
+        grantRole(PCV_CONTROLLER_ROLE, pcvGuard);
+    }
+
     /// @notice grants governor role to address
     /// @param governor new governor
     function grantGovernor(address governor) external override onlyGovernor {
@@ -107,6 +123,16 @@ contract Permissions is IPermissions, AccessControlEnumerable {
         onlyGovernor
     {
         revokeRole(PCV_CONTROLLER_ROLE, pcvController);
+    }
+
+    /// @notice revokes pcvGuard role from address
+    /// @param pcvGuard ex pcvGuard
+    function revokePCVGuard(address pcvGuard)
+        external
+        override
+        onlyGuardianOrGovernor
+    {
+        revokeRole(PCV_GUARD_ROLE, pcvGuard);
     }
 
     /// @notice revokes governor role from address
