@@ -6,13 +6,18 @@ import {CoreRef} from "../refs/CoreRef.sol";
 import {IPCVGuardian} from "./IPCVGuardian.sol";
 import {IPCVDeposit} from "./IPCVDeposit.sol";
 import {CoreRefPauseableLib} from "../libs/CoreRefPauseableLib.sol";
+import {TribeRoles} from "../core/TribeRoles.sol";
 
+/// @notice PCV Guardian is a contract to safeguard protocol funds
+/// by being able to withdraw whitelisted PSV deposits to an immutable safe address
 contract PCVGuardian is IPCVGuardian, CoreRef {
     using CoreRefPauseableLib for address;
     using EnumerableSet for EnumerableSet.AddressSet;
 
+    ///@notice set of whitelisted pcvDeposit addresses for withdrawal
     EnumerableSet.AddressSet private whitelistAddresses;
 
+    ///@notice safe address where PCV funds can be withdrawn to
     address public immutable safeAddress;
 
     constructor(
@@ -22,14 +27,17 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
     ) CoreRef(_core) {
         safeAddress = _safeAddress;
 
-        for (uint256 i = 0; i < _whitelistAddresses.length; i++) {
-            _setWhitelistAddress(_whitelistAddresses[i]);
+        // improbable to ever overflow
+        unchecked {
+            for (uint256 i = 0; i < _whitelistAddresses.length; i++) {
+                _setWhitelistAddress(_whitelistAddresses[i]);
+            }
         }
     }
 
     // ---------- Read-Only API ----------
 
-    /// @notice returns true if the the provided address is a valid destination to withdraw funds to
+    /// @notice returns true if the the provided address is a valid destination to withdraw funds from
     /// @param pcvDeposit the pcvDeposit address to check if whitelisted
     function isWhitelistAddress(address pcvDeposit)
         public
@@ -52,7 +60,7 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
 
     // ---------- Governor-Only State-Changing API ----------
 
-    /// @notice governor-only method to set an address as "safe" to withdraw funds to
+    /// @notice governor-only method to whitelist a pcvDesposit address to withdraw funds from
     /// @param pcvDeposit the address to set as safe
     function setWhitelistAddress(address pcvDeposit)
         external
@@ -62,22 +70,25 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         _setWhitelistAddress(pcvDeposit);
     }
 
-    /// @notice batch version of setSafeAddress
-    /// @param _whitelistAddresses the addresses to set as safe, as calldata
+    /// @notice batch version of setWhiteListaddress
+    /// @param _whitelistAddresses the addresses to whitelist, as calldata
     function setWhitelistAddresses(address[] calldata _whitelistAddresses)
         external
         override
         onlyGovernor
     {
-        require(_whitelistAddresses.length != 0, "empty");
-        for (uint256 i = 0; i < _whitelistAddresses.length; i++) {
-            _setWhitelistAddress(_whitelistAddresses[i]);
+        // improbable to ever overflow
+        unchecked {
+            require(_whitelistAddresses.length != 0, "empty");
+            for (uint256 i = 0; i < _whitelistAddresses.length; i++) {
+                _setWhitelistAddress(_whitelistAddresses[i]);
+            }
         }
     }
 
     // ---------- Governor-Or-Guardian-Only State-Changing API ----------
 
-    /// @notice governor-or-guardian-only method to un-set an address as "safe" to withdraw funds to
+    /// @notice governor-or-guardian-only method to un-whitelist a pcvDesposit address to withdraw funds from
     /// @param pcvDeposit the address to un-set as safe
     function unsetWhitelistAddress(address pcvDeposit)
         external
@@ -87,53 +98,59 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         _unsetWhitelistAddress(pcvDeposit);
     }
 
-    /// @notice batch version of unsetSafeAddresses
-    /// @param _whitelistAddresses the addresses to un-set as safe
+    /// @notice batch version of unsetWhitelistAddress
+    /// @param _whitelistAddresses the addresses to un-whitelist
     function unsetWhitelistAddresses(address[] calldata _whitelistAddresses)
         external
         override
         onlyGuardianOrGovernor
     {
-        require(_whitelistAddresses.length != 0, "empty");
-        for (uint256 i = 0; i < _whitelistAddresses.length; i++) {
-            _unsetWhitelistAddress(_whitelistAddresses[i]);
+        // improbable to ever overflow
+        unchecked {
+            require(_whitelistAddresses.length != 0, "empty");
+            for (uint256 i = 0; i < _whitelistAddresses.length; i++) {
+                _unsetWhitelistAddress(_whitelistAddresses[i]);
+            }
         }
     }
 
     /// @notice governor-or-guardian-only method to withdraw funds from a pcv deposit, by calling the withdraw() method on it
     /// @param pcvDeposit the address of the pcv deposit contract
     /// @param amount the amount to withdraw
-    /// @param pauseAfter if true, the pcv contract will be paused after the withdraw
-    function withdrawToSafeAddress(
-        address pcvDeposit,
-        uint256 amount,
-        bool pauseAfter
-    ) external override onlyGuardianOrGovernor {
+    function withdrawToSafeAddress(address pcvDeposit, uint256 amount)
+        external
+        override
+        hasAnyOfThreeRoles(
+            TribeRoles.GOVERNOR,
+            TribeRoles.GUARDIAN,
+            TribeRoles.PCV_GUARD
+        )
+    {
         require(
             isWhitelistAddress(pcvDeposit),
             "Provided address is not whitelisted"
         );
 
-        pcvDeposit._ensureUnpaused();
-
-        IPCVDeposit(pcvDeposit).withdraw(safeAddress, amount);
-
-        if (pauseAfter) {
+        if (pcvDeposit._paused()) {
+            pcvDeposit._unpause();
+            IPCVDeposit(pcvDeposit).withdraw(safeAddress, amount);
             pcvDeposit._pause();
+        } else {
+            IPCVDeposit(pcvDeposit).withdraw(safeAddress, amount);
         }
 
-        emit PCVGuardianWithdrawal(pcvDeposit, safeAddress, amount);
+        emit PCVGuardianWithdrawal(pcvDeposit, amount);
     }
 
     // ---------- Internal Functions ----------
 
-    function _setWhitelistAddress(address anAddress) internal {
-        require(whitelistAddresses.add(anAddress), "set");
-        emit SafeAddressAdded(anAddress);
+    function _setWhitelistAddress(address pcvDeposit) internal {
+        require(whitelistAddresses.add(pcvDeposit), "set");
+        emit WhitelistAddressAdded(pcvDeposit);
     }
 
-    function _unsetWhitelistAddress(address anAddress) internal {
-        require(whitelistAddresses.remove(anAddress), "unset");
-        emit SafeAddressRemoved(anAddress);
+    function _unsetWhitelistAddress(address pcvDeposit) internal {
+        require(whitelistAddresses.remove(pcvDeposit), "unset");
+        emit WhitelistAddressRemoved(pcvDeposit);
     }
 }

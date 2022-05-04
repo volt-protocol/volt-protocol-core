@@ -59,6 +59,9 @@ library TribeRoles {
     /// @notice manages the constituents of Optimistic Timelocks, including Proposers and Executors
     bytes32 internal constant OPTIMISTIC_ADMIN = keccak256("OPTIMISTIC_ADMIN");
 
+    ///@notice is able to withdraw whistelisted PCV deposits to a safe address
+    bytes32 internal constant PCV_GUARD = keccak256("PCV_GUARD_ROLE");
+
     /*///////////////////////////////////////////////////////////////
                                  Minor Roles
     //////////////////////////////////////////////////////////////*/

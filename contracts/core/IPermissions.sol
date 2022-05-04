@@ -17,8 +17,6 @@ interface IPermissions is IAccessControl, IPermissionsRead {
 
     function grantPCVController(address pcvController) external;
 
-    function grantPCVGuard(address pcvGuard) external;
-
     function grantGovernor(address governor) external;
 
     function grantGuardian(address guardian) external;
@@ -28,8 +26,6 @@ interface IPermissions is IAccessControl, IPermissionsRead {
     function revokeBurner(address burner) external;
 
     function revokePCVController(address pcvController) external;
-
-    function revokePCVGuard(address pcvGuard) external;
 
     function revokeGovernor(address governor) external;
 
@@ -50,6 +46,4 @@ interface IPermissions is IAccessControl, IPermissionsRead {
     function MINTER_ROLE() external view returns (bytes32);
 
     function PCV_CONTROLLER_ROLE() external view returns (bytes32);
-
-    function PCV_GUARD_ROLE() external view returns (bytes32);
 }

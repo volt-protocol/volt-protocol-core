@@ -41,4 +41,12 @@ library CoreRefPauseableLib {
     function _unpause(address _pauseableCoreRefAddress) internal {
         CoreRef(_pauseableCoreRefAddress).unpause();
     }
+
+    function _paused(address _pauseableCoreRefAddres)
+        internal
+        view
+        returns (bool)
+    {
+        return CoreRef(_pauseableCoreRefAddres).paused();
+    }
 }
