@@ -41,14 +41,6 @@ contract Permissions is IPermissions, AccessControlEnumerable {
         _;
     }
 
-    modifier onlyGuardianOrGovernor() {
-        require(
-            isGuardian(msg.sender) || isGovernor(msg.sender),
-            "Permissions: Caller is neither governor nor guardian"
-        );
-        _;
-    }
-
     /// @notice creates a new role to be maintained
     /// @param role the new role id
     /// @param adminRole the admin role id for `role`
