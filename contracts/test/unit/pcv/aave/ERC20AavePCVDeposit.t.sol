@@ -19,8 +19,10 @@ contract ERC20AavePCVDepositTest is DSTest {
     MockLendingPool private lendingPool;
     ERC20AavePCVDeposit private aaveDeposit;
     ICore private core;
+    FeiTestAddresses public addresses = getAddresses();
+    Vm public constant vm = Vm(HEVM_ADDRESS);
 
-    function setup() public {
+    function setUp() public {
         core = getCore();
         lendingPool = new MockLendingPool();
         aToken = lendingPool.aToken();
@@ -35,6 +37,18 @@ contract ERC20AavePCVDepositTest is DSTest {
     }
 
     /// only pcv controller successfully withdraws
+    function testPCVControllerWithdraws() public {
+        uint256 amount = 1000;
+        token.mint(address(aaveDeposit), amount);
+        aaveDeposit.deposit();
+
+        vm.prank(addresses.pcvControllerAddress);
+        aaveDeposit.withdraw(address(this), amount);
+    }
+
     /// non pcv controller cannot withdraw
-    /// anyone can claim
+    function testNonPCVControllerCannotWithdraw() public {
+        vm.expectRevert(bytes("CoreRef: Caller is not a PCV controller"));
+        aaveDeposit.withdraw(address(this), 1000);
+    }
 }
