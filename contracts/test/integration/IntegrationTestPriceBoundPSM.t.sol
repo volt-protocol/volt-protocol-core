@@ -163,7 +163,10 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
             address(psm)
         );
 
-        assertEq(endingPSMUnderlyingBalance, mintAmount + mintAmount * 100_000);
+        assertEq(
+            endingPSMUnderlyingBalance,
+            amountStableIn + mintAmount * 100_000
+        );
         assertEq(endingUserVoltBalance, mintAmount + amountVoltOut);
     }
 
@@ -188,7 +191,11 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
             endingUserVOLTBalance,
             amountVoltOut + userStartingVoltBalance
         );
-        assertEq(endingPSMUnderlyingBalance, mintAmount + mintAmount * 100_000);
+        assertApproxEq(
+            endingPSMUnderlyingBalance.toInt256(),
+            (mintAmount + mintAmount * 100_000).toInt256(),
+            1
+        ); /// allow 1 basis point of error
     }
 
     /// @notice pcv deposit gets depleted on redeem
