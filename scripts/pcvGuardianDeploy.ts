@@ -8,13 +8,12 @@ import { Core } from '@custom-types/contracts';
 const { CORE, MULTISIG_ADDRESS } = config;
 
 const PCV_GUARD_ROLE = keccak256(utils.toUtf8Bytes('PCV_GUARD_ROLE'));
-const GOVERN_ROLE = keccak256(utils.toUtf8Bytes('GOVERN_ROLE'));
 
 const pcvGuardAddress = ''; //TODO fill in intial PCV Guard role address if setting at deployment
 
 async function deploy() {
   const PCVGuardian = await ethers.getContractFactory('PCVGuardian');
-  const whitelistAddresses = [];
+  const whitelistAddresses = []; // TODO fill in initial whitelisted addresses
 
   const pcvGuardian = await PCVGuardian.deploy(CORE, MULTISIG_ADDRESS, whitelistAddresses);
   await pcvGuardian.deployed();
@@ -27,7 +26,7 @@ async function deploy() {
   await core.grantPCVController(pcvGuardian.address);
   await core.grantGuardian(pcvGuardian.address);
 
-  await core.createRole(PCV_GUARD_ROLE, GOVERN_ROLE);
+  await core.createRole(PCV_GUARD_ROLE, await core.GOVERN_ROLE());
   await core.grantRole(PCV_GUARD_ROLE, pcvGuardAddress);
 
   await verifyDeployment(core, pcvGuardian.address);
@@ -44,7 +43,7 @@ async function verifyDeployment(core: Core, pcvGuardian: string) {
   expect(await core.isPCVController(pcvGuardian)).to.be.true;
   expect(await core.isGuardian(pcvGuardian)).to.be.true;
 
-  expect(await core.hasRole(PCV_GUARD_ROLE), pcvGuardAddress).to.be.true;
+  expect(await core.hasRole(PCV_GUARD_ROLE, pcvGuardAddress)).to.be.true;
 }
 
 deploy()

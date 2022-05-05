@@ -12,14 +12,11 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@contracts/*" : ["contracts/*"],
-      "@custom-types/*" : ["types/*"], // @types is reserved
-      "@test/*" : ["test/*"]
+      "@contracts/*": ["contracts/*"],
+      "@custom-types/*": ["types/*"], // @types is reserved
+      "@test/*": ["test/*"]
     }
   },
-  "include": [
-    "test/*", "test/**/*",
-    "./types/contracts/*", "./types/contracts/**/*"
-  ],
-  "files": ["./hardhat.config.ts"],
+  "include": ["test/*", "test/**/*", "./types/contracts/*", "./types/contracts/**/*", "./scripts"],
+  "files": ["./hardhat.config.ts"]
 }
