@@ -8,7 +8,7 @@ Peg Stability Module
 Description: This module is used to manage the stability of the peg.
 
 Steps:
-  0 - Deploy FEI PriceBoundPegStabilityModule
+  0 - Deploy FEI/VOLT PriceBoundPegStabilityModule
 */
 
 const {
@@ -36,8 +36,8 @@ const voltCeilingPrice = 11_200;
 const deploy = async () => {
   const voltPSMFactory = await ethers.getContractFactory('PriceBoundPSM');
 
-  // Deploy DAI Peg Stability Module
-  // PSM will trade DAI between 98 cents and 1.02 cents.
+  // Deploy FEI Peg Stability Module
+  // PSM will trade VOLT between 102 cents and 112 cents.
   // If price is outside of this band, the PSM will not allow trades
   const voltPSM = await voltPSMFactory.deploy(
     voltFloorPrice,
@@ -47,7 +47,7 @@ const deploy = async () => {
       oracleAddress: ORACLE_PASS_THROUGH_ADDRESS, // OPT
       backupOracle: ethers.constants.AddressZero,
       decimalsNormalizer: voltDecimalsNormalizer,
-      doInvert: true /// invert the price so that the Oracle works correctly
+      doInvert: true /// invert the price so that the Oracle and PSM works correctly
     },
     MINT_FEE_BASIS_POINTS,
     REDEEM_FEE_BASIS_POINTS,
