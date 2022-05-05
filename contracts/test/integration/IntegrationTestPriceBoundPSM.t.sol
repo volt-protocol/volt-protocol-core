@@ -222,27 +222,6 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
         );
     }
 
-    /// @notice pcv deposit gets depleted on redeem
-    function testSwapVoltForUnderlyingAfterPriceIncrease() public {
-        uint256 amountVoltIn = 100_000;
-        uint256 amountStableOut = 101_000;
-
-        volt.approve(address(psm), amountVoltIn);
-        psm.redeem(address(this), amountVoltIn, amountStableOut);
-
-        uint256 endingUserVOLTBalance = volt.balanceOf(address(this));
-        uint256 endingUserUnderlyingBalance = underlyingToken.balanceOf(
-            address(this)
-        );
-        uint256 endingPSMUnderlyingBalance = underlyingToken.balanceOf(
-            address(psm)
-        );
-
-        assertEq(endingPSMUnderlyingBalance, 0);
-        assertEq(endingUserVOLTBalance, mintAmount - amountVoltIn);
-        assertEq(endingUserUnderlyingBalance, mintAmount + amountStableOut);
-    }
-
     /// @notice redeem fails without approval
     function testSwapFeiForUnderlyingFailsWithoutApproval() public {
         vm.expectRevert(bytes("ERC20: transfer amount exceeds allowance"));
@@ -254,7 +233,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     function testSwapUnderlyingForFeiFailsWithoutApproval() public {
         vm.expectRevert(bytes("ERC20: transfer amount exceeds allowance"));
 
-        psm.mint(address(this), mintAmount, mintAmount);
+        psm.mint(address(this), mintAmount, 0);
     }
 
     /// @notice withdraw erc20 fails without correct permissions
