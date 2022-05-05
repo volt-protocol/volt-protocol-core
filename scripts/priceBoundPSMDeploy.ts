@@ -1,12 +1,5 @@
 import hre, { ethers } from 'hardhat';
 import { expect } from 'chai';
-import {
-  DeployUpgradeFunc,
-  NamedAddresses,
-  SetupUpgradeFunc,
-  TeardownUpgradeFunc,
-  ValidateUpgradeFunc
-} from '@custom-types/types';
 import config from './Config';
 /*
 
@@ -21,6 +14,7 @@ Steps:
 const {
   CORE,
   FEI,
+  VOLT,
   ORACLE_PASS_THROUGH_ADDRESS,
   VOLT_FUSE_PCV_DEPOSIT,
   /// fees
@@ -35,7 +29,7 @@ const voltPSMBufferCap = ethers.utils.parseEther('10000000');
 const voltDecimalsNormalizer = 0;
 
 const voltFloorPrice = 10_200;
-const voltCeilingPrice = 11_000;
+const voltCeilingPrice = 11_200;
 
 // Do any deployments
 // This should exclusively include new contract deployments
@@ -51,7 +45,7 @@ const deploy = async () => {
     {
       coreAddress: CORE,
       oracleAddress: ORACLE_PASS_THROUGH_ADDRESS, // OPT
-      backupOracle: ethers.constants.ZERO_ADDRESS, // zero address
+      backupOracle: ethers.constants.AddressZero,
       decimalsNormalizer: voltDecimalsNormalizer,
       doInvert: true /// invert the price so that the Oracle works correctly
     },
@@ -68,6 +62,36 @@ const deploy = async () => {
 
   // Wait for psm to deploy
   await voltPSM.deployTransaction.wait();
+
+  //  ---------------------------- //
+  //         Verify params         //
+  //  ---------------------------- //
+
+  //  oracle
+  expect(await voltPSM.doInvert()).to.be.true;
+  expect(await voltPSM.oracle()).to.be.equal(ORACLE_PASS_THROUGH_ADDRESS);
+  expect(await voltPSM.backupOracle()).to.be.equal(ethers.constants.AddressZero);
+
+  //  volt
+  expect(await voltPSM.underlyingToken()).to.be.equal(FEI);
+  expect(await voltPSM.volt()).to.be.equal(VOLT);
+
+  //  psm params
+  expect(await voltPSM.redeemFeeBasisPoints()).to.be.equal(REDEEM_FEE_BASIS_POINTS);
+  expect(await voltPSM.mintFeeBasisPoints()).to.be.equal(MINT_FEE_BASIS_POINTS);
+  expect(await voltPSM.reservesThreshold()).to.be.equal(feiReservesThreshold);
+  expect(await voltPSM.surplusTarget()).to.be.equal(VOLT_FUSE_PCV_DEPOSIT);
+  expect(await voltPSM.rateLimitPerSecond()).to.be.equal(mintLimitPerSecond);
+  expect(await voltPSM.buffer()).to.be.equal(voltPSMBufferCap);
+  expect(await voltPSM.bufferCap()).to.be.equal(voltPSMBufferCap);
+
+  //  price bound params
+  expect(await voltPSM.floor()).to.be.equal(voltFloorPrice);
+  expect(await voltPSM.ceiling()).to.be.equal(voltCeilingPrice);
+
+  //  balance check
+  expect(await voltPSM.balance()).to.be.equal(0);
+  expect(await voltPSM.voltBalance()).to.be.equal(0);
 
   return {
     voltPSM
