@@ -1,8 +1,8 @@
 import hre, { ethers } from 'hardhat';
 import { expect } from 'chai';
 import config from './Config';
-/*
 
+/*
 Peg Stability Module
 
 Description: This module is used to manage the stability of the peg.
@@ -28,8 +28,8 @@ const voltPSMBufferCap = ethers.utils.parseEther('10000000');
 
 const voltDecimalsNormalizer = 0;
 
-const voltFloorPrice = 10_200;
-const voltCeilingPrice = 11_200;
+const voltFloorPrice = 9_000;
+const voltCeilingPrice = 10_000;
 
 // Do any deployments
 // This should exclusively include new contract deployments
