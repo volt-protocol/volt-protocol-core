@@ -89,6 +89,16 @@ contract PCVGuardianTest is DSTest {
         pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), mintAmount);
     }
 
+    function testWithdrawToSafeAddressFailWhenGuardRevoked() public {
+        vm.prank(addresses.governorAddress);
+        core.revokeRole(TribeRoles.PCV_GUARD, guard);
+
+        vm.prank(guard);
+        vm.expectRevert(bytes("UNAUTHORIZED"));
+
+        pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), mintAmount);
+    }
+
     function testWithdrawToSafeAddressFailWhenNotWhitelist() public {
         vm.prank(addresses.governorAddress);
         vm.expectRevert(bytes("Provided address is not whitelisted"));
