@@ -9,7 +9,6 @@ import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
 
 import {DSTest} from "../unit/utils/DSTest.sol";
 import {Vm} from "../unit/utils/Vm.sol";
-import {console} from "hardhat/console.sol";
 
 contract IntegrationTestPCVGuardian is DSTest {
     PCVGuardian private pcvGuardian;
