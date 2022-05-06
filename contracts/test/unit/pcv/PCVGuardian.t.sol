@@ -64,21 +64,27 @@ contract PCVGuardianTest is DSTest {
     }
 
     function testWithdrawToSafeAddress() public {
-        vm.prank(addresses.governorAddress);
+        vm.startPrank(addresses.governorAddress);
+        assertEq(underlyingToken.balanceOf(address(this)), 0);
+
         pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), mintAmount);
 
         assertEq(underlyingToken.balanceOf(address(this)), mintAmount);
     }
 
     function testGuardianWithdrawToSafeAddress() public {
-        vm.prank(addresses.guardianAddress);
+        vm.startPrank(addresses.guardianAddress);
+        assertEq(underlyingToken.balanceOf(address(this)), 0);
+
         pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), mintAmount);
 
         assertEq(underlyingToken.balanceOf(address(this)), mintAmount);
     }
 
     function testPCVGuardWithdrawToSafeAddress() public {
-        vm.prank(guard);
+        vm.startPrank(guard);
+        assertEq(underlyingToken.balanceOf(address(this)), 0);
+
         pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), mintAmount);
 
         assertEq(underlyingToken.balanceOf(address(this)), mintAmount);
@@ -110,13 +116,13 @@ contract PCVGuardianTest is DSTest {
         vm.prank(addresses.governorAddress);
 
         pcvGuardian.setWhitelistAddress(address(0x123));
-        assert(pcvGuardian.isWhitelistAddress(address(0x123)));
+        assertTrue(pcvGuardian.isWhitelistAddress(address(0x123)));
     }
 
     function testUnsetWhiteListAddress() public {
         vm.prank(addresses.governorAddress);
 
         pcvGuardian.unsetWhitelistAddress(address(pcvDeposit));
-        assert(!pcvGuardian.isWhitelistAddress(address(pcvDeposit)));
+        assertTrue(!pcvGuardian.isWhitelistAddress(address(pcvDeposit)));
     }
 }

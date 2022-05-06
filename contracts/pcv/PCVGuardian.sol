@@ -9,7 +9,7 @@ import {CoreRefPauseableLib} from "../libs/CoreRefPauseableLib.sol";
 import {TribeRoles} from "../core/TribeRoles.sol";
 
 /// @notice PCV Guardian is a contract to safeguard protocol funds
-/// by being able to withdraw whitelisted PSV deposits to an immutable safe address
+/// by being able to withdraw whitelisted PCV deposits to an immutable safe address
 contract PCVGuardian is IPCVGuardian, CoreRef {
     using CoreRefPauseableLib for address;
     using EnumerableSet for EnumerableSet.AddressSet;

@@ -31,7 +31,7 @@ async function deploy() {
   await core.grantRole(PCV_GUARD_ROLE, pcvGuardAddress1);
   await core.grantRole(PCV_GUARD_ROLE, pcvGuardAddress2);
 
-  await verifyDeployment(core, pcvGuardian.address);
+  await validateDeployment(core, pcvGuardian.address);
 
   await hre.run('verify:verify', {
     address: pcvGuardian.address,
@@ -41,7 +41,7 @@ async function deploy() {
   return;
 }
 
-async function verifyDeployment(core: Core, pcvGuardian: string) {
+async function validateDeployment(core: Core, pcvGuardian: string) {
   expect(await core.isPCVController(pcvGuardian)).to.be.true;
   expect(await core.isGuardian(pcvGuardian)).to.be.true;
 
