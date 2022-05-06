@@ -5,7 +5,7 @@ import { keccak256 } from 'ethers/lib/utils';
 import config from './config';
 import { Core } from '@custom-types/contracts';
 
-const { CORE, PROTOCOL_MULTISIG_ADDRESS, VOLT_FUSE_PCV_DEPOSIT, PCV_DEPOSIT } = config;
+const { CORE, PROTOCOL_MULTISIG_ADDRESS, VOLT_FUSE_PCV_DEPOSIT, PCV_DEPOSIT, PRICE_BOUND_PSM } = config;
 
 const PCV_GUARD_ROLE = keccak256(utils.toUtf8Bytes('PCV_GUARD_ROLE'));
 
@@ -14,7 +14,7 @@ const pcvGuardAddress2 = '0xd90E9181B20D8D1B5034d9f5737804Da182039F6';
 
 async function deploy() {
   const PCVGuardian = await ethers.getContractFactory('PCVGuardian');
-  const whitelistAddresses = [VOLT_FUSE_PCV_DEPOSIT, PCV_DEPOSIT];
+  const whitelistAddresses = [VOLT_FUSE_PCV_DEPOSIT, PCV_DEPOSIT, PRICE_BOUND_PSM];
 
   const pcvGuardian = await PCVGuardian.deploy(CORE, PROTOCOL_MULTISIG_ADDRESS, whitelistAddresses);
   await pcvGuardian.deployed();

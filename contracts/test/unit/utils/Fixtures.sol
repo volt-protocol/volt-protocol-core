@@ -18,6 +18,7 @@ struct FeiTestAddresses {
     address burnerAddress;
     address guardianAddress;
     address voltGovernorAddress;
+    address voltDeployerAddress;
 }
 
 /// @dev Get a list of addresses
@@ -34,7 +35,8 @@ function getAddresses() pure returns (FeiTestAddresses memory) {
         minterAddress: address(0x9),
         burnerAddress: address(0x10),
         guardianAddress: address(0x11),
-        voltGovernorAddress: address(0x12)
+        voltGovernorAddress: address(0x12),
+        voltDeployerAddress: address(0x13)
     });
 
     return addresses;
@@ -56,7 +58,10 @@ function getMainnetAddresses() pure returns (FeiTestAddresses memory) {
         minterAddress: address(0xd51dbA7a94e1adEa403553A8235C302cEbF41a3c),
         burnerAddress: address(0x10),
         guardianAddress: address(0xB8f482539F2d3Ae2C9ea6076894df36D1f632775),
-        voltGovernorAddress: address(0xcBB83206698E8788F85EFbEeeCAd17e53366EBDf)
+        voltGovernorAddress: address(
+            0xcBB83206698E8788F85EFbEeeCAd17e53366EBDf
+        ),
+        voltDeployerAddress: address(0x25dCffa22EEDbF0A69F6277e24C459108c186ecB)
     });
 
     return addresses;

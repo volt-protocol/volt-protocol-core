@@ -6,7 +6,7 @@ import {TribeRoles} from "../../core/TribeRoles.sol";
 import {ICore} from "../../core/ICore.sol";
 import {IVolt} from "../../volt/Volt.sol";
 import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
-
+import {getMainnetAddresses, FeiTestAddresses} from "../unit/utils/Fixtures.sol";
 import {DSTest} from "../unit/utils/DSTest.sol";
 import {Vm} from "../unit/utils/Vm.sol";
 
@@ -21,7 +21,7 @@ contract IntegrationTestPCVGuardian is DSTest {
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
-    address public voltDeployer = 0x25dCffa22EEDbF0A69F6277e24C459108c186ecB;
+    FeiTestAddresses public addresses = getMainnetAddresses();
 
     address[] public whitelistAddresses;
     address public guard = address(0x123456789);
@@ -38,7 +38,7 @@ contract IntegrationTestPCVGuardian is DSTest {
         );
 
         // grant the pcvGuardian the PCV controller and Guardian roles
-        vm.startPrank(voltDeployer);
+        vm.startPrank(addresses.voltDeployerAddress);
         core.grantPCVController(address(pcvGuardian));
         core.grantGuardian(address(pcvGuardian));
 
@@ -54,7 +54,7 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testGovernorWithdrawToSafeAddress() public {
-        vm.startPrank(voltDeployer);
+        vm.startPrank(addresses.voltDeployerAddress);
         assertEq(fei.balanceOf(address(this)), 0);
 
         pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), withdrawAmount);
@@ -63,7 +63,7 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testGuardianWithdrawToSafeAddress() public {
-        vm.prank(voltDeployer);
+        vm.prank(addresses.voltDeployerAddress);
         core.grantGuardian(address(0x1234));
 
         assertEq(fei.balanceOf(address(this)), 0);
@@ -88,14 +88,14 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testWithdrawToSafeAddressFailWhenNotWhitelist() public {
-        vm.prank(voltDeployer);
+        vm.prank(addresses.voltDeployerAddress);
         vm.expectRevert(bytes("Provided address is not whitelisted"));
 
         pcvGuardian.withdrawToSafeAddress(address(0x1), withdrawAmount);
     }
 
     function testWithdrawToSafeAddressFailWhenGuardRevoked() public {
-        vm.prank(voltDeployer);
+        vm.prank(addresses.voltDeployerAddress);
         core.revokeRole(TribeRoles.PCV_GUARD, guard);
 
         vm.prank(guard);
@@ -105,14 +105,14 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testSetWhiteListAddress() public {
-        vm.prank(voltDeployer);
+        vm.prank(addresses.voltDeployerAddress);
 
         pcvGuardian.setWhitelistAddress(address(0x123));
         assertTrue(pcvGuardian.isWhitelistAddress(address(0x123)));
     }
 
     function testUnsetWhiteListAddress() public {
-        vm.prank(voltDeployer);
+        vm.prank(addresses.voltDeployerAddress);
 
         pcvGuardian.unsetWhitelistAddress(address(pcvDeposit));
         assertTrue(!pcvGuardian.isWhitelistAddress(address(pcvDeposit)));
