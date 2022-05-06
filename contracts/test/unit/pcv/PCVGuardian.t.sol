@@ -58,9 +58,9 @@ contract PCVGuardianTest is DSTest {
         vm.stopPrank();
     }
 
-    function testPCVGuardianRoles() public view {
-        assert(core.isGuardian(address(pcvGuardian)));
-        assert(core.isPCVController(address(pcvGuardian)));
+    function testPCVGuardianRoles() public {
+        assertTrue(core.isGuardian(address(pcvGuardian)));
+        assertTrue(core.isPCVController(address(pcvGuardian)));
     }
 
     function testWithdrawToSafeAddress() public {
