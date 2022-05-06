@@ -17,6 +17,7 @@ const {
   VOLT,
   ORACLE_PASS_THROUGH_ADDRESS,
   VOLT_FUSE_PCV_DEPOSIT,
+  PRICE_BOUND_PSM,
   /// fees
   MINT_FEE_BASIS_POINTS,
   REDEEM_FEE_BASIS_POINTS
@@ -98,7 +99,34 @@ const deploy = async () => {
   };
 };
 
-deploy()
+async function verifyDeployment() {
+  const oracleParams = {
+    coreAddress: CORE,
+    oracleAddress: ORACLE_PASS_THROUGH_ADDRESS, // OPT
+    backupOracle: ethers.constants.AddressZero,
+    decimalsNormalizer: voltDecimalsNormalizer,
+    doInvert: true /// invert the price so that the Oracle and PSM works correctly
+  };
+
+  await hre.run('verify:verify', {
+    address: PRICE_BOUND_PSM,
+
+    constructorArguments: [
+      voltFloorPrice,
+      voltCeilingPrice,
+      oracleParams,
+      MINT_FEE_BASIS_POINTS,
+      REDEEM_FEE_BASIS_POINTS,
+      feiReservesThreshold,
+      mintLimitPerSecond,
+      voltPSMBufferCap,
+      FEI,
+      VOLT_FUSE_PCV_DEPOSIT
+    ]
+  });
+}
+
+verifyDeployment()
   .then(() => process.exit(0))
   .catch((err) => {
     console.log(err);
