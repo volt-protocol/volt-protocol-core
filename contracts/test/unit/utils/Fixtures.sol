@@ -17,6 +17,7 @@ struct FeiTestAddresses {
     address minterAddress;
     address burnerAddress;
     address guardianAddress;
+    address voltGovernorAddress;
 }
 
 /// @dev Get a list of addresses
@@ -32,7 +33,30 @@ function getAddresses() pure returns (FeiTestAddresses memory) {
         pcvControllerAddress: address(0x8),
         minterAddress: address(0x9),
         burnerAddress: address(0x10),
-        guardianAddress: address(0x11)
+        guardianAddress: address(0x11),
+        voltGovernorAddress: address(0x12)
+    });
+
+    return addresses;
+}
+
+/// @dev Get a list of addresses
+function getMainnetAddresses() pure returns (FeiTestAddresses memory) {
+    FeiTestAddresses memory addresses = FeiTestAddresses({
+        userAddress: address(0x1),
+        secondUserAddress: address(0x2),
+        beneficiaryAddress1: address(0x3),
+        beneficiaryAddress2: address(0x4),
+        governorAddress: address(0xd51dbA7a94e1adEa403553A8235C302cEbF41a3c),
+        genesisGroup: address(0x6),
+        keeperAddress: address(0x7),
+        pcvControllerAddress: address(
+            0xd51dbA7a94e1adEa403553A8235C302cEbF41a3c
+        ),
+        minterAddress: address(0xd51dbA7a94e1adEa403553A8235C302cEbF41a3c),
+        burnerAddress: address(0x10),
+        guardianAddress: address(0xB8f482539F2d3Ae2C9ea6076894df36D1f632775),
+        voltGovernorAddress: address(0xcBB83206698E8788F85EFbEeeCAd17e53366EBDf)
     });
 
     return addresses;
