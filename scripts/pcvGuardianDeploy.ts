@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { utils } from 'ethers';
 import { keccak256 } from 'ethers/lib/utils';
 import config from './config';
-import { Core } from '@custom-types/contracts';
+import { Core, PCVGuardian } from '@custom-types/contracts';
 
 const { CORE, PROTOCOL_MULTISIG_ADDRESS, VOLT_FUSE_PCV_DEPOSIT, PCV_DEPOSIT, PRICE_BOUND_PSM } = config;
 
@@ -31,7 +31,7 @@ async function deploy() {
   await core.grantRole(PCV_GUARD_ROLE, pcvGuardAddress1);
   await core.grantRole(PCV_GUARD_ROLE, pcvGuardAddress2);
 
-  await validateDeployment(core, pcvGuardian.address);
+  await validateDeployment(core, pcvGuardian);
 
   await hre.run('verify:verify', {
     address: pcvGuardian.address,
@@ -41,12 +41,16 @@ async function deploy() {
   return;
 }
 
-async function validateDeployment(core: Core, pcvGuardian: string) {
-  expect(await core.isPCVController(pcvGuardian)).to.be.true;
-  expect(await core.isGuardian(pcvGuardian)).to.be.true;
+async function validateDeployment(core: Core, pcvGuardian: PCVGuardian) {
+  expect(await core.isPCVController(pcvGuardian.address)).to.be.true;
+  expect(await core.isGuardian(pcvGuardian.address)).to.be.true;
 
   expect(await core.hasRole(PCV_GUARD_ROLE, pcvGuardAddress1)).to.be.true;
   expect(await core.hasRole(PCV_GUARD_ROLE, pcvGuardAddress2)).to.be.true;
+
+  expect(await pcvGuardian.isWhitelistAddress(VOLT_FUSE_PCV_DEPOSIT)).to.be.true;
+  expect(await pcvGuardian.isWhitelistAddress(PCV_DEPOSIT)).to.be.true;
+  expect(await pcvGuardian.isWhitelistAddress(PRICE_BOUND_PSM)).to.be.true;
 }
 
 deploy()
