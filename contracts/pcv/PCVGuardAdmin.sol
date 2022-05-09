@@ -8,7 +8,7 @@ import {ICore} from "../core/ICore.sol";
 
 /// @title PCV Guard Admin
 /// @author Volt Protocol
-/// @notice This contract interfaces between access controls and the PCV Guardian
+/// @notice This contract interfaces between access controls and the PCV Guard
 /// allowing for multiple roles to manage the PCV Guard role, as access controls only allow for
 /// a single admin for each role
 contract PCVGuardAdmin is IPCVGuardAdmin, CoreRef {
