@@ -47,8 +47,12 @@ interface IPCVGuardian {
     function unsetWhitelistAddresses(address[] calldata whitelistAddresses)
         external;
 
-    /// @notice governor-or-guardian-only method to withdraw funds from a pcv deposit, by calling the withdraw() method on it
+    /// @notice governor-or-guardian-or-pcv-guard method to withdraw funds from a pcv deposit, by calling the withdraw() method on it
     /// @param pcvDeposit the address of the pcv deposit contract
     /// @param amount the amount to withdraw
     function withdrawToSafeAddress(address pcvDeposit, uint256 amount) external;
+
+    /// @notice governor-or-guardian-or-pcv-guard method to withdraw all at once funds from a pcv deposit, by calling the withdraw() method on it
+    /// @param pcvDeposit the address of the pcv deposit contract
+    function withdrawAllToSafeAddress(address pcvDeposit) external;
 }

@@ -77,6 +77,16 @@ contract IntegrationTestPCVGuardian is DSTest {
         assertEq(fei.balanceOf(address(this)), withdrawAmount);
     }
 
+    function testGovernorWithdrawAllToSafeAddress() public {
+        vm.startPrank(addresses.voltDeployerAddress);
+        assertEq(fei.balanceOf(address(this)), 0);
+
+        uint256 amountToWithdraw = pcvDeposit.balance();
+        pcvGuardian.withdrawAllToSafeAddress(address(pcvDeposit));
+
+        assertEq(fei.balanceOf(address(this)), amountToWithdraw);
+    }
+
     function testGuardianWithdrawToSafeAddress() public {
         vm.prank(addresses.voltDeployerAddress);
         core.grantGuardian(address(0x1234));
@@ -89,6 +99,19 @@ contract IntegrationTestPCVGuardian is DSTest {
         assertEq(fei.balanceOf(address(this)), withdrawAmount);
     }
 
+    function testGuardianWithdrawAllToSafeAddress() public {
+        vm.prank(addresses.voltDeployerAddress);
+        core.grantGuardian(address(0x1234));
+
+        assertEq(fei.balanceOf(address(this)), 0);
+        uint256 amountToWithdraw = pcvDeposit.balance();
+
+        vm.prank(address(0x1234));
+        pcvGuardian.withdrawAllToSafeAddress(address(pcvDeposit));
+
+        assertEq(fei.balanceOf(address(this)), amountToWithdraw);
+    }
+
     function testGuardWithdrawToSafeAddress() public {
         vm.startPrank(guard);
         assertEq(fei.balanceOf(address(this)), 0);
@@ -97,9 +120,25 @@ contract IntegrationTestPCVGuardian is DSTest {
         assertEq(fei.balanceOf(address(this)), withdrawAmount);
     }
 
+    function testGuardWithdrawAllToSafeAddress() public {
+        vm.startPrank(guard);
+
+        assertEq(fei.balanceOf(address(this)), 0);
+        uint256 amountToWithdraw = pcvDeposit.balance();
+
+        pcvGuardian.withdrawAllToSafeAddress(address(pcvDeposit));
+
+        assertEq(fei.balanceOf(address(this)), amountToWithdraw);
+    }
+
     function testWithdrawToSafeAddressFailWhenNoRole() public {
         vm.expectRevert(bytes("UNAUTHORIZED"));
         pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), withdrawAmount);
+    }
+
+    function testWithdrawAllToSafeAddressFailWhenNoRole() public {
+        vm.expectRevert(bytes("UNAUTHORIZED"));
+        pcvGuardian.withdrawAllToSafeAddress(address(pcvDeposit));
     }
 
     function testWithdrawToSafeAddressFailWhenNotWhitelist() public {
@@ -107,6 +146,13 @@ contract IntegrationTestPCVGuardian is DSTest {
         vm.expectRevert(bytes("Provided address is not whitelisted"));
 
         pcvGuardian.withdrawToSafeAddress(address(0x1), withdrawAmount);
+    }
+
+    function testWithdrawAllToSafeAddressFailWhenNotWhitelist() public {
+        vm.prank(addresses.voltDeployerAddress);
+        vm.expectRevert(bytes("Provided address is not whitelisted"));
+
+        pcvGuardian.withdrawAllToSafeAddress(address(0x1));
     }
 
     function testWithdrawToSafeAddressFailWhenGuardRevokedGovernor() public {
@@ -119,6 +165,16 @@ contract IntegrationTestPCVGuardian is DSTest {
         pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), withdrawAmount);
     }
 
+    function testWithdrawAllToSafeAddressFailWhenGuardRevokedGovernor() public {
+        vm.prank(addresses.voltDeployerAddress);
+        pcvGuardAdmin.revokePCVGuardRole(guard);
+
+        vm.prank(guard);
+        vm.expectRevert(bytes("UNAUTHORIZED"));
+
+        pcvGuardian.withdrawAllToSafeAddress(address(pcvDeposit));
+    }
+
     function testWithdrawToSafeAddressFailWhenGuardRevokedGuardian() public {
         vm.prank(addresses.guardianAddress);
         pcvGuardAdmin.revokePCVGuardRole(guard);
@@ -127,6 +183,16 @@ contract IntegrationTestPCVGuardian is DSTest {
         vm.expectRevert(bytes("UNAUTHORIZED"));
 
         pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), withdrawAmount);
+    }
+
+    function testWithdrawAllToSafeAddressFailWhenGuardRevokedGuardian() public {
+        vm.prank(addresses.guardianAddress);
+        pcvGuardAdmin.revokePCVGuardRole(guard);
+
+        vm.prank(guard);
+        vm.expectRevert(bytes("UNAUTHORIZED"));
+
+        pcvGuardian.withdrawAllToSafeAddress(address(pcvDeposit));
     }
 
     function testSetWhiteListAddress() public {

@@ -12,11 +12,7 @@ import {ICore} from "../core/ICore.sol";
 /// allowing for multiple roles to manage the PCV Guard role, as access controls only allow for
 /// a single admin for each role
 contract PCVGuardAdmin is IPCVGuardAdmin, CoreRef {
-    ICore private immutable _core;
-
-    constructor(address coreAddress) CoreRef(coreAddress) {
-        _core = ICore(coreAddress);
-    }
+    constructor(address _core) CoreRef(_core) {}
 
     // ---------- Governor-Only State-Changing API ----------
     function grantPCVGuardRole(address newGuard)
@@ -24,7 +20,7 @@ contract PCVGuardAdmin is IPCVGuardAdmin, CoreRef {
         override
         onlyGovernor
     {
-        _core.grantRole(TribeRoles.PCV_GUARD, newGuard);
+        core().grantRole(TribeRoles.PCV_GUARD, newGuard);
     }
 
     // ---------- Governor-Or-Guardian-Only State-Changing API ----------
@@ -34,6 +30,6 @@ contract PCVGuardAdmin is IPCVGuardAdmin, CoreRef {
         override
         onlyGuardianOrGovernor
     {
-        _core.revokeRole(TribeRoles.PCV_GUARD, oldGuard);
+        core().revokeRole(TribeRoles.PCV_GUARD, oldGuard);
     }
 }

@@ -104,9 +104,44 @@ contract PCVGuardianTest is DSTest {
         assertEq(underlyingToken.balanceOf(address(this)), mintAmount);
     }
 
+    function testWithdrawAllToSafeAddress() public {
+        vm.startPrank(addresses.governorAddress);
+        assertEq(underlyingToken.balanceOf(address(this)), 0);
+
+        uint256 amountToWithdraw = pcvDeposit.balance();
+        pcvGuardian.withdrawAllToSafeAddress(address(pcvDeposit));
+
+        assertEq(underlyingToken.balanceOf(address(this)), amountToWithdraw);
+    }
+
+    function testPCVGuardWithdrawAllToSafeAddress() public {
+        vm.startPrank(guard);
+        assertEq(underlyingToken.balanceOf(address(this)), 0);
+
+        uint256 amountToWithdraw = pcvDeposit.balance();
+        pcvGuardian.withdrawAllToSafeAddress(address(pcvDeposit));
+
+        assertEq(underlyingToken.balanceOf(address(this)), amountToWithdraw);
+    }
+
+    function testGuardianWithdrawAllToSafeAddress() public {
+        vm.startPrank(addresses.guardianAddress);
+        assertEq(underlyingToken.balanceOf(address(this)), 0);
+
+        uint256 amountToWithdraw = pcvDeposit.balance();
+        pcvGuardian.withdrawAllToSafeAddress(address(pcvDeposit));
+
+        assertEq(underlyingToken.balanceOf(address(this)), amountToWithdraw);
+    }
+
     function testWithdrawToSafeAddressFailWhenNoRole() public {
         vm.expectRevert(bytes("UNAUTHORIZED"));
         pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), mintAmount);
+    }
+
+    function testWithdrawAllToSafeAddressFailWhenNoRole() public {
+        vm.expectRevert(bytes("UNAUTHORIZED"));
+        pcvGuardian.withdrawAllToSafeAddress(address(pcvDeposit));
     }
 
     function testWithdrawToSafeAddressFailWhenGuardRevokedGovernor() public {
@@ -119,6 +154,16 @@ contract PCVGuardianTest is DSTest {
         pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), mintAmount);
     }
 
+    function testWithdrawAllToSafeAddressFailWhenGuardRevokedGovernor() public {
+        vm.prank(addresses.governorAddress);
+        pcvGuardAdmin.revokePCVGuardRole(guard);
+
+        vm.prank(guard);
+        vm.expectRevert(bytes("UNAUTHORIZED"));
+
+        pcvGuardian.withdrawAllToSafeAddress(address(pcvDeposit));
+    }
+
     function testWithdrawToSafeAddressFailWhenGuardRevokedGuardian() public {
         vm.prank(addresses.guardianAddress);
         pcvGuardAdmin.revokePCVGuardRole(guard);
@@ -129,11 +174,28 @@ contract PCVGuardianTest is DSTest {
         pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), mintAmount);
     }
 
+    function testWithdrawAllToSafeAddressFailWhenGuardRevokedGuardian() public {
+        vm.prank(addresses.guardianAddress);
+        pcvGuardAdmin.revokePCVGuardRole(guard);
+
+        vm.prank(guard);
+        vm.expectRevert(bytes("UNAUTHORIZED"));
+
+        pcvGuardian.withdrawAllToSafeAddress(address(pcvDeposit));
+    }
+
     function testWithdrawToSafeAddressFailWhenNotWhitelist() public {
         vm.prank(addresses.governorAddress);
         vm.expectRevert(bytes("Provided address is not whitelisted"));
 
         pcvGuardian.withdrawToSafeAddress(address(0x1), mintAmount);
+    }
+
+    function testWithdrawAlloSafeAddressFailWhenNotWhitelist() public {
+        vm.prank(addresses.governorAddress);
+        vm.expectRevert(bytes("Provided address is not whitelisted"));
+
+        pcvGuardian.withdrawAllToSafeAddress(address(0x1));
     }
 
     function testSetWhiteListAddress() public {

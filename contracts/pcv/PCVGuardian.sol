@@ -114,7 +114,7 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         }
     }
 
-    /// @notice governor-or-guardian-pcv-guard method to withdraw funds from a pcv deposit, by calling the withdraw() method on it
+    /// @notice governor-or-guardian-or-pcv-guard method to withdraw funds from a pcv deposit, by calling the withdraw() method on it
     /// @param pcvDeposit the address of the pcv deposit contract
     /// @param amount the amount to withdraw
     function withdrawToSafeAddress(address pcvDeposit, uint256 amount)
@@ -140,6 +140,35 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         }
 
         emit PCVGuardianWithdrawal(pcvDeposit, amount);
+    }
+
+    /// @notice governor-or-guardian-or-pcv-guard method to withdraw all at once funds from a pcv deposit, by calling the withdraw() method on it
+    /// @param pcvDeposit the address of the pcv deposit contract
+    function withdrawAllToSafeAddress(address pcvDeposit)
+        external
+        override
+        hasAnyOfThreeRoles(
+            TribeRoles.GOVERNOR,
+            TribeRoles.GUARDIAN,
+            TribeRoles.PCV_GUARD
+        )
+    {
+        require(
+            isWhitelistAddress(pcvDeposit),
+            "Provided address is not whitelisted"
+        );
+
+        uint256 amountToWithdraw = IPCVDeposit(pcvDeposit).balance();
+
+        if (pcvDeposit._paused()) {
+            pcvDeposit._unpause();
+            IPCVDeposit(pcvDeposit).withdraw(safeAddress, amountToWithdraw);
+            pcvDeposit._pause();
+        } else {
+            IPCVDeposit(pcvDeposit).withdraw(safeAddress, amountToWithdraw);
+        }
+
+        emit PCVGuardianWithdrawal(pcvDeposit, amountToWithdraw);
     }
 
     // ---------- Internal Functions ----------
