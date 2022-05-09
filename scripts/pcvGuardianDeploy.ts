@@ -8,6 +8,7 @@ import { Core, PCVGuardian } from '@custom-types/contracts';
 const { CORE, PROTOCOL_MULTISIG_ADDRESS, VOLT_FUSE_PCV_DEPOSIT, PCV_DEPOSIT, PRICE_BOUND_PSM } = config;
 
 const PCV_GUARD_ROLE = keccak256(utils.toUtf8Bytes('PCV_GUARD_ROLE'));
+const PCV_GUARD_ADMIN_ROLE = keccak256(utils.toUtf8Bytes('PCV_GUARD_ADMIN_ROLE'));
 
 const pcvGuardAddress1 = '0xf8D0387538E8e03F3B4394dA89f221D7565a28Ee';
 const pcvGuardAddress2 = '0xd90E9181B20D8D1B5034d9f5737804Da182039F6';
@@ -19,17 +20,32 @@ async function deploy() {
   const pcvGuardian = await PCVGuardian.deploy(CORE, PROTOCOL_MULTISIG_ADDRESS, whitelistAddresses);
   await pcvGuardian.deployed();
 
+  // Deploy PCV Guardian
   console.log('\n ~~~~~ Deployed PCV Guardian Successfully ~~~~~ \n');
   console.log(`PCV Guardian:        ${pcvGuardian.address}`);
 
+  const PCVGuardAdmin = await ethers.getContractFactory('PCVGuardAdmin');
+  const pcvGuardAdmin = await PCVGuardAdmin.deploy(CORE);
+  await pcvGuardAdmin.deployed();
+
+  //Deploy PCV Guard Admin
+  console.log('\n ~~~~~ Deployed PCV Guard Admin Successfully ~~~~~ \n');
+  console.log(`PCV Guard Admin:        ${pcvGuardAdmin.address}`);
+
   const core = await ethers.getContractAt('Core', CORE);
 
+  // Grant PCV Controller and Guardian Roles to the PCV Guardian Contract
   await core.grantPCVController(pcvGuardian.address);
   await core.grantGuardian(pcvGuardian.address);
 
-  await core.createRole(PCV_GUARD_ROLE, await core.GOVERN_ROLE());
-  await core.grantRole(PCV_GUARD_ROLE, pcvGuardAddress1);
-  await core.grantRole(PCV_GUARD_ROLE, pcvGuardAddress2);
+  // Create the PCV_GUARD_ADMIN Role and Grant to the PCV Guard Admin Contract
+  await core.createRole(PCV_GUARD_ADMIN_ROLE, await core.GOVERN_ROLE());
+  await core.grantRole(PCV_GUARD_ADMIN_ROLE, pcvGuardAdmin.address);
+
+  // Create the PCV Guard Role and grant the role to PCV Guards via the PCV Guard Admin contract
+  await core.createRole(PCV_GUARD_ROLE, PCV_GUARD_ADMIN_ROLE);
+  await pcvGuardAdmin.grantPCVGuardRole(pcvGuardAddress1);
+  await pcvGuardAdmin.grantPCVGuardRole(pcvGuardAddress2);
 
   await validateDeployment(core, pcvGuardian);
 
