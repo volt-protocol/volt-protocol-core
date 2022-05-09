@@ -58,6 +58,20 @@ contract PCVGuardAdminTest is DSTest {
         pcvGuardAdmin.grantPCVGuardRole(address(0x1234));
     }
 
+    function testRevokePCVGuardGovernor() public {
+        vm.startPrank(addresses.governorAddress);
+        pcvGuardAdmin.revokePCVGuardRole(guard);
+
+        assertTrue(!core.hasRole(TribeRoles.PCV_GUARD, guard));
+    }
+
+    function testRevokePCVGuardGuardian() public {
+        vm.startPrank(addresses.guardianAddress);
+        pcvGuardAdmin.revokePCVGuardRole(guard);
+
+        assertTrue(!core.hasRole(TribeRoles.PCV_GUARD, guard));
+    }
+
     function testRevokePCVGuardFailWhenNoRole() public {
         vm.expectRevert(bytes("CoreRef: Caller is not a guardian or governor"));
         pcvGuardAdmin.revokePCVGuardRole(guard);
