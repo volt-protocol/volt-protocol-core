@@ -5,7 +5,7 @@ import {CoreRef} from "../refs/CoreRef.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 
 /// @title PauseableLib
-/// @notice PauseableLib is a library that can be used to pause and unpause contracts, amont other utilities.
+/// @notice PauseableLib is a library that can be used to pause and unpause contracts, among other utilities.
 /// @dev This library should only be used on contracts that implement CoreRef.
 library CoreRefPauseableLib {
     function _pause(address _pauseableCoreRefAddress) internal {

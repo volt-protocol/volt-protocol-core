@@ -9,11 +9,10 @@ interface IPCVGuardAdmin {
     // PCV_GUARD_ADMIN admin of -> PCV_GUARD
     // This contract gets the PCV_GUARD_ADMIN role
 
-    // ----------- Setters -----------
+    // ---------- Governor-Only State-Changing API ----------
 
-    // only governor
     function grantPCVGuardRole(address newGuard) external;
 
-    // only governor or guardian
+    // ---------- Governor-Or-Guardian-Only State-Changing API ----------
     function revokePCVGuardRole(address newGuard) external;
 }

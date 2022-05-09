@@ -2,6 +2,7 @@
 pragma solidity ^0.8.4;
 
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
+import {PCVGuardAdmin} from "../../../pcv/PCVGuardAdmin.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
 import {MockPCVDepositV2} from "../../../mock/MockPCVDepositV2.sol";
 import {getCore, getAddresses, FeiTestAddresses} from "./../utils/Fixtures.sol";
@@ -12,6 +13,7 @@ import {Vm} from "./../utils/Vm.sol";
 
 contract PCVGuardianTest is DSTest {
     PCVGuardian private pcvGuardian;
+    PCVGuardAdmin private pcvGuardAdmin;
     MockERC20 public underlyingToken;
     MockPCVDepositV2 public pcvDeposit;
     ICore private core;
@@ -35,6 +37,8 @@ contract PCVGuardianTest is DSTest {
             0
         );
 
+        pcvGuardAdmin = new PCVGuardAdmin(address(core));
+
         // whitelist the pcvDeposit as one of the addresses that can be withdrawn from
         whitelistAddresses.push(address(pcvDeposit));
 
@@ -49,9 +53,13 @@ contract PCVGuardianTest is DSTest {
         core.grantPCVController(address(pcvGuardian));
         core.grantGuardian(address(pcvGuardian));
 
+        // create the PCV_GUARD_ADMIN role and grant it to the PCVGuardAdmin contract
+        core.createRole(TribeRoles.PCV_GUARD_ADMIN, TribeRoles.GOVERNOR);
+        core.grantRole(TribeRoles.PCV_GUARD_ADMIN, address(pcvGuardAdmin));
+
         // create the PCV guard role, and grant it to the 'guard' address
-        core.createRole(TribeRoles.PCV_GUARD, TribeRoles.GOVERNOR);
-        core.grantRole(TribeRoles.PCV_GUARD, guard);
+        core.createRole(TribeRoles.PCV_GUARD, TribeRoles.PCV_GUARD_ADMIN);
+        pcvGuardAdmin.grantPCVGuardRole(guard);
 
         underlyingToken.mint(address(pcvDeposit), mintAmount);
         pcvDeposit.deposit();
@@ -61,6 +69,12 @@ contract PCVGuardianTest is DSTest {
     function testPCVGuardianRoles() public {
         assertTrue(core.isGuardian(address(pcvGuardian)));
         assertTrue(core.isPCVController(address(pcvGuardian)));
+    }
+
+    function testPCVGuardAdminRole() public {
+        assertTrue(
+            core.hasRole(TribeRoles.PCV_GUARD_ADMIN, address(pcvGuardAdmin))
+        );
     }
 
     function testWithdrawToSafeAddress() public {
@@ -95,9 +109,19 @@ contract PCVGuardianTest is DSTest {
         pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), mintAmount);
     }
 
-    function testWithdrawToSafeAddressFailWhenGuardRevoked() public {
+    function testWithdrawToSafeAddressFailWhenGuardRevokedGovernor() public {
         vm.prank(addresses.governorAddress);
-        core.revokeRole(TribeRoles.PCV_GUARD, guard);
+        pcvGuardAdmin.revokePCVGuardRole(guard);
+
+        vm.prank(guard);
+        vm.expectRevert(bytes("UNAUTHORIZED"));
+
+        pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), mintAmount);
+    }
+
+    function testWithdrawToSafeAddressFailWhenGuardRevokedGuardian() public {
+        vm.prank(addresses.guardianAddress);
+        pcvGuardAdmin.revokePCVGuardRole(guard);
 
         vm.prank(guard);
         vm.expectRevert(bytes("UNAUTHORIZED"));
