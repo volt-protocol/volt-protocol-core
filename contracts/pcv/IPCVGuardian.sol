@@ -13,6 +13,12 @@ interface IPCVGuardian {
 
     event PCVGuardianWithdrawal(address indexed pcvDeposit, uint256 amount);
 
+    event PCVGuardianERC20Withdrawal(
+        address indexed pcvDeposit,
+        address token,
+        uint256 amount
+    );
+
     // ---------- Read-Only API ----------
 
     /// @notice returns true if the pcvDeposit address is whitelisted
@@ -55,4 +61,14 @@ interface IPCVGuardian {
     /// @notice governor-or-guardian-or-pcv-guard method to withdraw all at once funds from a pcv deposit, by calling the withdraw() method on it
     /// @param pcvDeposit the address of the pcv deposit contract
     function withdrawAllToSafeAddress(address pcvDeposit) external;
+
+    /// @notice governor-or-guardian-only method to withdraw an ERC20 from a pcv deposit, by calling the withdrawERC20() method on it
+    /// @param pcvDeposit the deposit to pull funds from
+    /// @param token the address of the token to withdraw
+    /// @param amount the amount of funds to withdraw
+    function withdrawERC20ToSafeAddress(
+        address pcvDeposit,
+        address token,
+        uint256 amount
+    ) external;
 }

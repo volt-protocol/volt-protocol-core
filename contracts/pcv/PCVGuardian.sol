@@ -153,6 +153,35 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         _withdrawToSafeAddress(pcvDeposit, IPCVDeposit(pcvDeposit).balance());
     }
 
+    /// @notice governor-or-guardian-only method to withdraw an ERC20 from a pcv deposit, by calling the withdrawERC20() method on it
+    /// @param pcvDeposit the deposit to pull funds from
+    /// @param token the address of the token to withdraw
+    /// @param amount the amount of funds to withdraw
+    function withdrawERC20ToSafeAddress(
+        address pcvDeposit,
+        address token,
+        uint256 amount
+    )
+        external
+        override
+        hasAnyOfThreeRoles(
+            TribeRoles.GOVERNOR,
+            TribeRoles.GUARDIAN,
+            TribeRoles.PCV_GUARD
+        )
+        onlyWhitelist(pcvDeposit)
+    {
+        if (pcvDeposit._paused()) {
+            pcvDeposit._unpause();
+            IPCVDeposit(pcvDeposit).withdrawERC20(token, safeAddress, amount);
+            pcvDeposit._pause();
+        } else {
+            IPCVDeposit(pcvDeposit).withdrawERC20(token, safeAddress, amount);
+        }
+
+        emit PCVGuardianERC20Withdrawal(pcvDeposit, token, amount);
+    }
+
     // ---------- Internal Functions ----------
 
     function _withdrawToSafeAddress(address pcvDeposit, uint256 amount)
@@ -170,12 +199,12 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
     }
 
     function _addWhitelistAddress(address pcvDeposit) internal {
-        require(whitelistAddresses.add(pcvDeposit), "set");
+        require(whitelistAddresses.add(pcvDeposit), "add");
         emit WhitelistAddressAdded(pcvDeposit);
     }
 
     function _removeWhitelistAddress(address pcvDeposit) internal {
-        require(whitelistAddresses.remove(pcvDeposit), "unset");
+        require(whitelistAddresses.remove(pcvDeposit), "remove");
         emit WhitelistAddressRemoved(pcvDeposit);
     }
 }
