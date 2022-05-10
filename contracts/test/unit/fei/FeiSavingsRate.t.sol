@@ -25,7 +25,7 @@ contract FeiSavingsRateTest is DSTest {
 
     address public feiHolder;
 
-    /// @notice increase price by 3.09% per month
+    /// @notice increase price by 3% per year
     uint256 public constant basisPointsPayout = 300;
 
     /// @notice initial mint amount
