@@ -11,8 +11,13 @@ interface IPCVGuardAdmin {
 
     // ---------- Governor-Only State-Changing API ----------
 
+    /// @notice This function can only be called by the Governor role to grant the PCV Guard role
+    /// @param newGuard address of the account to be revoked the role of PCV Guard
     function grantPCVGuardRole(address newGuard) external;
 
     // ---------- Governor-Or-Guardian-Only State-Changing API ----------
-    function revokePCVGuardRole(address newGuard) external;
+
+    /// @notice This function can only be called by the Governor or Guardian roles to revoke the PCV Guard role
+    /// @param oldGuard address of the account to be revoked the role of PCV Guard
+    function revokePCVGuardRole(address oldGuard) external;
 }

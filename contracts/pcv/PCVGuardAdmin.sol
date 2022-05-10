@@ -16,8 +16,8 @@ contract PCVGuardAdmin is IPCVGuardAdmin, CoreRef {
 
     // ---------- Governor-Only State-Changing API ----------
 
-    ///@param newGuard address of the account to be made a PCV Guard
-    ///@notice This function can only be called by the Governor role
+    /// @notice This function can only be called by the Governor role to grant the PCV Guard role
+    /// @param newGuard address of the account to be made a PCV Guard
     function grantPCVGuardRole(address newGuard)
         external
         override
@@ -28,8 +28,8 @@ contract PCVGuardAdmin is IPCVGuardAdmin, CoreRef {
 
     // ---------- Governor-Or-Guardian-Only State-Changing API ----------
 
-    ///@param oldGuard address of the account to be revoked the role of PCV Guard
-    ///@notice This function can only be called by the Governor or Guardian roles
+    /// @notice This function can only be called by the Governor or Guardian roles to revoke the PCV Guard role
+    /// @param oldGuard address of the account to be revoked the role of PCV Guard
     function revokePCVGuardRole(address oldGuard)
         external
         override
