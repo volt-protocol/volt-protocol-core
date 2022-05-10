@@ -201,14 +201,14 @@ contract PCVGuardianTest is DSTest {
     function testSetWhiteListAddress() public {
         vm.prank(addresses.governorAddress);
 
-        pcvGuardian.setWhitelistAddress(address(0x123));
+        pcvGuardian.addWhitelistAddress(address(0x123));
         assertTrue(pcvGuardian.isWhitelistAddress(address(0x123)));
     }
 
     function testUnsetWhiteListAddress() public {
         vm.prank(addresses.governorAddress);
 
-        pcvGuardian.unsetWhitelistAddress(address(pcvDeposit));
+        pcvGuardian.removeWhitelistAddress(address(pcvDeposit));
         assertTrue(!pcvGuardian.isWhitelistAddress(address(pcvDeposit)));
     }
 }
