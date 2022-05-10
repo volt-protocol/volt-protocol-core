@@ -27,8 +27,8 @@ interface IPCVGuardian {
 
     // ---------- Governor-Only State-Changing API ----------
 
-    /// @notice governor-only method to whitelist an address as part of the internal addresses that can be withdrawn from
-    /// @param pcvDeposit to add to whitelisted addresses
+    /// @notice governor-only method to whitelist a pcvDeposit address to withdraw funds from
+    /// @param pcvDeposit the address to whitelist
     function addWhitelistAddress(address pcvDeposit) external;
 
     /// @notice batch version of addWhitelistAddress
@@ -38,7 +38,7 @@ interface IPCVGuardian {
 
     // ---------- Governor-or-Guardian-Only State-Changing API ----------
 
-    /// @notice governor-or-guardian-only method to un-whitelist an address as part of the internal addresses that can be withdrawn from
+    /// @notice governor-or-guardian-only method to remove pcvDeposit address from the whitelist to withdraw funds from
     /// @param pcvDeposit the address to un-whitelist
     function removeWhitelistAddress(address pcvDeposit) external;
 

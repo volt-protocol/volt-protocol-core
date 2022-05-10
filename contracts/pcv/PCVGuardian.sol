@@ -68,8 +68,8 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
 
     // ---------- Governor-Only State-Changing API ----------
 
-    /// @notice governor-only method to whitelist a pcvDesposit address to withdraw funds from
-    /// @param pcvDeposit the address to set as safe
+    /// @notice governor-only method to whitelist a pcvDeposit address to withdraw funds from
+    /// @param pcvDeposit the address to whitelist
     function addWhitelistAddress(address pcvDeposit)
         external
         override
@@ -78,7 +78,7 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         _addWhitelistAddress(pcvDeposit);
     }
 
-    /// @notice batch version of setWhiteListaddress
+    /// @notice batch version of addWhiteListaddress
     /// @param _whitelistAddresses the addresses to whitelist, as calldata
     function addWhitelistAddresses(address[] calldata _whitelistAddresses)
         external
@@ -96,8 +96,8 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
 
     // ---------- Governor-Or-Guardian-Only State-Changing API ----------
 
-    /// @notice governor-or-guardian-only method to un-whitelist a pcvDesposit address to withdraw funds from
-    /// @param pcvDeposit the address to un-set as safe
+    /// @notice governor-or-guardian-only method to remove pcvDeposit address from the whitelist to withdraw funds from
+    /// @param pcvDeposit the address to remove from whitelist
     function removeWhitelistAddress(address pcvDeposit)
         external
         override
@@ -106,8 +106,8 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         _removeWhitelistAddress(pcvDeposit);
     }
 
-    /// @notice batch version of unsetWhitelistAddress
-    /// @param _whitelistAddresses the addresses to un-whitelist
+    /// @notice batch version of removeWhitelistAddress
+    /// @param _whitelistAddresses the addresses to remove from whitelist
     function removeWhitelistAddresses(address[] calldata _whitelistAddresses)
         external
         override
