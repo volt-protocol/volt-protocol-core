@@ -101,12 +101,21 @@ contract FeiSavingsRate is IFeiSavingsRate {
     /// @notice function that only the Tribe DAO governor can call to cancel the FSR for Volt
     /// this removes all Fei from the FSR contract and sends that Fei to the caller
     function clawback() external override {
+        /// Check
         require(
             feiCore.isGovernor(msg.sender),
             "Fei Savings Rate: Not Fei governor"
         );
 
+        uint40 newBlockTimestamp = uint40(block.timestamp);
+
+        /// Effects
+        lastRecordedPayout = newBlockTimestamp; /// jump to latest block
+        lastFeiAmount = 0; /// zero fei balance
+        /// this zero's out the existing unpaid rewards stream
+
         uint256 feiBalance = fei.balanceOf(address(this));
+        /// Interactions
         fei.safeTransfer(msg.sender, feiBalance);
 
         emit Clawback(feiBalance);

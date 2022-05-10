@@ -62,6 +62,27 @@ contract FeiSavingsRateTest is DSTest {
         fsr.clawback();
     }
 
+    function testClawbackSucceedsAsGovernor() public {
+        vm.prank(addresses.governorAddress);
+        fsr.clawback();
+    }
+
+    function testClawbackSucceedsAsGovernorAndUnclaimedInterestRemoved()
+        public
+    {
+        uint256 mintAmt = 10_000_000e18;
+        fei.mint(address(fsr), mintAmt);
+
+        vm.warp(block.timestamp + 1000);
+        vm.prank(addresses.governorAddress);
+        fsr.clawback();
+
+        assertEq(fsr.lastFeiAmount(), 0);
+        assertEq(fsr.lastRecordedPayout(), block.timestamp);
+        assertEq(fei.balanceOf(address(fsr)), 0);
+        assertEq(fei.balanceOf(addresses.governorAddress), mintAmt);
+    }
+
     function testLastFeiAmountSetCorrectly() public {
         assertEq(initialMintAmount, fsr.lastFeiAmount());
     }
@@ -96,7 +117,7 @@ contract FeiSavingsRateTest is DSTest {
         fei.mint(address(fsr), type(uint248).max); /// give the fsr address the max amt of fei tokens to pay out
         fei.mint(feiHolder, amt);
         vm.warp(block.timestamp + 1);
-        fsr.earnInterest(); // sync these new values
+        fsr.earnInterest(); // sync these new token and block timestamp values
         uint256 currentLastRecordedPayout = fsr.lastRecordedPayout();
 
         vm.warp(block.timestamp + x);
