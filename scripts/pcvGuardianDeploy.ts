@@ -1,17 +1,20 @@
 import hre, { ethers } from 'hardhat';
 import { expect } from 'chai';
-import { utils } from 'ethers';
-import { keccak256 } from 'ethers/lib/utils';
 import config from './config';
 import { Core, PCVGuardian } from '@custom-types/contracts';
 
-const { CORE, PROTOCOL_MULTISIG_ADDRESS, VOLT_FUSE_PCV_DEPOSIT, PCV_DEPOSIT, PRICE_BOUND_PSM } = config;
+const {
+  CORE,
+  PROTOCOL_MULTISIG_ADDRESS,
+  VOLT_FUSE_PCV_DEPOSIT,
+  PCV_DEPOSIT,
+  PRICE_BOUND_PSM,
+  PCV_GUARD_EOA_1,
+  PCV_GUARD_EOA_2
+} = config;
 
-const PCV_GUARD_ROLE = keccak256(utils.toUtf8Bytes('PCV_GUARD_ROLE'));
-const PCV_GUARD_ADMIN_ROLE = keccak256(utils.toUtf8Bytes('PCV_GUARD_ADMIN_ROLE'));
-
-const pcvGuardAddress1 = '0xf8D0387538E8e03F3B4394dA89f221D7565a28Ee';
-const pcvGuardAddress2 = '0xd90E9181B20D8D1B5034d9f5737804Da182039F6';
+const PCV_GUARD_ROLE = ethers.utils.id('PCV_GUARD_ROLE');
+const PCV_GUARD_ADMIN_ROLE = ethers.utils.id('PCV_GUARD_ADMIN_ROLE');
 
 async function deploy() {
   const PCVGuardian = await ethers.getContractFactory('PCVGuardian');
@@ -44,8 +47,8 @@ async function deploy() {
 
   // Create the PCV Guard Role and grant the role to PCV Guards via the PCV Guard Admin contract
   await core.createRole(PCV_GUARD_ROLE, PCV_GUARD_ADMIN_ROLE);
-  await pcvGuardAdmin.grantPCVGuardRole(pcvGuardAddress1);
-  await pcvGuardAdmin.grantPCVGuardRole(pcvGuardAddress2);
+  await pcvGuardAdmin.grantPCVGuardRole(PCV_GUARD_EOA_1);
+  await pcvGuardAdmin.grantPCVGuardRole(PCV_GUARD_EOA_2);
 
   await validateDeployment(core, pcvGuardian);
 
@@ -61,8 +64,8 @@ async function validateDeployment(core: Core, pcvGuardian: PCVGuardian) {
   expect(await core.isPCVController(pcvGuardian.address)).to.be.true;
   expect(await core.isGuardian(pcvGuardian.address)).to.be.true;
 
-  expect(await core.hasRole(PCV_GUARD_ROLE, pcvGuardAddress1)).to.be.true;
-  expect(await core.hasRole(PCV_GUARD_ROLE, pcvGuardAddress2)).to.be.true;
+  expect(await core.hasRole(PCV_GUARD_ROLE, PCV_GUARD_EOA_1)).to.be.true;
+  expect(await core.hasRole(PCV_GUARD_ROLE, PCV_GUARD_EOA_2)).to.be.true;
 
   expect(await pcvGuardian.isWhitelistAddress(VOLT_FUSE_PCV_DEPOSIT)).to.be.true;
   expect(await pcvGuardian.isWhitelistAddress(PCV_DEPOSIT)).to.be.true;
