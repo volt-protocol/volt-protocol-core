@@ -171,13 +171,7 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         )
         onlyWhitelist(pcvDeposit)
     {
-        if (pcvDeposit._paused()) {
-            pcvDeposit._unpause();
-            IPCVDeposit(pcvDeposit).withdrawERC20(token, safeAddress, amount);
-            pcvDeposit._pause();
-        } else {
-            IPCVDeposit(pcvDeposit).withdrawERC20(token, safeAddress, amount);
-        }
+        IPCVDeposit(pcvDeposit).withdrawERC20(token, safeAddress, amount);
 
         emit PCVGuardianERC20Withdrawal(pcvDeposit, token, amount);
     }
