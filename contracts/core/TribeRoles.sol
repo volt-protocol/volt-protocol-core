@@ -26,7 +26,7 @@ library TribeRoles {
     /// @notice can mint FEI arbitrarily
     bytes32 internal constant MINTER = keccak256("MINTER_ROLE");
 
-    ///@notice is able to withdraw whistelisted PCV deposits to a safe address
+    ///@notice is able to withdraw whitelisted PCV deposits to a safe address
     bytes32 internal constant PCV_GUARD = keccak256("PCV_GUARD_ROLE");
 
     /*///////////////////////////////////////////////////////////////
