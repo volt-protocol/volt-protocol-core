@@ -89,7 +89,10 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
     {
         // improbable to ever overflow
         unchecked {
-            require(_whitelistAddresses.length != 0, "empty");
+            require(
+                _whitelistAddresses.length != 0,
+                "PCVGuardian: Empty address array provided"
+            );
             for (uint256 i = 0; i < _whitelistAddresses.length; i++) {
                 _addWhitelistAddress(_whitelistAddresses[i]);
             }
@@ -117,7 +120,10 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
     {
         // improbable to ever overflow
         unchecked {
-            require(_whitelistAddresses.length != 0, "empty");
+            require(
+                _whitelistAddresses.length != 0,
+                "PCVGuardian: Empty address array provided"
+            );
             for (uint256 i = 0; i < _whitelistAddresses.length; i++) {
                 _removeWhitelistAddress(_whitelistAddresses[i]);
             }
