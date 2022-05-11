@@ -232,7 +232,7 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
     function _removeWhitelistAddress(address pcvDeposit) internal {
         require(
             whitelistAddresses.remove(pcvDeposit),
-            "PCVGuardian: Failed to remove address to whitelist"
+            "PCVGuardian: Failed to remove address from whitelist"
         );
         emit WhitelistAddressRemoved(pcvDeposit);
     }
