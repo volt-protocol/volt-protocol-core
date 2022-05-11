@@ -12,6 +12,12 @@ import {getMainnetAddresses, FeiTestAddresses} from "../unit/utils/Fixtures.sol"
 import {DSTest} from "../unit/utils/DSTest.sol";
 import {Vm} from "../unit/utils/Vm.sol";
 
+interface IPCVDepositTest is IPCVDeposit {
+    function pause() external;
+
+    function paused() external view returns (bool);
+}
+
 contract IntegrationTestPCVGuardian is DSTest {
     PCVGuardian private pcvGuardian;
     PCVGuardAdmin private pcvGuardAdmin;
@@ -19,8 +25,8 @@ contract IntegrationTestPCVGuardian is DSTest {
     ICore private core = ICore(0xEC7AD284f7Ad256b64c6E69b84Eb0F48f42e8196);
     IVolt private fei = IVolt(0x956F47F50A910163D8BF957Cf5846D573E7f87CA);
 
-    IPCVDeposit private pcvDeposit =
-        IPCVDeposit(0x4188fbD7aDC72853E3275F1c3503E170994888D7);
+    IPCVDepositTest private pcvDeposit =
+        IPCVDepositTest(0x4188fbD7aDC72853E3275F1c3503E170994888D7);
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
@@ -66,6 +72,18 @@ contract IntegrationTestPCVGuardian is DSTest {
         assertTrue(
             core.hasRole(TribeRoles.PCV_GUARD_ADMIN, address(pcvGuardAdmin))
         );
+    }
+
+    function testPausedAfterWithdrawToSafeAddress() public {
+        vm.startPrank(addresses.voltDeployerAddress);
+        pcvDeposit.pause();
+        assertEq(fei.balanceOf(address(this)), 0);
+
+        pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), withdrawAmount);
+        vm.stopPrank();
+
+        assertEq(fei.balanceOf(address(this)), withdrawAmount);
+        assertTrue(pcvDeposit.paused());
     }
 
     function testGovernorWithdrawToSafeAddress() public {

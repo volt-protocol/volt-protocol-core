@@ -83,6 +83,18 @@ contract PCVGuardianTest is DSTest {
         );
     }
 
+    function testPausedAfterWithdrawToSafeAddress() public {
+        vm.startPrank(addresses.governorAddress);
+        pcvDeposit.pause();
+        assertEq(underlyingToken.balanceOf(address(this)), 0);
+
+        pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), mintAmount);
+        vm.stopPrank();
+
+        assertEq(underlyingToken.balanceOf(address(this)), mintAmount);
+        assertTrue(pcvDeposit.paused());
+    }
+
     function testWithdrawToSafeAddress() public {
         vm.startPrank(addresses.governorAddress);
         assertEq(underlyingToken.balanceOf(address(this)), 0);
