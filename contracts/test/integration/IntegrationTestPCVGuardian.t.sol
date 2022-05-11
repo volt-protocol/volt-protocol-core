@@ -143,14 +143,18 @@ contract IntegrationTestPCVGuardian is DSTest {
 
     function testWithdrawToSafeAddressFailWhenNotWhitelist() public {
         vm.prank(addresses.voltDeployerAddress);
-        vm.expectRevert(bytes("Provided address is not whitelisted"));
+        vm.expectRevert(
+            bytes("PCVGuardian: Provided address is not whitelisted")
+        );
 
         pcvGuardian.withdrawToSafeAddress(address(0x1), withdrawAmount);
     }
 
     function testWithdrawAllToSafeAddressFailWhenNotWhitelist() public {
         vm.prank(addresses.voltDeployerAddress);
-        vm.expectRevert(bytes("Provided address is not whitelisted"));
+        vm.expectRevert(
+            bytes("PCVGuardian: Provided address is not whitelisted")
+        );
 
         pcvGuardian.withdrawAllToSafeAddress(address(0x1));
     }

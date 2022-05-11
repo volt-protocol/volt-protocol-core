@@ -137,7 +137,9 @@ contract PCVGuardianTest is DSTest {
 
     function testWithdrawToSafeAddressFailWhenNotWhitelist() public {
         vm.prank(addresses.governorAddress);
-        vm.expectRevert(bytes("Provided address is not whitelisted"));
+        vm.expectRevert(
+            bytes("PCVGuardian: Provided address is not whitelisted")
+        );
 
         pcvGuardian.withdrawToSafeAddress(address(0x1), mintAmount);
     }
@@ -199,7 +201,9 @@ contract PCVGuardianTest is DSTest {
 
     function testWithdrawAlloSafeAddressFailWhenNotWhitelist() public {
         vm.prank(addresses.governorAddress);
-        vm.expectRevert(bytes("Provided address is not whitelisted"));
+        vm.expectRevert(
+            bytes("PCVGuardian: Provided address is not whitelisted")
+        );
 
         pcvGuardian.withdrawAllToSafeAddress(address(0x1));
     }
@@ -286,7 +290,9 @@ contract PCVGuardianTest is DSTest {
 
     function testWithdrawERC20oSafeAddressFailWhenNotWhitelist() public {
         vm.prank(addresses.governorAddress);
-        vm.expectRevert(bytes("Provided address is not whitelisted"));
+        vm.expectRevert(
+            bytes("PCVGuardian: Provided address is not whitelisted")
+        );
 
         pcvGuardian.withdrawERC20ToSafeAddress(
             address(0x1),
@@ -371,7 +377,9 @@ contract PCVGuardianTest is DSTest {
 
     function testWithdrawAllERC20ToSafeAddressFailWhenNotWhitelist() public {
         vm.prank(addresses.governorAddress);
-        vm.expectRevert(bytes("Provided address is not whitelisted"));
+        vm.expectRevert(
+            bytes("PCVGuardian: Provided address is not whitelisted")
+        );
 
         pcvGuardian.withdrawAllERC20ToSafeAddress(
             address(0x1),
