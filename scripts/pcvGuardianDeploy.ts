@@ -35,22 +35,24 @@ async function deploy() {
   console.log('\n ~~~~~ Deployed PCV Guard Admin Successfully ~~~~~ \n');
   console.log(`PCV Guard Admin:        ${pcvGuardAdmin.address}`);
 
-  const core = await ethers.getContractAt('Core', CORE);
+  if (hre.network.name !== 'mainnet') {
+    const core = await ethers.getContractAt('Core', CORE);
 
-  // Grant PCV Controller and Guardian Roles to the PCV Guardian Contract
-  await core.grantPCVController(pcvGuardian.address);
-  await core.grantGuardian(pcvGuardian.address);
+    // Grant PCV Controller and Guardian Roles to the PCV Guardian Contract
+    await core.grantPCVController(pcvGuardian.address);
+    await core.grantGuardian(pcvGuardian.address);
 
-  // Create the PCV_GUARD_ADMIN Role and Grant to the PCV Guard Admin Contract
-  await core.createRole(PCV_GUARD_ADMIN_ROLE, await core.GOVERN_ROLE());
-  await core.grantRole(PCV_GUARD_ADMIN_ROLE, pcvGuardAdmin.address);
+    // Create the PCV_GUARD_ADMIN Role and Grant to the PCV Guard Admin Contract
+    await core.createRole(PCV_GUARD_ADMIN_ROLE, await core.GOVERN_ROLE());
+    await core.grantRole(PCV_GUARD_ADMIN_ROLE, pcvGuardAdmin.address);
 
-  // Create the PCV Guard Role and grant the role to PCV Guards via the PCV Guard Admin contract
-  await core.createRole(PCV_GUARD_ROLE, PCV_GUARD_ADMIN_ROLE);
-  await pcvGuardAdmin.grantPCVGuardRole(PCV_GUARD_EOA_1);
-  await pcvGuardAdmin.grantPCVGuardRole(PCV_GUARD_EOA_2);
+    // Create the PCV Guard Role and grant the role to PCV Guards via the PCV Guard Admin contract
+    await core.createRole(PCV_GUARD_ROLE, PCV_GUARD_ADMIN_ROLE);
+    await pcvGuardAdmin.grantPCVGuardRole(PCV_GUARD_EOA_1);
+    await pcvGuardAdmin.grantPCVGuardRole(PCV_GUARD_EOA_2);
 
-  await validateDeployment(core, pcvGuardian);
+    await validateDeployment(core, pcvGuardian);
+  }
 
   await hre.run('verify:verify', {
     address: pcvGuardian.address,
