@@ -73,6 +73,7 @@ contract IntegrationTestPCVGuardian is DSTest {
         assertEq(fei.balanceOf(address(this)), 0);
 
         pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), withdrawAmount);
+        vm.stopPrank();
 
         assertEq(fei.balanceOf(address(this)), withdrawAmount);
     }
@@ -83,6 +84,7 @@ contract IntegrationTestPCVGuardian is DSTest {
 
         uint256 amountToWithdraw = pcvDeposit.balance();
         pcvGuardian.withdrawAllToSafeAddress(address(pcvDeposit));
+        vm.stopPrank();
 
         assertEq(fei.balanceOf(address(this)), amountToWithdraw);
     }
@@ -127,6 +129,7 @@ contract IntegrationTestPCVGuardian is DSTest {
         uint256 amountToWithdraw = pcvDeposit.balance();
 
         pcvGuardian.withdrawAllToSafeAddress(address(pcvDeposit));
+        vm.stopPrank();
 
         assertEq(fei.balanceOf(address(this)), amountToWithdraw);
     }

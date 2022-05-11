@@ -153,7 +153,7 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         _withdrawToSafeAddress(pcvDeposit, IPCVDeposit(pcvDeposit).balance());
     }
 
-    /// @notice governor-or-guardian-only method to withdraw an ERC20 from a pcv deposit, by calling the withdrawERC20() method on it
+    /// @notice governor-or-guardian-or-pcv-guard method to withdraw an ERC20 from a pcv deposit, by calling the withdrawERC20() method on it
     /// @param pcvDeposit the deposit to pull funds from
     /// @param token the address of the token to withdraw
     /// @param amount the amount of funds to withdraw
@@ -174,7 +174,7 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         _withdrawERC20ToSafeAddress(pcvDeposit, token, amount);
     }
 
-    /// @notice governor-or-guardian-only method to withdraw all of an ERC20 balance from a pcv deposit, by calling the withdrawERC20() method on it
+    /// @notice governor-or-guardian-or-pcv-guard method to withdraw all of an ERC20 balance from a pcv deposit, by calling the withdrawERC20() method on it
     /// @param pcvDeposit the deposit to pull funds from
     /// @param token the address of the token to withdraw
     function withdrawAllERC20ToSafeAddress(address pcvDeposit, address token)

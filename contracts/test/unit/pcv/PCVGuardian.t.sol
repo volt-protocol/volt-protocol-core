@@ -88,6 +88,7 @@ contract PCVGuardianTest is DSTest {
         assertEq(underlyingToken.balanceOf(address(this)), 0);
 
         pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), mintAmount);
+        vm.stopPrank();
 
         assertEq(underlyingToken.balanceOf(address(this)), mintAmount);
     }
@@ -97,6 +98,7 @@ contract PCVGuardianTest is DSTest {
         assertEq(underlyingToken.balanceOf(address(this)), 0);
 
         pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), mintAmount);
+        vm.stopPrank();
 
         assertEq(underlyingToken.balanceOf(address(this)), mintAmount);
     }
@@ -106,6 +108,7 @@ contract PCVGuardianTest is DSTest {
         assertEq(underlyingToken.balanceOf(address(this)), 0);
 
         pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), mintAmount);
+        vm.stopPrank();
 
         assertEq(underlyingToken.balanceOf(address(this)), mintAmount);
     }
@@ -150,6 +153,7 @@ contract PCVGuardianTest is DSTest {
 
         uint256 amountToWithdraw = pcvDeposit.balance();
         pcvGuardian.withdrawAllToSafeAddress(address(pcvDeposit));
+        vm.stopPrank();
 
         assertEq(underlyingToken.balanceOf(address(this)), amountToWithdraw);
     }
@@ -160,6 +164,7 @@ contract PCVGuardianTest is DSTest {
 
         uint256 amountToWithdraw = pcvDeposit.balance();
         pcvGuardian.withdrawAllToSafeAddress(address(pcvDeposit));
+        vm.stopPrank();
 
         assertEq(underlyingToken.balanceOf(address(this)), amountToWithdraw);
     }
@@ -170,6 +175,7 @@ contract PCVGuardianTest is DSTest {
 
         uint256 amountToWithdraw = pcvDeposit.balance();
         pcvGuardian.withdrawAllToSafeAddress(address(pcvDeposit));
+        vm.stopPrank();
 
         assertEq(underlyingToken.balanceOf(address(this)), amountToWithdraw);
     }
@@ -217,6 +223,7 @@ contract PCVGuardianTest is DSTest {
             address(rewardToken),
             mintAmount
         );
+        vm.stopPrank();
 
         assertEq(rewardToken.balanceOf(address(this)), mintAmount);
     }
@@ -230,6 +237,7 @@ contract PCVGuardianTest is DSTest {
             address(rewardToken),
             mintAmount
         );
+        vm.stopPrank();
 
         assertEq(rewardToken.balanceOf(address(this)), mintAmount);
     }
@@ -243,6 +251,7 @@ contract PCVGuardianTest is DSTest {
             address(rewardToken),
             mintAmount
         );
+        vm.stopPrank();
 
         assertEq(rewardToken.balanceOf(address(this)), mintAmount);
     }
@@ -309,6 +318,7 @@ contract PCVGuardianTest is DSTest {
             address(pcvDeposit),
             address(rewardToken)
         );
+        vm.stopPrank();
 
         assertEq(rewardToken.balanceOf(address(this)), mintAmount);
     }
@@ -321,6 +331,7 @@ contract PCVGuardianTest is DSTest {
             address(pcvDeposit),
             address(rewardToken)
         );
+        vm.stopPrank();
 
         assertEq(rewardToken.balanceOf(address(this)), mintAmount);
     }
@@ -333,6 +344,7 @@ contract PCVGuardianTest is DSTest {
             address(pcvDeposit),
             address(rewardToken)
         );
+        vm.stopPrank();
 
         assertEq(rewardToken.balanceOf(address(this)), mintAmount);
     }
