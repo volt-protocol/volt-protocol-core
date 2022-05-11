@@ -41,7 +41,7 @@ contract PCVGuardAdminTest is DSTest {
     }
 
     function testGrantPCVGuard() public {
-        vm.startPrank(addresses.governorAddress);
+        vm.prank(addresses.governorAddress);
         pcvGuardAdmin.grantPCVGuardRole(address(0x1234));
 
         assertTrue(core.hasRole(TribeRoles.PCV_GUARD, address(0x1234)));
@@ -53,20 +53,20 @@ contract PCVGuardAdminTest is DSTest {
     }
 
     function testGrantPCVGuardFailWhenGuardian() public {
-        vm.startPrank(addresses.guardianAddress);
+        vm.prank(addresses.guardianAddress);
         vm.expectRevert(bytes("CoreRef: Caller is not a governor"));
         pcvGuardAdmin.grantPCVGuardRole(address(0x1234));
     }
 
     function testRevokePCVGuardGovernor() public {
-        vm.startPrank(addresses.governorAddress);
+        vm.prank(addresses.governorAddress);
         pcvGuardAdmin.revokePCVGuardRole(guard);
 
         assertTrue(!core.hasRole(TribeRoles.PCV_GUARD, guard));
     }
 
     function testRevokePCVGuardGuardian() public {
-        vm.startPrank(addresses.guardianAddress);
+        vm.prank(addresses.guardianAddress);
         pcvGuardAdmin.revokePCVGuardRole(guard);
 
         assertTrue(!core.hasRole(TribeRoles.PCV_GUARD, guard));
