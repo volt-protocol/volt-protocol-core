@@ -2,6 +2,7 @@
 pragma solidity ^0.8.4;
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {CoreRef} from "../refs/CoreRef.sol";
 import {IPCVGuardian} from "./IPCVGuardian.sol";
 import {IPCVDeposit} from "./IPCVDeposit.sol";
@@ -171,9 +172,27 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         )
         onlyWhitelist(pcvDeposit)
     {
-        IPCVDeposit(pcvDeposit).withdrawERC20(token, safeAddress, amount);
+        _wtihdrawERC20ToSafeAddress(pcvDeposit, token, amount);
+    }
 
-        emit PCVGuardianERC20Withdrawal(pcvDeposit, token, amount);
+    /// @notice governor-or-guardian-only method to withdraw all of an ERC20 balance from a pcv deposit, by calling the withdrawERC20() method on it
+    /// @param pcvDeposit the deposit to pull funds from
+    /// @param token the address of the token to withdraw
+    function withdrawAllERC20ToSafeAddress(address pcvDeposit, address token)
+        external
+        override
+        hasAnyOfThreeRoles(
+            TribeRoles.GOVERNOR,
+            TribeRoles.GUARDIAN,
+            TribeRoles.PCV_GUARD
+        )
+        onlyWhitelist(pcvDeposit)
+    {
+        _wtihdrawERC20ToSafeAddress(
+            pcvDeposit,
+            token,
+            IERC20(token).balanceOf(pcvDeposit)
+        );
     }
 
     // ---------- Internal Functions ----------
@@ -190,6 +209,15 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         }
 
         emit PCVGuardianWithdrawal(pcvDeposit, amount);
+    }
+
+    function _wtihdrawERC20ToSafeAddress(
+        address pcvDeposit,
+        address token,
+        uint256 amount
+    ) internal {
+        IPCVDeposit(pcvDeposit).withdrawERC20(token, safeAddress, amount);
+        emit PCVGuardianERC20Withdrawal(pcvDeposit, token, amount);
     }
 
     function _addWhitelistAddress(address pcvDeposit) internal {

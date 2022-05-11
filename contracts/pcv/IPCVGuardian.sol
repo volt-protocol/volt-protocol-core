@@ -71,4 +71,10 @@ interface IPCVGuardian {
         address token,
         uint256 amount
     ) external;
+
+    /// @notice governor-or-guardian-only method to withdraw all of an ERC20 balance from a pcv deposit, by calling the withdrawERC20() method on it
+    /// @param pcvDeposit the deposit to pull funds from
+    /// @param token the address of the token to withdraw
+    function withdrawAllERC20ToSafeAddress(address pcvDeposit, address token)
+        external;
 }
