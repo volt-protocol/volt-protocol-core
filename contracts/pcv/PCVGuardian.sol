@@ -6,13 +6,13 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {CoreRef} from "../refs/CoreRef.sol";
 import {IPCVGuardian} from "./IPCVGuardian.sol";
 import {IPCVDeposit} from "./IPCVDeposit.sol";
-import {CoreRefPauseableLib} from "../libs/CoreRefPauseableLib.sol";
+import {CoreRefPausableLib} from "../libs/CoreRefPausableLib.sol";
 import {TribeRoles} from "../core/TribeRoles.sol";
 
 /// @notice PCV Guardian is a contract to safeguard protocol funds
 /// by being able to withdraw whitelisted PCV deposits to an immutable safe address
 contract PCVGuardian is IPCVGuardian, CoreRef {
-    using CoreRefPauseableLib for address;
+    using CoreRefPausableLib for address;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     ///@notice set of whitelisted pcvDeposit addresses for withdrawal
