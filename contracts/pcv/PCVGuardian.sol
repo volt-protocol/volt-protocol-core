@@ -36,10 +36,11 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         }
     }
 
+    /// @dev checks if a pcv deposit address is whitelisted, reverts if not
     modifier onlyWhitelist(address pcvDeposit) {
         require(
             isWhitelistAddress(pcvDeposit),
-            "Provided address is not whitelisted"
+            "PCVGuardian: Provided address is not whitelisted"
         );
         _;
     }
@@ -221,12 +222,18 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
     }
 
     function _addWhitelistAddress(address pcvDeposit) internal {
-        require(whitelistAddresses.add(pcvDeposit), "add");
+        require(
+            whitelistAddresses.add(pcvDeposit),
+            "PCVGuardian: Failed to add address to whitelist"
+        );
         emit WhitelistAddressAdded(pcvDeposit);
     }
 
     function _removeWhitelistAddress(address pcvDeposit) internal {
-        require(whitelistAddresses.remove(pcvDeposit), "remove");
+        require(
+            whitelistAddresses.remove(pcvDeposit),
+            "PCVGuardian: Failed to remove address to whitelist"
+        );
         emit WhitelistAddressRemoved(pcvDeposit);
     }
 }
