@@ -89,10 +89,6 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
     {
         // improbable to ever overflow
         unchecked {
-            require(
-                _whitelistAddresses.length != 0,
-                "PCVGuardian: Empty address array provided"
-            );
             for (uint256 i = 0; i < _whitelistAddresses.length; i++) {
                 _addWhitelistAddress(_whitelistAddresses[i]);
             }
@@ -120,10 +116,6 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
     {
         // improbable to ever overflow
         unchecked {
-            require(
-                _whitelistAddresses.length != 0,
-                "PCVGuardian: Empty address array provided"
-            );
             for (uint256 i = 0; i < _whitelistAddresses.length; i++) {
                 _removeWhitelistAddress(_whitelistAddresses[i]);
             }
@@ -179,7 +171,7 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         )
         onlyWhitelist(pcvDeposit)
     {
-        _wtihdrawERC20ToSafeAddress(pcvDeposit, token, amount);
+        _withdrawERC20ToSafeAddress(pcvDeposit, token, amount);
     }
 
     /// @notice governor-or-guardian-only method to withdraw all of an ERC20 balance from a pcv deposit, by calling the withdrawERC20() method on it
@@ -195,7 +187,7 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         )
         onlyWhitelist(pcvDeposit)
     {
-        _wtihdrawERC20ToSafeAddress(
+        _withdrawERC20ToSafeAddress(
             pcvDeposit,
             token,
             IERC20(token).balanceOf(pcvDeposit)
@@ -218,7 +210,7 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         emit PCVGuardianWithdrawal(pcvDeposit, amount);
     }
 
-    function _wtihdrawERC20ToSafeAddress(
+    function _withdrawERC20ToSafeAddress(
         address pcvDeposit,
         address token,
         uint256 amount
