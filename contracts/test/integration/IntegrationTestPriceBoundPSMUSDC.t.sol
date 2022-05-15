@@ -111,6 +111,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     /// @notice PSM is set up correctly
     function testSetUpCorrectly() public {
         assertTrue(psm.doInvert());
+        assertTrue(psm.isPriceValid());
         assertEq(psm.floor(), voltFloorPrice);
         assertEq(psm.ceiling(), voltCeilingPrice);
         assertEq(address(psm.oracle()), address(oracle));

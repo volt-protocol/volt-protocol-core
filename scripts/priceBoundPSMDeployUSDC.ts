@@ -28,9 +28,9 @@ const mintLimitPerSecond = ethers.utils.parseEther('10000');
 const voltPSMBufferCap = ethers.utils.parseEther('10000000');
 
 const voltUSDCDecimalsNormalizer = 12;
-
-const voltFloorPrice = 9_000;
-const voltCeilingPrice = 10_000;
+/// Need to scale up price by 1e12 to account for decimal normalizer that is factored into price
+const voltFloorPrice = '9000000000000000';
+const voltCeilingPrice = '10000000000000000';
 
 // Do any deployments
 // This should exclusively include new contract deployments
@@ -89,17 +89,23 @@ const deploy = async () => {
   //  price bound params
   expect(await voltPSM.floor()).to.be.equal(voltFloorPrice);
   expect(await voltPSM.ceiling()).to.be.equal(voltCeilingPrice);
+  expect(await voltPSM.isPriceValid()).to.be.true;
 
   //  balance check
   expect(await voltPSM.balance()).to.be.equal(0);
   expect(await voltPSM.voltBalance()).to.be.equal(0);
+
+  if (hre.network.name === 'mainnet') {
+    await verifyDeployment(voltPSM.address);
+  }
 
   return {
     voltPSM
   };
 };
 
-async function verifyDeployment() {
+/// verify contract on etherscan
+async function verifyDeployment(priceBoundPSMAddress: string) {
   const oracleParams = {
     coreAddress: CORE,
     oracleAddress: ORACLE_PASS_THROUGH_ADDRESS, // OPT
@@ -109,7 +115,7 @@ async function verifyDeployment() {
   };
 
   await hre.run('verify:verify', {
-    // address: PRICE_BOUND_PSM_USDC,
+    address: priceBoundPSMAddress,
 
     constructorArguments: [
       voltFloorPrice,
