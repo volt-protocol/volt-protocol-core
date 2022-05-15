@@ -78,8 +78,8 @@ const deploy = async () => {
   expect(await voltPSM.volt()).to.be.equal(VOLT);
 
   //  psm params
-  expect(await voltPSM.redeemFeeBasisPoints()).to.be.equal(REDEEM_FEE_BASIS_POINTS);
-  expect(await voltPSM.mintFeeBasisPoints()).to.be.equal(MINT_FEE_BASIS_POINTS);
+  expect(await voltPSM.redeemFeeBasisPoints()).to.be.equal(REDEEM_FEE_BASIS_POINTS); /// 0 basis points
+  expect(await voltPSM.mintFeeBasisPoints()).to.be.equal(MINT_FEE_BASIS_POINTS); /// 30 basis points
   expect(await voltPSM.reservesThreshold()).to.be.equal(feiReservesThreshold);
   expect(await voltPSM.surplusTarget()).to.be.equal(VOLT_FUSE_PCV_DEPOSIT);
   expect(await voltPSM.rateLimitPerSecond()).to.be.equal(mintLimitPerSecond);

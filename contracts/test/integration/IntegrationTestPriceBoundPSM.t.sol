@@ -347,10 +347,4 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
         vm.expectRevert(bytes("PegStabilityModule: Minting paused"));
         psm.mint(address(this), 100, 100);
     }
-
-    /// @notice mint fails when price has not increased enough to get minAmountVoltOut
-    function testLog() public {
-        emit log_uint(psm.readOracle().value);
-        // emit logs(bytes(psm.isPriceValid()));
-    }
 }
