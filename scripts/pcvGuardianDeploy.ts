@@ -2,6 +2,7 @@ import hre, { ethers } from 'hardhat';
 import { expect } from 'chai';
 import config from './config';
 import { Core, PCVGuardian } from '@custom-types/contracts';
+import { getImpersonatedSigner } from '@test/helpers';
 
 const {
   CORE,
@@ -38,14 +39,7 @@ async function deploy() {
   if (hre.network.name !== 'mainnet') {
     const core = await ethers.getContractAt('Core', CORE);
 
-    await hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [CORE]
-    });
-
-    await hre.network.provider.send('hardhat_setBalance', [CORE, ethers.utils.parseEther('10.0').toHexString()]);
-
-    const signer = await ethers.getSigner(CORE);
+    const signer = await getImpersonatedSigner(CORE);
 
     // Grant PCV Controller and Guardian Roles to the PCV Guardian Contract
     await core.connect(signer).grantPCVController(pcvGuardian.address);
@@ -61,11 +55,6 @@ async function deploy() {
     await pcvGuardAdmin.connect(signer).grantPCVGuardRole(PCV_GUARD_EOA_2);
 
     await validateDeployment(core, pcvGuardian);
-
-    await hre.network.provider.request({
-      method: 'hardhat_stopImpersonatingAccount',
-      params: [CORE]
-    });
   }
 
   if (hre.network.name == 'mainnet') {
