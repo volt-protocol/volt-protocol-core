@@ -39,7 +39,7 @@ async function deploy() {
   if (hre.network.name !== 'mainnet') {
     const core = await ethers.getContractAt('Core', CORE);
 
-    const signer = await getImpersonatedSigner(CORE);
+    const signer = await getImpersonatedSigner(PROTOCOL_MULTISIG_ADDRESS);
 
     // Grant PCV Controller and Guardian Roles to the PCV Guardian Contract
     await core.connect(signer).grantPCVController(pcvGuardian.address);
