@@ -38,26 +38,42 @@ async function deploy() {
   if (hre.network.name !== 'mainnet') {
     const core = await ethers.getContractAt('Core', CORE);
 
+    await hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [CORE]
+    });
+
+    await hre.network.provider.send('hardhat_setBalance', [CORE, ethers.utils.parseEther('10.0').toHexString()]);
+
+    const signer = await ethers.getSigner(CORE);
+
     // Grant PCV Controller and Guardian Roles to the PCV Guardian Contract
-    await core.grantPCVController(pcvGuardian.address);
-    await core.grantGuardian(pcvGuardian.address);
+    await core.connect(signer).grantPCVController(pcvGuardian.address);
+    await core.connect(signer).grantGuardian(pcvGuardian.address);
 
     // Create the PCV_GUARD_ADMIN Role and Grant to the PCV Guard Admin Contract
-    await core.createRole(PCV_GUARD_ADMIN_ROLE, await core.GOVERN_ROLE());
-    await core.grantRole(PCV_GUARD_ADMIN_ROLE, pcvGuardAdmin.address);
+    await core.connect(signer).createRole(PCV_GUARD_ADMIN_ROLE, await core.connect(signer).GOVERN_ROLE());
+    await core.connect(signer).grantRole(PCV_GUARD_ADMIN_ROLE, pcvGuardAdmin.address);
 
     // Create the PCV Guard Role and grant the role to PCV Guards via the PCV Guard Admin contract
-    await core.createRole(PCV_GUARD_ROLE, PCV_GUARD_ADMIN_ROLE);
-    await pcvGuardAdmin.grantPCVGuardRole(PCV_GUARD_EOA_1);
-    await pcvGuardAdmin.grantPCVGuardRole(PCV_GUARD_EOA_2);
+    await core.connect(signer).createRole(PCV_GUARD_ROLE, PCV_GUARD_ADMIN_ROLE);
+    await pcvGuardAdmin.connect(signer).grantPCVGuardRole(PCV_GUARD_EOA_1);
+    await pcvGuardAdmin.connect(signer).grantPCVGuardRole(PCV_GUARD_EOA_2);
 
     await validateDeployment(core, pcvGuardian);
+
+    await hre.network.provider.request({
+      method: 'hardhat_stopImpersonatingAccount',
+      params: [CORE]
+    });
   }
 
-  await hre.run('verify:verify', {
-    address: pcvGuardian.address,
-    constructorArguments: [CORE, PROTOCOL_MULTISIG_ADDRESS, whitelistAddresses]
-  });
+  if (hre.network.name == 'mainnet') {
+    await hre.run('verify:verify', {
+      address: pcvGuardian.address,
+      constructorArguments: [CORE, PROTOCOL_MULTISIG_ADDRESS, whitelistAddresses]
+    });
+  }
 
   return;
 }
@@ -72,6 +88,7 @@ async function validateDeployment(core: Core, pcvGuardian: PCVGuardian) {
   expect(await pcvGuardian.isWhitelistAddress(VOLT_FUSE_PCV_DEPOSIT)).to.be.true;
   expect(await pcvGuardian.isWhitelistAddress(PCV_DEPOSIT)).to.be.true;
   expect(await pcvGuardian.isWhitelistAddress(PRICE_BOUND_PSM)).to.be.true;
+  console.log('~~~~ Deployment validation successful ~~~~~');
 }
 
 deploy()
