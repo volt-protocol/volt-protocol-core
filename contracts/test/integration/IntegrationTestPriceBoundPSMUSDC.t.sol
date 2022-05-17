@@ -23,7 +23,6 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     using SafeCast for *;
     PriceBoundPSM private psm;
     ICore private core = ICore(0xEC7AD284f7Ad256b64c6E69b84Eb0F48f42e8196);
-    ICore private feiCore = ICore(0x8d5ED43dCa8C2F7dFB20CF7b53CC7E593635d7b9);
     IVolt private volt = IVolt(0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18);
     IERC20 private usdc = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48); /// typed as IVolt to allow minting
     IERC20 private underlyingToken = usdc;
@@ -48,10 +47,6 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     /// @notice live FEI PCV Deposit
     ERC20CompoundPCVDeposit public immutable rariVoltPCVDeposit =
         ERC20CompoundPCVDeposit(0xFeBDf448C8484834bb399d930d7E1bdC773E23bA);
-
-    /// @notice fei DAO timelock address
-    address public immutable feiDAOTimelock =
-        0xd51dbA7a94e1adEa403553A8235C302cEbF41a3c;
 
     /// @notice Oracle Pass Through contract
     OraclePassThrough public oracle =
