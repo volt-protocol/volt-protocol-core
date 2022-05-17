@@ -24,7 +24,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     PriceBoundPSM private psm;
     ICore private core = ICore(0xEC7AD284f7Ad256b64c6E69b84Eb0F48f42e8196);
     IVolt private volt = IVolt(0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18);
-    IERC20 private usdc = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48); /// typed as IVolt to allow minting
+    IERC20 private usdc = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
     IERC20 private underlyingToken = usdc;
 
     address public makerUSDCPSM = 0xAe2D4617c862309A3d75A0fFB358c7a5009c673F;
