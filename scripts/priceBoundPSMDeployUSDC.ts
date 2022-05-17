@@ -32,7 +32,7 @@ const {
   ORACLE_PASS_THROUGH_ADDRESS
 } = config;
 
-const usdcReservesThreshold = ethers.utils.parseEther('10000000000'); /// this is greater than the trillions because USDC only has 6 decimals
+const usdcReservesThreshold = ethers.constants.MaxUint256; /// max uint value so that we can never allocate surplus on this PSM to the pcv deposit
 const mintLimitPerSecond = ethers.utils.parseEther('10000'); /// 10k Volt minted per second max, however this value is useless as this PSM will not be given the minter role
 const voltPSMBufferCap = ethers.utils.parseEther('10000000'); /// 10m Volt max can be minted at a time, however this value is useless as this PSM will not be given the minter role
 const initialUSDCPSMVoltAmount = ethers.utils.parseEther('1941000'); /// 1.941m Volt which equals $2m at current prices

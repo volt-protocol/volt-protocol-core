@@ -52,6 +52,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     /// these are inverted
     uint256 voltFloorPrice = 9_000e12; /// 1 volt for .9 usdc is the max allowable price
     uint256 voltCeilingPrice = 10_000e12; /// 1 volt for 1 usdc is the minimum price
+    uint256 reservesThreshold = type(uint256).max; /// max uint so that surplus can never be allocated into the pcv deposit
 
     function setUp() public {
         PegStabilityModule.OracleParams memory oracleParams;
@@ -71,7 +72,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
             oracleParams,
             30,
             0,
-            10_000_000_000e18,
+            reservesThreshold,
             10_000e18,
             10_000_000e18,
             IERC20(address(usdc)),
@@ -109,6 +110,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
         assertEq(psm.mintFeeBasisPoints(), 30); /// mint costs 30 bps
         assertEq(psm.redeemFeeBasisPoints(), 0); /// redeem has no fee
         assertEq(address(psm.underlyingToken()), address(usdc));
+        assertEq(psm.reservesThreshold(), reservesThreshold);
     }
 
     /// @notice PSM is set up correctly and redeem view function is working
