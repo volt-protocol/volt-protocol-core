@@ -38,12 +38,6 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     uint256 public constant individualMaxBufferCap = 5_000_000e18;
     uint256 public constant rps = 10_000e18;
 
-    /// ------------ Oracle System Params ------------
-
-    /// @notice prices during test will increase 1% monthly
-    int256 public constant monthlyChangeRateBasisPoints = 100;
-    uint256 public constant maxDeviationThresholdBasisPoints = 1_000;
-
     /// @notice live FEI PCV Deposit
     ERC20CompoundPCVDeposit public immutable rariVoltPCVDeposit =
         ERC20CompoundPCVDeposit(0xFeBDf448C8484834bb399d930d7E1bdC773E23bA);
@@ -140,7 +134,11 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     /// @notice PSM is set up correctly and view functions are working
     function testGetMintAmountOut() public {
         uint256 amountUSDCIn = 100;
-        assertApproxEq(psm.getMintAmountOut(amountUSDCIn).toInt256(), 98e12, 9); /// values are within 9 basis points of each other
+        assertApproxEq(
+            psm.getMintAmountOut(amountUSDCIn).toInt256(),
+            9809e10,
+            1
+        ); /// values are within 9 basis points of each other
     }
 
     /// @notice pcv deposit receives underlying token on mint
