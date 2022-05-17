@@ -33,9 +33,9 @@ const {
 } = config;
 
 const usdcReservesThreshold = ethers.utils.parseEther('10000000000'); /// this is greater than the trillions because USDC only has 6 decimals
-const mintLimitPerSecond = ethers.utils.parseEther('10000');
-const voltPSMBufferCap = ethers.utils.parseEther('10000000');
-const initialUSDCPSMVoltAmount = ethers.utils.parseEther('1941000');
+const mintLimitPerSecond = ethers.utils.parseEther('10000'); /// 10k Volt minted per second max, however this value is useless as this PSM will not be given the minter role
+const voltPSMBufferCap = ethers.utils.parseEther('10000000'); /// 10m Volt max can be minted at a time, however this value is useless as this PSM will not be given the minter role
+const initialUSDCPSMVoltAmount = ethers.utils.parseEther('1941000'); /// 1.941m Volt which equals $2m at current prices
 
 /// Oracle price gets scaled up by 1e12 to account for the differences in decimals of USDC and VOLT.
 /// USDC has 6 decimals while Volt has 12, thus creating a difference that has to be normalized
