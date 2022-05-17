@@ -49,6 +49,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     Vm public constant vm = Vm(HEVM_ADDRESS);
     FeiTestAddresses public addresses = getMainnetAddresses();
 
+    /// these are inverted
     uint256 voltFloorPrice = 9_000e12; /// 1 volt for .9 usdc is the max allowable price
     uint256 voltCeilingPrice = 10_000e12; /// 1 volt for 1 usdc is the minimum price
 
