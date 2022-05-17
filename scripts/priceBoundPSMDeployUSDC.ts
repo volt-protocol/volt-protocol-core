@@ -71,7 +71,7 @@ const deploy = async () => {
     VOLT_FUSE_PCV_DEPOSIT
   );
 
-  console.log('USDC voltPSM: ', voltPSM.address);
+  console.log('\nUSDC voltPSM: ', voltPSM.address);
 
   /// Wait for psm to deploy
   await voltPSM.deployTransaction.wait();
@@ -109,6 +109,7 @@ const deploy = async () => {
 
   if (hre.network.name === 'mainnet') {
     await verifyDeployment(voltPSM.address);
+    console.log('\n ~~~ Successfully Verified PSM on Etherscan ~~~ ');
   } else {
     console.log(' ~~~ Simulating Multisig Steps ~~~ ');
     const signer = await getImpersonatedSigner(PROTOCOL_MULTISIG_ADDRESS);
