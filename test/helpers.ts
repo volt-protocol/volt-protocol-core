@@ -62,6 +62,8 @@ async function getImpersonatedSigner(address: string): Promise<SignerWithAddress
 
   const signer = await ethers.getSigner(address);
 
+  await hre.network.provider.send('hardhat_setBalance', [address, ethers.utils.parseEther('10.0').toHexString()]);
+
   return signer;
 }
 
