@@ -17,9 +17,10 @@ const {
 const PCV_GUARD_ROLE = ethers.utils.id('PCV_GUARD_ROLE');
 const PCV_GUARD_ADMIN_ROLE = ethers.utils.id('PCV_GUARD_ADMIN_ROLE');
 
+const whitelistAddresses = [VOLT_FUSE_PCV_DEPOSIT, PCV_DEPOSIT, PRICE_BOUND_PSM];
+
 async function deploy() {
   const PCVGuardian = await ethers.getContractFactory('PCVGuardian');
-  const whitelistAddresses = [VOLT_FUSE_PCV_DEPOSIT, PCV_DEPOSIT, PRICE_BOUND_PSM];
 
   const pcvGuardian = await PCVGuardian.deploy(CORE, PROTOCOL_MULTISIG_ADDRESS, whitelistAddresses);
   await pcvGuardian.deployed();
@@ -36,7 +37,9 @@ async function deploy() {
   console.log('\n ~~~~~ Deployed PCV Guard Admin Successfully ~~~~~ \n');
   console.log(`PCV Guard Admin:        ${pcvGuardAdmin.address}`);
 
-  if (hre.network.name !== 'mainnet') {
+  if (hre.network.name == 'mainnet') {
+    verifyDeployment(pcvGuardian.address, pcvGuardAdmin.address);
+  } else {
     const core = await ethers.getContractAt('Core', CORE);
 
     const signer = await getImpersonatedSigner(PROTOCOL_MULTISIG_ADDRESS);
@@ -57,17 +60,25 @@ async function deploy() {
     await validateDeployment(core, pcvGuardian);
   }
 
-  if (hre.network.name == 'mainnet') {
-    await hre.run('verify:verify', {
-      address: pcvGuardian.address,
-      constructorArguments: [CORE, PROTOCOL_MULTISIG_ADDRESS, whitelistAddresses]
-    });
-  }
-
   return;
 }
 
+async function verifyDeployment(pcvGuardianAddress: string, pcvGuardAdminAddress: string) {
+  await hre.run('verify:verify', {
+    address: pcvGuardianAddress,
+    constructorArguments: [CORE, PROTOCOL_MULTISIG_ADDRESS, whitelistAddresses]
+  });
+  console.log('\n ~~~ Successfully Verified PCV Guardian on Etherscan ~~~ \n');
+
+  await hre.run('verify:verify', {
+    address: pcvGuardAdminAddress,
+    constructorArguments: [CORE]
+  });
+  console.log('\n ~~~ Successfully Verified PCV Guard Admin on Etherscan ~~~ \n');
+}
+
 async function validateDeployment(core: Core, pcvGuardian: PCVGuardian) {
+  console.log('\n ~~~~ Validating Deployment ~~~~~ \n');
   expect(await core.isPCVController(pcvGuardian.address)).to.be.true;
   expect(await core.isGuardian(pcvGuardian.address)).to.be.true;
 
@@ -77,7 +88,7 @@ async function validateDeployment(core: Core, pcvGuardian: PCVGuardian) {
   expect(await pcvGuardian.isWhitelistAddress(VOLT_FUSE_PCV_DEPOSIT)).to.be.true;
   expect(await pcvGuardian.isWhitelistAddress(PCV_DEPOSIT)).to.be.true;
   expect(await pcvGuardian.isWhitelistAddress(PRICE_BOUND_PSM)).to.be.true;
-  console.log('~~~~ Deployment validation successful ~~~~~');
+  console.log('\n ~~~~ Deployment validation successful ~~~~~ \n');
 }
 
 deploy()
