@@ -440,7 +440,12 @@ contract L2ScalingPriceOracleTest is DSTest {
     function testFulfillSucceedsTwentyPercentTwelveMonthsFuzz(uint128 x)
         public
     {
-        vm.assume(x >= 1e18);
+        /// instead of using vm.assume, do this to cut down on wasted runs
+        if (x < 1e18) {
+            vm.expectRevert(
+                bytes("L2ScalingPriceOracle: Starting oracle price too low")
+            );
+        }
 
         l2scalingPriceOracle = new MockL2ScalingPriceOracle(
             oracle,
@@ -451,6 +456,9 @@ contract L2ScalingPriceOracleTest is DSTest {
             block.timestamp,
             x
         );
+        if (x < 1e18) {
+            return;
+        }
         assertEq(l2scalingPriceOracle.oraclePrice(), x);
         vm.warp(block.timestamp + 33 days);
         uint256 newCurrentMonth = (currentMonth * 120) / 100;
