@@ -70,6 +70,8 @@ contract L2ScalingPriceOracleTest is DSTest {
     }
 
     function testSetup() public {
+        assertEq(l2scalingPriceOracle.oraclePrice(), 1e18); /// starting price is correct
+        assertEq(l2scalingPriceOracle.MAX_OWNER_SYNC_DEVIATION(), 100);
         assertEq(scalingPriceOracle.oracle(), oracle);
         assertEq(scalingPriceOracle.jobId(), jobId);
         assertEq(scalingPriceOracle.fee(), fee);
@@ -219,7 +221,7 @@ contract L2ScalingPriceOracleTest is DSTest {
 
     function testFulfillSucceedsTwentyPercentTwoMonths() public {
         vm.warp(block.timestamp + 33 days);
-        uint256 storedCurrentMonth = scalingPriceOracle.currentMonth();
+        uint256 storedCurrentMonth = l2scalingPriceOracle.currentMonth();
         uint256 newCurrentMonth = (currentMonth * 120) / 100;
 
         /// this will succeed as max allowable is 20%
@@ -372,5 +374,116 @@ contract L2ScalingPriceOracleTest is DSTest {
             block.timestamp,
             99e16
         );
+    }
+
+    function testDeploymentSucceedsWithCorrectStartingOraclePrice() public {
+        l2scalingPriceOracle = new MockL2ScalingPriceOracle(
+            oracle,
+            jobId,
+            fee,
+            currentMonth,
+            previousMonth,
+            block.timestamp,
+            2e18
+        );
+        assertEq(l2scalingPriceOracle.oraclePrice(), 2e18);
+    }
+
+    function testFulfillSucceedsTwentyPercentTwelveMonthsStartingOraclePriceTwo()
+        public
+    {
+        l2scalingPriceOracle = new MockL2ScalingPriceOracle(
+            oracle,
+            jobId,
+            fee,
+            currentMonth,
+            previousMonth,
+            block.timestamp,
+            2e18
+        );
+        assertEq(l2scalingPriceOracle.oraclePrice(), 2e18);
+        vm.warp(block.timestamp + 33 days);
+        uint256 newCurrentMonth = (currentMonth * 120) / 100;
+        uint256 price = l2scalingPriceOracle.getCurrentOraclePrice();
+
+        for (uint256 i = 0; i < 12; i++) {
+            uint256 storedCurrentMonth = l2scalingPriceOracle.currentMonth();
+
+            vm.warp(block.timestamp + 31 days);
+            bytes32 requestId = l2scalingPriceOracle.requestCPIData();
+            /// prank to allow request to be fulfilled
+            vm.prank(address(0));
+            /// this will succeed as max allowable is 20%
+            l2scalingPriceOracle.fulfill(requestId, newCurrentMonth);
+            assertEq(l2scalingPriceOracle.getCurrentOraclePrice(), price);
+
+            uint256 expectedChangeRateBasisPoints = ((l2scalingPriceOracle
+                .currentMonth() - l2scalingPriceOracle.previousMonth()) *
+                10_000) / l2scalingPriceOracle.previousMonth();
+
+            assertEq(
+                l2scalingPriceOracle.monthlyChangeRateBasisPoints(),
+                expectedChangeRateBasisPoints.toInt256()
+            );
+            assertEq(l2scalingPriceOracle.previousMonth(), storedCurrentMonth);
+            assertEq(l2scalingPriceOracle.currentMonth(), newCurrentMonth);
+
+            assertEq(l2scalingPriceOracle.oraclePrice(), price);
+
+            newCurrentMonth =
+                (newCurrentMonth * (10_000 + expectedChangeRateBasisPoints)) /
+                10_000;
+            price = (price * (10_000 + expectedChangeRateBasisPoints)) / 10_000;
+        }
+    }
+
+    function testFulfillSucceedsTwentyPercentTwelveMonthsFuzz(uint128 x)
+        public
+    {
+        vm.assume(x >= 1e18);
+
+        l2scalingPriceOracle = new MockL2ScalingPriceOracle(
+            oracle,
+            jobId,
+            fee,
+            currentMonth,
+            previousMonth,
+            block.timestamp,
+            x
+        );
+        assertEq(l2scalingPriceOracle.oraclePrice(), x);
+        vm.warp(block.timestamp + 33 days);
+        uint256 newCurrentMonth = (currentMonth * 120) / 100;
+        uint256 price = l2scalingPriceOracle.getCurrentOraclePrice();
+
+        for (uint256 i = 0; i < 12; i++) {
+            uint256 storedCurrentMonth = l2scalingPriceOracle.currentMonth();
+
+            vm.warp(block.timestamp + 31 days);
+            bytes32 requestId = l2scalingPriceOracle.requestCPIData();
+            /// prank to allow request to be fulfilled
+            vm.prank(address(0));
+            /// this will succeed as max allowable is 20%
+            l2scalingPriceOracle.fulfill(requestId, newCurrentMonth);
+            assertEq(l2scalingPriceOracle.getCurrentOraclePrice(), price);
+
+            uint256 expectedChangeRateBasisPoints = ((l2scalingPriceOracle
+                .currentMonth() - l2scalingPriceOracle.previousMonth()) *
+                10_000) / l2scalingPriceOracle.previousMonth();
+
+            assertEq(
+                l2scalingPriceOracle.monthlyChangeRateBasisPoints(),
+                expectedChangeRateBasisPoints.toInt256()
+            );
+            assertEq(l2scalingPriceOracle.previousMonth(), storedCurrentMonth);
+            assertEq(l2scalingPriceOracle.currentMonth(), newCurrentMonth);
+
+            assertEq(l2scalingPriceOracle.oraclePrice(), price);
+
+            newCurrentMonth =
+                (newCurrentMonth * (10_000 + expectedChangeRateBasisPoints)) /
+                10_000;
+            price = (price * (10_000 + expectedChangeRateBasisPoints)) / 10_000;
+        }
     }
 }
