@@ -10,7 +10,7 @@ import {Permissions} from "./Permissions.sol";
 /// @author Volt Protocol
 /// @notice maintains roles, access control, Volt, Vcon, and the Vcon treasury
 contract ArbitrumCore is ICore, Permissions {
-    /// @notice the address of the FEI contract
+    /// @notice the address of the VOLT contract
     IVolt public immutable override volt;
 
     /// @notice the address of the Vcon contract

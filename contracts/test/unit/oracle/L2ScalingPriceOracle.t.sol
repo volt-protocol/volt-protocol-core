@@ -40,13 +40,15 @@ contract L2ScalingPriceOracleTest is DSTest {
     Vm public constant vm = Vm(HEVM_ADDRESS);
     FeiTestAddresses public addresses = getAddresses();
 
+    uint256 public constant startTime = 50 days;
+
     function setUp() public {
         /// set this code at address 0 so _rawRequest in ChainlinkClient succeeds
         MockChainlinkToken token = new MockChainlinkToken();
         vm.etch(address(0), address(token).code);
 
         /// warp to 50 days to set isTimeStarted to true and pass deployment check
-        vm.warp(50 days);
+        vm.warp(startTime);
 
         scalingPriceOracle = new MockScalingPriceOracle(
             oracle,
@@ -70,6 +72,7 @@ contract L2ScalingPriceOracleTest is DSTest {
     }
 
     function testSetup() public {
+        assertEq(l2scalingPriceOracle.startTime(), startTime);
         assertEq(l2scalingPriceOracle.oraclePrice(), 1e18); /// starting price is correct
         assertEq(l2scalingPriceOracle.MAX_OWNER_SYNC_DEVIATION(), 100);
         assertEq(scalingPriceOracle.oracle(), oracle);
