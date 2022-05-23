@@ -281,6 +281,10 @@ async function validateDeployment(
   expect(await scalingPriceOracle.oraclePrice()).to.be.equal(STARTING_L2_ORACLE_PRICE);
   expect(await scalingPriceOracle.startTime()).to.be.equal(ACTUAL_START_TIME);
 
+  expect(await scalingPriceOracle.currentMonth()).to.be.equal(L2_CURRENT_MONTH);
+  expect(await scalingPriceOracle.previousMonth()).to.be.equal(L2_PREVIOUS_MONTH);
+  expect(await scalingPriceOracle.monthlyChangeRateBasisPoints()).to.be.equal(55);
+
   expect(await oraclePassThrough.scalingPriceOracle()).to.be.equal(scalingPriceOracle.address);
   expect(await oraclePassThrough.owner()).to.be.equal(L2_PROTOCOL_MULTISIG_ADDRESS);
   expect(await oraclePassThrough.getCurrentOraclePrice()).to.be.equal(await scalingPriceOracle.getCurrentOraclePrice());
