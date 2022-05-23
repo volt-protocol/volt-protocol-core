@@ -1,6 +1,7 @@
 import { ethers } from 'ethers';
 
 const config = {
+  /// Mainnet
   MAINNET_DEPLOYMENT: true,
   CHAINLINK_FEE: ethers.utils.parseEther('10'),
   CHAINLINK_ORACLE_ADDRESS: '0x049bd8c3adc3fe7d3fc2a44541d955a537c2a484',
@@ -45,12 +46,24 @@ const config = {
   PCV_GUARD_EOA_2: '0xd90E9181B20D8D1B5034d9f5737804Da182039F6',
 
   /// L2
-  ACTUAL_START_TIME: '', /// TODO figure this out
-  STARTING_L2_ORACLE_PRICE: '', /// TODO deploy this
+  L2_DEPLOYMENT: false,
+
+  ACTUAL_START_TIME: '1652575642', /// TODO figure this out
+  STARTING_L2_ORACLE_PRICE: '1029723310689109788', /// TODO figure this out
   L2_CORE: '', /// TODO deploy this
   L2_SCALING_PRICE_ORACLE_ADDRESS: '', /// TODO deploy this
-  L2_VOLT: '0x6Ba6f18a290Cd55cf1B00be2bEc5c954cb29fAc5',
+  L2_ORACLE_PASS_THROUGH_ADDRESS: '', /// TODO deploy this
+
+  /// Chainlink
+  L2_JOB_ID: ethers.utils.toUtf8Bytes('MockJobIdedb485ab27eb7bb39caf827'), /// TODO figure this out
+  L2_CHAINLINK_FEE: ethers.utils.parseEther('10'), /// TODO figure this out
+  L2_CHAINLINK_ORACLE_ADDRESS: '0xf76F586F6aAC0c8dE147Eea75D76AB7c2f23eDC2',
+
+  L2_PREVIOUS_MONTH: '287504',
+  L2_CURRENT_MONTH: '289109',
+
   L2_PROTOCOL_MULTISIG_ADDRESS: '0x1A1075cef632624153176CCf19Ae0175953CF010',
+  L2_VOLT: '0x6Ba6f18a290Cd55cf1B00be2bEc5c954cb29fAc5',
   L2_DAI: '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1',
   L2_USDC: '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8',
 

@@ -1,33 +1,47 @@
 import hre, { ethers } from 'hardhat';
 import { expect } from 'chai';
 import config from './config';
-import { ArbitrumCore, Core, PCVGuardAdmin, PCVGuardian, PriceBoundPSM } from '@custom-types/contracts';
+import {
+  ArbitrumCore,
+  Core,
+  OraclePassThrough,
+  PCVGuardAdmin,
+  PCVGuardian,
+  PriceBoundPSM,
+  ScalingPriceOracle
+} from '@custom-types/contracts';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 const {
   L2_VOLT,
   L2_DAI,
-  GLOBAL_RATE_LIMITED_MINTER,
-  PCV_DEPOSIT,
-  MAINNET_DEPLOYMENT,
-  /// addresses
-  FEI,
-  ZERO_ADDRESS,
-  L2_SCALING_PRICE_ORACLE_ADDRESS,
+  L2_DEPLOYMENT, /// deploying to L2 or not
+
   /// fees
   MINT_FEE_BASIS_POINTS,
   REDEEM_FEE_BASIS_POINTS,
-  /// grlm/psm constants
-  MAX_BUFFER_CAP,
-  RATE_LIMIT_PER_SECOND,
-  MAX_RATE_LIMIT_PER_SECOND,
+
+  VOLT_FUSE_PCV_DEPOSIT, /// unused deposit
   L2_PROTOCOL_MULTISIG_ADDRESS,
-  VOLT_FUSE_PCV_DEPOSIT,
+
+  /// addresses for PCV Guards
+  PCV_GUARD_EOA_1,
+  PCV_GUARD_EOA_2,
+
+  /// bls cpi-u inflation data
+  L2_PREVIOUS_MONTH,
+  L2_CURRENT_MONTH,
+
+  /// L2 chainlink
+  STARTING_L2_ORACLE_PRICE,
+  ACTUAL_START_TIME,
+  L2_JOB_ID,
+  L2_CHAINLINK_ORACLE_ADDRESS,
+  L2_CHAINLINK_FEE,
+
   /// Roles
   PCV_GUARD_ROLE,
-  PCV_GUARD_ADMIN_ROLE,
-  PCV_GUARD_EOA_1,
-  PCV_GUARD_EOA_2
+  PCV_GUARD_ADMIN_ROLE
 } = config;
 
 const daiReservesThreshold = ethers.constants.MaxUint256; /// max uint value so that we can never allocate surplus on this PSM to the pcv deposit
@@ -61,6 +75,28 @@ async function main() {
 
   const volt = await core.volt();
 
+  const L2ScalingPriceOracleFactory = await ethers.getContractFactory('L2ScalingPriceOracle');
+  const OraclePassThroughFactory = await ethers.getContractFactory('OraclePassThrough');
+
+  const scalingPriceOracle = await L2ScalingPriceOracleFactory.deploy(
+    L2_CHAINLINK_ORACLE_ADDRESS,
+    L2_JOB_ID,
+    L2_CHAINLINK_FEE,
+    L2_CURRENT_MONTH,
+    L2_PREVIOUS_MONTH,
+    ACTUAL_START_TIME,
+    STARTING_L2_ORACLE_PRICE
+  );
+  await scalingPriceOracle.deployed();
+
+  const oraclePassThrough = await OraclePassThroughFactory.deploy(scalingPriceOracle.address);
+  await oraclePassThrough.deployed();
+
+  /// -------- Oracle Actions --------
+
+  /// transfer ownership to the multisig
+  await oraclePassThrough.transferOwnership(L2_PROTOCOL_MULTISIG_ADDRESS);
+
   const voltPSMFactory = await ethers.getContractFactory('PriceBoundPSM');
 
   /// Deploy DAI Peg Stability Module
@@ -72,7 +108,7 @@ async function main() {
     voltCeilingPrice,
     {
       coreAddress: core.address,
-      oracleAddress: L2_SCALING_PRICE_ORACLE_ADDRESS, /// OPT
+      oracleAddress: oraclePassThrough.address, /// OPT
       backupOracle: ethers.constants.AddressZero,
       decimalsNormalizer: voltDAIDecimalsNormalizer,
       doInvert: true /// invert the price so that the Oracle and PSM works correctly
@@ -118,44 +154,45 @@ async function main() {
 
   console.log('\n ~~~~~ Deployed Contracts Successfully ~~~~~ \n');
 
-  console.log(`Core:                     ${core.address}`);
+  console.log(`⚡Core⚡:                 ${core.address}`);
   console.log(`⚡VOLT⚡:                 ${volt}`);
   console.log(`⚡VOLT PSM⚡:             ${voltPSM.address}`);
   console.log(`⚡PCVGuardian⚡:          ${pcvGuardian.address}`);
   console.log(`⚡PCVGuardAdmin⚡:        ${pcvGuardAdmin.address}`);
+  console.log(`⚡OraclePassThrough⚡:    ${oraclePassThrough.address}`);
+  console.log(`⚡L2ScalingPriceOracle⚡: ${scalingPriceOracle.address}`);
 
-  if (MAINNET_DEPLOYMENT) {
-    await verifyEtherscan(voltPSM.address, core.address, volt);
-    await validateDeployment(core, pcvGuardian, pcvGuardAdmin, deployer, voltPSM);
+  if (L2_DEPLOYMENT) {
+    await verifyEtherscan(voltPSM.address, core.address, volt, oraclePassThrough.address);
   }
+
+  await validateDeployment(core, pcvGuardian, pcvGuardAdmin, deployer, voltPSM, oraclePassThrough, scalingPriceOracle);
 }
 
-async function verifyEtherscan(voltPSM: string, core: string, volt: string) {
+async function verifyEtherscan(voltPSM: string, core: string, volt: string, oraclePassThrough: string) {
   const oracleParams = {
     coreAddress: core,
-    oracleAddress: L2_SCALING_PRICE_ORACLE_ADDRESS,
-    backupOracle: ZERO_ADDRESS,
-    decimalsNormalizer: 0
-  };
-
-  const rateLimitedParams = {
-    maxRateLimitPerSecond: MAX_RATE_LIMIT_PER_SECOND,
-    rateLimitPerSecond: RATE_LIMIT_PER_SECOND,
-    bufferCap: MAX_BUFFER_CAP
-  };
-
-  const psmParams = {
-    mintFeeBasisPoints: MINT_FEE_BASIS_POINTS,
-    redeemFeeBasisPoints: REDEEM_FEE_BASIS_POINTS,
-    underlyingToken: FEI,
-    pcvDeposit: PCV_DEPOSIT,
-    rateLimitedMinter: GLOBAL_RATE_LIMITED_MINTER
+    oracleAddress: oraclePassThrough,
+    backupOracle: ethers.constants.AddressZero,
+    decimalsNormalizer: 0,
+    doInvert: true /// invert the price so that the Oracle and PSM works correctly
   };
 
   await hre.run('verify:verify', {
     address: voltPSM,
 
-    constructorArguments: [oracleParams, rateLimitedParams, psmParams]
+    constructorArguments: [
+      voltFloorPrice,
+      voltCeilingPrice,
+      oracleParams,
+      MINT_FEE_BASIS_POINTS,
+      REDEEM_FEE_BASIS_POINTS,
+      daiReservesThreshold,
+      mintLimitPerSecond,
+      voltPSMBufferCap,
+      L2_DAI,
+      VOLT_FUSE_PCV_DEPOSIT
+    ]
   });
 
   await hre.run('verify:verify', {
@@ -169,7 +206,9 @@ async function validateDeployment(
   pcvGuardian: PCVGuardian,
   pcvGuardAdmin: PCVGuardAdmin,
   deployer: SignerWithAddress,
-  voltPSM: PriceBoundPSM
+  voltPSM: PriceBoundPSM,
+  oraclePassThrough: OraclePassThrough,
+  scalingPriceOracle: ScalingPriceOracle
 ) {
   /// -------- Core Parameter Validation --------
 
@@ -212,7 +251,7 @@ async function validateDeployment(
 
   ///  oracle
   expect(await voltPSM.doInvert()).to.be.true;
-  expect(await voltPSM.oracle()).to.be.equal(L2_SCALING_PRICE_ORACLE_ADDRESS);
+  expect(await voltPSM.oracle()).to.be.equal(oraclePassThrough.address);
   expect(await voltPSM.backupOracle()).to.be.equal(ethers.constants.AddressZero);
 
   ///  volt
@@ -236,6 +275,17 @@ async function validateDeployment(
   ///  balance check
   expect(await voltPSM.balance()).to.be.equal(0);
   expect(await voltPSM.voltBalance()).to.be.equal(0);
+
+  /// -------- OraclePassThrough/ScalingPriceOracle Parameter Validation --------
+
+  expect(await scalingPriceOracle.oraclePrice()).to.be.equal(STARTING_L2_ORACLE_PRICE);
+  expect(await scalingPriceOracle.startTime()).to.be.equal(ACTUAL_START_TIME);
+
+  expect(await oraclePassThrough.scalingPriceOracle()).to.be.equal(scalingPriceOracle.address);
+  expect(await oraclePassThrough.owner()).to.be.equal(L2_PROTOCOL_MULTISIG_ADDRESS);
+  expect(await oraclePassThrough.getCurrentOraclePrice()).to.be.equal(await scalingPriceOracle.getCurrentOraclePrice());
+
+  console.log(`\n ~~~~~ Verified Contracts Successfully ~~~~~ \n`);
 }
 
 main()
