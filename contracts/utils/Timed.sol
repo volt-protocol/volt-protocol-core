@@ -68,12 +68,6 @@ abstract contract Timed {
         emit TimerReset(block.timestamp);
     }
 
-    function _setStartTime(uint256 newStartTime) internal {
-        startTime = newStartTime;
-
-        emit TimerReset(newStartTime);
-    }
-
     function _setDuration(uint256 newDuration) internal {
         require(newDuration != 0, "Timed: zero duration");
 
