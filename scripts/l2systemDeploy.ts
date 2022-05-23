@@ -2,7 +2,7 @@ import hre, { ethers } from 'hardhat';
 import { expect } from 'chai';
 import config from './config';
 import {
-  ArbitrumCore,
+  L2Core,
   Core,
   OraclePassThrough,
   PCVGuardAdmin,
@@ -13,7 +13,7 @@ import {
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 const {
-  L2_VOLT,
+  L2_ARBITRUM_VOLT,
   L2_DAI,
   L2_DEPLOYMENT, /// deploying to L2 or not
 
@@ -22,22 +22,22 @@ const {
   REDEEM_FEE_BASIS_POINTS,
 
   VOLT_FUSE_PCV_DEPOSIT, /// unused deposit
-  L2_PROTOCOL_MULTISIG_ADDRESS,
+  L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS,
 
   /// addresses for PCV Guards
   PCV_GUARD_EOA_1,
   PCV_GUARD_EOA_2,
 
   /// bls cpi-u inflation data
-  L2_PREVIOUS_MONTH,
-  L2_CURRENT_MONTH,
+  L2_ARBITRUM_PREVIOUS_MONTH,
+  L2_ARBITRUM_CURRENT_MONTH,
 
   /// L2 chainlink
   STARTING_L2_ORACLE_PRICE,
   ACTUAL_START_TIME,
-  L2_JOB_ID,
-  L2_CHAINLINK_ORACLE_ADDRESS,
-  L2_CHAINLINK_FEE,
+  L2_ARBITRUM_JOB_ID,
+  L2_ARBITRUM_CHAINLINK_ORACLE_ADDRESS,
+  L2_ARBITRUM_CHAINLINK_FEE,
 
   /// Roles
   PCV_GUARD_ROLE,
@@ -69,8 +69,8 @@ async function main() {
 
   const deployer = (await ethers.getSigners())[0];
 
-  const CoreFactory = await ethers.getContractFactory('ArbitrumCore');
-  const core = await CoreFactory.deploy(L2_VOLT); /// point to bridge token as Volt
+  const CoreFactory = await ethers.getContractFactory('L2Core');
+  const core = await CoreFactory.deploy(L2_ARBITRUM_VOLT); /// point to bridge token as Volt
   await core.deployed();
 
   const volt = await core.volt();
@@ -79,11 +79,11 @@ async function main() {
   const OraclePassThroughFactory = await ethers.getContractFactory('OraclePassThrough');
 
   const scalingPriceOracle = await L2ScalingPriceOracleFactory.deploy(
-    L2_CHAINLINK_ORACLE_ADDRESS,
-    L2_JOB_ID,
-    L2_CHAINLINK_FEE,
-    L2_CURRENT_MONTH,
-    L2_PREVIOUS_MONTH,
+    L2_ARBITRUM_CHAINLINK_ORACLE_ADDRESS,
+    L2_ARBITRUM_JOB_ID,
+    L2_ARBITRUM_CHAINLINK_FEE,
+    L2_ARBITRUM_CURRENT_MONTH,
+    L2_ARBITRUM_PREVIOUS_MONTH,
     ACTUAL_START_TIME,
     STARTING_L2_ORACLE_PRICE
   );
@@ -95,7 +95,7 @@ async function main() {
   /// -------- Oracle Actions --------
 
   /// transfer ownership to the multisig
-  await oraclePassThrough.transferOwnership(L2_PROTOCOL_MULTISIG_ADDRESS);
+  await oraclePassThrough.transferOwnership(L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS);
 
   const voltPSMFactory = await ethers.getContractFactory('PriceBoundPSM');
 
@@ -128,7 +128,7 @@ async function main() {
 
   /// whitelist psm to withdraw from
   /// safe address is protocol multisig
-  const pcvGuardian = await PCVGuardian.deploy(core.address, L2_PROTOCOL_MULTISIG_ADDRESS, [voltPSM.address]);
+  const pcvGuardian = await PCVGuardian.deploy(core.address, L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS, [voltPSM.address]);
   await pcvGuardian.deployed();
 
   const PCVGuardAdmin = await ethers.getContractFactory('PCVGuardAdmin');
@@ -150,7 +150,7 @@ async function main() {
   await pcvGuardAdmin.grantPCVGuardRole(PCV_GUARD_EOA_1);
   await pcvGuardAdmin.grantPCVGuardRole(PCV_GUARD_EOA_2);
 
-  await core.grantGovernor(L2_PROTOCOL_MULTISIG_ADDRESS); /// give multisig the governor role
+  await core.grantGovernor(L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS); /// give multisig the governor role
 
   console.log('\n ~~~~~ Deployed Contracts Successfully ~~~~~ \n');
 
@@ -202,7 +202,7 @@ async function verifyEtherscan(voltPSM: string, core: string, volt: string, orac
 }
 
 async function validateDeployment(
-  core: ArbitrumCore,
+  core: L2Core,
   pcvGuardian: PCVGuardian,
   pcvGuardAdmin: PCVGuardAdmin,
   deployer: SignerWithAddress,
@@ -219,7 +219,7 @@ async function validateDeployment(
   expect(await core.getRoleMemberCount(await core.MINTER_ROLE())).to.be.equal(0); // only GRLM is minter
   expect(await core.getRoleMemberCount(await core.PCV_CONTROLLER_ROLE())).to.be.equal(1); // only PCV Guardian is minter
 
-  expect(await core.isGovernor(L2_PROTOCOL_MULTISIG_ADDRESS)).to.be.true;
+  expect(await core.isGovernor(L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS)).to.be.true;
   expect(await core.isGovernor(deployer.address)).to.be.true;
   expect(await core.isGovernor(core.address)).to.be.true;
 
@@ -245,7 +245,7 @@ async function validateDeployment(
   /// -------- PCV Guardian Parameter Validation --------
 
   expect(await pcvGuardian.isWhitelistAddress(voltPSM.address)).to.be.true;
-  expect(await pcvGuardian.safeAddress()).to.be.equal(L2_PROTOCOL_MULTISIG_ADDRESS);
+  expect(await pcvGuardian.safeAddress()).to.be.equal(L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS);
 
   /// -------- VOLT/DAI PSM Parameter Validation --------
 
@@ -256,7 +256,7 @@ async function validateDeployment(
 
   ///  volt
   expect(await voltPSM.underlyingToken()).to.be.equal(L2_DAI);
-  expect(await voltPSM.volt()).to.be.equal(L2_VOLT);
+  expect(await voltPSM.volt()).to.be.equal(L2_ARBITRUM_VOLT);
 
   ///  psm params
   expect(await voltPSM.redeemFeeBasisPoints()).to.be.equal(REDEEM_FEE_BASIS_POINTS); /// 0 basis points
@@ -281,12 +281,12 @@ async function validateDeployment(
   expect(await scalingPriceOracle.oraclePrice()).to.be.equal(STARTING_L2_ORACLE_PRICE);
   expect(await scalingPriceOracle.startTime()).to.be.equal(ACTUAL_START_TIME);
 
-  expect(await scalingPriceOracle.currentMonth()).to.be.equal(L2_CURRENT_MONTH);
-  expect(await scalingPriceOracle.previousMonth()).to.be.equal(L2_PREVIOUS_MONTH);
+  expect(await scalingPriceOracle.currentMonth()).to.be.equal(L2_ARBITRUM_CURRENT_MONTH);
+  expect(await scalingPriceOracle.previousMonth()).to.be.equal(L2_ARBITRUM_PREVIOUS_MONTH);
   expect(await scalingPriceOracle.monthlyChangeRateBasisPoints()).to.be.equal(55);
 
   expect(await oraclePassThrough.scalingPriceOracle()).to.be.equal(scalingPriceOracle.address);
-  expect(await oraclePassThrough.owner()).to.be.equal(L2_PROTOCOL_MULTISIG_ADDRESS);
+  expect(await oraclePassThrough.owner()).to.be.equal(L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS);
   expect(await oraclePassThrough.getCurrentOraclePrice()).to.be.equal(await scalingPriceOracle.getCurrentOraclePrice());
 
   console.log(`\n ~~~~~ Verified Contracts Successfully ~~~~~ \n`);

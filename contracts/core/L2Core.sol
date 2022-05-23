@@ -9,7 +9,7 @@ import {Permissions} from "./Permissions.sol";
 /// @title Source of truth for VOLT Protocol on Arbitrum
 /// @author Volt Protocol
 /// @notice maintains roles, access control, Volt, Vcon, and the Vcon treasury
-contract ArbitrumCore is ICore, Permissions {
+contract L2Core is ICore, Permissions {
     /// @notice the address of the VOLT contract
     IVolt public immutable override volt;
 

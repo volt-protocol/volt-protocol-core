@@ -72,9 +72,10 @@ contract L2ScalingPriceOracleTest is DSTest {
     }
 
     function testSetup() public {
+        // assertEq(l2scalingPriceOracle.remainingTime(), block.timestamp - startTime);
+        assertTrue(!l2scalingPriceOracle.isTimeEnded());
         assertEq(l2scalingPriceOracle.startTime(), startTime);
         assertEq(l2scalingPriceOracle.oraclePrice(), 1e18); /// starting price is correct
-        assertEq(l2scalingPriceOracle.MAX_OWNER_SYNC_DEVIATION(), 100);
         assertEq(scalingPriceOracle.oracle(), oracle);
         assertEq(scalingPriceOracle.jobId(), jobId);
         assertEq(scalingPriceOracle.fee(), fee);
@@ -300,52 +301,6 @@ contract L2ScalingPriceOracleTest is DSTest {
         );
 
         l2scalingPriceOracle.requestCPIData();
-    }
-
-    function testOwnerSyncOraclePriceSuccessfully() public {
-        uint256 currentOraclePrice = l2scalingPriceOracle.oraclePrice();
-        uint256 newOraclePrice = ((currentOraclePrice * 50) / 10_000) +
-            currentOraclePrice;
-
-        l2scalingPriceOracle.ownerSyncOraclePrice(newOraclePrice);
-        assertEq(l2scalingPriceOracle.oraclePrice(), newOraclePrice);
-    }
-
-    function testOwnerSyncOraclePriceFailsSecondTime() public {
-        uint256 currentOraclePrice = l2scalingPriceOracle.oraclePrice();
-        uint256 newOraclePrice = ((currentOraclePrice * 50) / 10_000) +
-            currentOraclePrice;
-
-        l2scalingPriceOracle.ownerSyncOraclePrice(newOraclePrice);
-        assertEq(l2scalingPriceOracle.oraclePrice(), newOraclePrice);
-
-        vm.expectRevert(
-            bytes("Initializable: contract is already initialized")
-        );
-        l2scalingPriceOracle.ownerSyncOraclePrice(newOraclePrice);
-    }
-
-    function testOwnerSyncOraclePriceFailsNotOwner() public {
-        uint256 currentOraclePrice = l2scalingPriceOracle
-            .getCurrentOraclePrice();
-
-        vm.prank(address(0));
-        vm.expectRevert(bytes("Ownable: caller is not the owner"));
-        l2scalingPriceOracle.ownerSyncOraclePrice(currentOraclePrice);
-    }
-
-    function testOwnerSyncOraclePriceFailsOutsideDeviation() public {
-        uint256 currentOraclePrice = l2scalingPriceOracle.oraclePrice();
-        uint256 newOraclePrice = (currentOraclePrice * 150) /
-            10_000 +
-            currentOraclePrice;
-
-        vm.expectRevert(
-            bytes(
-                "L2ScalingPriceOracle: Oracle Price Sync outside of max deviation"
-            )
-        );
-        l2scalingPriceOracle.ownerSyncOraclePrice(newOraclePrice);
     }
 
     function testDeploymentFailsWithIncorrectStartTime() public {

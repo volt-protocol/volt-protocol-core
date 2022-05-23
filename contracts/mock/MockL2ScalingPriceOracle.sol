@@ -7,6 +7,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @notice Testing contract that allows for updates without mocking chainlink calls
 contract MockL2ScalingPriceOracle is L2ScalingPriceOracle {
+    address owner;
+
     constructor(
         address _oracle,
         bytes32 _jobid,
@@ -25,7 +27,9 @@ contract MockL2ScalingPriceOracle is L2ScalingPriceOracle {
             _actualStartTime,
             _startingOraclePrice
         )
-    {}
+    {
+        owner = msg.sender;
+    }
 
     function fulfill(uint256 _cpiData) external {
         _updateCPIData(_cpiData);
@@ -48,7 +52,9 @@ contract MockL2ScalingPriceOracle is L2ScalingPriceOracle {
         IERC20 token,
         address to,
         uint256 amount
-    ) external onlyOwner {
+    ) external {
+        require(msg.sender == owner, "!owner");
+
         token.transfer(to, amount);
     }
 }
