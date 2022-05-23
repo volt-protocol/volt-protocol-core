@@ -71,6 +71,7 @@ contract L2ScalingPriceOracle is
     /// @param newOraclePrice the new oracle price to sync the starting price between L1 and L2
     function ownerSyncOraclePrice(uint256 newOraclePrice)
         external
+        override
         onlyOwner
         initializer
     {
