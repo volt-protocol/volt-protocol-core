@@ -36,31 +36,9 @@ library TribeRoles {
     /// @notice can manage the majority of Tribe protocol parameters. Sets boundaries for MINOR_PARAM_ROLE.
     bytes32 internal constant PARAMETER_ADMIN = keccak256("PARAMETER_ADMIN");
 
-    /// @notice manages the Collateralization Oracle as well as other protocol oracles.
-    bytes32 internal constant ORACLE_ADMIN = keccak256("ORACLE_ADMIN_ROLE");
-
-    /// @notice manages TribalChief incentives and related functionality.
-    bytes32 internal constant TRIBAL_CHIEF_ADMIN =
-        keccak256("TRIBAL_CHIEF_ADMIN_ROLE");
-
     /// @notice admin of PCVGuardian
     bytes32 internal constant PCV_GUARDIAN_ADMIN =
         keccak256("PCV_GUARDIAN_ADMIN_ROLE");
-
-    /// @notice admin of all Minor Roles
-    bytes32 internal constant MINOR_ROLE_ADMIN = keccak256("MINOR_ROLE_ADMIN");
-
-    /// @notice admin of the Fuse protocol
-    bytes32 internal constant FUSE_ADMIN = keccak256("FUSE_ADMIN");
-
-    /// @notice capable of vetoing DAO votes or optimistic timelocks
-    bytes32 internal constant VETO_ADMIN = keccak256("VETO_ADMIN");
-
-    /// @notice capable of setting FEI Minters within global rate limits and caps
-    bytes32 internal constant MINTER_ADMIN = keccak256("MINTER_ADMIN");
-
-    /// @notice manages the constituents of Optimistic Timelocks, including Proposers and Executors
-    bytes32 internal constant OPTIMISTIC_ADMIN = keccak256("OPTIMISTIC_ADMIN");
 
     /// @notice manages the granting and revocation of PCV Guard roles
     bytes32 internal constant PCV_GUARD_ADMIN =
@@ -69,15 +47,6 @@ library TribeRoles {
     /*///////////////////////////////////////////////////////////////
                                  Minor Roles
     //////////////////////////////////////////////////////////////*/
-
-    /// @notice capable of poking existing LBP auctions to exchange tokens.
-    bytes32 internal constant LBP_SWAP_ROLE = keccak256("SWAP_ADMIN_ROLE");
-
-    /// @notice capable of engaging with Votium for voting incentives.
-    bytes32 internal constant VOTIUM_ROLE = keccak256("VOTIUM_ADMIN_ROLE");
-
-    /// @notice capable of changing parameters within non-critical ranges
-    bytes32 internal constant MINOR_PARAM_ROLE = keccak256("MINOR_PARAM_ROLE");
 
     /// @notice capable of adding an address to multi rate limited
     bytes32 internal constant ADD_MINTER_ROLE = keccak256("ADD_MINTER_ROLE");
