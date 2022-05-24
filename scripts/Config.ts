@@ -23,7 +23,7 @@ const config = {
   JOB_ID: ethers.utils.toUtf8Bytes('6f7fb4abcedb485ab27eb7bb39caf827'),
   CURRENT_MONTH_INFLATION_DATA: '287504', // March 2022 Inflation Data
   PREVIOUS_MONTH_INFLATION_DATA: '283716', // February 2022 Inflation Data
-  MINT_FEE_BASIS_POINTS: 30, // Fee set at 30 basis points
+  MINT_FEE_BASIS_POINTS: 50, // Fee set at 50 basis points
   REDEEM_FEE_BASIS_POINTS: 0,
   DEPLOYER_VOLT_AMOUNT: ethers.utils.parseEther('40000000'), // 40m
   MAX_BUFFER_CAP: ethers.utils.parseEther('10000000'), // 10m
@@ -47,6 +47,7 @@ const config = {
 
   /// L2 Arbitrum Deployment
   L2_DEPLOYMENT: false,
+  L2_REDEEM_FEE_BASIS_POINTS: 5,
 
   ACTUAL_START_TIME: '1652575642',
   STARTING_L2_ORACLE_PRICE: '1028069999088399458',

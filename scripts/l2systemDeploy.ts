@@ -19,7 +19,7 @@ const {
 
   /// fees
   MINT_FEE_BASIS_POINTS,
-  REDEEM_FEE_BASIS_POINTS,
+  L2_REDEEM_FEE_BASIS_POINTS,
 
   VOLT_FUSE_PCV_DEPOSIT, /// unused deposit
   L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS,
@@ -45,22 +45,24 @@ const {
 } = config;
 
 const daiReservesThreshold = ethers.constants.MaxUint256; /// max uint value so that we can never allocate surplus on this PSM to the pcv deposit
-const mintLimitPerSecond = ethers.utils.parseEther('0'); /// 0 Volt can be minted per second max
-const voltPSMBufferCap = ethers.utils.parseEther('0'); /// 0 Volt max can be minted at a time
+const mintLimitPerSecond = ethers.utils.parseEther('0'); /// No Volt can be minted
+const voltPSMBufferCap = ethers.utils.parseEther('0'); /// No Volt can be minted
 
 /// Oracle price does not need to be scaled up because both tokens have 18 decimals
 const voltDAIDecimalsNormalizer = 0;
 
 /// Floor and ceiling are inverted due to oracle price inversion
-const voltFloorPrice = 9_000;
-const voltCeilingPrice = 10_000;
+const voltFloorPrice = 9_000; /// actually ceiling price, which is $1.11
+const voltCeilingPrice = 10_000; /// actually floor price, which is $1.00
 
 /// ~~~ Contract Deployment ~~~
 
 /// 1. Core
-/// 2. VOLT/DAI PSM
-/// 3. PCV Guardian
-/// 4. PCV Guard Admin
+/// 2. Scaling Price Oracle
+/// 3. Oracle Pass Through
+/// 4. VOLT/DAI PSM
+/// 5. PCV Guardian
+/// 6. PCV Guard Admin
 
 /// Grant PSM the PCV Controller Role
 
@@ -114,7 +116,7 @@ async function main() {
       doInvert: true /// invert the price so that the Oracle and PSM works correctly
     },
     MINT_FEE_BASIS_POINTS,
-    REDEEM_FEE_BASIS_POINTS, /// TODO raise this
+    L2_REDEEM_FEE_BASIS_POINTS,
     daiReservesThreshold,
     mintLimitPerSecond,
     voltPSMBufferCap,
@@ -151,6 +153,7 @@ async function main() {
   await pcvGuardAdmin.grantPCVGuardRole(PCV_GUARD_EOA_2);
 
   await core.grantGovernor(L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS); /// give multisig the governor role
+  await core.grantPCVController(L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS); /// give multisig the PCV controller role
 
   console.log('\n ~~~~~ Deployed Contracts Successfully ~~~~~ \n');
 
@@ -163,13 +166,29 @@ async function main() {
   console.log(`⚡L2ScalingPriceOracle⚡: ${scalingPriceOracle.address}`);
 
   if (L2_DEPLOYMENT) {
-    await verifyEtherscan(voltPSM.address, core.address, volt, oraclePassThrough.address);
+    await verifyEtherscan(
+      voltPSM.address,
+      core.address,
+      volt,
+      pcvGuardian.address,
+      pcvGuardAdmin.address,
+      oraclePassThrough.address,
+      scalingPriceOracle.address
+    );
   }
 
   await validateDeployment(core, pcvGuardian, pcvGuardAdmin, deployer, voltPSM, oraclePassThrough, scalingPriceOracle);
 }
 
-async function verifyEtherscan(voltPSM: string, core: string, volt: string, oraclePassThrough: string) {
+async function verifyEtherscan(
+  voltPSM: string,
+  core: string,
+  volt: string,
+  pcvGuardian: string,
+  pcvGuardAdmin: string,
+  oraclePassThrough: string,
+  scalingPriceOracle: string
+) {
   const oracleParams = {
     coreAddress: core,
     oracleAddress: oraclePassThrough,
@@ -178,6 +197,7 @@ async function verifyEtherscan(voltPSM: string, core: string, volt: string, orac
     doInvert: true /// invert the price so that the Oracle and PSM works correctly
   };
 
+  /// verify VOLT/DAI PSM
   await hre.run('verify:verify', {
     address: voltPSM,
 
@@ -186,7 +206,7 @@ async function verifyEtherscan(voltPSM: string, core: string, volt: string, orac
       voltCeilingPrice,
       oracleParams,
       MINT_FEE_BASIS_POINTS,
-      REDEEM_FEE_BASIS_POINTS,
+      L2_REDEEM_FEE_BASIS_POINTS,
       daiReservesThreshold,
       mintLimitPerSecond,
       voltPSMBufferCap,
@@ -198,6 +218,38 @@ async function verifyEtherscan(voltPSM: string, core: string, volt: string, orac
   await hre.run('verify:verify', {
     address: core,
     constructorArguments: [volt]
+  });
+
+  /// verify PCV Guardian
+  await hre.run('verify:verify', {
+    address: pcvGuardian,
+    constructorArguments: [core, L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS, [voltPSM]]
+  });
+
+  /// verify Core
+  await hre.run('verify:verify', {
+    address: pcvGuardAdmin,
+    constructorArguments: [core]
+  });
+
+  /// verify Oracle Pass Through
+  await hre.run('verify:verify', {
+    address: oraclePassThrough,
+    constructorArguments: [scalingPriceOracle]
+  });
+
+  /// verify Scaling Price Oracle
+  await hre.run('verify:verify', {
+    address: scalingPriceOracle,
+    constructorArguments: [
+      L2_ARBITRUM_CHAINLINK_ORACLE_ADDRESS,
+      L2_ARBITRUM_JOB_ID,
+      L2_ARBITRUM_CHAINLINK_FEE,
+      L2_ARBITRUM_CURRENT_MONTH,
+      L2_ARBITRUM_PREVIOUS_MONTH,
+      ACTUAL_START_TIME,
+      STARTING_L2_ORACLE_PRICE
+    ]
   });
 }
 
@@ -216,8 +268,8 @@ async function validateDeployment(
 
   /// assert that deployer doesn't have governor or any privileged roles
   expect(await core.getRoleMemberCount(await core.GOVERN_ROLE())).to.be.equal(3); // core, multisig and deployer are governor
-  expect(await core.getRoleMemberCount(await core.MINTER_ROLE())).to.be.equal(0); // only GRLM is minter
-  expect(await core.getRoleMemberCount(await core.PCV_CONTROLLER_ROLE())).to.be.equal(1); // only PCV Guardian is minter
+  expect(await core.getRoleMemberCount(await core.MINTER_ROLE())).to.be.equal(0); // no minters in Core on L2
+  expect(await core.getRoleMemberCount(await core.PCV_CONTROLLER_ROLE())).to.be.equal(2); // only PCV Guardian is minter
 
   expect(await core.isGovernor(L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS)).to.be.true;
   expect(await core.isGovernor(deployer.address)).to.be.true;
@@ -230,6 +282,7 @@ async function validateDeployment(
   /// on l2, volt is a bridge token so it doesn't have a reference to Core and is not mintable
   expect(await core.volt()).to.be.equal(volt.address);
 
+  expect(await core.isPCVController(L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS)).to.be.true;
   expect(await core.isPCVController(pcvGuardian.address)).to.be.true;
   expect(await core.isGuardian(pcvGuardian.address)).to.be.true;
 
@@ -259,12 +312,12 @@ async function validateDeployment(
   expect(await voltPSM.volt()).to.be.equal(L2_ARBITRUM_VOLT);
 
   ///  psm params
-  expect(await voltPSM.redeemFeeBasisPoints()).to.be.equal(REDEEM_FEE_BASIS_POINTS); /// 0 basis points
-  expect(await voltPSM.mintFeeBasisPoints()).to.be.equal(MINT_FEE_BASIS_POINTS); /// 30 basis points
+  expect(await voltPSM.redeemFeeBasisPoints()).to.be.equal(L2_REDEEM_FEE_BASIS_POINTS); /// 5 basis points
+  expect(await voltPSM.mintFeeBasisPoints()).to.be.equal(MINT_FEE_BASIS_POINTS); /// 50 basis points
   expect(await voltPSM.reservesThreshold()).to.be.equal(daiReservesThreshold);
   expect(await voltPSM.surplusTarget()).to.be.equal(VOLT_FUSE_PCV_DEPOSIT);
   expect(await voltPSM.rateLimitPerSecond()).to.be.equal(mintLimitPerSecond);
-  expect(await voltPSM.buffer()).to.be.equal(voltPSMBufferCap);
+  expect(await voltPSM.buffer()).to.be.equal(0); /// buffer is 0 as PSM cannot mint
   expect(await voltPSM.bufferCap()).to.be.equal(voltPSMBufferCap);
 
   ///  price bound params
