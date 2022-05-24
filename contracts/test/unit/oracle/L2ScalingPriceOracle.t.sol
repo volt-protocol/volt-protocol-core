@@ -72,7 +72,8 @@ contract L2ScalingPriceOracleTest is DSTest {
     }
 
     function testSetup() public {
-        // assertEq(l2scalingPriceOracle.remainingTime(), block.timestamp - startTime);
+        assertEq(l2scalingPriceOracle.remainingTime(), 8 days);
+        assertEq(scalingPriceOracle.remainingTime(), 8 days);
         assertTrue(!l2scalingPriceOracle.isTimeEnded());
         assertEq(l2scalingPriceOracle.startTime(), startTime);
         assertEq(l2scalingPriceOracle.oraclePrice(), 1e18); /// starting price is correct
