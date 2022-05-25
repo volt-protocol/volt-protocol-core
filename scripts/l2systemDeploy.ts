@@ -41,6 +41,7 @@ const {
   L2_ARBITRUM_CHAINLINK_FEE,
 
   /// Roles
+  GOVERN_ROLE,
   PCV_GUARD_ROLE,
   PCV_GUARD_ADMIN_ROLE
 } = config;
@@ -70,8 +71,9 @@ const voltUSDCCeilingPrice = '10000000000000000';
 /// 2. Scaling Price Oracle
 /// 3. Oracle Pass Through
 /// 4. VOLT/DAI PSM
-/// 5. PCV Guardian
-/// 6. PCV Guard Admin
+/// 5. VOLT/USDC PSM
+/// 6. PCV Guardian
+/// 7. PCV Guard Admin
 
 /// Grant PSM the PCV Controller Role
 
@@ -327,6 +329,8 @@ async function verifyEtherscan(
       STARTING_L2_ORACLE_PRICE
     ]
   });
+
+  console.log(`\n ~~~~~ Verified Contracts On Arbiscan Successfully ~~~~~ \n`);
 }
 
 async function validateDeployment(
@@ -343,30 +347,35 @@ async function validateDeployment(
 
   const volt = await ethers.getContractAt('Volt', await core.volt());
 
-  /// assert that deployer doesn't have governor or any privileged roles
   expect(await core.getRoleMemberCount(await core.GOVERN_ROLE())).to.be.equal(3); // core, multisig and deployer are governor
   expect(await core.getRoleMemberCount(await core.MINTER_ROLE())).to.be.equal(0); // no minters in Core on L2
-  expect(await core.getRoleMemberCount(await core.PCV_CONTROLLER_ROLE())).to.be.equal(2); // only PCV Guardian is minter
+  expect(await core.getRoleMemberCount(await core.PCV_CONTROLLER_ROLE())).to.be.equal(2); // only PCV Guardian and Governor are PCV Controllers
 
+  /// validate predefined roles from core are given to correct addresses
   expect(await core.isGovernor(L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS)).to.be.true;
   expect(await core.isGovernor(deployer.address)).to.be.true;
   expect(await core.isGovernor(core.address)).to.be.true;
 
+  expect(await core.isPCVController(L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS)).to.be.true;
+  expect(await core.isPCVController(pcvGuardian.address)).to.be.true;
   expect(await core.isPCVController(deployer.address)).to.be.false;
+
+  expect(await core.isGuardian(pcvGuardian.address)).to.be.true;
+
   expect(await core.isMinter(deployer.address)).to.be.false;
+
+  /// validate custom roles from core are given to correct addresses
+  expect(await core.hasRole(PCV_GUARD_ROLE, PCV_GUARD_EOA_1)).to.be.true;
+  expect(await core.hasRole(PCV_GUARD_ROLE, PCV_GUARD_EOA_2)).to.be.true;
+  expect(await core.hasRole(PCV_GUARD_ADMIN_ROLE, pcvGuardAdmin.address)).to.be.true;
+
+  /// validate role heirarchy for PCV Guard and PCV Guard Admin
+  expect(await core.getRoleAdmin(PCV_GUARD_ADMIN_ROLE)).to.be.equal(GOVERN_ROLE);
+  expect(await core.getRoleAdmin(PCV_GUARD_ROLE)).to.be.equal(PCV_GUARD_ADMIN_ROLE);
 
   /// assert volt and core are properly linked together
   /// on l2, volt is a bridge token so it doesn't have a reference to Core and is not mintable
   expect(await core.volt()).to.be.equal(volt.address);
-
-  expect(await core.isPCVController(L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS)).to.be.true;
-  expect(await core.isPCVController(pcvGuardian.address)).to.be.true;
-  expect(await core.isGuardian(pcvGuardian.address)).to.be.true;
-
-  expect(await core.hasRole(PCV_GUARD_ROLE, PCV_GUARD_EOA_1)).to.be.true;
-  expect(await core.hasRole(PCV_GUARD_ROLE, PCV_GUARD_EOA_2)).to.be.true;
-
-  expect(await core.hasRole(PCV_GUARD_ADMIN_ROLE, pcvGuardAdmin.address)).to.be.true;
 
   /// -------- PCV Guard Admin Parameter Validation --------
 
@@ -451,7 +460,7 @@ async function validateDeployment(
   expect(await oraclePassThrough.owner()).to.be.equal(L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS);
   expect(await oraclePassThrough.getCurrentOraclePrice()).to.be.equal(await scalingPriceOracle.getCurrentOraclePrice());
 
-  console.log(`\n ~~~~~ Verified Contracts Successfully ~~~~~ \n`);
+  console.log(`\n ~~~~~ Verified Contract Setup Successfully ~~~~~ \n`);
 }
 
 main()

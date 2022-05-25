@@ -73,7 +73,8 @@ const config = {
 
   /// Roles
   PCV_GUARD_ROLE: ethers.utils.id('PCV_GUARD_ROLE'),
-  PCV_GUARD_ADMIN_ROLE: ethers.utils.id('PCV_GUARD_ADMIN_ROLE')
+  PCV_GUARD_ADMIN_ROLE: ethers.utils.id('PCV_GUARD_ADMIN_ROLE'),
+  GOVERN_ROLE: ethers.utils.id('GOVERN_ROLE')
 };
 
 export default config;
