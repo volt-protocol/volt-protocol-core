@@ -383,11 +383,14 @@ async function validateDeployment(
 
   /// -------- PCV Guardian Parameter Validation --------
 
+  expect(await pcvGuardian.core()).to.be.equal(core.address);
   expect(await pcvGuardian.isWhitelistAddress(voltDAIPSM.address)).to.be.true;
   expect(await pcvGuardian.isWhitelistAddress(voltUSDCPSM.address)).to.be.true;
   expect(await pcvGuardian.safeAddress()).to.be.equal(L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS);
 
   /// -------- VOLT/DAI PSM Parameter Validation --------
+
+  expect(await voltDAIPSM.core()).to.be.equal(core.address);
 
   ///  oracle
   expect(await voltDAIPSM.doInvert()).to.be.true;
@@ -418,6 +421,8 @@ async function validateDeployment(
   expect(await voltDAIPSM.voltBalance()).to.be.equal(0);
 
   /// -------- VOLT/USDC PSM Parameter Validation --------
+
+  expect(await voltUSDCPSM.core()).to.be.equal(core.address);
 
   ///  oracle
   expect(await voltUSDCPSM.doInvert()).to.be.true;
@@ -454,13 +459,13 @@ async function validateDeployment(
 
   expect(await scalingPriceOracle.currentMonth()).to.be.equal(L2_ARBITRUM_CURRENT_MONTH);
   expect(await scalingPriceOracle.previousMonth()).to.be.equal(L2_ARBITRUM_PREVIOUS_MONTH);
-  expect(await scalingPriceOracle.monthlyChangeRateBasisPoints()).to.be.equal(55);
+  expect(await scalingPriceOracle.monthlyChangeRateBasisPoints()).to.be.equal(55); /// ensure correct monthly change rate for new scaling price oracle
 
   expect(await oraclePassThrough.scalingPriceOracle()).to.be.equal(scalingPriceOracle.address);
   expect(await oraclePassThrough.owner()).to.be.equal(L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS);
   expect(await oraclePassThrough.getCurrentOraclePrice()).to.be.equal(await scalingPriceOracle.getCurrentOraclePrice());
 
-  console.log(`\n ~~~~~ Verified Contract Setup Successfully ~~~~~ \n`);
+  console.log(`\n ~~~~~ Validated Contract Setup Successfully ~~~~~ \n`);
 }
 
 main()
