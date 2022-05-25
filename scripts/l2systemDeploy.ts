@@ -165,11 +165,9 @@ async function main() {
   await voltUSDCPSM.deployed();
 
   const PCVGuardian = await ethers.getContractFactory('PCVGuardian');
-
-  /// whitelist psm to withdraw from
   /// safe address is protocol multisig
   const pcvGuardian = await PCVGuardian.deploy(core.address, L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS, [
-    voltDAIPSM.address,
+    voltDAIPSM.address, /// whitelist psm's to withdraw from
     voltUSDCPSM.address
   ]);
   await pcvGuardian.deployed();
