@@ -28,11 +28,24 @@ contract L2CoreTest is DSTest {
         vm.startPrank(addresses.governorAddress);
         core = new L2Core(IVolt(address(volt)));
         vcon = new Vcon(addresses.governorAddress, addresses.governorAddress);
+        vm.stopPrank();
     }
 
     function testSetup() public {
         assertEq(address(core.volt()), address(volt));
-        assertEq(address(core.vcon()), address(vcon));
+        assertEq(address(core.vcon()), address(0)); /// vcon starts set to address 0
+
+        assertTrue(core.isGovernor(address(core))); /// core contract is governor
+        assertTrue(core.isGovernor(addresses.governorAddress)); /// msg.sender of contract is governor
+
+        bytes32 governRole = core.GOVERN_ROLE();
+        /// assert all roles have the proper admin
+        assertEq(core.getRoleAdmin(core.BURNER_ROLE()), governRole);
+        assertEq(core.getRoleAdmin(core.MINTER_ROLE()), governRole);
+        assertEq(core.getRoleAdmin(core.GOVERN_ROLE()), governRole);
+        assertEq(core.getRoleAdmin(core.GUARDIAN_ROLE()), governRole);
+        assertEq(core.getRoleAdmin(core.PCV_CONTROLLER_ROLE()), governRole);
+        assertEq(core.getRoleMemberCount(governRole), 2); /// msg.sender of contract and core is governor
     }
 
     function testGovernorSetsVcon() public {
