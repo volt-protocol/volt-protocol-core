@@ -15,6 +15,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 const {
   L2_ARBITRUM_VOLT,
   L2_DAI,
+  L2_ARBITRUM_USDC,
   L2_DEPLOYMENT, /// deploying to L2 or not
 
   /// fees
@@ -44,16 +45,24 @@ const {
   PCV_GUARD_ADMIN_ROLE
 } = config;
 
-const daiReservesThreshold = ethers.constants.MaxUint256; /// max uint value so that we can never allocate surplus on this PSM to the pcv deposit
+const reservesThreshold = ethers.constants.MaxUint256; /// max uint value so that we can never allocate surplus on this PSM to the pcv deposit
 const mintLimitPerSecond = ethers.utils.parseEther('0'); /// No Volt can be minted
 const voltPSMBufferCap = ethers.utils.parseEther('0'); /// No Volt can be minted
 
 /// Oracle price does not need to be scaled up because both tokens have 18 decimals
 const voltDAIDecimalsNormalizer = 0;
 
+/// Oracle price gets scaled up by 1e12 to account for the differences in decimals of USDC and VOLT.
+/// USDC has 6 decimals while Volt has 12, thus creating a difference that has to be normalized
+const voltUSDCDecimalsNormalizer = 12;
+
 /// Floor and ceiling are inverted due to oracle price inversion
-const voltFloorPrice = 9_000; /// actually ceiling price, which is $1.11
-const voltCeilingPrice = 10_000; /// actually floor price, which is $1.00
+const voltDAIFloorPrice = 9_000; /// actually ceiling price, which is $1.11
+const voltDAICeilingPrice = 10_000; /// actually floor price, which is $1.00
+
+/// Need to scale up price of floor and ceiling by 1e12 to account for decimal normalizer that is factored into oracle price
+const voltUSDCFloorPrice = '9000000000000000';
+const voltUSDCCeilingPrice = '10000000000000000';
 
 /// ~~~ Contract Deployment ~~~
 
@@ -105,9 +114,9 @@ async function main() {
   /// PSM will trade VOLT between 100 cents and 111 cents. If the Volt price exceeds 111 cents,
   /// the floor price will have to be moved lower as the oracle price is inverted.
   /// If price is outside of this band, the PSM will not allow trades
-  const voltPSM = await voltPSMFactory.deploy(
-    voltFloorPrice,
-    voltCeilingPrice,
+  const voltDAIPSM = await voltPSMFactory.deploy(
+    voltDAIFloorPrice,
+    voltDAICeilingPrice,
     {
       coreAddress: core.address,
       oracleAddress: oraclePassThrough.address, /// OPT
@@ -117,7 +126,7 @@ async function main() {
     },
     MINT_FEE_BASIS_POINTS,
     L2_REDEEM_FEE_BASIS_POINTS,
-    daiReservesThreshold,
+    reservesThreshold,
     mintLimitPerSecond,
     voltPSMBufferCap,
     L2_DAI,
@@ -126,11 +135,43 @@ async function main() {
     /// so this call will never be be attempted in the first place
   );
 
+  await voltDAIPSM.deployed();
+
+  /// Deploy DAI Peg Stability Module
+  /// PSM will trade VOLT between 100 cents and 111 cents. If the Volt price exceeds 111 cents,
+  /// the floor price will have to be moved lower as the oracle price is inverted.
+  /// If price is outside of this band, the PSM will not allow trades
+  const voltUSDCPSM = await voltPSMFactory.deploy(
+    voltUSDCFloorPrice,
+    voltUSDCCeilingPrice,
+    {
+      coreAddress: core.address,
+      oracleAddress: oraclePassThrough.address, /// OPT
+      backupOracle: ethers.constants.AddressZero,
+      decimalsNormalizer: voltUSDCDecimalsNormalizer,
+      doInvert: true /// invert the price so that the Oracle and PSM works correctly
+    },
+    MINT_FEE_BASIS_POINTS,
+    L2_REDEEM_FEE_BASIS_POINTS,
+    reservesThreshold,
+    mintLimitPerSecond,
+    voltPSMBufferCap,
+    L2_ARBITRUM_USDC,
+    VOLT_FUSE_PCV_DEPOSIT /// intentionally set the PCV deposit as an address that does not exist on l2
+    /// any calls to try to allocate surplus will fail, however the reserves threshold is too high
+    /// so this call will never be be attempted in the first place
+  );
+
+  await voltUSDCPSM.deployed();
+
   const PCVGuardian = await ethers.getContractFactory('PCVGuardian');
 
   /// whitelist psm to withdraw from
   /// safe address is protocol multisig
-  const pcvGuardian = await PCVGuardian.deploy(core.address, L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS, [voltPSM.address]);
+  const pcvGuardian = await PCVGuardian.deploy(core.address, L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS, [
+    voltDAIPSM.address,
+    voltUSDCPSM.address
+  ]);
   await pcvGuardian.deployed();
 
   const PCVGuardAdmin = await ethers.getContractFactory('PCVGuardAdmin');
@@ -159,15 +200,16 @@ async function main() {
 
   console.log(`⚡Core⚡:                 ${core.address}`);
   console.log(`⚡VOLT⚡:                 ${volt}`);
-  console.log(`⚡VOLT PSM⚡:             ${voltPSM.address}`);
   console.log(`⚡PCVGuardian⚡:          ${pcvGuardian.address}`);
+  console.log(`⚡VOLT DAI PSM⚡:         ${voltDAIPSM.address}`);
   console.log(`⚡PCVGuardAdmin⚡:        ${pcvGuardAdmin.address}`);
   console.log(`⚡OraclePassThrough⚡:    ${oraclePassThrough.address}`);
   console.log(`⚡L2ScalingPriceOracle⚡: ${scalingPriceOracle.address}`);
 
   if (L2_DEPLOYMENT) {
     await verifyEtherscan(
-      voltPSM.address,
+      voltDAIPSM.address,
+      voltUSDCPSM.address,
       core.address,
       volt,
       pcvGuardian.address,
@@ -177,11 +219,21 @@ async function main() {
     );
   }
 
-  await validateDeployment(core, pcvGuardian, pcvGuardAdmin, deployer, voltPSM, oraclePassThrough, scalingPriceOracle);
+  await validateDeployment(
+    core,
+    pcvGuardian,
+    pcvGuardAdmin,
+    deployer,
+    voltDAIPSM,
+    voltUSDCPSM,
+    oraclePassThrough,
+    scalingPriceOracle
+  );
 }
 
 async function verifyEtherscan(
-  voltPSM: string,
+  voltDAIPSM: string,
+  voltUSDCPSM: string,
   core: string,
   volt: string,
   pcvGuardian: string,
@@ -189,28 +241,54 @@ async function verifyEtherscan(
   oraclePassThrough: string,
   scalingPriceOracle: string
 ) {
-  const oracleParams = {
+  const daiOracleParams = {
     coreAddress: core,
     oracleAddress: oraclePassThrough,
     backupOracle: ethers.constants.AddressZero,
-    decimalsNormalizer: 0,
+    decimalsNormalizer: voltDAIDecimalsNormalizer,
+    doInvert: true /// invert the price so that the Oracle and PSM works correctly
+  };
+
+  const usdcOracleParams = {
+    coreAddress: core,
+    oracleAddress: oraclePassThrough,
+    backupOracle: ethers.constants.AddressZero,
+    decimalsNormalizer: voltUSDCDecimalsNormalizer,
     doInvert: true /// invert the price so that the Oracle and PSM works correctly
   };
 
   /// verify VOLT/DAI PSM
   await hre.run('verify:verify', {
-    address: voltPSM,
+    address: voltDAIPSM,
 
     constructorArguments: [
-      voltFloorPrice,
-      voltCeilingPrice,
-      oracleParams,
+      voltDAIFloorPrice,
+      voltDAICeilingPrice,
+      daiOracleParams,
       MINT_FEE_BASIS_POINTS,
       L2_REDEEM_FEE_BASIS_POINTS,
-      daiReservesThreshold,
+      reservesThreshold,
       mintLimitPerSecond,
       voltPSMBufferCap,
       L2_DAI,
+      VOLT_FUSE_PCV_DEPOSIT
+    ]
+  });
+
+  /// verify VOLT/USDC PSM
+  await hre.run('verify:verify', {
+    address: voltUSDCPSM,
+
+    constructorArguments: [
+      voltUSDCFloorPrice,
+      voltUSDCCeilingPrice,
+      usdcOracleParams,
+      MINT_FEE_BASIS_POINTS,
+      L2_REDEEM_FEE_BASIS_POINTS,
+      reservesThreshold,
+      mintLimitPerSecond,
+      voltPSMBufferCap,
+      L2_ARBITRUM_USDC,
       VOLT_FUSE_PCV_DEPOSIT
     ]
   });
@@ -223,7 +301,7 @@ async function verifyEtherscan(
   /// verify PCV Guardian
   await hre.run('verify:verify', {
     address: pcvGuardian,
-    constructorArguments: [core, L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS, [voltPSM]]
+    constructorArguments: [core, L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS, [voltDAIPSM, voltUSDCPSM]]
   });
 
   /// verify Core
@@ -258,7 +336,8 @@ async function validateDeployment(
   pcvGuardian: PCVGuardian,
   pcvGuardAdmin: PCVGuardAdmin,
   deployer: SignerWithAddress,
-  voltPSM: PriceBoundPSM,
+  voltDAIPSM: PriceBoundPSM,
+  voltUSDCPSM: PriceBoundPSM,
   oraclePassThrough: OraclePassThrough,
   scalingPriceOracle: ScalingPriceOracle
 ) {
@@ -297,37 +376,69 @@ async function validateDeployment(
 
   /// -------- PCV Guardian Parameter Validation --------
 
-  expect(await pcvGuardian.isWhitelistAddress(voltPSM.address)).to.be.true;
+  expect(await pcvGuardian.isWhitelistAddress(voltDAIPSM.address)).to.be.true;
+  expect(await pcvGuardian.isWhitelistAddress(voltUSDCPSM.address)).to.be.true;
   expect(await pcvGuardian.safeAddress()).to.be.equal(L2_ARBITRUM_PROTOCOL_MULTISIG_ADDRESS);
 
   /// -------- VOLT/DAI PSM Parameter Validation --------
 
   ///  oracle
-  expect(await voltPSM.doInvert()).to.be.true;
-  expect(await voltPSM.oracle()).to.be.equal(oraclePassThrough.address);
-  expect(await voltPSM.backupOracle()).to.be.equal(ethers.constants.AddressZero);
+  expect(await voltDAIPSM.doInvert()).to.be.true;
+  expect(await voltDAIPSM.oracle()).to.be.equal(oraclePassThrough.address);
+  expect(await voltDAIPSM.backupOracle()).to.be.equal(ethers.constants.AddressZero);
+  expect(await voltDAIPSM.decimalsNormalizer()).to.be.equal(voltDAIDecimalsNormalizer);
 
   ///  volt
-  expect(await voltPSM.underlyingToken()).to.be.equal(L2_DAI);
-  expect(await voltPSM.volt()).to.be.equal(L2_ARBITRUM_VOLT);
+  expect(await voltDAIPSM.underlyingToken()).to.be.equal(L2_DAI);
+  expect(await voltDAIPSM.volt()).to.be.equal(L2_ARBITRUM_VOLT);
 
   ///  psm params
-  expect(await voltPSM.redeemFeeBasisPoints()).to.be.equal(L2_REDEEM_FEE_BASIS_POINTS); /// 5 basis points
-  expect(await voltPSM.mintFeeBasisPoints()).to.be.equal(MINT_FEE_BASIS_POINTS); /// 50 basis points
-  expect(await voltPSM.reservesThreshold()).to.be.equal(daiReservesThreshold);
-  expect(await voltPSM.surplusTarget()).to.be.equal(VOLT_FUSE_PCV_DEPOSIT);
-  expect(await voltPSM.rateLimitPerSecond()).to.be.equal(mintLimitPerSecond);
-  expect(await voltPSM.buffer()).to.be.equal(0); /// buffer is 0 as PSM cannot mint
-  expect(await voltPSM.bufferCap()).to.be.equal(voltPSMBufferCap);
+  expect(await voltDAIPSM.redeemFeeBasisPoints()).to.be.equal(L2_REDEEM_FEE_BASIS_POINTS); /// 5 basis points
+  expect(await voltDAIPSM.mintFeeBasisPoints()).to.be.equal(MINT_FEE_BASIS_POINTS); /// 50 basis points
+  expect(await voltDAIPSM.reservesThreshold()).to.be.equal(reservesThreshold);
+  expect(await voltDAIPSM.surplusTarget()).to.be.equal(VOLT_FUSE_PCV_DEPOSIT);
+  expect(await voltDAIPSM.rateLimitPerSecond()).to.be.equal(mintLimitPerSecond);
+  expect(await voltDAIPSM.buffer()).to.be.equal(0); /// buffer is 0 as PSM cannot mint
+  expect(await voltDAIPSM.bufferCap()).to.be.equal(voltPSMBufferCap);
 
   ///  price bound params
-  expect(await voltPSM.floor()).to.be.equal(voltFloorPrice);
-  expect(await voltPSM.ceiling()).to.be.equal(voltCeilingPrice);
-  expect(await voltPSM.isPriceValid()).to.be.true;
+  expect(await voltDAIPSM.floor()).to.be.equal(voltDAIFloorPrice);
+  expect(await voltDAIPSM.ceiling()).to.be.equal(voltDAICeilingPrice);
+  expect(await voltDAIPSM.isPriceValid()).to.be.true;
 
   ///  balance check
-  expect(await voltPSM.balance()).to.be.equal(0);
-  expect(await voltPSM.voltBalance()).to.be.equal(0);
+  expect(await voltDAIPSM.balance()).to.be.equal(0);
+  expect(await voltDAIPSM.voltBalance()).to.be.equal(0);
+
+  /// -------- VOLT/USDC PSM Parameter Validation --------
+
+  ///  oracle
+  expect(await voltUSDCPSM.doInvert()).to.be.true;
+  expect(await voltUSDCPSM.oracle()).to.be.equal(oraclePassThrough.address);
+  expect(await voltUSDCPSM.backupOracle()).to.be.equal(ethers.constants.AddressZero);
+  expect(await voltUSDCPSM.decimalsNormalizer()).to.be.equal(voltUSDCDecimalsNormalizer);
+
+  ///  volt
+  expect(await voltUSDCPSM.underlyingToken()).to.be.equal(L2_ARBITRUM_USDC);
+  expect(await voltUSDCPSM.volt()).to.be.equal(L2_ARBITRUM_VOLT);
+
+  ///  psm params
+  expect(await voltUSDCPSM.redeemFeeBasisPoints()).to.be.equal(L2_REDEEM_FEE_BASIS_POINTS); /// 5 basis points
+  expect(await voltUSDCPSM.mintFeeBasisPoints()).to.be.equal(MINT_FEE_BASIS_POINTS); /// 50 basis points
+  expect(await voltUSDCPSM.reservesThreshold()).to.be.equal(reservesThreshold);
+  expect(await voltUSDCPSM.surplusTarget()).to.be.equal(VOLT_FUSE_PCV_DEPOSIT);
+  expect(await voltUSDCPSM.rateLimitPerSecond()).to.be.equal(mintLimitPerSecond);
+  expect(await voltUSDCPSM.buffer()).to.be.equal(0); /// buffer is 0 as PSM cannot mint
+  expect(await voltUSDCPSM.bufferCap()).to.be.equal(voltPSMBufferCap);
+
+  ///  price bound params
+  expect(await voltUSDCPSM.floor()).to.be.equal(voltUSDCFloorPrice);
+  expect(await voltUSDCPSM.ceiling()).to.be.equal(voltUSDCCeilingPrice);
+  expect(await voltUSDCPSM.isPriceValid()).to.be.true;
+
+  ///  balance check
+  expect(await voltUSDCPSM.balance()).to.be.equal(0);
+  expect(await voltUSDCPSM.voltBalance()).to.be.equal(0);
 
   /// -------- OraclePassThrough/ScalingPriceOracle Parameter Validation --------
 

@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
-import {Core, Vcon, Volt, IERC20} from "../../../core/Core.sol";
+import {MockERC20} from "./../../../mock/MockERC20.sol";
+import {Core, Vcon, Volt, IERC20, IVolt} from "../../../core/Core.sol";
+import {L2Core} from "../../../core/L2Core.sol";
 import {DSTest} from "./DSTest.sol";
 import {Vm} from "./Vm.sol";
 
@@ -79,6 +81,31 @@ function getCore() returns (Core) {
     vm.startPrank(addresses.governorAddress);
     Core core = new Core();
     core.init();
+    Vcon vcon = new Vcon(addresses.governorAddress, addresses.governorAddress);
+
+    core.setVcon(IERC20(address(vcon)));
+    core.grantMinter(addresses.minterAddress);
+    core.grantBurner(addresses.burnerAddress);
+    core.grantPCVController(addresses.pcvControllerAddress);
+    core.grantGuardian(addresses.guardianAddress);
+
+    vm.stopPrank();
+    return core;
+}
+
+/// @dev Deploy and configure Core
+function getL2Core() returns (L2Core) {
+    address HEVM_ADDRESS = address(
+        bytes20(uint160(uint256(keccak256("hevm cheat code"))))
+    );
+    Vm vm = Vm(HEVM_ADDRESS);
+    FeiTestAddresses memory addresses = getAddresses();
+
+    MockERC20 mockVolt = new MockERC20();
+
+    // Deploy Core from Governor address
+    vm.startPrank(addresses.governorAddress);
+    L2Core core = new L2Core(IVolt(address(mockVolt)));
     Vcon vcon = new Vcon(addresses.governorAddress, addresses.governorAddress);
 
     core.setVcon(IERC20(address(vcon)));

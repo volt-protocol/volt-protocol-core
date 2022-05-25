@@ -150,6 +150,9 @@ contract L2ScalingPriceOracleTest is DSTest {
         vm.warp(block.timestamp + 28 days);
         assertEq(97e16, scalingPriceOracle.getCurrentOraclePrice());
         assertEq(97e16, l2scalingPriceOracle.getCurrentOraclePrice());
+        assertEq(l2scalingPriceOracle.remainingTime(), 0);
+        assertEq(scalingPriceOracle.remainingTime(), 0);
+
         _testOraclePriceEquivalence();
     }
 
@@ -195,6 +198,9 @@ contract L2ScalingPriceOracleTest is DSTest {
     function testRequestSucceeds() public {
         vm.warp(block.timestamp + 45 days);
         uint256 oraclePrice = scalingPriceOracle.getCurrentOraclePrice();
+
+        assertEq(l2scalingPriceOracle.remainingTime(), 0);
+        assertEq(scalingPriceOracle.remainingTime(), 0);
 
         /// this will succeed and compound interest
         scalingPriceOracle.requestCPIData();
