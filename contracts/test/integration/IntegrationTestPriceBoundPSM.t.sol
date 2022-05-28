@@ -94,9 +94,6 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
         vm.prank(feiDAOTimelock);
         fei.mint(address(this), mintAmount);
 
-        vm.prank(0x25dCffa22EEDbF0A69F6277e24C459108c186ecB);
-        core.grantGovernor(addresses.voltGovernorAddress);
-
         vm.startPrank(addresses.voltGovernorAddress);
 
         /// grant the PSM the PCV Controller role
@@ -118,7 +115,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     /// @notice PSM is set up correctly and view functions are working
     function testGetRedeemAmountOut() public {
         uint256 amountFeiIn = 100;
-        assertEq(psm.getRedeemAmountOut(amountFeiIn), 101);
+        assertEq(psm.getRedeemAmountOut(amountFeiIn), 102);
     }
 
     /// @notice PSM is set up correctly and view functions are working
@@ -139,13 +136,13 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     /// @notice PSM is set up correctly and view functions are working
     function testGetMintAmountOut() public {
         uint256 amountFeiIn = 100;
-        assertEq(psm.getMintAmountOut(amountFeiIn), 98);
+        assertEq(psm.getMintAmountOut(amountFeiIn), 96);
     }
 
     /// @notice PSM is set up correctly and view functions are working
     function testGetRedeemAmountOutAfterTime() public {
         uint256 amountVoltIn = 98;
-        uint256 expectedAmountStableOut = 99;
+        uint256 expectedAmountStableOut = 100;
 
         assertEq(psm.getRedeemAmountOut(amountVoltIn), expectedAmountStableOut);
     }

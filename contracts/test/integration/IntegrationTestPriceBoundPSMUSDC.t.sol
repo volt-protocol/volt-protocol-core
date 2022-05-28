@@ -3,7 +3,6 @@ pragma solidity ^0.8.4;
 
 import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-
 import {MockPCVDepositV2} from "../../mock/MockPCVDepositV2.sol";
 import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
@@ -83,9 +82,6 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
         vm.prank(makerUSDCPSM);
         usdc.transfer(address(this), balance);
 
-        vm.prank(0x25dCffa22EEDbF0A69F6277e24C459108c186ecB);
-        core.grantGovernor(addresses.voltGovernorAddress);
-
         vm.startPrank(addresses.voltGovernorAddress);
 
         /// grant the PSM the PCV Controller role
@@ -116,7 +112,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     /// @notice PSM is set up correctly and redeem view function is working
     function testGetRedeemAmountOut() public {
         uint256 amountVoltIn = 100e12;
-        assertEq(psm.getRedeemAmountOut(amountVoltIn), 101);
+        assertEq(psm.getRedeemAmountOut(amountVoltIn), 102);
     }
 
     /// @notice PSM is set up correctly and view functions are working
@@ -139,7 +135,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
         uint256 amountUSDCIn = 100;
         assertApproxEq(
             psm.getMintAmountOut(amountUSDCIn).toInt256(),
-            9809e10,
+            9654e10,
             1
         ); /// values are within 9 basis points of each other
     }

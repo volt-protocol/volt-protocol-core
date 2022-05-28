@@ -26,7 +26,7 @@ contract IntegrationTestPCVGuardian is DSTest {
     IVolt private fei = IVolt(0x956F47F50A910163D8BF957Cf5846D573E7f87CA);
 
     IPCVDepositTest private pcvDeposit =
-        IPCVDepositTest(0x4188fbD7aDC72853E3275F1c3503E170994888D7);
+        IPCVDepositTest(0x985f9C331a9E4447C782B98D6693F5c7dF8e560e);
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
@@ -49,7 +49,7 @@ contract IntegrationTestPCVGuardian is DSTest {
         pcvGuardAdmin = new PCVGuardAdmin(address(core));
 
         // grant the pcvGuardian the PCV controller and Guardian roles
-        vm.startPrank(addresses.voltDeployerAddress);
+        vm.startPrank(addresses.voltGovernorAddress);
         core.grantPCVController(address(pcvGuardian));
         core.grantGuardian(address(pcvGuardian));
 
@@ -75,7 +75,7 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testPausedAfterWithdrawToSafeAddress() public {
-        vm.startPrank(addresses.voltDeployerAddress);
+        vm.startPrank(addresses.voltGovernorAddress);
         pcvDeposit.pause();
         assertEq(fei.balanceOf(address(this)), 0);
 
@@ -87,7 +87,7 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testGovernorWithdrawToSafeAddress() public {
-        vm.startPrank(addresses.voltDeployerAddress);
+        vm.startPrank(addresses.voltGovernorAddress);
         assertEq(fei.balanceOf(address(this)), 0);
 
         pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), withdrawAmount);
@@ -97,7 +97,7 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testPausedAfterWithdrawAllToSafeAddress() public {
-        vm.startPrank(addresses.voltDeployerAddress);
+        vm.startPrank(addresses.voltGovernorAddress);
         pcvDeposit.pause();
         assertEq(fei.balanceOf(address(this)), 0);
 
@@ -110,7 +110,7 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testGovernorWithdrawAllToSafeAddress() public {
-        vm.startPrank(addresses.voltDeployerAddress);
+        vm.startPrank(addresses.voltGovernorAddress);
         assertEq(fei.balanceOf(address(this)), 0);
 
         uint256 amountToWithdraw = pcvDeposit.balance();
@@ -121,7 +121,7 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testGuardianWithdrawToSafeAddress() public {
-        vm.prank(addresses.voltDeployerAddress);
+        vm.prank(addresses.voltGovernorAddress);
         core.grantGuardian(address(0x1234));
 
         assertEq(fei.balanceOf(address(this)), 0);
@@ -133,7 +133,7 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testGuardianWithdrawAllToSafeAddress() public {
-        vm.prank(addresses.voltDeployerAddress);
+        vm.prank(addresses.voltGovernorAddress);
         core.grantGuardian(address(0x1234));
 
         assertEq(fei.balanceOf(address(this)), 0);
@@ -176,7 +176,7 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testWithdrawToSafeAddressFailWhenNotWhitelist() public {
-        vm.prank(addresses.voltDeployerAddress);
+        vm.prank(addresses.voltGovernorAddress);
         vm.expectRevert(
             bytes("PCVGuardian: Provided address is not whitelisted")
         );
@@ -185,7 +185,7 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testWithdrawAllToSafeAddressFailWhenNotWhitelist() public {
-        vm.prank(addresses.voltDeployerAddress);
+        vm.prank(addresses.voltGovernorAddress);
         vm.expectRevert(
             bytes("PCVGuardian: Provided address is not whitelisted")
         );
@@ -194,7 +194,7 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testWithdrawToSafeAddressFailWhenGuardRevokedGovernor() public {
-        vm.prank(addresses.voltDeployerAddress);
+        vm.prank(addresses.voltGovernorAddress);
         pcvGuardAdmin.revokePCVGuardRole(guard);
 
         vm.prank(guard);
@@ -204,7 +204,7 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testWithdrawAllToSafeAddressFailWhenGuardRevokedGovernor() public {
-        vm.prank(addresses.voltDeployerAddress);
+        vm.prank(addresses.voltGovernorAddress);
         pcvGuardAdmin.revokePCVGuardRole(guard);
 
         vm.prank(guard);
@@ -234,14 +234,14 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testSetWhiteListAddress() public {
-        vm.prank(addresses.voltDeployerAddress);
+        vm.prank(addresses.voltGovernorAddress);
 
         pcvGuardian.addWhitelistAddress(address(0x123));
         assertTrue(pcvGuardian.isWhitelistAddress(address(0x123)));
     }
 
     function testUnsetWhiteListAddress() public {
-        vm.prank(addresses.voltDeployerAddress);
+        vm.prank(addresses.voltGovernorAddress);
 
         pcvGuardian.removeWhitelistAddress(address(pcvDeposit));
         assertTrue(!pcvGuardian.isWhitelistAddress(address(pcvDeposit)));
