@@ -81,6 +81,7 @@ export interface AddressConfig {
 export enum AddressCategory {
   Core = 'Core',
   Governance = 'Governance',
+  Guardian = 'Guardian',
   Peg = 'Peg',
   PCV = 'PCV',
   PCV_V1 = 'PCV_V1',
