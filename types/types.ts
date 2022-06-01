@@ -49,6 +49,9 @@ export type ProposalDescription = {
   title: string;
   commands: ProposalCommand[];
   description: string;
+  salt: string;
+  delay: number;
+  predecessor: string;
 };
 
 export type ProposalCommand = {
