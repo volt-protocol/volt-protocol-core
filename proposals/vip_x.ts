@@ -11,10 +11,7 @@ const vip_x: ProposalDescription = {
       description: ''
     }
   ],
-  description: 'vip_x will change the game!',
-  salt: '0x73616c74000000000000000000000000000000000000000000000000000000',
-  predecessor: '0x70726f63656564696e672070726f706f73616c000000000000000000000000',
-  delay: 600
+  description: 'vip_x will change the game!'
 };
 
 export default vip_x;

@@ -41,10 +41,7 @@ const vip_1: ProposalDescription = {
       description: 'Check if core is governor'
     }
   ],
-  description: `Grant the Timelock Governor Role`,
-  salt: '0x73616c7400000000000000000000000000000000000000000000000000000000',
-  predecessor: '0x70726f63656564696e672070726f706f73616c00000000000000000000000000',
-  delay: 600
+  description: `Grant the Timelock Governor Role`
 };
 
 export default vip_1;
