@@ -16,7 +16,7 @@ Description:
 
 Steps:
   1 - First grant the timelock the governor role by the multisig
-  2 - Run script
+  2 - Grant Timelock PCV Controller
   3 - Validate state changes
 
 */

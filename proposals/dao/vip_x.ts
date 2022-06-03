@@ -10,7 +10,7 @@ import {
 
 /*
 
-DAO Proposal #9001
+Timelock Proposal #9001
 
 Description:
 

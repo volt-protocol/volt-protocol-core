@@ -1,7 +1,7 @@
 import { ProposalDescription } from '@custom-types/types';
 
 const vip_1: ProposalDescription = {
-  title: 'VIP-1: Setup Timelock',
+  title: 'VIP-1: Grant Timelock PCV Controller',
   commands: [
     {
       target: 'core',
