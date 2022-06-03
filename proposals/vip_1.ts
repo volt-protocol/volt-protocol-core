@@ -11,7 +11,7 @@ const vip_1: ProposalDescription = {
       description: 'Grant timelock PCV Controller role'
     }
   ],
-  description: `Grant the Timelock Governor Role`
+  description: `Grant the Timelock PCV Controller Role`
 };
 
 export default vip_1;
