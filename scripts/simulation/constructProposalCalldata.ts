@@ -3,16 +3,8 @@ import { Interface } from '@ethersproject/abi';
 import { utils } from 'ethers';
 import { getAllContractAddresses, getAllContracts } from '@scripts/utils/loadContracts';
 import format from 'string-template';
-import { NamedAddresses, ProposalDescription, ProposalCategory } from '@custom-types/types';
+import { ProposalDescription, ExtendedAlphaProposal } from '@custom-types/types';
 import constructProposal from './constructProposal';
-
-type ExtendedAlphaProposal = {
-  targets: string[];
-  values: BigNumber[];
-  signatures: string[];
-  calldatas: string[];
-  description: string;
-};
 
 /**
  * Take in a hardhat proposal object and output the proposal calldatas

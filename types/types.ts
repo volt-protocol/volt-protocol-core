@@ -1,9 +1,17 @@
-import { Contract, ethers } from 'ethers';
-import { Core, Volt, IERC20, Vcon } from './contracts';
+import { BigNumber, Contract, ethers } from 'ethers';
+import { Core, Volt, IERC20, Vcon, OptimisticTimelock } from './contracts';
 
 export type Env = {
   contracts: NamedContracts;
   contractAddresses: NamedAddresses;
+};
+
+export type ExtendedAlphaProposal = {
+  targets: string[];
+  values: BigNumber[];
+  signatures: string[];
+  calldatas: string[];
+  description: string;
 };
 
 export interface TestCoordinator {
@@ -156,6 +164,8 @@ export interface MainnetContracts {
   dpi: IERC20;
   dai: IERC20;
   rai: IERC20;
+  optimisticTimelock: OptimisticTimelock;
+  optimisticTimelockArbitrum: OptimisticTimelock;
   curve3Metapool: IERC20;
 }
 

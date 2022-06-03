@@ -13,7 +13,7 @@ export async function simulateOAProposal(
   logging = false
 ): Promise<void> {
   const timelockOA = contracts.optimisticTimelock as OptimisticTimelock;
-  const multisigAddressOA = contractAddresses.optimisticMultisig as string;
+  const multisigAddressOA = contractAddresses.protocolMultisig as string;
   await simulateTimelockProposal(timelockOA, multisigAddressOA, proposalInfo, contracts, contractAddresses, logging);
 }
 
@@ -25,7 +25,7 @@ export async function simulateOAProposalArbitrum(
   logging = false
 ): Promise<void> {
   const timelockOA = contracts.optimisticTimelockArbitrum as OptimisticTimelock;
-  const multisigAddressOA = contractAddresses.optimisticMultisigArbitrum as string;
+  const multisigAddressOA = contractAddresses.protocolMultisigArbitrum as string;
   await simulateTimelockProposal(timelockOA, multisigAddressOA, proposalInfo, contracts, contractAddresses, logging);
 }
 

@@ -72,6 +72,12 @@ const MainnetAddresses: MainnetAddresses = {
     artifactName: 'unknown',
     category: AddressCategory.Governance
   },
+  /// Volt Protocol Timelock
+  optimisticTimelock: {
+    address: '0x860fa85f04f9d35B3471D8F7F7fA3Ad31Ce4D5Ae',
+    artifactName: 'OptimisticTimelock',
+    category: AddressCategory.Governance
+  },
   feiDaiFixedPricePSM: {
     address: '0x2A188F9EB761F70ECEa083bA6c2A40145078dfc2',
     artifactName: 'unknown', /// Fixed Price PSM
