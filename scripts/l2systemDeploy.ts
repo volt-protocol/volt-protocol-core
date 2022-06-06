@@ -3,12 +3,11 @@ import { expect } from 'chai';
 import config from './config';
 import {
   L2Core,
-  Core,
   OraclePassThrough,
   PCVGuardAdmin,
   PCVGuardian,
   PriceBoundPSM,
-  ScalingPriceOracle
+  L2ScalingPriceOracle
 } from '@custom-types/contracts';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
@@ -202,6 +201,7 @@ async function main() {
   console.log(`⚡VOLT⚡:                 ${volt}`);
   console.log(`⚡PCVGuardian⚡:          ${pcvGuardian.address}`);
   console.log(`⚡VOLT DAI PSM⚡:         ${voltDAIPSM.address}`);
+  console.log(`⚡VOLT USDC PSM⚡:        ${voltUSDCPSM.address}`);
   console.log(`⚡PCVGuardAdmin⚡:        ${pcvGuardAdmin.address}`);
   console.log(`⚡OraclePassThrough⚡:    ${oraclePassThrough.address}`);
   console.log(`⚡L2ScalingPriceOracle⚡: ${scalingPriceOracle.address}`);
@@ -341,7 +341,7 @@ async function validateDeployment(
   voltDAIPSM: PriceBoundPSM,
   voltUSDCPSM: PriceBoundPSM,
   oraclePassThrough: OraclePassThrough,
-  scalingPriceOracle: ScalingPriceOracle
+  scalingPriceOracle: L2ScalingPriceOracle
 ) {
   /// -------- Core Parameter Validation --------
 
