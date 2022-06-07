@@ -6,7 +6,7 @@ import {IVolt, Volt, IERC20} from "../volt/Volt.sol";
 import {ICore} from "./ICore.sol";
 import {Permissions} from "./Permissions.sol";
 
-/// @title Source of truth for VOLT Protocol on Arbitrum
+/// @title Source of truth for VOLT Protocol on L2
 /// @author Volt Protocol
 /// @notice maintains roles, access control, Volt, Vcon, and the Vcon treasury
 contract L2Core is ICore, Permissions {
