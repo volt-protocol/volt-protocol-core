@@ -22,9 +22,10 @@ contract IntegrationTestOATimelock is DSTest {
     address public executorAddress = voltAddresses.executorAddress;
 
     function setUp() public {
-        address[] memory proposerCancellerAddresses = new address[](2);
+        address[] memory proposerCancellerAddresses = new address[](3);
         proposerCancellerAddresses[0] = proposer1;
         proposerCancellerAddresses[1] = proposer2;
+        proposerCancellerAddresses[2] = executorAddress;
 
         address[] memory executorAddresses = new address[](1);
         executorAddresses[0] = voltAddresses.executorAddress;
@@ -44,13 +45,20 @@ contract IntegrationTestOATimelock is DSTest {
         assertTrue(oaTimelock.hasRole(oaTimelock.CANCELLER_ROLE(), proposer2));
         assertTrue(oaTimelock.hasRole(oaTimelock.PROPOSER_ROLE(), proposer2));
 
+        /// ensure multisig has PROPOSER, CANCELLER and EXECUTOR roles
+        assertTrue(
+            oaTimelock.hasRole(oaTimelock.CANCELLER_ROLE(), executorAddress)
+        );
+        assertTrue(
+            oaTimelock.hasRole(oaTimelock.PROPOSER_ROLE(), executorAddress)
+        );
         assertTrue(
             oaTimelock.hasRole(oaTimelock.EXECUTOR_ROLE(), executorAddress)
         );
     }
 
     function testTimelockEthReceive() public {
-        assertEq(address(oaTimelock).balance, 0); // starts with 0 balance
+        assertEq(address(oaTimelock).balance, 0); /// starts with 0 balance
 
         uint256 ethSendAmount = 100 ether;
         vm.deal(proposer1, ethSendAmount);
@@ -66,7 +74,7 @@ contract IntegrationTestOATimelock is DSTest {
         uint256 ethSendAmount = 100 ether;
         vm.deal(address(oaTimelock), ethSendAmount);
 
-        assertEq(address(oaTimelock).balance, ethSendAmount); // starts with 0 balance
+        assertEq(address(oaTimelock).balance, ethSendAmount); /// starts with 0 balance
 
         bytes memory data = "";
         bytes32 predecessor = bytes32(0);
@@ -90,16 +98,16 @@ contract IntegrationTestOATimelock is DSTest {
 
         uint256 startingProposerEthBalance = proposer1.balance;
 
-        assertTrue(!oaTimelock.isOperationDone(id)); // operation is not done
-        assertTrue(!oaTimelock.isOperationReady(id)); // operation is not ready
+        assertTrue(!oaTimelock.isOperationDone(id)); /// operation is not done
+        assertTrue(!oaTimelock.isOperationReady(id)); /// operation is not ready
 
         vm.warp(block.timestamp + 600);
-        assertTrue(oaTimelock.isOperationReady(id)); // operation is ready
+        assertTrue(oaTimelock.isOperationReady(id)); /// operation is ready
 
         vm.prank(executorAddress);
         oaTimelock.execute(proposer1, ethSendAmount, data, predecessor, salt);
 
-        assertTrue(oaTimelock.isOperationDone(id)); // operation is done
+        assertTrue(oaTimelock.isOperationDone(id)); /// operation is done
 
         assertEq(address(oaTimelock).balance, 0);
         assertEq(proposer1.balance, ethSendAmount + startingProposerEthBalance); /// assert proposer received their eth
