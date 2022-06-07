@@ -57,7 +57,7 @@ export default {
       forking: enableMainnetForking
         ? {
             url: `https://eth-mainnet.alchemyapi.io/v2/${mainnetAlchemyApiKey}`,
-            blockNumber: 14787549
+            blockNumber: 14899146
           }
         : undefined
     },
@@ -81,7 +81,7 @@ export default {
     mainnet: {
       url: `https://eth-mainnet.alchemyapi.io/v2/${mainnetAlchemyApiKey}`,
       accounts: privateKey ? [privateKey] : [],
-      gasPrice: 80000000000 // gas price that is paid for mainnet transactions. currently 80 gigawei
+      gasPrice: 40000000000 // gas price that is paid for mainnet transactions. currently 40 gigawei
     }
   },
 
