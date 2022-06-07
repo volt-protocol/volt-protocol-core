@@ -92,7 +92,7 @@ describe('Fei', function () {
       it('burn Fei tokens', async function () {
         await expectRevert(
           this.fei.connect(impersonatedSigners[burnerAddress]).burnFrom(userAddress, 100),
-          'ERC20: burn amount exceeds allowance'
+          'ERC20: insufficient allowance'
         );
       });
     });

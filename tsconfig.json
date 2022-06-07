@@ -14,9 +14,18 @@
     "paths": {
       "@contracts/*": ["contracts/*"],
       "@custom-types/*": ["types/*"], // @types is reserved
-      "@test/*": ["test/*"]
-    }
+      "@test/*": ["test/*"],
+      "@proposals/*" : ["proposals/*"],
+      "@protocol/*" : ["protocol-configuration/*"],
+      "@scripts/*" : ["scripts/*"],
+    },
   },
-  "include": ["test/*", "test/**/*", "./types/contracts/*", "./types/contracts/**/*", "./scripts"],
+  "include": [
+    "test/*", "test/**/*",
+    "./types/contracts/*", "./types/contracts/**/*",
+    "./scripts", "proposals/**/*",
+    "protocol-configuration/*", "protocol-configuration/**/*",
+    "scripts/*", "scripts/**/*"
+  ],
   "files": ["./hardhat.config.ts"]
 }

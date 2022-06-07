@@ -23,6 +23,12 @@ struct FeiTestAddresses {
     address voltDeployerAddress;
 }
 
+struct VoltAddresses {
+    address pcvGuardAddress1; // address(0xf8D0387538E8e03F3B4394dA89f221D7565a28Ee),
+    address pcvGuardAddress2; // address(0xd90E9181B20D8D1B5034d9f5737804Da182039F6),
+    address executorAddress; // address(0xcBB83206698E8788F85EFbEeeCAd17e53366EBDf) // msig is executor
+}
+
 /// @dev Get a list of addresses
 function getAddresses() pure returns (FeiTestAddresses memory) {
     FeiTestAddresses memory addresses = FeiTestAddresses({
@@ -42,6 +48,14 @@ function getAddresses() pure returns (FeiTestAddresses memory) {
     });
 
     return addresses;
+}
+
+function getVoltAddresses() pure returns (VoltAddresses memory addresses) {
+    addresses = VoltAddresses({
+        pcvGuardAddress1: 0xf8D0387538E8e03F3B4394dA89f221D7565a28Ee,
+        pcvGuardAddress2: 0xd90E9181B20D8D1B5034d9f5737804Da182039F6,
+        executorAddress: 0xcBB83206698E8788F85EFbEeeCAd17e53366EBDf
+    });
 }
 
 /// @dev Get a list of addresses

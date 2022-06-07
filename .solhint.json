@@ -2,7 +2,7 @@
   "extends": "solhint:recommended",
   "plugins": ["prettier"],
     "rules": {
-      "compiler-version" : ["warn", "^0.6.0"],
+      "compiler-version" : ["warn", "^0.8.4"],
       "not-rely-on-time" : "off",
       "reason-string" : "off",
       "no-empty-blocks" : "off",
