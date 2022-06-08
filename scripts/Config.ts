@@ -51,12 +51,6 @@ const config = {
 
   ACTUAL_START_TIME: '1652575642',
   STARTING_L2_ORACLE_PRICE: '1028069999088399458',
-  L2_CORE: '', /// TODO deploy this
-  L2_DAI_PRICE_BOUND_PSM: '', /// TODO deploy this
-  L2_USDC_PRICE_BOUND_PSM: '', /// TODO deploy this
-  L2_ARBITRUM_PCV_GUARDIAN: '', /// TODO deploy this
-  L2_ARBITRUM_SCALING_PRICE_ORACLE_ADDRESS: '', /// TODO deploy this
-  L2_ARBITRUM_ORACLE_PASS_THROUGH_ADDRESS: '', /// TODO deploy this
 
   /// Chainlink
   L2_ARBITRUM_JOB_ID: ethers.utils.toUtf8Bytes('db685451903340c590d22eb505d49946'),

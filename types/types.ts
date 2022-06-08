@@ -84,6 +84,12 @@ export interface AddressConfig {
   artifactName: string;
   address: string;
   category: AddressCategory;
+  network: Network;
+}
+
+export enum Network {
+  Mainnet = 'Mainnet',
+  Arbitrum = 'Arbitrum'
 }
 
 export enum AddressCategory {
