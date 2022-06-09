@@ -44,9 +44,12 @@ if (useJSONTestReporter) {
 
 export default {
   etherscan: {
-    // Your API key for Etherscan
-    // Obtain one at https://etherscan.io/
-    apiKey: process.env.ETHERSCAN_KEY
+    apiKey: {
+      // Your API key for Etherscan
+      // Obtain one at https://etherscan.io/ or https://arbiscan.io/
+      mainnet: process.env.ETHERSCAN_KEY,
+      arbitrumOne: process.env.ARBISCAN_KEY
+    }
   },
   gasReporter: {
     enabled: !!process.env.REPORT_GAS
@@ -79,7 +82,7 @@ export default {
       accounts: testnetPrivateKey ? [testnetPrivateKey] : []
     },
 
-    arbitrum: {
+    arbitrumOne: {
       url: `https://arb-mainnet.g.alchemy.com/v2/${arbitrumAlchemyApiKey}`,
       accounts: privateKey ? [privateKey] : [],
       gasPrice: 800000000 // gas price that is paid for arbitrum transactions. currently .8 gigawei

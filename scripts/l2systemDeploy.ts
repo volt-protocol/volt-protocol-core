@@ -1,6 +1,7 @@
 import hre, { ethers } from 'hardhat';
 import { expect } from 'chai';
 import config from './config';
+import l2config from './l2config';
 import { getAllContractAddresses } from '@scripts/utils/loadContracts';
 import NetworksForVerification from '@protocol/networksForVerification';
 import {
@@ -18,6 +19,15 @@ import { NamedAddresses } from '@custom-types/types';
 const {
   /// fees
   MINT_FEE_BASIS_POINTS,
+
+  /// Roles
+  GOVERN_ROLE,
+  PCV_GUARD_ROLE,
+  PCV_GUARD_ADMIN_ROLE,
+  TIMELOCK_DELAY
+} = config;
+
+const {
   L2_REDEEM_FEE_BASIS_POINTS,
 
   /// bls cpi-u inflation data
@@ -29,34 +39,17 @@ const {
   ACTUAL_START_TIME,
   L2_ARBITRUM_JOB_ID,
   L2_ARBITRUM_CHAINLINK_FEE,
-
-  /// Roles
-  GOVERN_ROLE,
-  PCV_GUARD_ROLE,
-  PCV_GUARD_ADMIN_ROLE
-} = config;
-
-const reservesThreshold = ethers.constants.MaxUint256; /// max uint value so that we can never allocate surplus on this PSM to the pcv deposit
-const mintLimitPerSecond = ethers.utils.parseEther('0'); /// No Volt can be minted
-const voltPSMBufferCap = ethers.utils.parseEther('0'); /// No Volt can be minted
-
-/// Oracle price does not need to be scaled up because both tokens have 18 decimals
-const voltDAIDecimalsNormalizer = 0;
-
-/// Oracle price gets scaled up by 1e12 to account for the differences in decimals of USDC and VOLT.
-/// USDC has 6 decimals while Volt has 12, thus creating a difference that has to be normalized
-const voltUSDCDecimalsNormalizer = 12;
-
-/// Floor and ceiling are inverted due to oracle price inversion
-const voltDAIFloorPrice = 9_000; /// actually ceiling price, which is $1.11
-const voltDAICeilingPrice = 10_000; /// actually floor price, which is $1.00
-
-/// Need to scale up price of floor and ceiling by 1e12 to account for decimal normalizer that is factored into oracle price
-const voltUSDCFloorPrice = '9000000000000000';
-const voltUSDCCeilingPrice = '10000000000000000';
-
-/// Delay is 10 minutes
-const timelockDelay = 600;
+  voltUSDCFloorPrice,
+  voltUSDCCeilingPrice,
+  voltUSDCDecimalsNormalizer,
+  voltDAICeilingPrice,
+  voltDAIFloorPrice,
+  voltDAIDecimalsNormalizer,
+  reservesThreshold,
+  mintLimitPerSecond,
+  voltPSMBufferCap,
+  ADDRESS_ONE
+} = l2config;
 
 /// ~~~ Contract Deployment ~~~
 
@@ -101,11 +94,6 @@ async function main() {
   const oraclePassThrough = await OraclePassThroughFactory.deploy(scalingPriceOracle.address);
   await oraclePassThrough.deployed();
 
-  /// -------- Oracle Actions --------
-
-  /// transfer ownership to the multisig
-  await oraclePassThrough.transferOwnership(addresses.arbitrumProtocolMultisig);
-
   const voltPSMFactory = await ethers.getContractFactory('PriceBoundPSM');
 
   /// Deploy DAI Peg Stability Module
@@ -128,9 +116,9 @@ async function main() {
     mintLimitPerSecond,
     voltPSMBufferCap,
     addresses.arbitrumDai,
-    addresses.voltFusePCVDeposit /// intentionally set the PCV deposit as an address that does not exist on l2
-    /// any calls to try to allocate surplus will fail, however the reserves threshold is too high
-    /// so this call will never be be attempted in the first place
+    ADDRESS_ONE /// intentionally set the PCV deposit as an address that does not exist on l2, address(1)
+    /// any calls to try to allocate surplus will fail, however the reserves threshold is max uint
+    /// so this call will never be be able to be attempted in the first place
   );
 
   await voltDAIPSM.deployed();
@@ -155,9 +143,9 @@ async function main() {
     mintLimitPerSecond,
     voltPSMBufferCap,
     addresses.arbitrumUsdc,
-    addresses.voltFusePCVDeposit /// intentionally set the PCV deposit as an address that does not exist on l2
-    /// any calls to try to allocate surplus will fail, however the reserves threshold is too high
-    /// so this call will never be be attempted in the first place
+    ADDRESS_ONE /// intentionally set the PCV deposit as an address that does not exist on l2, address(1)
+    /// any calls to try to allocate surplus will fail, however the reserves threshold is max uint
+    /// so this call will never be be able to be attempted in the first place
   );
 
   await voltUSDCPSM.deployed();
@@ -178,13 +166,33 @@ async function main() {
     await ethers.getContractFactory('OptimisticTimelock')
   ).deploy(
     core.address,
-    timelockDelay,
+    TIMELOCK_DELAY,
     /// guards and multisig can propose and cancel
     [addresses.arbitrumProtocolMultisig, addresses.pcvGuardEOA1, addresses.pcvGuardEOA2],
     [addresses.arbitrumProtocolMultisig] /// protocol multisig is allowed to execute
   );
 
   await optimisticTimelock.deployed();
+
+  console.log(`⚡Core⚡:                 ${core.address}`);
+  console.log(`⚡VOLT⚡:                 ${volt}`);
+  console.log(`⚡Timelock⚡:             ${optimisticTimelock.address}`);
+  console.log(`⚡PCVGuardian⚡:          ${pcvGuardian.address}`);
+  console.log(`⚡VOLT DAI PSM⚡:         ${voltDAIPSM.address}`);
+  console.log(`⚡VOLT USDC PSM⚡:        ${voltUSDCPSM.address}`);
+  console.log(`⚡PCVGuardAdmin⚡:        ${pcvGuardAdmin.address}`);
+  console.log(`⚡OraclePassThrough⚡:    ${oraclePassThrough.address}`);
+  console.log(`⚡L2ScalingPriceOracle⚡: ${scalingPriceOracle.address}`);
+
+  console.log('\n ~~~~~ Deployed Contracts Successfully ~~~~~ \n');
+
+  /// TODO: break the setup actions into a separate file / function that is run independently of the deploy script
+  /// separate validation and verification on etherscan as well into distinct files or runnable commands so it isn't all at once
+
+  /// -------- Oracle Actions --------
+
+  /// transfer ownership to the multisig
+  await oraclePassThrough.transferOwnership(addresses.arbitrumProtocolMultisig);
 
   /// -------- PCV Guardian Actions --------
 
@@ -209,17 +217,10 @@ async function main() {
   await core.grantGovernor(optimisticTimelock.address); /// give timelock the governor role
   await core.grantPCVController(optimisticTimelock.address); /// give timelock the PCV controller role
 
-  console.log('\n ~~~~~ Deployed Contracts Successfully ~~~~~ \n');
+  /// -------- Deployer Revokes Governor --------
 
-  console.log(`⚡Core⚡:                 ${core.address}`);
-  console.log(`⚡VOLT⚡:                 ${volt}`);
-  console.log(`⚡Timelock⚡:             ${optimisticTimelock.address}`);
-  console.log(`⚡PCVGuardian⚡:          ${pcvGuardian.address}`);
-  console.log(`⚡VOLT DAI PSM⚡:         ${voltDAIPSM.address}`);
-  console.log(`⚡VOLT USDC PSM⚡:        ${voltUSDCPSM.address}`);
-  console.log(`⚡PCVGuardAdmin⚡:        ${pcvGuardAdmin.address}`);
-  console.log(`⚡OraclePassThrough⚡:    ${oraclePassThrough.address}`);
-  console.log(`⚡L2ScalingPriceOracle⚡: ${scalingPriceOracle.address}`);
+  /// deployer revokes their governor role from core
+  await core.revokeGovernor(deployer.address);
 
   if (NetworksForVerification[hre.network.name]) {
     await verifyEtherscan(
@@ -292,7 +293,7 @@ async function verifyEtherscan(
       mintLimitPerSecond,
       voltPSMBufferCap,
       addresses.arbitrumDai,
-      addresses.voltFusePCVDeposit
+      ADDRESS_ONE
     ]
   });
 
@@ -310,7 +311,7 @@ async function verifyEtherscan(
       mintLimitPerSecond,
       voltPSMBufferCap,
       addresses.arbitrumUsdc,
-      addresses.voltFusePCVDeposit
+      ADDRESS_ONE
     ]
   });
 
@@ -325,18 +326,18 @@ async function verifyEtherscan(
     constructorArguments: [core, addresses.arbitrumProtocolMultisig, [voltDAIPSM, voltUSDCPSM]]
   });
 
-  /// verify Core
+  /// verify PCV Guard Admin
   await hre.run('verify:verify', {
     address: pcvGuardAdmin,
     constructorArguments: [core]
   });
 
-  /// verify optimistic timelock
+  /// verify Optimistic Timelock
   await hre.run('verify:verify', {
     address: optimisticTimelock,
     constructorArguments: [
       core,
-      timelockDelay,
+      TIMELOCK_DELAY,
       [addresses.arbitrumProtocolMultisig, addresses.pcvGuardEOA1, addresses.pcvGuardEOA2],
       [addresses.arbitrumProtocolMultisig]
     ]
@@ -381,13 +382,14 @@ async function validateDeployment(
 
   const volt = await ethers.getContractAt('Volt', await core.volt());
 
-  expect(await core.getRoleMemberCount(await core.GOVERN_ROLE())).to.be.equal(4); // core, multisig, timelock and deployer are governor
+  expect(await core.getRoleMemberCount(await core.GOVERN_ROLE())).to.be.equal(3); // core, multisig and timelock are governor
   expect(await core.getRoleMemberCount(await core.MINTER_ROLE())).to.be.equal(0); // no minters in Core on Arbitrum, because Volt can only be minted by the Arbitrum bridge
   expect(await core.getRoleMemberCount(await core.PCV_CONTROLLER_ROLE())).to.be.equal(3); // PCV Guardian, Multisig and Timelock are PCV Controllers
 
   /// validate predefined roles from core are given to correct addresses
   expect(await core.isGovernor(addresses.arbitrumProtocolMultisig)).to.be.true;
-  expect(await core.isGovernor(deployer.address)).to.be.true;
+  expect(await core.isGovernor(optimisticTimelock.address)).to.be.true;
+  expect(await core.isGovernor(deployer.address)).to.be.false;
   expect(await core.isGovernor(core.address)).to.be.true;
 
   expect(await core.isPCVController(addresses.arbitrumProtocolMultisig)).to.be.true;
@@ -426,7 +428,26 @@ async function validateDeployment(
   /// -------- Timelock Parameter Validation --------
 
   expect(await optimisticTimelock.core()).to.be.equal(core.address);
-  expect(await optimisticTimelock.getMinDelay()).to.be.equal(timelockDelay);
+  expect(await optimisticTimelock.getMinDelay()).to.be.equal(TIMELOCK_DELAY);
+
+  /// validate proposer role
+  const proposerRole = await optimisticTimelock.PROPOSER_ROLE();
+  expect(await optimisticTimelock.hasRole(proposerRole, addresses.pcvGuardEOA1)).to.be.true;
+  expect(await optimisticTimelock.hasRole(proposerRole, addresses.pcvGuardEOA2)).to.be.true;
+  expect(await optimisticTimelock.hasRole(proposerRole, addresses.arbitrumProtocolMultisig)).to.be.true;
+
+  /// validate canceller role
+  const cancellerRole = await optimisticTimelock.CANCELLER_ROLE();
+  expect(await optimisticTimelock.hasRole(cancellerRole, addresses.pcvGuardEOA1)).to.be.true;
+  expect(await optimisticTimelock.hasRole(cancellerRole, addresses.pcvGuardEOA2)).to.be.true;
+  expect(await optimisticTimelock.hasRole(cancellerRole, addresses.arbitrumProtocolMultisig)).to.be.true;
+
+  /// validate executor role
+  const executorRole = await optimisticTimelock.EXECUTOR_ROLE();
+  expect(await optimisticTimelock.hasRole(executorRole, addresses.arbitrumProtocolMultisig)).to.be.true;
+  /// guards cannot execute
+  expect(await optimisticTimelock.hasRole(executorRole, addresses.pcvGuardEOA1)).to.be.false;
+  expect(await optimisticTimelock.hasRole(executorRole, addresses.pcvGuardEOA2)).to.be.false;
 
   /// -------- VOLT/DAI PSM Parameter Validation --------
 
@@ -446,7 +467,7 @@ async function validateDeployment(
   expect(await voltDAIPSM.redeemFeeBasisPoints()).to.be.equal(L2_REDEEM_FEE_BASIS_POINTS); /// 5 basis points
   expect(await voltDAIPSM.mintFeeBasisPoints()).to.be.equal(MINT_FEE_BASIS_POINTS); /// 50 basis points
   expect(await voltDAIPSM.reservesThreshold()).to.be.equal(reservesThreshold);
-  expect(await voltDAIPSM.surplusTarget()).to.be.equal(addresses.voltFusePCVDeposit);
+  expect(await voltDAIPSM.surplusTarget()).to.be.equal(ADDRESS_ONE); /// TODO change to address 1
   expect(await voltDAIPSM.rateLimitPerSecond()).to.be.equal(mintLimitPerSecond);
   expect(await voltDAIPSM.buffer()).to.be.equal(0); /// buffer is 0 as PSM cannot mint
   expect(await voltDAIPSM.bufferCap()).to.be.equal(voltPSMBufferCap);
@@ -478,7 +499,7 @@ async function validateDeployment(
   expect(await voltUSDCPSM.redeemFeeBasisPoints()).to.be.equal(L2_REDEEM_FEE_BASIS_POINTS); /// 5 basis points
   expect(await voltUSDCPSM.mintFeeBasisPoints()).to.be.equal(MINT_FEE_BASIS_POINTS); /// 50 basis points
   expect(await voltUSDCPSM.reservesThreshold()).to.be.equal(reservesThreshold);
-  expect(await voltUSDCPSM.surplusTarget()).to.be.equal(addresses.voltFusePCVDeposit);
+  expect(await voltUSDCPSM.surplusTarget()).to.be.equal(ADDRESS_ONE); /// TODO change to address 1
   expect(await voltUSDCPSM.rateLimitPerSecond()).to.be.equal(mintLimitPerSecond);
   expect(await voltUSDCPSM.buffer()).to.be.equal(0); /// buffer is 0 as PSM cannot mint
   expect(await voltUSDCPSM.bufferCap()).to.be.equal(voltPSMBufferCap);
@@ -492,7 +513,7 @@ async function validateDeployment(
   expect(await voltUSDCPSM.balance()).to.be.equal(0);
   expect(await voltUSDCPSM.voltBalance()).to.be.equal(0);
 
-  /// -------- OraclePassThrough/ScalingPriceOracle Parameter Validation --------
+  /// -------- OraclePassThrough / ScalingPriceOracle Parameter Validation --------
 
   expect(await scalingPriceOracle.oraclePrice()).to.be.equal(STARTING_L2_ORACLE_PRICE);
   expect(await scalingPriceOracle.startTime()).to.be.equal(ACTUAL_START_TIME);

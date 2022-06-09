@@ -183,6 +183,54 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.Guardian,
     network: Network.Mainnet
   },
+  arbitrumCore: {
+    address: '',
+    artifactName: 'L2Core',
+    category: AddressCategory.Core,
+    network: Network.Arbitrum
+  },
+  arbitrumOptimisticTimelock: {
+    address: '',
+    artifactName: 'OptimisticTimelock',
+    category: AddressCategory.Core,
+    network: Network.Arbitrum
+  },
+  arbitrumScalingPriceOracle: {
+    address: '',
+    artifactName: 'L2ScalingPriceOracle',
+    category: AddressCategory.Oracle,
+    network: Network.Arbitrum
+  },
+  arbitrumOraclePassThrough: {
+    address: '',
+    artifactName: 'OraclePassThrough',
+    category: AddressCategory.Oracle,
+    network: Network.Arbitrum
+  },
+  arbitrumPCVGuardAdmin: {
+    address: '',
+    artifactName: 'PCVGuardAdmin',
+    category: AddressCategory.TBD,
+    network: Network.Arbitrum
+  },
+  arbitrumPCVGuardian: {
+    address: '',
+    artifactName: 'PCVGuardian',
+    category: AddressCategory.TBD,
+    network: Network.Arbitrum
+  },
+  arbitrumDAIPSM: {
+    address: '',
+    artifactName: 'PriceBoundPSM',
+    category: AddressCategory.Peg,
+    network: Network.Arbitrum
+  },
+  arbitrumUSDCPSM: {
+    address: '',
+    artifactName: 'PriceBoundPSM',
+    category: AddressCategory.Peg,
+    network: Network.Arbitrum
+  },
   zeroAddress: {
     address: ethers.constants.AddressZero,
     artifactName: 'unknown',

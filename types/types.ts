@@ -1,5 +1,17 @@
 import { BigNumber, Contract, ethers } from 'ethers';
-import { Core, Volt, IERC20, Vcon, OptimisticTimelock } from './contracts';
+import {
+  Core,
+  Volt,
+  IERC20,
+  Vcon,
+  OptimisticTimelock,
+  ScalingPriceOracle,
+  L2Core,
+  PCVGuardAdmin,
+  PCVGuardian,
+  OraclePassThrough,
+  PriceBoundPSM
+} from './contracts';
 
 export type Env = {
   contracts: NamedContracts;
@@ -173,6 +185,14 @@ export interface MainnetContracts {
   optimisticTimelock: OptimisticTimelock;
   optimisticTimelockArbitrum: OptimisticTimelock;
   curve3Metapool: IERC20;
+  arbitrumOptimisticTimelock: OptimisticTimelock;
+  arbitrumScalingPriceOracle: ScalingPriceOracle;
+  arbitrumCore: L2Core;
+  arbitrumPCVGuardAdmin: PCVGuardAdmin;
+  arbitrumPCVGuardian: PCVGuardian;
+  arbitrumOraclePassThrough: OraclePassThrough;
+  arbitrumDAIPSM: PriceBoundPSM;
+  arbitrumUSDCPSM: PriceBoundPSM;
 }
 
 export interface MainnetContractAddresses {
