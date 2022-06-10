@@ -184,49 +184,49 @@ const MainnetAddresses: MainnetAddresses = {
     network: Network.Mainnet
   },
   arbitrumCore: {
-    address: '',
+    address: '0x31A38B79fDcFBC3095E3268CAFac1b9791796736',
     artifactName: 'L2Core',
     category: AddressCategory.Core,
     network: Network.Arbitrum
   },
   arbitrumOptimisticTimelock: {
-    address: '',
+    address: '0x980A05105a53eCa7745DA40DF1AdE6674fc73eD5',
     artifactName: 'OptimisticTimelock',
     category: AddressCategory.Core,
     network: Network.Arbitrum
   },
   arbitrumScalingPriceOracle: {
-    address: '',
+    address: '0x0313a76AD2cE70A35eC95066f942becab6A64893',
     artifactName: 'L2ScalingPriceOracle',
     category: AddressCategory.Oracle,
     network: Network.Arbitrum
   },
   arbitrumOraclePassThrough: {
-    address: '',
+    address: '0x7A23eB9bf043471dE7422a9CcdB5Ef809F34CbdE',
     artifactName: 'OraclePassThrough',
     category: AddressCategory.Oracle,
     network: Network.Arbitrum
   },
   arbitrumPCVGuardAdmin: {
-    address: '',
+    address: '0x0d6d0600BEa83FaAF172C2E8aCDd2F5140e235D3',
     artifactName: 'PCVGuardAdmin',
     category: AddressCategory.TBD,
     network: Network.Arbitrum
   },
   arbitrumPCVGuardian: {
-    address: '',
+    address: '0x14eCB5Ff2A78364E0FF443B7F0F6e0e393531484',
     artifactName: 'PCVGuardian',
-    category: AddressCategory.TBD,
+    category: AddressCategory.Guardian,
     network: Network.Arbitrum
   },
   arbitrumDAIPSM: {
-    address: '',
+    address: '0x4d2cF840FDe4210A96F485fC01f1459Bfb2EFABb',
     artifactName: 'PriceBoundPSM',
     category: AddressCategory.Peg,
     network: Network.Arbitrum
   },
   arbitrumUSDCPSM: {
-    address: '',
+    address: '0x278A903dA9Fb0ea8B90c2b1b089eF90033FDd868',
     artifactName: 'PriceBoundPSM',
     category: AddressCategory.Peg,
     network: Network.Arbitrum
