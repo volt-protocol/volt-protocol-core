@@ -8,7 +8,7 @@ const l2config = {
   voltUSDCDecimalsNormalizer: 12,
   /// Oracle price does not need to be scaled up because both tokens have 18 decimals
   voltDAIDecimalsNormalizer: 0,
-  reservesThreshold: ethers.constants.MaxUint256,
+  reservesThreshold: ethers.constants.MaxUint256.toString(),
 
   /// Floor and ceiling are inverted due to oracle price inversion
   voltDAIFloorPrice: 9_000,

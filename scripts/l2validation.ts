@@ -6,6 +6,7 @@ import { expect } from 'chai';
 import '@nomiclabs/hardhat-ethers';
 
 const {
+  VOLT_FUSE_PCV_DEPOSIT,
   /// fees
   MINT_FEE_BASIS_POINTS,
   TIMELOCK_DELAY
@@ -21,7 +22,6 @@ const {
   /// Set Surplus Deposit to Address 1 to stop allocate surplus from being callable
   /// Allocate surplus can never be called because reserves threshold is max uint and therefore impossible to exceed
   /// Surplus deposit cannot be address 0 because logic in the PSM explicitly checks the 0 address, so address 1 is used instead
-  ADDRESS_ONE,
   PCV_GUARD_ROLE,
   PCV_GUARD_ADMIN_ROLE,
   GOVERN_ROLE,
@@ -145,7 +145,7 @@ async function validateDeployment() {
   expect(await arbitrumDAIPSM.redeemFeeBasisPoints()).to.be.equal(L2_REDEEM_FEE_BASIS_POINTS); /// 5 basis points
   expect(await arbitrumDAIPSM.mintFeeBasisPoints()).to.be.equal(MINT_FEE_BASIS_POINTS); /// 50 basis points
   expect(await arbitrumDAIPSM.reservesThreshold()).to.be.equal(reservesThreshold);
-  expect(await arbitrumDAIPSM.surplusTarget()).to.be.equal(ADDRESS_ONE); /// TODO change to address 1
+  expect(await arbitrumDAIPSM.surplusTarget()).to.be.equal(VOLT_FUSE_PCV_DEPOSIT); /// TODO change to address 1
   expect(await arbitrumDAIPSM.rateLimitPerSecond()).to.be.equal(mintLimitPerSecond);
   expect(await arbitrumDAIPSM.buffer()).to.be.equal(0); /// buffer is 0 as PSM cannot mint
   expect(await arbitrumDAIPSM.bufferCap()).to.be.equal(voltPSMBufferCap);
@@ -177,7 +177,7 @@ async function validateDeployment() {
   expect(await arbitrumUSDCPSM.redeemFeeBasisPoints()).to.be.equal(L2_REDEEM_FEE_BASIS_POINTS); /// 5 basis points
   expect(await arbitrumUSDCPSM.mintFeeBasisPoints()).to.be.equal(MINT_FEE_BASIS_POINTS); /// 50 basis points
   expect(await arbitrumUSDCPSM.reservesThreshold()).to.be.equal(reservesThreshold);
-  expect(await arbitrumUSDCPSM.surplusTarget()).to.be.equal(ADDRESS_ONE); /// TODO change to address 1
+  expect(await arbitrumUSDCPSM.surplusTarget()).to.be.equal(VOLT_FUSE_PCV_DEPOSIT); /// TODO change to address 1
   expect(await arbitrumUSDCPSM.rateLimitPerSecond()).to.be.equal(mintLimitPerSecond);
   expect(await arbitrumUSDCPSM.buffer()).to.be.equal(0); /// buffer is 0 as PSM cannot mint
   expect(await arbitrumUSDCPSM.bufferCap()).to.be.equal(voltPSMBufferCap);
