@@ -1,6 +1,7 @@
 import { ethers } from 'ethers';
 
 const config = {
+  /// Mainnet
   MAINNET_DEPLOYMENT: true,
   CHAINLINK_FEE: ethers.utils.parseEther('10'),
   CHAINLINK_ORACLE_ADDRESS: '0x049bd8c3adc3fe7d3fc2a44541d955a537c2a484',
@@ -22,7 +23,7 @@ const config = {
   JOB_ID: ethers.utils.toUtf8Bytes('6f7fb4abcedb485ab27eb7bb39caf827'),
   CURRENT_MONTH_INFLATION_DATA: '287504', // March 2022 Inflation Data
   PREVIOUS_MONTH_INFLATION_DATA: '283716', // February 2022 Inflation Data
-  MINT_FEE_BASIS_POINTS: 30, // Fee set at 30 basis points
+  MINT_FEE_BASIS_POINTS: 50, // Fee set at 50 basis points
   REDEEM_FEE_BASIS_POINTS: 0,
   DEPLOYER_VOLT_AMOUNT: ethers.utils.parseEther('40000000'), // 40m
   MAX_BUFFER_CAP: ethers.utils.parseEther('10000000'), // 10m
@@ -42,7 +43,14 @@ const config = {
   PCV_GUARDIAN: '0x2c2b362e6ae0F080F39b90Cb5657E5550090D6C3',
   PCV_GUARD_ADMIN: '0x868F58Ae8F6B2Dc31D9ADc97a8A09B16f05E9cd7',
   PCV_GUARD_EOA_1: '0xf8D0387538E8e03F3B4394dA89f221D7565a28Ee',
-  PCV_GUARD_EOA_2: '0xd90E9181B20D8D1B5034d9f5737804Da182039F6'
+  PCV_GUARD_EOA_2: '0xd90E9181B20D8D1B5034d9f5737804Da182039F6',
+
+  /// Roles
+  PCV_GUARD_ROLE: ethers.utils.id('PCV_GUARD_ROLE'),
+  PCV_GUARD_ADMIN_ROLE: ethers.utils.id('PCV_GUARD_ADMIN_ROLE'),
+  GOVERN_ROLE: ethers.utils.id('GOVERN_ROLE'),
+
+  TIMELOCK_DELAY: 600
 };
 
 export default config;

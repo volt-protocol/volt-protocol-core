@@ -1,8 +1,7 @@
-import { BigNumber, ethers } from 'ethers';
+import { ethers } from 'ethers';
 import { Interface } from '@ethersproject/abi';
 import { utils } from 'ethers';
 import { getAllContractAddresses, getAllContracts } from '@scripts/utils/loadContracts';
-import format from 'string-template';
 import { ProposalDescription, ExtendedAlphaProposal } from '@custom-types/types';
 import constructProposal from './constructProposal';
 

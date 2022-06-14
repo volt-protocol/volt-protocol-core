@@ -1,5 +1,17 @@
-import { BigNumber, Contract, ethers } from 'ethers';
-import { Core, Volt, IERC20, Vcon, OptimisticTimelock } from './contracts';
+import { BigNumber, ethers } from 'ethers';
+import {
+  Core,
+  Volt,
+  IERC20,
+  Vcon,
+  OptimisticTimelock,
+  L2Core,
+  PCVGuardAdmin,
+  PCVGuardian,
+  OraclePassThrough,
+  PriceBoundPSM,
+  L2ScalingPriceOracle
+} from './contracts';
 
 export type Env = {
   contracts: NamedContracts;
@@ -84,6 +96,12 @@ export interface AddressConfig {
   artifactName: string;
   address: string;
   category: AddressCategory;
+  network: Network;
+}
+
+export enum Network {
+  Mainnet = 'Mainnet',
+  Arbitrum = 'Arbitrum'
 }
 
 export enum AddressCategory {
@@ -167,6 +185,14 @@ export interface MainnetContracts {
   optimisticTimelock: OptimisticTimelock;
   optimisticTimelockArbitrum: OptimisticTimelock;
   curve3Metapool: IERC20;
+  arbitrumOptimisticTimelock: OptimisticTimelock;
+  arbitrumScalingPriceOracle: L2ScalingPriceOracle;
+  arbitrumCore: L2Core;
+  arbitrumPCVGuardAdmin: PCVGuardAdmin;
+  arbitrumPCVGuardian: PCVGuardian;
+  arbitrumOraclePassThrough: OraclePassThrough;
+  arbitrumDAIPSM: PriceBoundPSM;
+  arbitrumUSDCPSM: PriceBoundPSM;
 }
 
 export interface MainnetContractAddresses {

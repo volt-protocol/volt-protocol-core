@@ -19,6 +19,7 @@ const testnetPrivateKey = process.env.TESTNET_PRIVATE_KEY;
 const privateKey = process.env.ETH_PRIVATE_KEY;
 const enableMainnetForking = process.env.ENABLE_MAINNET_FORKING;
 const mainnetAlchemyApiKey = process.env.MAINNET_ALCHEMY_API_KEY;
+const arbitrumAlchemyApiKey = process.env.ARBITRUM_ALCHEMY_API_KEY;
 const useJSONTestReporter = process.env.REPORT_TEST_RESULTS_AS_JSON;
 
 if (!(process.env.NODE_OPTIONS && process.env.NODE_OPTIONS.includes('max-old-space-size'))) {
@@ -43,9 +44,12 @@ if (useJSONTestReporter) {
 
 export default {
   etherscan: {
-    // Your API key for Etherscan
-    // Obtain one at https://etherscan.io/
-    apiKey: process.env.ETHERSCAN_KEY
+    apiKey: {
+      // Your API key for Etherscan
+      // Obtain one at https://etherscan.io/ or https://arbiscan.io/
+      mainnet: process.env.ETHERSCAN_KEY,
+      arbitrumOne: process.env.ARBISCAN_KEY
+    }
   },
   gasReporter: {
     enabled: !!process.env.REPORT_GAS
@@ -76,6 +80,12 @@ export default {
     rinkeby: {
       url: `https://eth-rinkeby.alchemyapi.io/v2/${rinkebyAlchemyApiKey}`,
       accounts: testnetPrivateKey ? [testnetPrivateKey] : []
+    },
+
+    arbitrumOne: {
+      url: `https://arb-mainnet.g.alchemy.com/v2/${arbitrumAlchemyApiKey}`,
+      accounts: privateKey ? [privateKey] : [],
+      gasPrice: 1000000000 // gas price that is paid for arbitrum transactions. currently .9 gigawei
     },
 
     mainnet: {
