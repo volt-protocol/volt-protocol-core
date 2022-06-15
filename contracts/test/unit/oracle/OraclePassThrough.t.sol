@@ -47,7 +47,8 @@ contract OraclePassThroughTest is DSTest {
             jobId,
             fee,
             currentMonth,
-            previousMonth
+            previousMonth,
+            address(0)
         );
 
         oraclePassThrough = new OraclePassThrough(
@@ -96,7 +97,8 @@ contract OraclePassThroughTest is DSTest {
                     jobId,
                     fee,
                     currentMonth,
-                    previousMonth
+                    previousMonth,
+                    address(0)
                 )
             )
         );

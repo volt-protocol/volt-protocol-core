@@ -68,17 +68,16 @@ contract ScalingPriceOracle is
     /// @param _fee maximum fee paid to chainlink data provider
     /// @param _currentMonth current month's inflation data
     /// @param _previousMonth previous month's inflation data
+    /// @param _chainlinkToken address of the chainlink token
     constructor(
         address _oracle,
         bytes32 _jobid,
         uint256 _fee,
         uint128 _currentMonth,
-        uint128 _previousMonth
+        uint128 _previousMonth,
+        address _chainlinkToken
     ) Timed(TIMEFRAME) {
-        /// set public chainlink token if not on local testnet
-        if (block.chainid != 99) {
-            setPublicChainlinkToken();
-        }
+        setChainlinkToken(_chainlinkToken);
 
         oracle = _oracle;
         jobId = _jobid;

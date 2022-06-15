@@ -56,6 +56,10 @@ contract IntegrationTestVoltDeployment is DSTest, StdLib {
     address public immutable feiDAOTimelock =
         0xd51dbA7a94e1adEa403553A8235C302cEbF41a3c;
 
+    /// @notice address of chainlink token on mainnet
+    address public constant chainlinkToken =
+        0x514910771AF9Ca656af840dff83E8264EcF986CA;
+
     /// @notice Oracle Pass Through contract
     OraclePassThrough public oracle;
 
@@ -70,7 +74,8 @@ contract IntegrationTestVoltDeployment is DSTest, StdLib {
                 jobId,
                 10e18,
                 101,
-                100
+                100,
+                address(0)
             );
 
         oracle = new OraclePassThrough(

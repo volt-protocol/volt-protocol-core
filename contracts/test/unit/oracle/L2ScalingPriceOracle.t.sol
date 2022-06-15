@@ -55,7 +55,8 @@ contract L2ScalingPriceOracleTest is DSTest {
             jobId,
             fee,
             currentMonth,
-            previousMonth
+            previousMonth,
+            address(0)
         );
 
         vm.warp(block.timestamp + 20 days); /// now 70 days have passed
@@ -66,6 +67,7 @@ contract L2ScalingPriceOracleTest is DSTest {
             fee,
             currentMonth,
             previousMonth,
+            address(0),
             50 days,
             1e18
         );
@@ -135,7 +137,8 @@ contract L2ScalingPriceOracleTest is DSTest {
             jobId,
             fee,
             previousMonth, /// flip current and previous months so that rate is -3%
-            currentMonth
+            currentMonth,
+            address(0)
         );
         l2scalingPriceOracle = new MockL2ScalingPriceOracle(
             oracle,
@@ -143,6 +146,7 @@ contract L2ScalingPriceOracleTest is DSTest {
             fee,
             previousMonth, /// flip current and previous months so that rate is -3%
             currentMonth,
+            address(0),
             block.timestamp,
             1e18
         );
@@ -321,6 +325,7 @@ contract L2ScalingPriceOracleTest is DSTest {
             fee,
             currentMonth,
             previousMonth,
+            address(0),
             0, /// cause first check to fail as 0 < 1
             1e18
         );
@@ -336,6 +341,7 @@ contract L2ScalingPriceOracleTest is DSTest {
             fee,
             currentMonth,
             previousMonth,
+            address(0),
             block.timestamp,
             99e16
         );
@@ -348,6 +354,7 @@ contract L2ScalingPriceOracleTest is DSTest {
             fee,
             currentMonth,
             previousMonth,
+            address(0),
             block.timestamp,
             2e18
         );
@@ -363,6 +370,7 @@ contract L2ScalingPriceOracleTest is DSTest {
             fee,
             currentMonth,
             previousMonth,
+            address(0),
             block.timestamp,
             2e18
         );
@@ -418,6 +426,7 @@ contract L2ScalingPriceOracleTest is DSTest {
             fee,
             currentMonth,
             previousMonth,
+            address(0),
             block.timestamp,
             x
         );
