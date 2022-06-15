@@ -75,13 +75,8 @@ contract ScalingPriceOracle is
         uint128 _currentMonth,
         uint128 _previousMonth
     ) Timed(TIMEFRAME) {
-        uint256 chainId;
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            chainId := chainid()
-        }
-
-        if (chainId == 1 || chainId == 42) {
+        /// set public chainlink token if not on local testnet
+        if (block.chainid != 99) {
             setPublicChainlinkToken();
         }
 
