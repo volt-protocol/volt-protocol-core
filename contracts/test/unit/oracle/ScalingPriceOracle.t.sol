@@ -66,6 +66,7 @@ contract ScalingPriceOracleTest is DSTest {
             scalingPriceOracle.getMonthlyAPR(),
             monthlyChangeRateBasisPoints
         );
+        assertEq(scalingPriceOracle.getChainlinkTokenAddress(), address(0));
     }
 
     /// positive price action from oracle -- inflation case

@@ -118,6 +118,11 @@ contract ScalingPriceOracle is
         percentageChange = (delta * Constants.BP_INT) / int128(previousMonth);
     }
 
+    /// @notice return the address of the chainlink token referenced by this contract
+    function getChainlinkTokenAddress() public view returns (address) {
+        return chainlinkTokenAddress();
+    }
+
     /// ------------- Public API To Request Chainlink Data -------------
 
     /// @notice Create a Chainlink request to retrieve API response, find the target

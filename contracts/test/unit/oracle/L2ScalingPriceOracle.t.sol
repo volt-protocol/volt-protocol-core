@@ -88,6 +88,11 @@ contract L2ScalingPriceOracleTest is DSTest {
             scalingPriceOracle.getMonthlyAPR(),
             monthlyChangeRateBasisPoints
         );
+        assertEq(
+            scalingPriceOracle.getChainlinkTokenAddress(),
+            l2scalingPriceOracle.getChainlinkTokenAddress()
+        );
+        assertEq(l2scalingPriceOracle.getChainlinkTokenAddress(), address(0));
     }
 
     function testOracleSetupEquivalence() public {

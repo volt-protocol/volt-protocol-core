@@ -1,4 +1,3 @@
-import config from './config';
 import l2config from './l2config';
 import { getAllContractAddresses } from '@scripts/utils/loadContracts';
 import { ethers } from 'hardhat';
@@ -39,6 +38,7 @@ async function deploy() {
 
   console.log(`⚡L2ScalingPriceOracle⚡: ${scalingPriceOracle.address}`);
 
+  expect(await scalingPriceOracle.getChainlinkTokenAddress()).to.be.equal(L2_ARBITRUM_CHAINLINK_TOKEN);
   expect(await scalingPriceOracle.monthlyChangeRateBasisPoints()).to.be.equal(110);
   expect(await scalingPriceOracle.previousMonth()).to.be.equal(L2_ARBITRUM_PREVIOUS_MONTH);
   expect(await scalingPriceOracle.currentMonth()).to.be.equal(L2_ARBITRUM_CURRENT_MONTH);

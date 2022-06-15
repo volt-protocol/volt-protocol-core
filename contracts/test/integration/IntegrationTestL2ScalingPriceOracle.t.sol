@@ -104,6 +104,10 @@ contract IntegrationTestL2ScalingPriceOracle is DSTest {
             scalingPriceOracle.getCurrentOraclePrice(),
             l2scalingPriceOracle.getCurrentOraclePrice()
         );
+        assertEq(
+            l2scalingPriceOracle.getChainlinkTokenAddress(),
+            chainlinkToken
+        );
     }
 
     function _testOraclePriceEquivalence() internal {
