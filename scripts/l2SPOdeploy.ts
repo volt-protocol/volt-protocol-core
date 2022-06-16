@@ -25,7 +25,6 @@ async function deploy() {
 
   const scalingPriceOracle = await L2ScalingPriceOracleFactory.deploy(
     addresses.arbitrumFiewsChainlinkOracle,
-    /// if the variables aren't reusable or needed for documentation, they shouldn't be in Config.ts
     L2_ARBITRUM_JOB_ID,
     L2_ARBITRUM_CHAINLINK_FEE,
     L2_ARBITRUM_CURRENT_MONTH,
