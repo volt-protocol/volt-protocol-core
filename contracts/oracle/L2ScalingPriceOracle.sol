@@ -19,6 +19,7 @@ contract L2ScalingPriceOracle is ScalingPriceOracle {
     /// @param _fee maximum fee paid to chainlink data provider
     /// @param _currentMonth current month's inflation data
     /// @param _previousMonth previous month's inflation data
+    /// @param _chainlinkToken address of the chainlink token
     /// @param _actualStartTime unix timestamp of Oracle Price interpolation starting time
     /// @param _startingOraclePrice starting oracle price
     constructor(
@@ -27,9 +28,19 @@ contract L2ScalingPriceOracle is ScalingPriceOracle {
         uint256 _fee,
         uint128 _currentMonth,
         uint128 _previousMonth,
+        address _chainlinkToken,
         uint256 _actualStartTime,
         uint256 _startingOraclePrice
-    ) ScalingPriceOracle(_oracle, _jobid, _fee, _currentMonth, _previousMonth) {
+    )
+        ScalingPriceOracle(
+            _oracle,
+            _jobid,
+            _fee,
+            _currentMonth,
+            _previousMonth,
+            _chainlinkToken
+        )
+    {
         /// ensure start time is not more than 28 days ago
         require(
             _actualStartTime > block.timestamp - TIMEFRAME,

@@ -16,8 +16,18 @@ contract MockScalingPriceOracle is ScalingPriceOracle {
         bytes32 _jobid,
         uint256 _fee,
         uint128 _currentMonth,
-        uint128 _previousMonth
-    ) ScalingPriceOracle(_oracle, _jobid, _fee, _currentMonth, _previousMonth) {
+        uint128 _previousMonth,
+        address _chainlinkToken
+    )
+        ScalingPriceOracle(
+            _oracle,
+            _jobid,
+            _fee,
+            _currentMonth,
+            _previousMonth,
+            _chainlinkToken
+        )
+    {
         owner = msg.sender;
     }
 

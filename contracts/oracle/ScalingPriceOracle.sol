@@ -68,22 +68,16 @@ contract ScalingPriceOracle is
     /// @param _fee maximum fee paid to chainlink data provider
     /// @param _currentMonth current month's inflation data
     /// @param _previousMonth previous month's inflation data
+    /// @param _chainlinkToken address of the chainlink token
     constructor(
         address _oracle,
         bytes32 _jobid,
         uint256 _fee,
         uint128 _currentMonth,
-        uint128 _previousMonth
+        uint128 _previousMonth,
+        address _chainlinkToken
     ) Timed(TIMEFRAME) {
-        uint256 chainId;
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            chainId := chainid()
-        }
-
-        if (chainId == 1 || chainId == 42) {
-            setPublicChainlinkToken();
-        }
+        setChainlinkToken(_chainlinkToken);
 
         oracle = _oracle;
         jobId = _jobid;
@@ -122,6 +116,11 @@ contract ScalingPriceOracle is
     function getMonthlyAPR() public view returns (int256 percentageChange) {
         int256 delta = int128(currentMonth) - int128(previousMonth);
         percentageChange = (delta * Constants.BP_INT) / int128(previousMonth);
+    }
+
+    /// @notice return the address of the chainlink token referenced by this contract
+    function getChainlinkTokenAddress() public view returns (address) {
+        return chainlinkTokenAddress();
     }
 
     /// ------------- Public API To Request Chainlink Data -------------

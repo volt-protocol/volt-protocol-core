@@ -23,6 +23,10 @@ contract IntegrationTestL2ScalingPriceOracle is DSTest {
         ScalingPriceOracle(0x79412660E95F94a4D2d02a050CEA776200939917);
     L2ScalingPriceOracle private l2scalingPriceOracle;
 
+    /// @notice address of chainlink token on arbitrum
+    address public constant chainlinkToken =
+        0xf97f4df75117a78c1A5a0DBb814Af92458539FB4;
+
     /// @notice increase price by x% per month
     int256 public monthlyChangeRateBasisPoints =
         scalingPriceOracle.monthlyChangeRateBasisPoints();
@@ -58,6 +62,7 @@ contract IntegrationTestL2ScalingPriceOracle is DSTest {
             fee,
             currentMonth,
             previousMonth,
+            chainlinkToken,
             startTime,
             startOraclePrice
         );
@@ -99,6 +104,10 @@ contract IntegrationTestL2ScalingPriceOracle is DSTest {
             scalingPriceOracle.getCurrentOraclePrice(),
             l2scalingPriceOracle.getCurrentOraclePrice()
         );
+        assertEq(
+            l2scalingPriceOracle.getChainlinkTokenAddress(),
+            chainlinkToken
+        );
     }
 
     function _testOraclePriceEquivalence() internal {
@@ -125,14 +134,17 @@ contract IntegrationTestL2ScalingPriceOracle is DSTest {
             jobId,
             fee,
             previousMonth, /// flip current and previous months so that rate is -3%
-            currentMonth
+            currentMonth,
+            chainlinkToken
         );
+
         l2scalingPriceOracle = new MockL2ScalingPriceOracle(
             oracle,
             jobId,
             fee,
             previousMonth, /// flip current and previous months so that rate is -3%
             currentMonth,
+            chainlinkToken,
             scalingPriceOracle.startTime(),
             1e18
         );

@@ -196,7 +196,7 @@ const MainnetAddresses: MainnetAddresses = {
     network: Network.Arbitrum
   },
   arbitrumScalingPriceOracle: {
-    address: '0x0313a76AD2cE70A35eC95066f942becab6A64893',
+    address: '0x138F30D35557FA72478663b601f0f0FD7cc4E39E',
     artifactName: 'L2ScalingPriceOracle',
     category: AddressCategory.Oracle,
     network: Network.Arbitrum

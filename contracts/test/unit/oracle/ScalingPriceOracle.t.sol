@@ -51,7 +51,8 @@ contract ScalingPriceOracleTest is DSTest {
             jobId,
             fee,
             currentMonth,
-            previousMonth
+            previousMonth,
+            address(0)
         );
     }
 
@@ -65,6 +66,7 @@ contract ScalingPriceOracleTest is DSTest {
             scalingPriceOracle.getMonthlyAPR(),
             monthlyChangeRateBasisPoints
         );
+        assertEq(scalingPriceOracle.getChainlinkTokenAddress(), address(0));
     }
 
     /// positive price action from oracle -- inflation case
@@ -80,7 +82,8 @@ contract ScalingPriceOracleTest is DSTest {
             jobId,
             fee,
             previousMonth, /// flip current and previous months so that rate is -3%
-            currentMonth
+            currentMonth,
+            address(0)
         );
 
         vm.warp(block.timestamp + 28 days);

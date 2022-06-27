@@ -55,7 +55,8 @@ contract NonCustodialPSMTest is DSTest {
                 keccak256(abi.encodePacked("test")),
                 10e18,
                 101,
-                100
+                100,
+                address(0)
             );
 
         oracle = new OraclePassThrough(

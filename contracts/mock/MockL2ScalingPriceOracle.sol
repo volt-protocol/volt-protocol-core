@@ -15,6 +15,7 @@ contract MockL2ScalingPriceOracle is L2ScalingPriceOracle {
         uint256 _fee,
         uint128 _currentMonth,
         uint128 _previousMonth,
+        address _chainlinkToken,
         uint256 _actualStartTime,
         uint256 _startingOraclePrice
     )
@@ -24,6 +25,7 @@ contract MockL2ScalingPriceOracle is L2ScalingPriceOracle {
             _fee,
             _currentMonth,
             _previousMonth,
+            _chainlinkToken,
             _actualStartTime,
             _startingOraclePrice
         )
