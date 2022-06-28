@@ -14,8 +14,6 @@ import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposi
 import {getCore, getAddresses, FeiTestAddresses} from "./../unit/utils/Fixtures.sol";
 import {NonCustodialPSM, GlobalRateLimitedMinter} from "./../../peg/NonCustodialPSM.sol";
 
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-
 // Create Core
 // Global Rate Limited Minter
 // Oracle System
@@ -23,7 +21,6 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 // - Oracle Pass Through
 
 contract IntegrationTestVoltDeployment is DSTest, StdLib {
-    using SafeCast for *;
     GlobalRateLimitedMinter private rateLimitedMinter;
     NonCustodialPSM private psm;
     ICore private core;
@@ -201,11 +198,9 @@ contract IntegrationTestVoltDeployment is DSTest, StdLib {
         uint256 endingPCVDepositFeiBalance = rariFEIPCVDeposit.balance();
 
         assertEq(endingUserVoltBalance - startingUserVoltBalance, mintAmount);
-        assertApproxEq(
-            (endingPCVDepositFeiBalance - startingPCVDepositFeiBalance)
-                .toInt256(),
-            (mintAmount - 1).toInt256(), /// goes down by 1 because of cToken pricing rounding down
-            0
+        assertEq(
+            (endingPCVDepositFeiBalance - startingPCVDepositFeiBalance),
+            (mintAmount - 1) /// goes down by 1 because of cToken pricing rounding down
         );
     }
 
