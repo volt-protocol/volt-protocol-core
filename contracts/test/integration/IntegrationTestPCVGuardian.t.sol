@@ -34,7 +34,7 @@ contract IntegrationTestPCVGuardian is DSTest {
     address[] public whitelistAddresses;
     address public guard = address(0x123456789);
 
-    uint256 public withdrawAmount = 23_000e18; // approximate amount deposited at this block time
+    uint256 public withdrawAmount = fei.balanceOf(address(pcvDeposit));
 
     function setUp() public {
         whitelistAddresses.push(address(pcvDeposit));
