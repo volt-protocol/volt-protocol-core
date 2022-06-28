@@ -14,6 +14,9 @@ library MainnetAddresses {
     address public constant DEPLOYER =
         0x25dCffa22EEDbF0A69F6277e24C459108c186ecB;
 
+    address public constant VOLT_FEI_PSM =
+        0x985f9C331a9E4447C782B98D6693F5c7dF8e560e;
+
     // ---------- FEI ADDRESSES ----------
 
     address public constant FEI_CORE =
