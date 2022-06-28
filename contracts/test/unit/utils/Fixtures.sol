@@ -57,7 +57,7 @@ function getMainnetAddresses() pure returns (FeiTestAddresses memory) {
         ),
         minterAddress: address(0xd51dbA7a94e1adEa403553A8235C302cEbF41a3c),
         burnerAddress: address(0x10),
-        guardianAddress: address(0xEC7AD284f7Ad256b64c6E69b84Eb0F48f42e8196),
+        guardianAddress: address(0x2c2b362e6ae0F080F39b90Cb5657E5550090D6C3),
         voltGovernorAddress: address(
             0xcBB83206698E8788F85EFbEeeCAd17e53366EBDf
         ),

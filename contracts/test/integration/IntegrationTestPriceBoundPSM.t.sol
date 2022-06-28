@@ -22,8 +22,6 @@ import {DSTest} from "./../unit/utils/DSTest.sol";
 import {Constants} from "../../Constants.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-import "hardhat/console.sol";
-
 contract IntegrationTestPriceBoundPSMTest is DSTest {
     using SafeCast for *;
     using SafeMath for uint256;

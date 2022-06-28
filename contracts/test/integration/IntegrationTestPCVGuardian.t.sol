@@ -121,7 +121,7 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testGuardianWithdrawToSafeAddress() public {
-        vm.prank(addresses.voltGovernorAddress);
+        vm.prank(addresses.guardianAddress);
         core.grantGuardian(address(0x1234));
 
         assertEq(fei.balanceOf(address(this)), 0);
@@ -133,7 +133,7 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testGuardianWithdrawAllToSafeAddress() public {
-        vm.prank(addresses.voltGovernorAddress);
+        vm.prank(addresses.guardianAddress);
         core.grantGuardian(address(0x1234));
 
         assertEq(fei.balanceOf(address(this)), 0);
