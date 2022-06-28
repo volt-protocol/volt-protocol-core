@@ -121,26 +121,24 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testGuardianWithdrawToSafeAddress() public {
-        vm.prank(addresses.guardianAddress);
-        core.grantGuardian(address(0x1234));
+        vm.startPrank(addresses.guardianAddress);
 
         assertEq(fei.balanceOf(address(this)), 0);
-
-        vm.prank(address(0x1234));
         pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), withdrawAmount);
+
+        vm.stopPrank();
 
         assertEq(fei.balanceOf(address(this)), withdrawAmount);
     }
 
     function testGuardianWithdrawAllToSafeAddress() public {
-        vm.prank(addresses.guardianAddress);
-        core.grantGuardian(address(0x1234));
+        vm.startPrank(addresses.guardianAddress);
 
         assertEq(fei.balanceOf(address(this)), 0);
         uint256 amountToWithdraw = pcvDeposit.balance();
 
-        vm.prank(address(0x1234));
         pcvGuardian.withdrawAllToSafeAddress(address(pcvDeposit));
+        vm.stopPrank();
 
         assertEq(fei.balanceOf(address(this)), amountToWithdraw);
     }
