@@ -17,9 +17,14 @@ import {getCore, getMainnetAddresses, FeiTestAddresses} from "../unit/utils/Fixt
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import {Decimal} from "../../external/Decimal.sol";
+import {Constants} from "../../Constants.sol";
 
 contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     using SafeCast for *;
+    using SafeMath for uint256;
+    using Decimal for Decimal.D256;
     PriceBoundPSM private psm;
     ICore private core = ICore(0xEC7AD284f7Ad256b64c6E69b84Eb0F48f42e8196);
     IVolt private volt = IVolt(0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18);
@@ -111,8 +116,19 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
 
     /// @notice PSM is set up correctly and redeem view function is working
     function testGetRedeemAmountOut() public {
-        uint256 amountVoltIn = 100e12;
-        assertEq(psm.getRedeemAmountOut(amountVoltIn), 102);
+        uint256 amountVoltIn = 100e18;
+
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice().div(1e12);
+        uint256 fee = (amountVoltIn * psm.redeemFeeBasisPoints()) /
+            Constants.BASIS_POINTS_GRANULARITY;
+
+        uint256 amountOut = ((amountVoltIn * currentPegPrice).div(1e18)) - fee;
+
+        assertApproxEq(
+            psm.getRedeemAmountOut(amountVoltIn).toInt256(),
+            amountOut.toInt256(),
+            1
+        );
     }
 
     /// @notice PSM is set up correctly and view functions are working
@@ -132,12 +148,22 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
 
     /// @notice PSM is set up correctly and view functions are working
     function testGetMintAmountOut() public {
-        uint256 amountUSDCIn = 100;
+        uint256 amountUSDCIn = 100e18;
+
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
+
+        uint256 fee = (amountUSDCIn.mul(1e12) * psm.mintFeeBasisPoints()) /
+            Constants.BASIS_POINTS_GRANULARITY;
+
+        uint256 amountOut = ((amountUSDCIn.mul(1e18) / currentPegPrice)).mul(
+            1e12
+        ) - fee;
+
         assertApproxEq(
             psm.getMintAmountOut(amountUSDCIn).toInt256(),
-            9654e10,
+            amountOut.toInt256(),
             1
-        ); /// values are within 9 basis points of each other
+        );
     }
 
     /// @notice pcv deposit receives underlying token on mint

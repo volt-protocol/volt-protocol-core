@@ -19,8 +19,14 @@ import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposi
 import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
 
+import {Constants} from "../../Constants.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+
+import "hardhat/console.sol";
+
 contract IntegrationTestPriceBoundPSMTest is DSTest {
     using SafeCast for *;
+    using SafeMath for uint256;
     PriceBoundPSM private psm;
     ICore private core = ICore(0xEC7AD284f7Ad256b64c6E69b84Eb0F48f42e8196);
     ICore private feiCore = ICore(0x8d5ED43dCa8C2F7dFB20CF7b53CC7E593635d7b9);
@@ -114,8 +120,17 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
 
     /// @notice PSM is set up correctly and view functions are working
     function testGetRedeemAmountOut() public {
-        uint256 amountFeiIn = 100;
-        assertEq(psm.getRedeemAmountOut(amountFeiIn), 102);
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
+        uint256 fee = (mintAmount * psm.redeemFeeBasisPoints()) /
+            Constants.BASIS_POINTS_GRANULARITY;
+
+        uint256 amountOut = ((mintAmount * currentPegPrice).div(1e18)) - fee;
+
+        assertApproxEq(
+            psm.getRedeemAmountOut(mintAmount).toInt256(),
+            amountOut.toInt256(),
+            1
+        );
     }
 
     /// @notice PSM is set up correctly and view functions are working
@@ -135,20 +150,22 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
 
     /// @notice PSM is set up correctly and view functions are working
     function testGetMintAmountOut() public {
-        uint256 amountFeiIn = 100;
-        assertEq(psm.getMintAmountOut(amountFeiIn), 96);
-    }
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
 
-    /// @notice PSM is set up correctly and view functions are working
-    function testGetRedeemAmountOutAfterTime() public {
-        uint256 amountVoltIn = 98;
-        uint256 expectedAmountStableOut = 100;
+        uint256 fee = (mintAmount * psm.mintFeeBasisPoints()) /
+            Constants.BASIS_POINTS_GRANULARITY;
 
-        assertEq(psm.getRedeemAmountOut(amountVoltIn), expectedAmountStableOut);
+        uint256 amountOut = ((mintAmount.mul(1e18) / currentPegPrice)) - fee;
+
+        assertApproxEq(
+            psm.getMintAmountOut(mintAmount).toInt256(),
+            amountOut.toInt256(),
+            1
+        );
     }
 
     /// @notice pcv deposit receives underlying token on mint
-    function testSwapUnderlyingForFeiAfterPriceIncrease() public {
+    function testSwapUnderlyingForVoltAfterPriceIncrease() public {
         uint256 amountStableIn = 101_000;
         uint256 amountVoltOut = psm.getMintAmountOut(amountStableIn);
 
@@ -168,7 +185,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     }
 
     /// @notice pcv deposit receives underlying token on mint
-    function testSwapUnderlyingForFei() public {
+    function testSwapUnderlyingForVolt() public {
         uint256 userStartingVoltBalance = volt.balanceOf(address(this));
         uint256 minAmountOut = psm.getMintAmountOut(mintAmount);
 
