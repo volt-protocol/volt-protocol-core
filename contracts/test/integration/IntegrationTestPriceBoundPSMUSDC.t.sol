@@ -149,11 +149,13 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     /// @notice PSM is set up correctly and view functions are working
     function testGetMintAmountOut() public {
         uint256 amountUSDCIn = 100e18;
-
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
 
-        uint256 fee = (amountUSDCIn.mul(1e12) * psm.mintFeeBasisPoints()) /
-            Constants.BASIS_POINTS_GRANULARITY;
+        // The USDC PSM returns a result scaled up 1e12, so we scale the amountOut and fee
+        // by this same amount to maintain precision
+
+        uint256 fee = ((amountUSDCIn * psm.mintFeeBasisPoints()) /
+            Constants.BASIS_POINTS_GRANULARITY).mul(1e12);
 
         uint256 amountOut = ((amountUSDCIn.mul(1e18) / currentPegPrice)).mul(
             1e12
