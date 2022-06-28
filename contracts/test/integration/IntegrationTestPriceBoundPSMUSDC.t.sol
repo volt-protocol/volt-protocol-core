@@ -17,13 +17,11 @@ import {getCore, getMainnetAddresses, FeiTestAddresses} from "../unit/utils/Fixt
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import {Decimal} from "../../external/Decimal.sol";
 import {Constants} from "../../Constants.sol";
 
 contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     using SafeCast for *;
-    using SafeMath for uint256;
     using Decimal for Decimal.D256;
     PriceBoundPSM private psm;
     ICore private core = ICore(0xEC7AD284f7Ad256b64c6E69b84Eb0F48f42e8196);
@@ -117,12 +115,12 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     /// @notice PSM is set up correctly and redeem view function is working
     function testGetRedeemAmountOut() public {
         uint256 amountVoltIn = 100e18;
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice() / 1e12;
 
-        uint256 currentPegPrice = oracle.getCurrentOraclePrice().div(1e12);
         uint256 fee = (amountVoltIn * psm.redeemFeeBasisPoints()) /
             Constants.BASIS_POINTS_GRANULARITY;
 
-        uint256 amountOut = ((amountVoltIn * currentPegPrice).div(1e18)) - fee;
+        uint256 amountOut = ((amountVoltIn * currentPegPrice) / 1e18) - fee;
 
         assertApproxEq(
             psm.getRedeemAmountOut(amountVoltIn).toInt256(),
@@ -155,11 +153,11 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
         // by this same amount to maintain precision
 
         uint256 fee = ((amountUSDCIn * psm.mintFeeBasisPoints()) /
-            Constants.BASIS_POINTS_GRANULARITY).mul(1e12);
+            Constants.BASIS_POINTS_GRANULARITY) * 1e12;
 
-        uint256 amountOut = ((amountUSDCIn.mul(1e18) / currentPegPrice)).mul(
-            1e12
-        ) - fee;
+        uint256 amountOut = (((amountUSDCIn * 1e18) / currentPegPrice)) *
+            1e12 -
+            fee;
 
         assertApproxEq(
             psm.getMintAmountOut(amountUSDCIn).toInt256(),

@@ -20,11 +20,9 @@ import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
 
 import {Constants} from "../../Constants.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract IntegrationTestPriceBoundPSMTest is DSTest {
     using SafeCast for *;
-    using SafeMath for uint256;
     PriceBoundPSM private psm;
     ICore private core = ICore(0xEC7AD284f7Ad256b64c6E69b84Eb0F48f42e8196);
     ICore private feiCore = ICore(0x8d5ED43dCa8C2F7dFB20CF7b53CC7E593635d7b9);
@@ -122,7 +120,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
         uint256 fee = (mintAmount * psm.redeemFeeBasisPoints()) /
             Constants.BASIS_POINTS_GRANULARITY;
 
-        uint256 amountOut = ((mintAmount * currentPegPrice).div(1e18)) - fee;
+        uint256 amountOut = ((mintAmount * currentPegPrice) / 1e18) - fee;
 
         assertApproxEq(
             psm.getRedeemAmountOut(mintAmount).toInt256(),
@@ -153,7 +151,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
         uint256 fee = (mintAmount * psm.mintFeeBasisPoints()) /
             Constants.BASIS_POINTS_GRANULARITY;
 
-        uint256 amountOut = ((mintAmount.mul(1e18) / currentPegPrice)) - fee;
+        uint256 amountOut = (((mintAmount * 1e18) / currentPegPrice)) - fee;
 
         assertApproxEq(
             psm.getMintAmountOut(mintAmount).toInt256(),
