@@ -28,7 +28,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     IERC20 private usdc = IERC20(MainnetAddresses.USDC);
     IERC20 private underlyingToken = usdc;
 
-    address public makerUSDCPSM = 0xAe2D4617c862309A3d75A0fFB358c7a5009c673F;
+    address public makerUSDCPSM = MainnetAddresses.MAKER_USDC_PSM;
 
     /// ------------ Minting and RateLimited System Params ------------
 
@@ -45,7 +45,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
 
     /// @notice Oracle Pass Through contract
     OraclePassThrough public oracle =
-        OraclePassThrough(MainnetAddresses.ORACLE);
+        OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
