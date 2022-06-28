@@ -2,7 +2,7 @@
 pragma solidity ^0.8.4;
 
 library MainnetAddresses {
-    // ---------- INTERNAL ADDRESSES ----------
+    // ---------- VOLT ADDRESSES ----------
     address public constant CORE = 0xEC7AD284f7Ad256b64c6E69b84Eb0F48f42e8196;
     address public constant VOLT = 0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18;
     address public constant ORACLE_PASS_THROUGH =
