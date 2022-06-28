@@ -5,7 +5,7 @@ import {Core, Vcon, Volt, IERC20} from "../../../core/Core.sol";
 import {DSTest} from "./DSTest.sol";
 import {Vm} from "./Vm.sol";
 
-struct FeiTestAddresses {
+struct VoltTestAddresses {
     address userAddress;
     address secondUserAddress;
     address beneficiaryAddress1;
@@ -22,8 +22,8 @@ struct FeiTestAddresses {
 }
 
 /// @dev Get a list of addresses
-function getAddresses() pure returns (FeiTestAddresses memory) {
-    FeiTestAddresses memory addresses = FeiTestAddresses({
+function getAddresses() pure returns (VoltTestAddresses memory) {
+    VoltTestAddresses memory addresses = VoltTestAddresses({
         userAddress: address(0x1),
         secondUserAddress: address(0x2),
         beneficiaryAddress1: address(0x3),
@@ -43,8 +43,8 @@ function getAddresses() pure returns (FeiTestAddresses memory) {
 }
 
 /// @dev Get a list of addresses
-function getMainnetAddresses() pure returns (FeiTestAddresses memory) {
-    FeiTestAddresses memory addresses = FeiTestAddresses({
+function getMainnetAddresses() pure returns (VoltTestAddresses memory) {
+    VoltTestAddresses memory addresses = VoltTestAddresses({
         userAddress: address(0x1),
         secondUserAddress: address(0x2),
         beneficiaryAddress1: address(0x3),
@@ -73,7 +73,7 @@ function getCore() returns (Core) {
         bytes20(uint160(uint256(keccak256("hevm cheat code"))))
     );
     Vm vm = Vm(HEVM_ADDRESS);
-    FeiTestAddresses memory addresses = getAddresses();
+    VoltTestAddresses memory addresses = getAddresses();
 
     // Deploy Core from Governor address
     vm.startPrank(addresses.governorAddress);

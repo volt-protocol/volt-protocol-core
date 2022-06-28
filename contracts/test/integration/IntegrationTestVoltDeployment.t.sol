@@ -11,7 +11,7 @@ import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
 import {ScalingPriceOracle} from "../../oracle/ScalingPriceOracle.sol";
 import {MockScalingPriceOracle} from "../../mock/MockScalingPriceOracle.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
-import {getCore, getAddresses, FeiTestAddresses} from "./../unit/utils/Fixtures.sol";
+import {getCore, getAddresses, VoltTestAddresses} from "./../unit/utils/Fixtures.sol";
 import {NonCustodialPSM, GlobalRateLimitedMinter} from "./../../peg/NonCustodialPSM.sol";
 
 // Create Core
@@ -60,7 +60,7 @@ contract IntegrationTestVoltDeployment is DSTest, StdLib {
     OraclePassThrough public oracle;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
-    FeiTestAddresses public addresses = getAddresses();
+    VoltTestAddresses public addresses = getAddresses();
 
     function setUp() public {
         core = getCore();

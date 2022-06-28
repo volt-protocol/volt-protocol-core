@@ -8,7 +8,7 @@ import {TribeRoles} from "../../core/TribeRoles.sol";
 import {ICore} from "../../core/ICore.sol";
 import {IVolt} from "../../volt/Volt.sol";
 import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
-import {getMainnetAddresses, FeiTestAddresses} from "../unit/utils/Fixtures.sol";
+import {getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
 import {DSTest} from "../unit/utils/DSTest.sol";
 import {Vm} from "../unit/utils/Vm.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";

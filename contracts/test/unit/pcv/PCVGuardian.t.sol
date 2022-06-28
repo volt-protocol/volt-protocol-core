@@ -5,7 +5,7 @@ import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {PCVGuardAdmin} from "../../../pcv/PCVGuardAdmin.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
 import {MockPCVDepositV2} from "../../../mock/MockPCVDepositV2.sol";
-import {getCore, getAddresses, FeiTestAddresses} from "./../utils/Fixtures.sol";
+import {getCore, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
 import {TribeRoles} from "../../../core/TribeRoles.sol";
 import {ICore} from "../../../core/ICore.sol";
 import {DSTest} from "./../utils/DSTest.sol";
@@ -20,7 +20,7 @@ contract PCVGuardianTest is DSTest {
     ICore private core;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
-    FeiTestAddresses public addresses = getAddresses();
+    VoltTestAddresses public addresses = getAddresses();
 
     address[] public whitelistAddresses;
     address public guard = address(0x123456789);

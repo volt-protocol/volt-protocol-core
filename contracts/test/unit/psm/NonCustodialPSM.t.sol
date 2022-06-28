@@ -16,7 +16,7 @@ import {IVolt, Volt} from "../../../volt/Volt.sol";
 import {NonCustodialPSM, GlobalRateLimitedMinter} from "./../../../peg/NonCustodialPSM.sol";
 import {Vm} from "./../utils/Vm.sol";
 import {DSTest} from "./../utils/DSTest.sol";
-import {getCore, getAddresses, FeiTestAddresses} from "./../utils/Fixtures.sol";
+import {getCore, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
 
 contract NonCustodialPSMTest is DSTest {
     using SafeCast for *;
@@ -44,7 +44,7 @@ contract NonCustodialPSMTest is DSTest {
     OraclePassThrough public oracle;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
-    FeiTestAddresses public addresses = getAddresses();
+    VoltTestAddresses public addresses = getAddresses();
 
     function setUp() public {
         core = getCore();
