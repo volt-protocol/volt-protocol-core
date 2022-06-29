@@ -9,7 +9,7 @@ import {ICore} from "../../../core/ICore.sol";
 import {L2Core, Vcon} from "../../../core/L2Core.sol";
 import {Vm} from "./../utils/Vm.sol";
 import {DSTest} from "./../utils/DSTest.sol";
-import {getL2Core, getAddresses, FeiTestAddresses} from "./../utils/Fixtures.sol";
+import {getL2Core, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {MockERC20} from "./../../../mock/MockERC20.sol";
 
@@ -17,7 +17,7 @@ contract L2CoreTest is DSTest {
     L2Core private core;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
-    FeiTestAddresses public addresses = getAddresses();
+    VoltTestAddresses public addresses = getAddresses();
     MockERC20 volt;
     Vcon vcon;
 

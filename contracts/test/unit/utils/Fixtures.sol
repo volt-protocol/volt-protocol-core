@@ -113,7 +113,7 @@ function getL2Core() returns (L2Core) {
         bytes20(uint160(uint256(keccak256("hevm cheat code"))))
     );
     Vm vm = Vm(HEVM_ADDRESS);
-    FeiTestAddresses memory addresses = getAddresses();
+    VoltTestAddresses memory addresses = getAddresses();
 
     MockERC20 mockVolt = new MockERC20();
 
