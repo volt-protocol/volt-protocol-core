@@ -86,6 +86,45 @@ contract VoltSystemOracleTest is DSTest {
         );
     }
 
+    /// assert that price cannot increase before block.timestamp of 100,000
+    /// since uint16 max is 65,535, the current oracle price cannot increase
+    function testNoLinearInterpolationBeforeStartTime(uint16 x) public {
+        assertEq(voltSystemOracle.oraclePrice(), startPrice);
+        vm.warp(block.timestamp + x);
+
+        assertEq(
+            voltSystemOracle.getCurrentOraclePrice(),
+            voltSystemOracle.oraclePrice()
+        );
+    }
+
+    function testLinearInterpolationOnlyAfterStartTime(uint16 x) public {
+        assertEq(voltSystemOracle.oraclePrice(), startPrice);
+        vm.warp(block.timestamp + x);
+        uint256 cachedOraclePrice = voltSystemOracle.oraclePrice();
+
+        if (x > voltSystemOracle.oracleStartTime()) {
+            /// interpolation because past start time
+            uint256 timeDelta = block.timestamp -
+                voltSystemOracle.oracleStartTime();
+            uint256 pricePercentageChange = _calculateDelta(
+                cachedOraclePrice,
+                voltSystemOracle.annualChangeRateBasisPoints()
+            );
+            uint256 priceDelta = (pricePercentageChange * timeDelta) / 365 days;
+            assertEq(
+                voltSystemOracle.getCurrentOraclePrice(),
+                priceDelta + cachedOraclePrice
+            );
+        } else {
+            /// no interpolation because not past start time
+            assertEq(
+                voltSystemOracle.getCurrentOraclePrice(),
+                cachedOraclePrice
+            );
+        }
+    }
+
     function testLinearInterpolationFuzz(uint32 timeIncrease) public {
         vm.warp(block.timestamp + voltSystemOracle.oracleStartTime());
         uint256 cachedOraclePrice = voltSystemOracle.oraclePrice();
@@ -154,6 +193,50 @@ contract VoltSystemOracleTest is DSTest {
                     priceDelta + cachedOraclePrice
                 );
             }
+
+            bool isTimeEnded = block.timestamp >=
+                voltSystemOracle.oracleEndTime();
+
+            if (isTimeEnded) {
+                voltSystemOracle.compoundInterest();
+                /// ensure accumulator updates correctly on interest compounding
+                assertEq(
+                    voltSystemOracle.oraclePrice(),
+                    _calculateDelta(
+                        cachedOraclePrice,
+                        annualChangeRateBasisPoints +
+                            Constants.BASIS_POINTS_GRANULARITY
+                    )
+                );
+            }
+        }
+    }
+
+    function testLinearInterpolationUnderYearFuzzCycles(
+        uint24 timeIncrease, /// bound input to 16,777,215 which is lt 31,536,000
+        uint8 cycles
+    ) public {
+        /// get past start time and then initialize the volt system oracle
+        vm.warp(block.timestamp + voltSystemOracle.oracleStartTime());
+
+        for (uint256 i = 0; i < cycles; i++) {
+            vm.warp(block.timestamp + timeIncrease);
+
+            uint256 cachedOraclePrice = voltSystemOracle.oraclePrice();
+
+            uint256 timeDelta = Math.min(
+                block.timestamp - voltSystemOracle.oracleStartTime(),
+                voltSystemOracle.TIMEFRAME()
+            );
+            uint256 pricePercentageChange = _calculateDelta(
+                cachedOraclePrice,
+                voltSystemOracle.annualChangeRateBasisPoints()
+            );
+            uint256 priceDelta = (pricePercentageChange * timeDelta) / 365 days;
+            assertEq(
+                voltSystemOracle.getCurrentOraclePrice(),
+                priceDelta + cachedOraclePrice
+            );
 
             bool isTimeEnded = block.timestamp >=
                 voltSystemOracle.oracleEndTime();
