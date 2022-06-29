@@ -57,7 +57,7 @@ contract IntegrationTestOATimelock is DSTest {
     }
 
     function testTimelockEthReceive() public {
-        assertEq(address(oaTimelock).balance, 0); /// starts with 0 balance
+        uint256 startingOABalance = address(oaTimelock).balance;
 
         uint256 ethSendAmount = 100 ether;
         vm.deal(proposer1, ethSendAmount);
@@ -66,7 +66,10 @@ contract IntegrationTestOATimelock is DSTest {
         (bool success, ) = address(oaTimelock).call{value: ethSendAmount}("");
 
         assertTrue(success);
-        assertEq(address(oaTimelock).balance, ethSendAmount);
+        assertEq(
+            address(oaTimelock).balance - startingOABalance,
+            ethSendAmount
+        );
     }
 
     function testTimelockSendEth() public {
