@@ -57,7 +57,7 @@
     "async": "2.6.4",
     "chai": "^4.3.4",
     "dotenv": "^14.1.0",
-    "hardhat": "^2.8.2",
+    "hardhat": "^2.9.9",
     "hardhat-contract-sizer": "^2.4.0",
     "hardhat-gas-reporter": "^1.0.7",
     "merkletreejs": "^0.2.27",
