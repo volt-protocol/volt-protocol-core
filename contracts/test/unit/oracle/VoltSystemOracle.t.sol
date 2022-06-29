@@ -41,6 +41,32 @@ contract VoltSystemOracleTest is DSTest {
         );
     }
 
+    /// sequentially compound interest after multiple missed compounding events
+    function testMultipleSequentialPeriodCompounds(uint8 periods) public {
+        /// anything over this amount of periods gets the oracle price into
+        /// a zone where it could overflow during call to getCurrentOraclePrice
+        vm.assume(periods < 6193);
+        vm.warp(
+            voltSystemOracle.oracleStartTime() +
+                (periods * voltSystemOracle.TIMEFRAME())
+        );
+
+        uint256 expectedOraclePrice = voltSystemOracle.oraclePrice();
+
+        for (uint256 i = 0; i < periods; i++) {
+            voltSystemOracle.compoundInterest(); /// compound interest periods amount of times
+            expectedOraclePrice = _calculateDelta(
+                expectedOraclePrice,
+                voltSystemOracle.annualChangeRateBasisPoints() +
+                    Constants.BASIS_POINTS_GRANULARITY
+            );
+            assertEq(
+                expectedOraclePrice,
+                voltSystemOracle.getCurrentOraclePrice()
+            );
+        }
+    }
+
     function testSetup() public {
         assertEq(voltSystemOracle.oraclePrice(), startPrice);
         assertEq(

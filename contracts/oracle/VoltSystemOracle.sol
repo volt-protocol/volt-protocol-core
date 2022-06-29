@@ -9,7 +9,9 @@ import {IVoltSystemOracle} from "./IVoltSystemOracle.sol";
 /// @notice contract that receives a fixed interest rate upon construction,
 /// and then linearly interpolates that rate over a 1 year period into the VOLT price
 /// after the oracle start time.
-/// Interest can compound annually.
+/// Interest can compound annually. Assumption is that this oracle will only be used until
+/// Volt 2.0 ships. Maximum amount of compounding periods on this contract at 2% APR
+/// is 6192 years, which is more than enough for this use case.
 /// @author Elliot Friedman
 contract VoltSystemOracle is IVoltSystemOracle {
     /// ---------- Mutable Variables ----------
