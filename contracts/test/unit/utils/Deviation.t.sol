@@ -5,7 +5,7 @@ import {Vm} from "./../utils/Vm.sol";
 import "./../utils/DSTest.sol";
 import {Constants} from "./../../../Constants.sol";
 import {Deviation} from "./../../../utils/Deviation.sol";
-import {getCore, getAddresses, FeiTestAddresses} from "./../utils/Fixtures.sol";
+import {getCore, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
@@ -16,7 +16,7 @@ contract DeviationTest is DSTest {
     uint256 maxDeviationThresholdBasisPoints = 10_000;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
-    FeiTestAddresses public addresses = getAddresses();
+    VoltTestAddresses public addresses = getAddresses();
 
     function testDeviation() public {
         int256 x = 275000;

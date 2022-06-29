@@ -2,7 +2,7 @@
 pragma solidity ^0.8.4;
 
 import {PCVGuardAdmin} from "../../../pcv/PCVGuardAdmin.sol";
-import {getCore, getAddresses, FeiTestAddresses} from "./../utils/Fixtures.sol";
+import {getCore, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
 import {TribeRoles} from "../../../core/TribeRoles.sol";
 import {ICore} from "../../../core/ICore.sol";
 import {DSTest} from "./../utils/DSTest.sol";
@@ -13,7 +13,7 @@ contract PCVGuardAdminTest is DSTest {
     ICore private core;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
-    FeiTestAddresses public addresses = getAddresses();
+    VoltTestAddresses public addresses = getAddresses();
 
     address public guard = address(0x123456789);
 

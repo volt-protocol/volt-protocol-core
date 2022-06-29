@@ -7,7 +7,7 @@ import {L2Core} from "../../../core/L2Core.sol";
 import {DSTest} from "./DSTest.sol";
 import {Vm} from "./Vm.sol";
 
-struct FeiTestAddresses {
+struct VoltTestAddresses {
     address userAddress;
     address secondUserAddress;
     address beneficiaryAddress1;
@@ -30,8 +30,8 @@ struct VoltAddresses {
 }
 
 /// @dev Get a list of addresses
-function getAddresses() pure returns (FeiTestAddresses memory) {
-    FeiTestAddresses memory addresses = FeiTestAddresses({
+function getAddresses() pure returns (VoltTestAddresses memory) {
+    VoltTestAddresses memory addresses = VoltTestAddresses({
         userAddress: address(0x1),
         secondUserAddress: address(0x2),
         beneficiaryAddress1: address(0x3),
@@ -59,8 +59,8 @@ function getVoltAddresses() pure returns (VoltAddresses memory addresses) {
 }
 
 /// @dev Get a list of addresses
-function getMainnetAddresses() pure returns (FeiTestAddresses memory) {
-    FeiTestAddresses memory addresses = FeiTestAddresses({
+function getMainnetAddresses() pure returns (VoltTestAddresses memory) {
+    VoltTestAddresses memory addresses = VoltTestAddresses({
         userAddress: address(0x1),
         secondUserAddress: address(0x2),
         beneficiaryAddress1: address(0x3),
@@ -73,7 +73,7 @@ function getMainnetAddresses() pure returns (FeiTestAddresses memory) {
         ),
         minterAddress: address(0xd51dbA7a94e1adEa403553A8235C302cEbF41a3c),
         burnerAddress: address(0x10),
-        guardianAddress: address(0xEC7AD284f7Ad256b64c6E69b84Eb0F48f42e8196),
+        guardianAddress: address(0x2c2b362e6ae0F080F39b90Cb5657E5550090D6C3),
         voltGovernorAddress: address(
             0xcBB83206698E8788F85EFbEeeCAd17e53366EBDf
         ),
@@ -89,7 +89,7 @@ function getCore() returns (Core) {
         bytes20(uint160(uint256(keccak256("hevm cheat code"))))
     );
     Vm vm = Vm(HEVM_ADDRESS);
-    FeiTestAddresses memory addresses = getAddresses();
+    VoltTestAddresses memory addresses = getAddresses();
 
     // Deploy Core from Governor address
     vm.startPrank(addresses.governorAddress);
