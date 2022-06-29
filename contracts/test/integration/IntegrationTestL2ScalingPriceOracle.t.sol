@@ -13,8 +13,6 @@ import {L2ScalingPriceOracle} from "./../../oracle/L2ScalingPriceOracle.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 
-import {console} from "hardhat/console.sol";
-
 contract IntegrationTestL2ScalingPriceOracle is DSTest {
     using Decimal for Decimal.D256;
     using SafeCast for *;
