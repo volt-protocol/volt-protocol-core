@@ -9,7 +9,7 @@ import {ICore} from "../../../../core/ICore.sol";
 import {DSTest} from "./../../utils/DSTest.sol";
 import {MockERC20, MockLendingPool} from "../../../../mock/MockLendingPool.sol";
 import {ERC20AavePCVDeposit, LendingPool, IncentivesController} from "../../../../pcv/aave/ERC20AavePCVDeposit.sol";
-import {getCore, getAddresses, FeiTestAddresses} from "./../../utils/Fixtures.sol";
+import {getCore, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.sol";
 
 contract ERC20AavePCVDepositTest is DSTest {
     using SafeCast for *;
@@ -19,7 +19,7 @@ contract ERC20AavePCVDepositTest is DSTest {
     MockLendingPool private lendingPool;
     ERC20AavePCVDeposit private aaveDeposit;
     ICore private core;
-    FeiTestAddresses public addresses = getAddresses();
+    VoltTestAddresses public addresses = getAddresses();
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
     function setUp() public {
