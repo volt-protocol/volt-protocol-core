@@ -6,18 +6,17 @@ import {Timed} from "./../utils/Timed.sol";
 import {Constants} from "./../Constants.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {IVoltSystemOracle} from "./IVoltSystemOracle.sol";
-import {IScalingPriceOracle} from "./IScalingPriceOracle.sol";
 
 /// @notice contract that receives a fixed interest rate upon construction,
-/// and then linearly interpolates that rate over a 1 year period into the VOLT price.
+/// and then linearly interpolates that rate over a 1 year period into the VOLT price
+/// after the oracle start time.
 /// Interest can compound annually.
 /// @author Elliot Friedman
 contract VoltSystemOracle is Timed, Initializable, IVoltSystemOracle {
     /// ---------- Mutable Price Variable ----------
 
-    /// @notice oracle price. starts off at 1e18 and compounds once yearly
-    /// acts as an accumulator for interest earned in previous periods
-    uint256 public override oraclePrice = 1e18;
+    /// @notice acts as an accumulator for checkpointing interest earned in previous periods
+    uint256 public override oraclePrice;
 
     /// ---------- Immutable Variables ----------
 
@@ -28,10 +27,6 @@ contract VoltSystemOracle is Timed, Initializable, IVoltSystemOracle {
     /// one year was chosen because this is a temporary oracle
     uint256 public constant override TIMEFRAME = 365 days;
 
-    /// @notice reference to the Scaling Price Oracle which will be used to set the starting
-    /// oraclePrice once past the oracleStartTime
-    IScalingPriceOracle public immutable scalingPriceOracle;
-
     /// @notice start time at which point interest will start accruing, and the
     /// point in time at which the current ScalingPriceOracle price will be
     /// snapshotted and saved
@@ -39,19 +34,18 @@ contract VoltSystemOracle is Timed, Initializable, IVoltSystemOracle {
 
     /// @param _annualChangeRateBasisPoints yearly change rate in the Volt price
     /// @param _oracleStartTime start time at which oracle starts interpolating prices
-    /// @param _scalingPriceOracle contract to get price from on initialization
+    /// @param _oraclePrice starting oracle price
     constructor(
         uint256 _annualChangeRateBasisPoints,
         uint256 _oracleStartTime,
-        IScalingPriceOracle _scalingPriceOracle
+        uint256 _oraclePrice
     ) Timed(TIMEFRAME) {
         annualChangeRateBasisPoints = _annualChangeRateBasisPoints;
         oracleStartTime = _oracleStartTime;
-        scalingPriceOracle = _scalingPriceOracle;
+        oraclePrice = _oraclePrice;
 
-        /// init timed to set start time to current block timestamp
-        /// this stops getCurrentOraclePrice from returning an incorect price before
-        /// init is called
+        /// init timed to set start time to current block timestamp this stops
+        /// getCurrentOraclePrice from returning an incorect price before init is called
         _initTimed();
     }
 
@@ -78,9 +72,11 @@ contract VoltSystemOracle is Timed, Initializable, IVoltSystemOracle {
             block.timestamp >= oracleStartTime,
             "VoltSystemOracle: not past start time"
         );
-
-        startTime = oracleStartTime; /// init timed class, wiping any accrued interest
-        oraclePrice = scalingPriceOracle.getCurrentOraclePrice(); /// set starting oracle price
+        /// init timed class, wiping any accrued interest
+        /// the reason this variable is set here is because if it was set in the constructor,
+        /// and the start time was in the future, getCurrentOraclePrice would revert from
+        /// an underflow when block.timestamp subtracts startTime
+        startTime = oracleStartTime;
     }
 
     /// @notice public function that allows compounding of interest after duration has passed

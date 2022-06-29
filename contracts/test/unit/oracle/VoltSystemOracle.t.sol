@@ -17,8 +17,6 @@ contract VoltSystemOracleTest is DSTest {
     using Decimal for Decimal.D256;
     using SafeCast for *;
 
-    MockScalingPriceOracle private scalingPriceOracle;
-
     /// @notice reference to the volt system oracle
     VoltSystemOracle private voltSystemOracle;
 
@@ -28,23 +26,11 @@ contract VoltSystemOracleTest is DSTest {
     /// @notice increase the volt target price by 2% annually
     uint256 public constant annualChangeRateBasisPoints = 200;
 
-    /// @notice the current month's CPI data
-    uint128 public constant currentMonth = 270000;
-
-    /// @notice the previous month's CPI data
-    uint128 public constant previousMonth = 261900;
-
-    /// @notice address of chainlink oracle to send request
-    address public immutable oracle = address(0);
-
-    /// @notice job id that retrieves the latest CPI data
-    bytes32 public immutable jobId =
-        keccak256(abi.encodePacked("Chainlink CPI-U job"));
-
-    /// @notice fee of 10 link
-    uint256 public immutable fee = 1e19;
-
+    /// @notice block time at which the VSO will be able to be initialized and start accruing interest
     uint256 public constant startTime = 100_000;
+
+    /// @notice starting oracle price
+    uint256 public constant startPrice = 1.0387e18;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
     FeiTestAddresses public addresses = getAddresses();
@@ -57,35 +43,22 @@ contract VoltSystemOracleTest is DSTest {
         /// warp to 1 to set isTimeStarted to true
         vm.warp(1);
 
-        scalingPriceOracle = new MockScalingPriceOracle(
-            oracle,
-            jobId,
-            fee,
-            currentMonth,
-            previousMonth,
-            address(0)
-        );
-
         voltSystemOracle = new VoltSystemOracle(
             annualChangeRateBasisPoints,
             startTime,
-            ScalingPriceOracle(address(scalingPriceOracle))
+            startPrice
         );
     }
 
     function testSetup() public {
-        assertEq(voltSystemOracle.oraclePrice(), 1 ether);
+        assertEq(voltSystemOracle.oraclePrice(), startPrice);
         assertEq(
             voltSystemOracle.annualChangeRateBasisPoints(),
             annualChangeRateBasisPoints
         );
-        assertEq(
-            address(voltSystemOracle.scalingPriceOracle()),
-            address(scalingPriceOracle)
-        );
         assertEq(voltSystemOracle.oracleStartTime(), startTime);
         assertEq(voltSystemOracle.startTime(), block.timestamp);
-        assertEq(voltSystemOracle.getCurrentOraclePrice(), 1e18);
+        assertEq(voltSystemOracle.getCurrentOraclePrice(), startPrice);
     }
 
     function testInitFailsBeforeStartTime() public {
@@ -119,23 +92,14 @@ contract VoltSystemOracleTest is DSTest {
             voltSystemOracle.startTime(),
             voltSystemOracle.oracleStartTime()
         );
-        /// spo and vso are perfectly in sync when init happens
-        assertEq(
-            voltSystemOracle.getCurrentOraclePrice(),
-            scalingPriceOracle.getCurrentOraclePrice()
-        );
-        assertEq(
-            voltSystemOracle.oraclePrice(),
-            scalingPriceOracle.getCurrentOraclePrice()
-        );
     }
 
     function testCompoundSucceedsAfterOneYear() public {
-        assertEq(voltSystemOracle.oraclePrice(), 1 ether);
+        assertEq(voltSystemOracle.oraclePrice(), startPrice);
         vm.warp(block.timestamp + voltSystemOracle.oracleStartTime());
 
         voltSystemOracle.init();
-        uint256 oraclePrice = scalingPriceOracle.getCurrentOraclePrice();
+        uint256 oraclePrice = voltSystemOracle.oraclePrice();
 
         vm.warp(block.timestamp + 365 days);
 
@@ -157,12 +121,12 @@ contract VoltSystemOracleTest is DSTest {
     }
 
     function testLinearInterpolation() public {
-        assertEq(voltSystemOracle.oraclePrice(), 1 ether);
+        assertEq(voltSystemOracle.oraclePrice(), startPrice);
         vm.warp(voltSystemOracle.oracleStartTime() + 365 days);
 
         assertEq(
             voltSystemOracle.getCurrentOraclePrice(),
-            (1e18 *
+            (startPrice *
                 (Constants.BASIS_POINTS_GRANULARITY +
                     annualChangeRateBasisPoints)) /
                 Constants.BASIS_POINTS_GRANULARITY

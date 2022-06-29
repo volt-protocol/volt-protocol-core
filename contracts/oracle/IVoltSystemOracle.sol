@@ -1,14 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
-import {IScalingPriceOracle} from "./IScalingPriceOracle.sol";
-
 /// @notice interface for the Volt System Oracle
 interface IVoltSystemOracle {
     // ----------- Getters -----------
-
-    /// @notice reference to the scaling price oracle
-    function scalingPriceOracle() external view returns (IScalingPriceOracle);
 
     /// @notice function to get the current oracle price for the entire system
     function getCurrentOraclePrice() external view returns (uint256);
