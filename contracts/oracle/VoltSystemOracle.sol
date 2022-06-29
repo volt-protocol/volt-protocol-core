@@ -2,7 +2,6 @@
 pragma solidity ^0.8.4;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {Timed} from "./../utils/Timed.sol";
 import {Constants} from "./../Constants.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {IVoltSystemOracle} from "./IVoltSystemOracle.sol";
@@ -12,11 +11,16 @@ import {IVoltSystemOracle} from "./IVoltSystemOracle.sol";
 /// after the oracle start time.
 /// Interest can compound annually.
 /// @author Elliot Friedman
-contract VoltSystemOracle is Timed, Initializable, IVoltSystemOracle {
-    /// ---------- Mutable Price Variable ----------
+contract VoltSystemOracle is IVoltSystemOracle {
+    /// ---------- Mutable Variables ----------
 
     /// @notice acts as an accumulator for checkpointing interest earned in previous periods
     uint256 public override oraclePrice;
+
+    /// @notice start time at which point interest will start accruing, and the
+    /// point in time at which the current ScalingPriceOracle price will be
+    /// snapshotted and saved
+    uint256 public override oracleStartTime;
 
     /// ---------- Immutable Variables ----------
 
@@ -27,11 +31,6 @@ contract VoltSystemOracle is Timed, Initializable, IVoltSystemOracle {
     /// one year was chosen because this is a temporary oracle
     uint256 public constant override TIMEFRAME = 365 days;
 
-    /// @notice start time at which point interest will start accruing, and the
-    /// point in time at which the current ScalingPriceOracle price will be
-    /// snapshotted and saved
-    uint256 public immutable oracleStartTime;
-
     /// @param _annualChangeRateBasisPoints yearly change rate in the Volt price
     /// @param _oracleStartTime start time at which oracle starts interpolating prices
     /// @param _oraclePrice starting oracle price
@@ -39,14 +38,10 @@ contract VoltSystemOracle is Timed, Initializable, IVoltSystemOracle {
         uint256 _annualChangeRateBasisPoints,
         uint256 _oracleStartTime,
         uint256 _oraclePrice
-    ) Timed(TIMEFRAME) {
+    ) {
         annualChangeRateBasisPoints = _annualChangeRateBasisPoints;
         oracleStartTime = _oracleStartTime;
         oraclePrice = _oraclePrice;
-
-        /// init timed to set start time to current block timestamp this stops
-        /// getCurrentOraclePrice from returning an incorect price before init is called
-        _initTimed();
     }
 
     // ----------- Getters -----------
@@ -56,38 +51,42 @@ contract VoltSystemOracle is Timed, Initializable, IVoltSystemOracle {
     /// scaled by 18 decimals
     // prettier-ignore
     function getCurrentOraclePrice() public view override returns (uint256) {
+        uint256 cachedStartTime = oracleStartTime; /// save a single warm SLOAD if condition is false
+        if (cachedStartTime >= block.timestamp) { /// only accrue interest after start time
+            return oraclePrice;
+        }
+
         uint256 cachedOraclePrice = oraclePrice; /// save a single warm SLOAD by using the stack
-        uint256 timeDelta = Math.min(block.timestamp - startTime, TIMEFRAME);
+        uint256 timeDelta = Math.min(block.timestamp - cachedStartTime, TIMEFRAME);
         uint256 pricePercentageChange = cachedOraclePrice * annualChangeRateBasisPoints / Constants.BASIS_POINTS_GRANULARITY;
         uint256 priceDelta = pricePercentageChange * timeDelta / TIMEFRAME;
 
         return cachedOraclePrice + priceDelta;
     }
 
-    /// ------------- Public State Changing API's -------------
-
-    /// @notice function to initialize the contract after the OracleStartTime has passed
-    function init() external override initializer {
-        require(
-            block.timestamp >= oracleStartTime,
-            "VoltSystemOracle: not past start time"
-        );
-        /// init timed class, wiping any accrued interest
-        /// the reason this variable is set here is because if it was set in the constructor,
-        /// and the start time was in the future, getCurrentOraclePrice would revert from
-        /// an underflow when block.timestamp subtracts startTime
-        startTime = oracleStartTime;
+    /// @notice function that returns the end time of the current period
+    function oracleEndTime() public view returns (uint256) {
+        return oracleStartTime + TIMEFRAME;
     }
+
+    /// ------------- Public State Changing API -------------
 
     /// @notice public function that allows compounding of interest after duration has passed
     /// Sets accumulator to the current accrued interest, and then resets the timer.
-    function compoundInterest() external override afterTime {
+    function compoundInterest() external override {
+        uint256 periodEndTime = oracleStartTime + TIMEFRAME; /// save a single warm SLOAD when writing to oracleStartTime
+        require(
+            block.timestamp >= periodEndTime,
+            "VoltSystemOracle: not past end time"
+        );
+
         /// first set Oracle Price to interpolated value
         oraclePrice = getCurrentOraclePrice();
-        /// set startTime to startTime + timeframe,
+
+        /// set oracleStartTime to oracleStartTime + timeframe,
         /// this is equivalent to init timed, which wipes out all unaccumulated compounded interest
         /// and cleanly sets the start time.
-        startTime += TIMEFRAME;
+        oracleStartTime = periodEndTime;
 
         emit InterestCompounded();
     }

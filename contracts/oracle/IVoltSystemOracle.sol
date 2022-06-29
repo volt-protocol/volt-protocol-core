@@ -25,9 +25,6 @@ interface IVoltSystemOracle {
 
     // ----------- Public state changing api -----------
 
-    /// @notice function to initialize the contract after the OracleStartTime has passed
-    function init() external;
-
     /// @notice public function that allows compounding of interest after duration has passed
     /// Sets accumulator to the current accrued interest, and then resets the timer.
     function compoundInterest() external;
