@@ -60,10 +60,7 @@ contract VoltSystemOracleTest is DSTest {
                 voltSystemOracle.annualChangeRateBasisPoints() +
                     Constants.BASIS_POINTS_GRANULARITY
             );
-            assertEq(
-                expectedOraclePrice,
-                voltSystemOracle.getCurrentOraclePrice()
-            );
+            assertEq(expectedOraclePrice, voltSystemOracle.oraclePrice());
         }
     }
 
