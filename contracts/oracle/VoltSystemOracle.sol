@@ -16,10 +16,12 @@ import {IVoltSystemOracle} from "./IVoltSystemOracle.sol";
 contract VoltSystemOracle is IVoltSystemOracle {
     /// ---------- Mutable Variables ----------
 
-    /// @notice acts as an accumulator for checkpointing interest earned in previous periods
+    /// @notice acts as an accumulator for interest earned in previous periods
+    /// returns the oracle price from the end of the last period
     uint256 public override oraclePrice;
 
-    /// @notice period start time at which point interest will start accruing
+    /// @notice start time at which point interest will start accruing, and the
+    /// current ScalingPriceOracle price will be snapshotted and saved
     uint256 public override periodStartTime;
 
     /// ---------- Immutable Variables ----------
@@ -44,7 +46,7 @@ contract VoltSystemOracle is IVoltSystemOracle {
         oraclePrice = _oraclePrice;
     }
 
-    // ----------- Getters -----------
+    // ----------- Getter -----------
 
     /// @notice get the current scaled oracle price
     /// applies the change rate smoothly over a 365 day period
@@ -62,11 +64,6 @@ contract VoltSystemOracle is IVoltSystemOracle {
         uint256 priceDelta = pricePercentageChange * timeDelta / TIMEFRAME;
 
         return cachedOraclePrice + priceDelta;
-    }
-
-    /// @notice function that returns the end time of the current period
-    function oracleEndTime() public view returns (uint256) {
-        return periodStartTime + TIMEFRAME;
     }
 
     /// ------------- Public State Changing API -------------
@@ -88,6 +85,6 @@ contract VoltSystemOracle is IVoltSystemOracle {
         /// and cleanly sets the start time.
         periodStartTime = periodEndTime;
 
-        emit InterestCompounded(periodEndTime - TIMEFRAME, oraclePrice);
+        emit InterestCompounded(periodStartTime, oraclePrice);
     }
 }

@@ -24,7 +24,7 @@ contract VoltSystemOracleTest is DSTest {
     /// @notice increase the volt target price by 2% annually
     uint256 public constant annualChangeRateBasisPoints = 200;
 
-    /// @notice block time at which the VSO will be able to be initialized and start accruing interest
+    /// @notice block time at which the VSO (Volt System Oracle) will start accruing interest
     uint256 public constant startTime = 100_000;
 
     /// @notice starting oracle price
@@ -74,7 +74,7 @@ contract VoltSystemOracleTest is DSTest {
         assertEq(voltSystemOracle.getCurrentOraclePrice(), startPrice);
     }
 
-    function testCompoundBeforeInitFails() public {
+    function testCompoundBeforePeriodStartFails() public {
         vm.expectRevert("VoltSystemOracle: not past end time");
         voltSystemOracle.compoundInterest();
     }
@@ -182,7 +182,7 @@ contract VoltSystemOracleTest is DSTest {
         uint32 timeIncrease,
         uint8 cycles
     ) public {
-        /// get past start time and then initialize the volt system oracle
+        /// get past start time so that interest can start accruing
         vm.warp(block.timestamp + voltSystemOracle.periodStartTime());
 
         for (uint256 i = 0; i < cycles; i++) {
@@ -218,7 +218,8 @@ contract VoltSystemOracleTest is DSTest {
             }
 
             bool isTimeEnded = block.timestamp >=
-                voltSystemOracle.oracleEndTime();
+                voltSystemOracle.periodStartTime() +
+                    voltSystemOracle.TIMEFRAME();
 
             if (isTimeEnded) {
                 voltSystemOracle.compoundInterest();
@@ -239,7 +240,7 @@ contract VoltSystemOracleTest is DSTest {
         uint24 timeIncrease, /// bound input to 16,777,215 which is lt 31,536,000
         uint8 cycles
     ) public {
-        /// get past start time and then initialize the volt system oracle
+        /// get past start time so that interest can start accruing
         vm.warp(block.timestamp + voltSystemOracle.periodStartTime());
 
         for (uint256 i = 0; i < cycles; i++) {
@@ -262,7 +263,8 @@ contract VoltSystemOracleTest is DSTest {
             );
 
             bool isTimeEnded = block.timestamp >=
-                voltSystemOracle.oracleEndTime();
+                voltSystemOracle.periodStartTime() +
+                    voltSystemOracle.TIMEFRAME();
 
             if (isTimeEnded) {
                 voltSystemOracle.compoundInterest();
