@@ -121,10 +121,10 @@ contract VoltSystemOracleTest is DSTest {
     }
 
     /// sequentially compound interest after multiple missed compounding events
-    function testMultipleSequentialPeriodCompounds(uint16 periods) public {
+    function testMultipleSequentialPeriodCompounds() public {
         /// anything over this amount of periods gets the oracle price into
         /// a zone where it could overflow during call to getCurrentOraclePrice
-        vm.assume(periods < 6193);
+        uint16 periods = 6192;
         vm.warp(
             voltSystemOracle.periodStartTime() +
                 (periods * voltSystemOracle.TIMEFRAME())
@@ -217,7 +217,13 @@ contract VoltSystemOracleTest is DSTest {
                     voltSystemOracle.TIMEFRAME();
 
             if (isTimeEnded) {
+                uint256 currentPeriodStart = voltSystemOracle.periodStartTime();
                 voltSystemOracle.compoundInterest();
+                assertEq(
+                    currentPeriodStart + voltSystemOracle.TIMEFRAME(),
+                    voltSystemOracle.periodStartTime()
+                );
+
                 /// ensure accumulator updates correctly on interest compounding
                 assertEq(
                     voltSystemOracle.oraclePrice(),
@@ -262,7 +268,13 @@ contract VoltSystemOracleTest is DSTest {
                 voltSystemOracle.periodStartTime() + duration;
 
             if (isTimeEnded) {
+                uint256 currentPeriodStart = voltSystemOracle.periodStartTime();
                 voltSystemOracle.compoundInterest();
+                assertEq(
+                    currentPeriodStart + voltSystemOracle.TIMEFRAME(),
+                    voltSystemOracle.periodStartTime()
+                );
+
                 /// ensure accumulator updates correctly on interest compounding
                 assertEq(
                     voltSystemOracle.oraclePrice(),
