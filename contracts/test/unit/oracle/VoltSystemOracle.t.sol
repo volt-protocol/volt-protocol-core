@@ -173,14 +173,14 @@ contract VoltSystemOracleTest is DSTest {
         }
     }
 
-    function testLinearInterpolationFuzzCycles(
+    function testLinearInterpolationFuzzMultiplePeriods(
         uint32 timeIncrease,
-        uint8 cycles
+        uint8 periods
     ) public {
         /// get past start time so that interest can start accruing
         vm.warp(block.timestamp + voltSystemOracle.periodStartTime());
 
-        for (uint256 i = 0; i < cycles; i++) {
+        for (uint256 i = 0; i < periods; i++) {
             vm.warp(block.timestamp + timeIncrease);
 
             uint256 cachedOraclePrice = voltSystemOracle.oraclePrice();
@@ -231,14 +231,14 @@ contract VoltSystemOracleTest is DSTest {
         }
     }
 
-    function testLinearInterpolationUnderYearFuzzCycles(
-        uint24 timeIncrease, /// bound input to 16,777,215 which is lt 31,536,000
-        uint8 cycles
+    function testLinearInterpolationUnderYearFuzzPeriods(
+        uint24 timeIncrease, /// bound input to 16,777,215 which is lt 31,536,000 (seconds per year)
+        uint8 periods
     ) public {
         /// get past start time so that interest can start accruing
         vm.warp(block.timestamp + voltSystemOracle.periodStartTime());
 
-        for (uint256 i = 0; i < cycles; i++) {
+        for (uint256 i = 0; i < periods; i++) {
             vm.warp(block.timestamp + timeIncrease);
 
             uint256 cachedOraclePrice = voltSystemOracle.oraclePrice();
