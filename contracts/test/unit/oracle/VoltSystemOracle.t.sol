@@ -41,29 +41,6 @@ contract VoltSystemOracleTest is DSTest {
         );
     }
 
-    /// sequentially compound interest after multiple missed compounding events
-    function testMultipleSequentialPeriodCompounds(uint8 periods) public {
-        /// anything over this amount of periods gets the oracle price into
-        /// a zone where it could overflow during call to getCurrentOraclePrice
-        vm.assume(periods < 6193);
-        vm.warp(
-            voltSystemOracle.periodStartTime() +
-                (periods * voltSystemOracle.TIMEFRAME())
-        );
-
-        uint256 expectedOraclePrice = voltSystemOracle.oraclePrice();
-
-        for (uint256 i = 0; i < periods; i++) {
-            voltSystemOracle.compoundInterest(); /// compound interest periods amount of times
-            expectedOraclePrice = _calculateDelta(
-                expectedOraclePrice,
-                voltSystemOracle.annualChangeRateBasisPoints() +
-                    Constants.BASIS_POINTS_GRANULARITY
-            );
-            assertEq(expectedOraclePrice, voltSystemOracle.oraclePrice());
-        }
-    }
-
     function testSetup() public {
         assertEq(voltSystemOracle.oraclePrice(), startPrice);
         assertEq(
@@ -80,13 +57,11 @@ contract VoltSystemOracleTest is DSTest {
     }
 
     function testCompoundSucceedsAfterOneYear() public {
-        assertEq(voltSystemOracle.oraclePrice(), startPrice);
-        vm.warp(block.timestamp + voltSystemOracle.periodStartTime());
+        vm.warp(
+            block.timestamp + voltSystemOracle.periodStartTime() + 365 days
+        );
 
         uint256 oraclePrice = voltSystemOracle.oraclePrice();
-
-        vm.warp(block.timestamp + 365 days);
-
         uint256 expectedOraclePrice = _calculateDelta(
             oraclePrice,
             annualChangeRateBasisPoints + Constants.BASIS_POINTS_GRANULARITY
@@ -97,7 +72,6 @@ contract VoltSystemOracleTest is DSTest {
     }
 
     function testLinearInterpolation() public {
-        assertEq(voltSystemOracle.oraclePrice(), startPrice);
         vm.warp(voltSystemOracle.periodStartTime() + 365 days);
 
         assertEq(
@@ -112,7 +86,6 @@ contract VoltSystemOracleTest is DSTest {
     /// assert that price cannot increase before block.timestamp of 100,000
     /// since uint16 max is 65,535, the current oracle price cannot increase
     function testNoLinearInterpolationBeforeStartTime(uint16 x) public {
-        assertEq(voltSystemOracle.oraclePrice(), startPrice);
         vm.warp(block.timestamp + x);
 
         assertEq(
@@ -122,7 +95,6 @@ contract VoltSystemOracleTest is DSTest {
     }
 
     function testLinearInterpolationOnlyAfterStartTime(uint16 x) public {
-        assertEq(voltSystemOracle.oraclePrice(), startPrice);
         vm.warp(block.timestamp + x);
         uint256 cachedOraclePrice = voltSystemOracle.oraclePrice();
 
@@ -145,6 +117,29 @@ contract VoltSystemOracleTest is DSTest {
                 voltSystemOracle.getCurrentOraclePrice(),
                 cachedOraclePrice
             );
+        }
+    }
+
+    /// sequentially compound interest after multiple missed compounding events
+    function testMultipleSequentialPeriodCompounds(uint8 periods) public {
+        /// anything over this amount of periods gets the oracle price into
+        /// a zone where it could overflow during call to getCurrentOraclePrice
+        vm.assume(periods < 6193);
+        vm.warp(
+            voltSystemOracle.periodStartTime() +
+                (periods * voltSystemOracle.TIMEFRAME())
+        );
+
+        uint256 expectedOraclePrice = voltSystemOracle.oraclePrice();
+
+        for (uint256 i = 0; i < periods; i++) {
+            voltSystemOracle.compoundInterest(); /// compound interest periods amount of times
+            expectedOraclePrice = _calculateDelta(
+                expectedOraclePrice,
+                voltSystemOracle.annualChangeRateBasisPoints() +
+                    Constants.BASIS_POINTS_GRANULARITY
+            );
+            assertEq(expectedOraclePrice, voltSystemOracle.oraclePrice());
         }
     }
 

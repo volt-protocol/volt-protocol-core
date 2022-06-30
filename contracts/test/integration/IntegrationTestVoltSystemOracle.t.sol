@@ -107,7 +107,7 @@ contract IntegrationTestVoltSystemOracle is DSTest {
 
     /// swap out the old oracle for the new one and ensure the read functions
     /// give the same value
-    function testSwapOraclePassThroughOnPSMs() public {
+    function testMintSwapOraclePassThroughOnPSMs() public {
         _warpToStart();
 
         uint256 mintAmount = 100_000e18;
@@ -126,8 +126,31 @@ contract IntegrationTestVoltSystemOracle is DSTest {
         assertEq(endingAmountOutUSDC, startingAmountOutUSDC);
     }
 
+    /// swap out the old oracle for the new one and ensure the read functions
+    /// give the same value
+    function testRedeemSwapOraclePassThroughOnPSMs() public {
+        _warpToStart();
+
+        uint256 redeemAmount = 100_000e18;
+        uint256 startingAmountOutFei = feiPSM.getRedeemAmountOut(redeemAmount);
+        uint256 startingAmountOutUSDC = usdcPSM.getRedeemAmountOut(
+            redeemAmount
+        );
+
+        vm.startPrank(MainnetAddresses.GOVERNOR);
+        feiPSM.setOracle(address(oraclePassThrough));
+        usdcPSM.setOracle(address(oraclePassThrough));
+        vm.stopPrank();
+
+        uint256 endingAmountOutFei = feiPSM.getRedeemAmountOut(redeemAmount);
+        uint256 endingAmountOutUSDC = usdcPSM.getRedeemAmountOut(redeemAmount);
+
+        assertEq(endingAmountOutFei, startingAmountOutFei);
+        assertEq(endingAmountOutUSDC, startingAmountOutUSDC);
+    }
+
     /// assert swaps function the same after upgrading the scaling price oracle for Fei
-    function testSwapParityAfterOracleUpgradeFEI() public {
+    function testMintParityAfterOracleUpgradeFEI() public {
         _warpToStart();
         uint256 amountStableIn = 101_000;
         uint256 amountVoltOut = feiPSM.getMintAmountOut(amountStableIn);
@@ -170,7 +193,7 @@ contract IntegrationTestVoltSystemOracle is DSTest {
     }
 
     /// assert swaps function the same after upgrading the scaling price oracle for USDC
-    function testSwapParityAfterOracleUpgradeUSDC() public {
+    function testMintParityAfterOracleUpgradeUSDC() public {
         _warpToStart();
         uint256 amountStableIn = 101_000;
         uint256 amountVoltOut = usdcPSM.getMintAmountOut(amountStableIn);
