@@ -242,10 +242,11 @@ contract VoltSystemOracleTest is DSTest {
             vm.warp(block.timestamp + timeIncrease);
 
             uint256 cachedOraclePrice = voltSystemOracle.oraclePrice();
+            uint256 duration = voltSystemOracle.TIMEFRAME();
 
             uint256 timeDelta = Math.min(
                 block.timestamp - voltSystemOracle.periodStartTime(),
-                voltSystemOracle.TIMEFRAME()
+                duration
             );
             uint256 pricePercentageChange = _calculateDelta(
                 cachedOraclePrice,
@@ -258,8 +259,7 @@ contract VoltSystemOracleTest is DSTest {
             );
 
             bool isTimeEnded = block.timestamp >=
-                voltSystemOracle.periodStartTime() +
-                    voltSystemOracle.TIMEFRAME();
+                voltSystemOracle.periodStartTime() + duration;
 
             if (isTimeEnded) {
                 voltSystemOracle.compoundInterest();
