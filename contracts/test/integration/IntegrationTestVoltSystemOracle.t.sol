@@ -20,7 +20,13 @@ contract IntegrationTestVoltSystemOracle is DSTest {
     using SafeCast for *;
 
     /// @notice reference to Volt
-    IERC20 private volt = IERC20(MainnetAddresses.VOLT);
+    IVolt private volt = IVolt(MainnetAddresses.VOLT);
+
+    /// @notice reference to Fei
+    IERC20 private fei = IERC20(MainnetAddresses.FEI);
+
+    /// @notice reference to USDC
+    IERC20 private usdc = IERC20(MainnetAddresses.USDC);
 
     /// @notice scaling price oracle on mainnet today
     ScalingPriceOracle private scalingPriceOracle =
@@ -233,5 +239,88 @@ contract IntegrationTestVoltSystemOracle is DSTest {
             startingUserVoltBalanceAfterUpgrade + amountVoltOutAfterUpgrade
         );
         assertEq(amountVoltOutAfterUpgrade, amountVoltOut);
+    }
+
+    /// assert redemptions function the same after upgrading the scaling price oracle for Fei
+    function testRedeemParityAfterOracleUpgradeFEI() public {
+        _warpToStart();
+
+        uint256 amountVoltIn = 10_000e18;
+        vm.prank(MainnetAddresses.GLOBAL_RATE_LIMITED_MINTER); /// fund with Fei
+        volt.mint(address(this), amountVoltIn * 2);
+
+        uint256 amountFeiOut = feiPSM.getRedeemAmountOut(amountVoltIn);
+        uint256 startingUserFeiBalance = fei.balanceOf(address(this));
+
+        volt.approve(address(feiPSM), amountVoltIn * 2);
+        feiPSM.redeem(address(this), amountVoltIn, amountFeiOut);
+
+        uint256 endingUserFeiBalance = fei.balanceOf(address(this));
+        assertEq(endingUserFeiBalance, startingUserFeiBalance + amountFeiOut);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        feiPSM.setOracle(address(oraclePassThrough));
+
+        uint256 amountFeiOutAfterUpgrade = feiPSM.getRedeemAmountOut(
+            amountVoltIn
+        );
+        uint256 startingUserFeiBalanceAfterUpgrade = fei.balanceOf(
+            address(this)
+        );
+
+        feiPSM.redeem(address(this), amountVoltIn, amountFeiOutAfterUpgrade);
+
+        uint256 endingUserFeiBalanceAfterUpgrade = fei.balanceOf(address(this));
+        assertEq(
+            endingUserFeiBalanceAfterUpgrade,
+            startingUserFeiBalanceAfterUpgrade + amountFeiOutAfterUpgrade
+        );
+        assertEq(amountFeiOutAfterUpgrade, amountFeiOut);
+    }
+
+    /// assert redemptions function the same after upgrading the scaling price oracle for Usdc
+    function testRedeemParityAfterOracleUpgradeUSDC() public {
+        _warpToStart();
+        if (usdcPSM.redeemPaused()) {
+            vm.prank(MainnetAddresses.GUARDIAN);
+            usdcPSM.unpauseRedeem();
+        }
+
+        uint256 amountVoltIn = 10_000e18;
+        vm.prank(MainnetAddresses.GLOBAL_RATE_LIMITED_MINTER); /// fund with Volt
+        volt.mint(address(this), amountVoltIn * 2);
+
+        uint256 amountUsdcOut = usdcPSM.getRedeemAmountOut(amountVoltIn);
+        uint256 startingUserUsdcBalance = usdc.balanceOf(address(this));
+
+        volt.approve(address(usdcPSM), amountVoltIn * 2);
+        usdcPSM.redeem(address(this), amountVoltIn, amountUsdcOut);
+
+        uint256 endingUserUsdcBalance = usdc.balanceOf(address(this));
+        assertEq(
+            endingUserUsdcBalance,
+            startingUserUsdcBalance + amountUsdcOut
+        );
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcPSM.setOracle(address(oraclePassThrough));
+
+        uint256 amountUsdcOutAfterUpgrade = usdcPSM.getRedeemAmountOut(
+            amountVoltIn
+        );
+        uint256 startingUserUsdcBalanceAfterUpgrade = usdc.balanceOf(
+            address(this)
+        );
+
+        usdcPSM.redeem(address(this), amountVoltIn, amountUsdcOutAfterUpgrade);
+
+        uint256 endingUserUsdcBalanceAfterUpgrade = usdc.balanceOf(
+            address(this)
+        );
+        assertEq(
+            endingUserUsdcBalanceAfterUpgrade,
+            startingUserUsdcBalanceAfterUpgrade + amountUsdcOutAfterUpgrade
+        );
+        assertEq(amountUsdcOutAfterUpgrade, amountUsdcOut);
     }
 }

@@ -21,6 +21,8 @@ library MainnetAddresses {
 
     address public constant VOLT_USDC_PSM =
         0x0b9A7EA2FCA868C93640Dd77cF44df335095F501;
+    address public constant GLOBAL_RATE_LIMITED_MINTER =
+        0x87945f59E008aDc9ed6210a8e061f009d6ace718;
 
     // ---------- FEI ADDRESSES ----------
 
