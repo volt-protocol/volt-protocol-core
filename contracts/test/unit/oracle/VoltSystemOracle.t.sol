@@ -47,7 +47,7 @@ contract VoltSystemOracleTest is DSTest {
         /// a zone where it could overflow during call to getCurrentOraclePrice
         vm.assume(periods < 6193);
         vm.warp(
-            voltSystemOracle.oracleStartTime() +
+            voltSystemOracle.periodStartTime() +
                 (periods * voltSystemOracle.TIMEFRAME())
         );
 
@@ -70,7 +70,7 @@ contract VoltSystemOracleTest is DSTest {
             voltSystemOracle.annualChangeRateBasisPoints(),
             annualChangeRateBasisPoints
         );
-        assertEq(voltSystemOracle.oracleStartTime(), startTime);
+        assertEq(voltSystemOracle.periodStartTime(), startTime);
         assertEq(voltSystemOracle.getCurrentOraclePrice(), startPrice);
     }
 
@@ -81,7 +81,7 @@ contract VoltSystemOracleTest is DSTest {
 
     function testCompoundSucceedsAfterOneYear() public {
         assertEq(voltSystemOracle.oraclePrice(), startPrice);
-        vm.warp(block.timestamp + voltSystemOracle.oracleStartTime());
+        vm.warp(block.timestamp + voltSystemOracle.periodStartTime());
 
         uint256 oraclePrice = voltSystemOracle.oraclePrice();
 
@@ -98,7 +98,7 @@ contract VoltSystemOracleTest is DSTest {
 
     function testLinearInterpolation() public {
         assertEq(voltSystemOracle.oraclePrice(), startPrice);
-        vm.warp(voltSystemOracle.oracleStartTime() + 365 days);
+        vm.warp(voltSystemOracle.periodStartTime() + 365 days);
 
         assertEq(
             voltSystemOracle.getCurrentOraclePrice(),
@@ -126,10 +126,10 @@ contract VoltSystemOracleTest is DSTest {
         vm.warp(block.timestamp + x);
         uint256 cachedOraclePrice = voltSystemOracle.oraclePrice();
 
-        if (x > voltSystemOracle.oracleStartTime()) {
+        if (x > voltSystemOracle.periodStartTime()) {
             /// interpolation because past start time
             uint256 timeDelta = block.timestamp -
-                voltSystemOracle.oracleStartTime();
+                voltSystemOracle.periodStartTime();
             uint256 pricePercentageChange = _calculateDelta(
                 cachedOraclePrice,
                 voltSystemOracle.annualChangeRateBasisPoints()
@@ -149,7 +149,7 @@ contract VoltSystemOracleTest is DSTest {
     }
 
     function testLinearInterpolationFuzz(uint32 timeIncrease) public {
-        vm.warp(block.timestamp + voltSystemOracle.oracleStartTime());
+        vm.warp(block.timestamp + voltSystemOracle.periodStartTime());
         uint256 cachedOraclePrice = voltSystemOracle.oraclePrice();
 
         vm.warp(block.timestamp + timeIncrease);
@@ -165,7 +165,7 @@ contract VoltSystemOracleTest is DSTest {
             );
         } else {
             uint256 timeDelta = block.timestamp -
-                voltSystemOracle.oracleStartTime();
+                voltSystemOracle.periodStartTime();
             uint256 pricePercentageChange = _calculateDelta(
                 cachedOraclePrice,
                 voltSystemOracle.annualChangeRateBasisPoints()
@@ -183,7 +183,7 @@ contract VoltSystemOracleTest is DSTest {
         uint8 cycles
     ) public {
         /// get past start time and then initialize the volt system oracle
-        vm.warp(block.timestamp + voltSystemOracle.oracleStartTime());
+        vm.warp(block.timestamp + voltSystemOracle.periodStartTime());
 
         for (uint256 i = 0; i < cycles; i++) {
             vm.warp(block.timestamp + timeIncrease);
@@ -202,7 +202,7 @@ contract VoltSystemOracleTest is DSTest {
                 );
             } else {
                 uint256 timeDelta = Math.min(
-                    block.timestamp - voltSystemOracle.oracleStartTime(),
+                    block.timestamp - voltSystemOracle.periodStartTime(),
                     voltSystemOracle.TIMEFRAME()
                 );
                 uint256 pricePercentageChange = _calculateDelta(
@@ -240,7 +240,7 @@ contract VoltSystemOracleTest is DSTest {
         uint8 cycles
     ) public {
         /// get past start time and then initialize the volt system oracle
-        vm.warp(block.timestamp + voltSystemOracle.oracleStartTime());
+        vm.warp(block.timestamp + voltSystemOracle.periodStartTime());
 
         for (uint256 i = 0; i < cycles; i++) {
             vm.warp(block.timestamp + timeIncrease);
@@ -248,7 +248,7 @@ contract VoltSystemOracleTest is DSTest {
             uint256 cachedOraclePrice = voltSystemOracle.oraclePrice();
 
             uint256 timeDelta = Math.min(
-                block.timestamp - voltSystemOracle.oracleStartTime(),
+                block.timestamp - voltSystemOracle.periodStartTime(),
                 voltSystemOracle.TIMEFRAME()
             );
             uint256 pricePercentageChange = _calculateDelta(

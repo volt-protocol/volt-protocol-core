@@ -19,10 +19,8 @@ contract VoltSystemOracle is IVoltSystemOracle {
     /// @notice acts as an accumulator for checkpointing interest earned in previous periods
     uint256 public override oraclePrice;
 
-    /// @notice start time at which point interest will start accruing, and the
-    /// point in time at which the current ScalingPriceOracle price will be
-    /// snapshotted and saved
-    uint256 public override oracleStartTime;
+    /// @notice period start time at which point interest will start accruing
+    uint256 public override periodStartTime;
 
     /// ---------- Immutable Variables ----------
 
@@ -34,15 +32,15 @@ contract VoltSystemOracle is IVoltSystemOracle {
     uint256 public constant override TIMEFRAME = 365 days;
 
     /// @param _annualChangeRateBasisPoints yearly change rate in the Volt price
-    /// @param _oracleStartTime start time at which oracle starts interpolating prices
+    /// @param _periodStartTime start time at which oracle starts interpolating prices
     /// @param _oraclePrice starting oracle price
     constructor(
         uint256 _annualChangeRateBasisPoints,
-        uint256 _oracleStartTime,
+        uint256 _periodStartTime,
         uint256 _oraclePrice
     ) {
         annualChangeRateBasisPoints = _annualChangeRateBasisPoints;
-        oracleStartTime = _oracleStartTime;
+        periodStartTime = _periodStartTime;
         oraclePrice = _oraclePrice;
     }
 
@@ -53,7 +51,7 @@ contract VoltSystemOracle is IVoltSystemOracle {
     /// scaled by 18 decimals
     // prettier-ignore
     function getCurrentOraclePrice() public view override returns (uint256) {
-        uint256 cachedStartTime = oracleStartTime; /// save a single warm SLOAD if condition is false
+        uint256 cachedStartTime = periodStartTime; /// save a single warm SLOAD if condition is false
         if (cachedStartTime >= block.timestamp) { /// only accrue interest after start time
             return oraclePrice;
         }
@@ -68,7 +66,7 @@ contract VoltSystemOracle is IVoltSystemOracle {
 
     /// @notice function that returns the end time of the current period
     function oracleEndTime() public view returns (uint256) {
-        return oracleStartTime + TIMEFRAME;
+        return periodStartTime + TIMEFRAME;
     }
 
     /// ------------- Public State Changing API -------------
@@ -76,7 +74,7 @@ contract VoltSystemOracle is IVoltSystemOracle {
     /// @notice public function that allows compounding of interest after duration has passed
     /// Sets accumulator to the current accrued interest, and then resets the timer.
     function compoundInterest() external override {
-        uint256 periodEndTime = oracleStartTime + TIMEFRAME; /// save a single warm SLOAD when writing to oracleStartTime
+        uint256 periodEndTime = periodStartTime + TIMEFRAME; /// save a single warm SLOAD when writing to periodStartTime
         require(
             block.timestamp >= periodEndTime,
             "VoltSystemOracle: not past end time"
@@ -85,11 +83,11 @@ contract VoltSystemOracle is IVoltSystemOracle {
         /// first set Oracle Price to interpolated value
         oraclePrice = getCurrentOraclePrice();
 
-        /// set oracleStartTime to oracleStartTime + timeframe,
+        /// set periodStartTime to periodStartTime + timeframe,
         /// this is equivalent to init timed, which wipes out all unaccumulated compounded interest
         /// and cleanly sets the start time.
-        oracleStartTime = periodEndTime;
+        periodStartTime = periodEndTime;
 
-        emit InterestCompounded();
+        emit InterestCompounded(periodEndTime - TIMEFRAME, oraclePrice);
     }
 }

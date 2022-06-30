@@ -10,7 +10,7 @@ interface IVoltSystemOracle {
 
     /// @notice start time at which point interest will start accruing, and the
     /// current ScalingPriceOracle price will be snapshotted and saved
-    function oracleStartTime() external view returns (uint256);
+    function periodStartTime() external view returns (uint256);
 
     /// @notice oracle price. starts off at 1e18 and compounds yearly
     /// acts as an accumulator for interest earned in previous periods
@@ -30,5 +30,6 @@ interface IVoltSystemOracle {
     function compoundInterest() external;
 
     /// @notice event emitted when the Volt system oracle compounds
-    event InterestCompounded();
+    /// emits the end time of the period that completed and the new oracle price
+    event InterestCompounded(uint256 periodEnd, uint256 newOraclePrice);
 }
