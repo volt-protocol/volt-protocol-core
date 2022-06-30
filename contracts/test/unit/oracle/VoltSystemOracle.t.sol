@@ -121,7 +121,7 @@ contract VoltSystemOracleTest is DSTest {
     }
 
     /// sequentially compound interest after multiple missed compounding events
-    function testMultipleSequentialPeriodCompounds(uint8 periods) public {
+    function testMultipleSequentialPeriodCompounds(uint16 periods) public {
         /// anything over this amount of periods gets the oracle price into
         /// a zone where it could overflow during call to getCurrentOraclePrice
         vm.assume(periods < 6193);
