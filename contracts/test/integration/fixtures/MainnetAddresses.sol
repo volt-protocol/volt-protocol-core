@@ -7,6 +7,8 @@ library MainnetAddresses {
     address public constant VOLT = 0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18;
     address public constant ORACLE_PASS_THROUGH =
         0x84dc71500D504163A87756dB6368CC8bB654592f;
+    address public constant SCALING_PRICE_ORACLE =
+        0x79412660E95F94a4D2d02a050CEA776200939917;
     address public constant GOVERNOR =
         0xcBB83206698E8788F85EFbEeeCAd17e53366EBDf;
     address public constant GUARDIAN =
@@ -16,6 +18,9 @@ library MainnetAddresses {
 
     address public constant VOLT_FEI_PSM =
         0x985f9C331a9E4447C782B98D6693F5c7dF8e560e;
+
+    address public constant VOLT_USDC_PSM =
+        0x0b9A7EA2FCA868C93640Dd77cF44df335095F501;
 
     // ---------- FEI ADDRESSES ----------
 
