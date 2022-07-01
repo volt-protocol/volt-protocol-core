@@ -12,7 +12,7 @@ import {DSTest} from "./utils/DSTest.sol";
 import {getCore, getAddresses, VoltTestAddresses} from "./utils/Fixtures.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 
-contract VoltTest is DSTest {
+contract VoltUnitTest is DSTest {
     IVolt private volt;
     ICore private core;
 

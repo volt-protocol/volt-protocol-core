@@ -11,7 +11,7 @@ import {ICore} from "../../../core/ICore.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {Vm} from "./../utils/Vm.sol";
 
-contract PCVGuardianTest is DSTest {
+contract PCVGuardianUnitTest is DSTest {
     PCVGuardian private pcvGuardian;
     PCVGuardAdmin private pcvGuardAdmin;
     MockERC20 public underlyingToken;

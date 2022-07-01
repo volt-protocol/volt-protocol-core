@@ -11,7 +11,7 @@ import {MockERC20, MockLendingPool} from "../../../../mock/MockLendingPool.sol";
 import {ERC20AavePCVDeposit, LendingPool, IncentivesController} from "../../../../pcv/aave/ERC20AavePCVDeposit.sol";
 import {getCore, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.sol";
 
-contract ERC20AavePCVDepositTest is DSTest {
+contract ERC20AavePCVDepositUnitTest is DSTest {
     using SafeCast for *;
 
     IERC20 private aToken;

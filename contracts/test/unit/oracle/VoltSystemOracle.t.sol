@@ -14,7 +14,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-contract VoltSystemOracleTest is DSTest {
+contract VoltSystemOracleUnitTest is DSTest {
     using Decimal for Decimal.D256;
     using SafeCast for *;
 
@@ -27,8 +27,8 @@ contract VoltSystemOracleTest is DSTest {
     /// @notice block time at which the VSO (Volt System Oracle) will start accruing interest
     uint256 public constant startTime = 100_000;
 
-    /// @notice starting oracle price
-    uint256 public constant startPrice = 1.0387e18;
+    /// @notice actual starting oracle price on mainnet
+    uint256 public constant startPrice = 1045095352308302897;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
     VoltTestAddresses public addresses = getAddresses();
@@ -66,20 +66,39 @@ contract VoltSystemOracleTest is DSTest {
             oraclePrice,
             annualChangeRateBasisPoints + Constants.BASIS_POINTS_GRANULARITY
         );
+        uint256 previousStartTime = voltSystemOracle.periodStartTime();
         assertEq(voltSystemOracle.getCurrentOraclePrice(), expectedOraclePrice);
+
         voltSystemOracle.compoundInterest();
+
         assertEq(voltSystemOracle.oraclePrice(), expectedOraclePrice);
+        assertEq(
+            previousStartTime + voltSystemOracle.TIMEFRAME(),
+            voltSystemOracle.periodStartTime()
+        );
     }
 
     function testLinearInterpolation() public {
         vm.warp(voltSystemOracle.periodStartTime() + 365 days);
+        uint256 yearOneEndPrice = 1065997259354468954;
 
         assertEq(
             voltSystemOracle.getCurrentOraclePrice(),
-            _calculateDelta(
-                startPrice,
-                annualChangeRateBasisPoints + Constants.BASIS_POINTS_GRANULARITY
-            )
+            yearOneEndPrice /// oracle value after 1 year at 2% increase
+        );
+
+        uint256 previousStartTime = voltSystemOracle.periodStartTime();
+        voltSystemOracle.compoundInterest();
+        vm.warp(block.timestamp + 365 days);
+
+        assertEq(yearOneEndPrice, voltSystemOracle.oraclePrice());
+        assertEq(
+            previousStartTime + voltSystemOracle.TIMEFRAME(),
+            voltSystemOracle.periodStartTime()
+        );
+        assertEq(
+            voltSystemOracle.getCurrentOraclePrice(),
+            1087317204541558333 /// oracle value after 2 years at 2% increase, compounded annually
         );
     }
 
@@ -92,32 +111,6 @@ contract VoltSystemOracleTest is DSTest {
             voltSystemOracle.getCurrentOraclePrice(),
             voltSystemOracle.oraclePrice()
         );
-    }
-
-    function testLinearInterpolationOnlyAfterStartTime(uint16 x) public {
-        vm.warp(block.timestamp + x);
-        uint256 cachedOraclePrice = voltSystemOracle.oraclePrice();
-
-        if (x > voltSystemOracle.periodStartTime()) {
-            /// interpolation because past start time
-            uint256 timeDelta = block.timestamp -
-                voltSystemOracle.periodStartTime();
-            uint256 pricePercentageChange = _calculateDelta(
-                cachedOraclePrice,
-                voltSystemOracle.annualChangeRateBasisPoints()
-            );
-            uint256 priceDelta = (pricePercentageChange * timeDelta) / 365 days;
-            assertEq(
-                voltSystemOracle.getCurrentOraclePrice(),
-                priceDelta + cachedOraclePrice
-            );
-        } else {
-            /// no interpolation because not past start time
-            assertEq(
-                voltSystemOracle.getCurrentOraclePrice(),
-                cachedOraclePrice
-            );
-        }
     }
 
     /// sequentially compound interest after multiple missed compounding events
@@ -133,6 +126,7 @@ contract VoltSystemOracleTest is DSTest {
         uint256 expectedOraclePrice = voltSystemOracle.oraclePrice();
 
         for (uint256 i = 0; i < periods; i++) {
+            uint256 previousStartTime = voltSystemOracle.periodStartTime();
             voltSystemOracle.compoundInterest(); /// compound interest periods amount of times
             expectedOraclePrice = _calculateDelta(
                 expectedOraclePrice,
@@ -140,14 +134,18 @@ contract VoltSystemOracleTest is DSTest {
                     Constants.BASIS_POINTS_GRANULARITY
             );
             assertEq(expectedOraclePrice, voltSystemOracle.oraclePrice());
+            assertEq(
+                previousStartTime + voltSystemOracle.TIMEFRAME(),
+                voltSystemOracle.periodStartTime()
+            );
         }
     }
 
     function testLinearInterpolationFuzz(uint32 timeIncrease) public {
-        vm.warp(block.timestamp + voltSystemOracle.periodStartTime());
+        vm.warp(
+            block.timestamp + voltSystemOracle.periodStartTime() + timeIncrease
+        );
         uint256 cachedOraclePrice = voltSystemOracle.oraclePrice();
-
-        vm.warp(block.timestamp + timeIncrease);
 
         if (timeIncrease >= 365 days) {
             assertEq(
