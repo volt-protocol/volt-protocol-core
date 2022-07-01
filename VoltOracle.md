@@ -14,6 +14,14 @@ The following is the Volt System Oracle Formula where p equals price and t equal
 
 p = Δp * Δt / compounding period + p
 
+$$
+\begin{align*}
+Δt &= min(currentTimestamp - startTime, compoundingPeriod) \\
+Δp &= p \cdot \frac{interestRate}{10,000} \\
+p_{1} &= p + (\frac{Δp \cdot Δt}{compoundingPeriod})
+\end{align*}
+$$
+
 Compounding period for the Volt System Oracle is 1 year and does not take leap years into account. 
 
 Interest accrues per second as long as block.timestamp is greater than start time. After the period is over, the function `compoundInterest` can be called, which sets the start time to the previous start time plus the period length. This means that if a previous period had not been compounded, `compoundInterest` can be called multiple times to catch the oracle price up to where it should be. Interest will not be factored into the current price if `compoundInterest` is not called after the period ends. This is expected behavior as this contract is meant to be as simple as possible.
