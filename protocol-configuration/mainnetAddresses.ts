@@ -14,12 +14,6 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.Oracle,
     network: Network.Arbitrum
   },
-  oraclePassThrough: {
-    address: '0x84dc71500D504163A87756dB6368CC8bB654592f',
-    artifactName: 'OraclePassThrough',
-    category: AddressCategory.Oracle,
-    network: Network.Mainnet
-  },
   scalingPriceOracle: {
     address: '0x79412660E95F94a4D2d02a050CEA776200939917',
     artifactName: 'OraclePassThrough',
@@ -172,14 +166,14 @@ const MainnetAddresses: MainnetAddresses = {
     network: Network.Mainnet
   },
   pcvGuardEOA1: {
-    address: '0xf8D0387538E8e03F3B4394dA89f221D7565a28Ee',
+    address: '0xB320e376Be6459421695F2b6B1E716AE4bc8129A',
     artifactName: 'unknown',
     category: AddressCategory.Guardian,
     network: Network.Mainnet
   },
   pcvGuardEOA2: {
     address: '0xd90E9181B20D8D1B5034d9f5737804Da182039F6',
-    artifactName: 'OtcEscrow',
+    artifactName: 'unknown',
     category: AddressCategory.Guardian,
     network: Network.Mainnet
   },

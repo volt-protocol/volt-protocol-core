@@ -1,6 +1,11 @@
 import { ethers } from 'ethers';
 
 const config = {
+  /// Volt System Oracle Params
+  STARTING_ORACLE_PRICE: '1045095352308302897',
+  ORACLE_PERIOD_START_TIME: '1657670923',
+  ANNUAL_CHANGE_RATE_BASIS_POINTS: 100, /// placeholder value, this is tbd based on yield in underlying venues
+
   /// Mainnet
   MAINNET_DEPLOYMENT: true,
   CHAINLINK_FEE: ethers.utils.parseEther('10'),
