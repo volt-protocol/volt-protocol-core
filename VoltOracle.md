@@ -9,7 +9,9 @@ The Volt System Oracle will sit behind an Oracle Pass Through contract that the 
 The following is the Volt System Oracle Formula where p equals price and t equals time.
 
 Δt = min{current timestamp - start time, compounding period}
+
 Δp = p * interest rate (basis points) / 10,000
+
 p = Δp * Δt / compounding period + p
 
 Compounding period for the Volt System Oracle is 1 year and does not take leap years into account. 
