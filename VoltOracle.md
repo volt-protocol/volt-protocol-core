@@ -6,7 +6,7 @@ The Volt System Oracle is an oracle that tracks the yield earned in the underlyi
 
 The Volt System Oracle sits behind an Oracle Pass Through contract that the time-lock owns. This allows for a changing out of the underlying PCV venues in which the Volt System Oracle points to. A change will occur "at-will" given significant enough deviation of the rates.
 
-The following is the Volt System Oracle Formula where p equals price and t equals time.
+The following is the Volt System Oracle Formula where p equals price at the start of the period, p<sub>1</sub> equals new price after all changes are applied, and t equals time.
 
 $$
 \begin{align*}

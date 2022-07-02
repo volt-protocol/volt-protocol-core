@@ -51,11 +51,7 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
   };
 };
 
-const setup: SetupUpgradeFunc = async (addresses, oldContracts, contracts, logging) => {
-  const signer = await getImpersonatedSigner(addresses.protocolMultisig);
-  await contracts.core.connect(signer).grantGovernor(addresses.optimisticTimelock);
-  console.log('setup granted timelock governor');
-};
+const setup: SetupUpgradeFunc = async (addresses, oldContracts, contracts, logging) => {};
 
 // Tears down any changes made in setup() that need to be
 // cleaned up before doing any validation checks.

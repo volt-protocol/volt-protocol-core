@@ -1,15 +1,16 @@
 import { getAllContracts, getAllContractAddresses } from './loadContracts';
 import { NamedAddresses, NamedContracts, UpgradeFuncs, namedContractsToNamedAddresses } from '@custom-types/types';
-import { simulateOAProposal } from '../simulation/simulateTimelockProposal';
+import { simulateOAProposal, simulateOAProposalArbitrum } from '../simulation/simulateTimelockProposal';
 import { MainnetContracts, ProposalDescription } from '@custom-types/types';
 import { ethers } from 'hardhat';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const proposalName = process.env.DEPLOY_FILE;
 const doSetup = process.env.DO_SETUP;
 const doDeploy = process.env.DO_DEPLOY;
+const isArbitrumVip = process.env.ENABLE_ARBITRUM_FORKING;
+const proposalName = process.env.DEPLOY_FILE + (isArbitrumVip ? '_arbitrum' : '');
 
 if (!proposalName) {
   throw new Error('DEPLOY_FILE env variable not set');
@@ -54,8 +55,13 @@ async function checkProposal(proposalName: string, doSetup?: string) {
   }
 
   console.log(`Starting Simulation of OA proposal...`);
-  await simulateOAProposal(proposalInfo, contracts as unknown as MainnetContracts, contractAddresses, true);
-  console.log(`Successfully Simulated OA proposal on mainnet`);
+  if (isArbitrumVip) {
+    await simulateOAProposalArbitrum(proposalInfo, contracts as unknown as MainnetContracts, contractAddresses, true);
+    console.log(`Successfully Simulated OA proposal on arbitrum`);
+  } else {
+    await simulateOAProposal(proposalInfo, contracts as unknown as MainnetContracts, contractAddresses, true);
+    console.log(`Successfully Simulated OA proposal on mainnet`);
+  }
 
   console.log('Teardown');
   await proposalFuncs.teardown(

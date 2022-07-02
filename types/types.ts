@@ -183,7 +183,6 @@ export interface MainnetContracts {
   dai: IERC20;
   rai: IERC20;
   optimisticTimelock: OptimisticTimelock;
-  optimisticTimelockArbitrum: OptimisticTimelock;
   curve3Metapool: IERC20;
   arbitrumOptimisticTimelock: OptimisticTimelock;
   arbitrumScalingPriceOracle: L2ScalingPriceOracle;
@@ -200,7 +199,6 @@ export interface MainnetContractAddresses {
   tribe: string;
   fei: string;
   uniswapPCVDeposit: string;
-  bondingCurve: string;
   chainlinkEthUsdOracle: string;
   chainlinkFeiEthOracle: string;
   compositeOracle: string;
@@ -218,14 +216,8 @@ export interface MainnetContractAddresses {
   governorAlpha: string;
   indexCoopFusePoolDpi: string;
   reflexerStableAssetFusePoolRai: string;
-  bentoBox: string;
-  masterKashi: string;
   feiTribePair: string;
-  rariPool8Tribe: string;
-  curve3Metapool: string;
-  tribalChiefOptimisticMultisig: string;
-  stakingTokenWrapperRari: string;
-  rariRewardsDistributorDelegator: string;
+  arbitrumProtocolMultisig: string;
 }
 
 export type ContractAccessRights = {

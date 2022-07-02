@@ -37,6 +37,7 @@
     "abis": "node scripts/utils/abis.js",
     "calldata": "npx hardhat run scripts/simulation/getProposalCalldata.ts",
     "check-proposal": "ENABLE_MAINNET_FORKING=true npx hardhat run scripts/utils/checkProposal.ts",
+    "check-proposal-arbitrum": "ENABLE_ARBITRUM_FORKING=true npx hardhat run scripts/utils/checkProposal.ts",
     "prettier:sol": "prettier --config ./contracts/.prettierrc --write 'contracts/**/*.sol'",
     "prettier:ts": "prettier --config .prettierrc './**/*.ts' --write",
     "prettier": "npx prettier:soldity && npx prettier:ts",
