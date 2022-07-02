@@ -56,8 +56,8 @@ contract VoltSystemOracleUnitTest is DSTest {
         voltSystemOracle.compoundInterest();
     }
 
-    function _testLERP(uint256 startTime) internal {
-        vm.warp(startTime);
+    function _testLERP(uint256 lerpStartTime) internal {
+        vm.warp(lerpStartTime);
 
         uint256 oraclePrice = voltSystemOracle.oraclePrice();
         uint256 endingOraclePrice = _calculateDelta(
@@ -94,9 +94,9 @@ contract VoltSystemOracleUnitTest is DSTest {
     }
 
     function testLERPPerDay() public {
-        _testLERP(block.timestamp + voltSystemOracle.periodStartTime());
-        for (uint256 i = 1; i < 365; i++) {
-            _testLERP(block.timestamp + (i * 1 days));
+        vm.warp(block.timestamp + voltSystemOracle.periodStartTime());
+        for (uint256 i = 1; i < 363; i++) {
+            _testLERP(block.timestamp + 1 days);
         }
     }
 
