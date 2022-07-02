@@ -168,6 +168,24 @@ contract VoltSystemOracleUnitTest is DSTest {
                 voltSystemOracle.getCurrentOraclePrice(),
                 priceDelta + cachedOraclePrice
             );
+            uint256 endingOraclePrice = _calculateDelta(
+                cachedOraclePrice,
+                annualChangeRateBasisPoints + Constants.BASIS_POINTS_GRANULARITY
+            );
+            uint256 periodStartTime = voltSystemOracle.periodStartTime();
+            uint256 duration = voltSystemOracle.TIMEFRAME();
+            uint256 expectedOraclePrice = _calculateLinearInterpolation(
+                Math.min(block.timestamp, periodStartTime + duration), /// calculate interest accrued at this point in time
+                periodStartTime, /// x1
+                periodStartTime + voltSystemOracle.TIMEFRAME(), /// x2
+                cachedOraclePrice, /// y1
+                endingOraclePrice /// y2
+            );
+            assertEq(
+                voltSystemOracle.getCurrentOraclePrice(),
+                expectedOraclePrice
+            );
+            assertEq(priceDelta + cachedOraclePrice, expectedOraclePrice);
         }
     }
 
@@ -208,6 +226,25 @@ contract VoltSystemOracleUnitTest is DSTest {
                     voltSystemOracle.getCurrentOraclePrice(),
                     priceDelta + cachedOraclePrice
                 );
+                uint256 endingOraclePrice = _calculateDelta(
+                    cachedOraclePrice,
+                    annualChangeRateBasisPoints +
+                        Constants.BASIS_POINTS_GRANULARITY
+                );
+                uint256 periodStartTime = voltSystemOracle.periodStartTime();
+                uint256 duration = voltSystemOracle.TIMEFRAME();
+                uint256 expectedOraclePrice = _calculateLinearInterpolation(
+                    Math.min(block.timestamp, periodStartTime + duration), /// calculate interest accrued at this point in time
+                    periodStartTime, /// x1
+                    periodStartTime + voltSystemOracle.TIMEFRAME(), /// x2
+                    cachedOraclePrice, /// y1
+                    endingOraclePrice /// y2
+                );
+                assertEq(
+                    voltSystemOracle.getCurrentOraclePrice(),
+                    expectedOraclePrice
+                );
+                assertEq(priceDelta + cachedOraclePrice, expectedOraclePrice);
             }
 
             bool isTimeEnded = block.timestamp >=
@@ -247,6 +284,19 @@ contract VoltSystemOracleUnitTest is DSTest {
 
             uint256 cachedOraclePrice = voltSystemOracle.oraclePrice();
             uint256 duration = voltSystemOracle.TIMEFRAME();
+            uint256 endingOraclePrice = _calculateDelta(
+                cachedOraclePrice,
+                annualChangeRateBasisPoints + Constants.BASIS_POINTS_GRANULARITY
+            );
+            uint256 periodStartTime = voltSystemOracle.periodStartTime();
+            /// double check contract's math and use LERP to verify both algorithms generate the same price at t
+            uint256 expectedOraclePrice = _calculateLinearInterpolation(
+                Math.min(block.timestamp, periodStartTime + duration), /// calculate interest accrued at this point in time
+                periodStartTime, /// x1
+                periodStartTime + voltSystemOracle.TIMEFRAME(), /// x2
+                cachedOraclePrice, /// y1
+                endingOraclePrice /// y2
+            );
 
             uint256 timeDelta = Math.min(
                 block.timestamp - voltSystemOracle.periodStartTime(),
@@ -257,10 +307,16 @@ contract VoltSystemOracleUnitTest is DSTest {
                 voltSystemOracle.annualChangeRateBasisPoints()
             );
             uint256 priceDelta = (pricePercentageChange * timeDelta) / 365 days;
+
             assertEq(
                 voltSystemOracle.getCurrentOraclePrice(),
                 priceDelta + cachedOraclePrice
             );
+            assertEq(
+                voltSystemOracle.getCurrentOraclePrice(),
+                expectedOraclePrice
+            );
+            assertEq(priceDelta + cachedOraclePrice, expectedOraclePrice);
 
             bool isTimeEnded = block.timestamp >=
                 voltSystemOracle.periodStartTime() + duration;
@@ -284,6 +340,50 @@ contract VoltSystemOracleUnitTest is DSTest {
                 );
             }
         }
+    }
+
+    function testCompoundSucceedsAfterHalfYear() public {
+        vm.warp(
+            block.timestamp + voltSystemOracle.periodStartTime() + 182.5 days
+        );
+
+        uint256 oraclePrice = voltSystemOracle.oraclePrice();
+        uint256 endingOraclePrice = _calculateDelta(
+            oraclePrice,
+            annualChangeRateBasisPoints + Constants.BASIS_POINTS_GRANULARITY
+        );
+        uint256 periodStartTime = voltSystemOracle.periodStartTime();
+        uint256 expectedOraclePrice = _calculateLinearInterpolation(
+            block.timestamp, /// calculate interest accrued at this point in time
+            periodStartTime, /// x1
+            periodStartTime + voltSystemOracle.TIMEFRAME(), /// x2
+            oraclePrice, /// y1
+            endingOraclePrice /// y2
+        );
+        assertEq(voltSystemOracle.getCurrentOraclePrice(), expectedOraclePrice);
+    }
+
+    /// Linear Interpolation Formula
+    // (y) = y1 + (x − x1) * ((y2 − y1) / (x2 − x1))
+    /// @notice calculate linear interpolation and return ending price
+    /// @param x is time value to calculate interpolation on
+    /// @param x1 is starting time to calculate interpolation from
+    /// @param x2 is ending time to calculate interpolation to
+    /// @param y1 is starting price to calculate interpolation from
+    /// @param y2 is ending price to calculate interpolation to
+    function _calculateLinearInterpolation(
+        uint256 x,
+        uint256 x1,
+        uint256 x2,
+        uint256 y1,
+        uint256 y2
+    ) internal pure returns (uint256 y) {
+        uint256 firstDeltaX = x - x1; /// will not overflow because x should always be gte x1
+        uint256 secondDeltaX = x2 - x1; /// will not overflow because x2 should always be gt x1
+        uint256 deltaY = y2 - y1; /// will not overflow because y2 should always be gt y1
+
+        uint256 product = (firstDeltaX * deltaY) / secondDeltaX;
+        y = product + y1;
     }
 
     function _calculateDelta(
