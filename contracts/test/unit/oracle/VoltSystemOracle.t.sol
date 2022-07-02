@@ -56,6 +56,50 @@ contract VoltSystemOracleUnitTest is DSTest {
         voltSystemOracle.compoundInterest();
     }
 
+    function _testLERP(uint256 startTime) internal {
+        vm.warp(startTime);
+
+        uint256 oraclePrice = voltSystemOracle.oraclePrice();
+        uint256 endingOraclePrice = _calculateDelta(
+            oraclePrice,
+            annualChangeRateBasisPoints + Constants.BASIS_POINTS_GRANULARITY
+        );
+        uint256 periodStartTime = voltSystemOracle.periodStartTime();
+        uint256 expectedOraclePrice = _calculateLinearInterpolation(
+            block.timestamp, /// calculate interest accrued at this point in time
+            periodStartTime, /// x1
+            periodStartTime + voltSystemOracle.TIMEFRAME(), /// x2
+            oraclePrice, /// y1
+            endingOraclePrice /// y2
+        );
+        assertEq(voltSystemOracle.getCurrentOraclePrice(), expectedOraclePrice);
+    }
+
+    function testLERPOneQuarter() public {
+        _testLERP(
+            block.timestamp + voltSystemOracle.periodStartTime() + 91.25 days
+        );
+    }
+
+    function testLERPHalfYear() public {
+        _testLERP(
+            block.timestamp + voltSystemOracle.periodStartTime() + 182.5 days
+        );
+    }
+
+    function testLERPThreeQuarters() public {
+        _testLERP(
+            block.timestamp + voltSystemOracle.periodStartTime() + 273.75 days
+        );
+    }
+
+    function testLERPPerDay() public {
+        _testLERP(block.timestamp + voltSystemOracle.periodStartTime());
+        for (uint256 i = 1; i < 365; i++) {
+            _testLERP(block.timestamp + (i * 1 days));
+        }
+    }
+
     function testCompoundSucceedsAfterOneYear() public {
         vm.warp(
             block.timestamp + voltSystemOracle.periodStartTime() + 365 days
@@ -293,28 +337,22 @@ contract VoltSystemOracleUnitTest is DSTest {
             uint256 expectedOraclePrice = _calculateLinearInterpolation(
                 Math.min(block.timestamp, periodStartTime + duration), /// calculate interest accrued at this point in time
                 periodStartTime, /// x1
-                periodStartTime + voltSystemOracle.TIMEFRAME(), /// x2
+                periodStartTime + duration, /// x2
                 cachedOraclePrice, /// y1
                 endingOraclePrice /// y2
             );
 
             uint256 timeDelta = Math.min(
-                block.timestamp - voltSystemOracle.periodStartTime(),
+                block.timestamp - periodStartTime,
                 duration
             );
-            uint256 pricePercentageChange = _calculateDelta(
-                cachedOraclePrice,
-                voltSystemOracle.annualChangeRateBasisPoints()
-            );
-            uint256 priceDelta = (pricePercentageChange * timeDelta) / 365 days;
+            uint256 priceChangeOverPeriod = endingOraclePrice -
+                cachedOraclePrice;
+            uint256 priceDelta = (priceChangeOverPeriod * timeDelta) / 365 days;
 
             assertEq(
                 voltSystemOracle.getCurrentOraclePrice(),
                 priceDelta + cachedOraclePrice
-            );
-            assertEq(
-                voltSystemOracle.getCurrentOraclePrice(),
-                expectedOraclePrice
             );
             assertEq(priceDelta + cachedOraclePrice, expectedOraclePrice);
 
@@ -322,10 +360,9 @@ contract VoltSystemOracleUnitTest is DSTest {
                 voltSystemOracle.periodStartTime() + duration;
 
             if (isTimeEnded) {
-                uint256 currentPeriodStart = voltSystemOracle.periodStartTime();
                 voltSystemOracle.compoundInterest();
                 assertEq(
-                    currentPeriodStart + voltSystemOracle.TIMEFRAME(),
+                    periodStartTime + voltSystemOracle.TIMEFRAME(),
                     voltSystemOracle.periodStartTime()
                 );
 
@@ -342,29 +379,8 @@ contract VoltSystemOracleUnitTest is DSTest {
         }
     }
 
-    function testCompoundSucceedsAfterHalfYear() public {
-        vm.warp(
-            block.timestamp + voltSystemOracle.periodStartTime() + 182.5 days
-        );
-
-        uint256 oraclePrice = voltSystemOracle.oraclePrice();
-        uint256 endingOraclePrice = _calculateDelta(
-            oraclePrice,
-            annualChangeRateBasisPoints + Constants.BASIS_POINTS_GRANULARITY
-        );
-        uint256 periodStartTime = voltSystemOracle.periodStartTime();
-        uint256 expectedOraclePrice = _calculateLinearInterpolation(
-            block.timestamp, /// calculate interest accrued at this point in time
-            periodStartTime, /// x1
-            periodStartTime + voltSystemOracle.TIMEFRAME(), /// x2
-            oraclePrice, /// y1
-            endingOraclePrice /// y2
-        );
-        assertEq(voltSystemOracle.getCurrentOraclePrice(), expectedOraclePrice);
-    }
-
     /// Linear Interpolation Formula
-    // (y) = y1 + (x − x1) * ((y2 − y1) / (x2 − x1))
+    /// (y) = y1 + (x − x1) * ((y2 − y1) / (x2 − x1))
     /// @notice calculate linear interpolation and return ending price
     /// @param x is time value to calculate interpolation on
     /// @param x1 is starting time to calculate interpolation from
