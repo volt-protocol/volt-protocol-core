@@ -21,6 +21,13 @@ const vip_2: ProposalDescription = {
       target: 'core',
       values: '0',
       method: 'grantGuardian(address)',
+      arguments: ['{pcvGuardEOA2}'],
+      description: 'Grant Guardian Roles to EOA 2 on mainnet'
+    },
+    {
+      target: 'core',
+      values: '0',
+      method: 'grantGuardian(address)',
       arguments: ['{pcvGuardEOA3}'],
       description: 'Grant Guardian Roles to EOA 3 on mainnet'
     },
