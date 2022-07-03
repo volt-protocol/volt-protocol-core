@@ -32,6 +32,13 @@ const vip_2: ProposalDescription = {
       description: 'Grant Guardian Roles on L2'
     },
     {
+      target: 'arbitrumCore',
+      values: '0',
+      method: 'grantGuardian(address)',
+      arguments: ['{pcvGuardEOA3}'],
+      description: 'Grant Guardian Roles on L2'
+    },
+    {
       target: 'arbitrumOptimisticTimelock',
       values: '0',
       method: 'revokeRole(bytes32,address)',

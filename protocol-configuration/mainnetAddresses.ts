@@ -177,6 +177,12 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.Guardian,
     network: Network.Mainnet
   },
+  pcvGuardEOA3: {
+    address: '0xd90E9181B20D8D1B5034d9f5737804Da182039F6',
+    artifactName: 'unknown',
+    category: AddressCategory.Guardian,
+    network: Network.Mainnet
+  },
   pcvGuardRevoked1: {
     address: '0xf8D0387538E8e03F3B4394dA89f221D7565a28Ee',
     artifactName: 'unknown',

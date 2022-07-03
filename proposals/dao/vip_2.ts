@@ -60,7 +60,20 @@ const teardown: TeardownUpgradeFunc = async (addresses, oldContracts, contracts,
 // Run any validations required on the vip using mocha or console logging
 // IE check balances, check state of contracts, etc.
 const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts, logging) => {
-  const { oraclePassThrough, voltSystemOracle, feiPriceBoundPSM, usdcPriceBoundPSM, optimisticTimelock } = contracts;
+  const { core, oraclePassThrough, voltSystemOracle, feiPriceBoundPSM, usdcPriceBoundPSM, optimisticTimelock } =
+    contracts;
+
+  const { pcvGuardEOA1, pcvGuardEOA2, pcvGuardEOA3, pcvGuardRevoked1 } = addresses;
+
+  expect(await core.isGuardian(pcvGuardEOA1)).to.be.true;
+  expect(await core.isGuardian(pcvGuardEOA2)).to.be.true;
+  expect(await core.isGuardian(pcvGuardEOA3)).to.be.true;
+
+  const proposerRole = await optimisticTimelock.PROPOSER_ROLE();
+  expect(await optimisticTimelock.hasRole(proposerRole, pcvGuardEOA1)).to.be.true;
+  expect(await optimisticTimelock.hasRole(proposerRole, pcvGuardEOA2)).to.be.true;
+  expect(await optimisticTimelock.hasRole(proposerRole, pcvGuardEOA3)).to.be.false;
+  expect(await optimisticTimelock.hasRole(proposerRole, pcvGuardRevoked1)).to.be.false;
 
   expect(await voltSystemOracle.oraclePrice()).to.be.equal(STARTING_ORACLE_PRICE);
   expect(await voltSystemOracle.getCurrentOraclePrice()).to.be.equal(STARTING_ORACLE_PRICE);
