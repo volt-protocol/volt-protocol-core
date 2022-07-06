@@ -17,7 +17,7 @@ import "../pcv/IPCVDeposit.sol";
  * PCVDeposit - to track reserves
  *
  */
-interface BasePSM {
+interface IBasePSM {
     // ----------- Public State Changing API -----------
 
     /// @notice mint `amountVoltOut` VOLT to address `to` for `amountIn` underlying tokens
