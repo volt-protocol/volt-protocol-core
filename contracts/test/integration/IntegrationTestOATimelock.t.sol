@@ -4,7 +4,6 @@ pragma solidity ^0.8.4;
 import {Vm} from "../unit/utils/Vm.sol";
 import {ICore} from "../../core/ICore.sol";
 import {DSTest} from "../unit/utils/DSTest.sol";
-import {PSMRouter} from "./../../peg/PSMRouter.sol";
 import {OptimisticTimelock} from "./../../dao/OptimisticTimelock.sol";
 import {INonCustodialPSM} from "./../../peg/NonCustodialPSM.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
