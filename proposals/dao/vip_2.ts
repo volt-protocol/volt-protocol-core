@@ -8,8 +8,7 @@ import {
 import config from '../../scripts/config';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { getImpersonatedSigner } from '@test/helpers';
-const { STARTING_ORACLE_PRICE, ORACLE_PERIOD_START_TIME, ANNUAL_CHANGE_RATE_BASIS_POINTS } = config;
+const { STARTING_ORACLE_PRICE, ORACLE_PERIOD_START_TIME, MONTHLY_CHANGE_RATE_BASIS_POINTS } = config;
 
 /*
 
@@ -33,7 +32,7 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
   const OraclePassThroughFactory = await ethers.getContractFactory('OraclePassThrough');
 
   const voltSystemOracle = await VoltSystemOracleFactory.deploy(
-    ANNUAL_CHANGE_RATE_BASIS_POINTS,
+    MONTHLY_CHANGE_RATE_BASIS_POINTS,
     ORACLE_PERIOD_START_TIME,
     STARTING_ORACLE_PRICE
   );
@@ -78,7 +77,7 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
   expect(await voltSystemOracle.oraclePrice()).to.be.equal(STARTING_ORACLE_PRICE);
   expect(await voltSystemOracle.getCurrentOraclePrice()).to.be.equal(STARTING_ORACLE_PRICE);
   expect(await voltSystemOracle.periodStartTime()).to.be.equal(ORACLE_PERIOD_START_TIME);
-  expect(await voltSystemOracle.annualChangeRateBasisPoints()).to.be.equal(ANNUAL_CHANGE_RATE_BASIS_POINTS);
+  expect(await voltSystemOracle.monthlyChangeRateBasisPoints()).to.be.equal(MONTHLY_CHANGE_RATE_BASIS_POINTS);
   expect(await oraclePassThrough.scalingPriceOracle()).to.be.equal(voltSystemOracle.address);
   expect(await oraclePassThrough.owner()).to.be.equal(optimisticTimelock.address);
   expect(await feiPriceBoundPSM.oracle()).to.be.equal(oraclePassThrough.address);

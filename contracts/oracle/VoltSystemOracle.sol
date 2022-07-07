@@ -26,22 +26,22 @@ contract VoltSystemOracle is IVoltSystemOracle {
 
     /// ---------- Immutable Variables ----------
 
-    /// @notice current amount that oracle price is inflating by yearly in basis points
-    uint256 public immutable annualChangeRateBasisPoints;
+    /// @notice current amount that oracle price is inflating by monthly in basis points
+    uint256 public immutable monthlyChangeRateBasisPoints;
 
     /// @notice the time frame over which all changes in the APR are applied
-    /// one year was chosen because this is a temporary oracle
-    uint256 public constant override TIMEFRAME = 365 days;
+    /// one month was chosen because this is a temporary oracle
+    uint256 public constant override TIMEFRAME = 30.42 days;
 
-    /// @param _annualChangeRateBasisPoints yearly change rate in the Volt price
+    /// @param _monthlyChangeRateBasisPoints yearly change rate in the Volt price
     /// @param _periodStartTime start time at which oracle starts interpolating prices
     /// @param _oraclePrice starting oracle price
     constructor(
-        uint256 _annualChangeRateBasisPoints,
+        uint256 _monthlyChangeRateBasisPoints,
         uint256 _periodStartTime,
         uint256 _oraclePrice
     ) {
-        annualChangeRateBasisPoints = _annualChangeRateBasisPoints;
+        monthlyChangeRateBasisPoints = _monthlyChangeRateBasisPoints;
         periodStartTime = _periodStartTime;
         oraclePrice = _oraclePrice;
     }
@@ -60,7 +60,7 @@ contract VoltSystemOracle is IVoltSystemOracle {
 
         uint256 cachedOraclePrice = oraclePrice; /// save a single warm SLOAD by using the stack
         uint256 timeDelta = Math.min(block.timestamp - cachedStartTime, TIMEFRAME);
-        uint256 pricePercentageChange = cachedOraclePrice * annualChangeRateBasisPoints / Constants.BASIS_POINTS_GRANULARITY;
+        uint256 pricePercentageChange = cachedOraclePrice * monthlyChangeRateBasisPoints / Constants.BASIS_POINTS_GRANULARITY;
         uint256 priceDelta = pricePercentageChange * timeDelta / TIMEFRAME;
 
         return cachedOraclePrice + priceDelta;

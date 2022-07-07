@@ -20,7 +20,7 @@ interface IVoltSystemOracle {
     /// @notice current amount that oracle price is inflating by yearly in basis points
     /// does not support negative rates because PCV will not be deposited into negatively
     /// yielding venues.
-    function annualChangeRateBasisPoints() external view returns (uint256);
+    function monthlyChangeRateBasisPoints() external view returns (uint256);
 
     /// @notice the time frame over which all changes in the APR are applied
     /// one year was chosen because this is a temporary oracle

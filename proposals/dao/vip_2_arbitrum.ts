@@ -8,7 +8,7 @@ import {
 import config from '../../scripts/config';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-const { STARTING_ORACLE_PRICE, ORACLE_PERIOD_START_TIME, ANNUAL_CHANGE_RATE_BASIS_POINTS } = config;
+const { STARTING_ORACLE_PRICE, ORACLE_PERIOD_START_TIME, MONTHLY_CHANGE_RATE_BASIS_POINTS } = config;
 
 /*
 
@@ -32,7 +32,7 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
   const OraclePassThroughFactory = await ethers.getContractFactory('OraclePassThrough');
 
   const voltSystemOracleArbitrum = await VoltSystemOracleFactory.deploy(
-    ANNUAL_CHANGE_RATE_BASIS_POINTS,
+    MONTHLY_CHANGE_RATE_BASIS_POINTS,
     ORACLE_PERIOD_START_TIME,
     STARTING_ORACLE_PRICE
   );
@@ -80,7 +80,7 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
   expect(await voltSystemOracleArbitrum.oraclePrice()).to.be.equal(STARTING_ORACLE_PRICE);
   expect(await voltSystemOracleArbitrum.getCurrentOraclePrice()).to.be.equal(STARTING_ORACLE_PRICE);
   expect(await voltSystemOracleArbitrum.periodStartTime()).to.be.equal(ORACLE_PERIOD_START_TIME);
-  expect(await voltSystemOracleArbitrum.annualChangeRateBasisPoints()).to.be.equal(ANNUAL_CHANGE_RATE_BASIS_POINTS);
+  expect(await voltSystemOracleArbitrum.monthlyChangeRateBasisPoints()).to.be.equal(MONTHLY_CHANGE_RATE_BASIS_POINTS);
   expect(await oraclePassThroughArbitrum.scalingPriceOracle()).to.be.equal(voltSystemOracleArbitrum.address);
   expect(await oraclePassThroughArbitrum.owner()).to.be.equal(arbitrumOptimisticTimelock.address);
   expect(await arbitrumUSDCPSM.oracle()).to.be.equal(oraclePassThroughArbitrum.address);
