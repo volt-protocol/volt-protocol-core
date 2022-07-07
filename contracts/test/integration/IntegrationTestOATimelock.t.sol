@@ -4,18 +4,16 @@ pragma solidity ^0.8.4;
 import {Vm} from "../unit/utils/Vm.sol";
 import {ICore} from "../../core/ICore.sol";
 import {DSTest} from "../unit/utils/DSTest.sol";
-import {PSMRouter} from "./../../peg/PSMRouter.sol";
 import {OptimisticTimelock} from "./../../dao/OptimisticTimelock.sol";
 import {INonCustodialPSM} from "./../../peg/NonCustodialPSM.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {getCore, getAddresses, getVoltAddresses, FeiTestAddresses, VoltAddresses} from "../unit/utils/Fixtures.sol";
+import {getCore, getAddresses, getVoltAddresses, VoltAddresses} from "../unit/utils/Fixtures.sol";
 
 contract IntegrationTestOATimelock is DSTest {
     Vm public constant vm = Vm(HEVM_ADDRESS);
     ICore public core = ICore(0xEC7AD284f7Ad256b64c6E69b84Eb0F48f42e8196);
     OptimisticTimelock public oaTimelock;
-    FeiTestAddresses public addresses = getAddresses();
     VoltAddresses public voltAddresses = getVoltAddresses();
     address public proposer1 = voltAddresses.pcvGuardAddress1;
     address public proposer2 = voltAddresses.pcvGuardAddress2;
@@ -58,7 +56,7 @@ contract IntegrationTestOATimelock is DSTest {
     }
 
     function testTimelockEthReceive() public {
-        assertEq(address(oaTimelock).balance, 0); /// starts with 0 balance
+        uint256 startingOABalance = address(oaTimelock).balance;
 
         uint256 ethSendAmount = 100 ether;
         vm.deal(proposer1, ethSendAmount);
@@ -67,7 +65,10 @@ contract IntegrationTestOATimelock is DSTest {
         (bool success, ) = address(oaTimelock).call{value: ethSendAmount}("");
 
         assertTrue(success);
-        assertEq(address(oaTimelock).balance, ethSendAmount);
+        assertEq(
+            address(oaTimelock).balance - startingOABalance,
+            ethSendAmount
+        );
     }
 
     function testTimelockSendEth() public {
