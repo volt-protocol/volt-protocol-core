@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
+abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
     using Decimal for Decimal.D256;
     using SafeCast for *;
     using SafeERC20 for IERC20;
@@ -198,6 +198,8 @@ contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
             "PegStabilityModule: Redeem not enough out"
         );
 
+        _beforeVoltRedeem(to, amountVoltIn, minAmountOut);
+
         IERC20(volt()).safeTransferFrom(
             msg.sender,
             address(this),
@@ -207,6 +209,8 @@ contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
         _transfer(to, amountOut);
 
         emit Redeem(to, amountVoltIn, amountOut);
+
+        _afterVoltRedeem(to, amountVoltIn, minAmountOut);
     }
 
     /// @notice internal helper method to mint VOLT in exchange for an external asset
@@ -221,6 +225,8 @@ contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
             "PegStabilityModule: Mint not enough out"
         );
 
+        _beforeVoltMint(to, amountIn, minAmountOut);
+
         _transferFrom(msg.sender, address(this), amountIn);
 
         uint256 amountVoltToTransfer = Math.min(
@@ -231,6 +237,8 @@ contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
         if (amountVoltToTransfer != 0) {
             IERC20(volt()).safeTransfer(to, amountVoltToTransfer);
         }
+
+        _afterVoltMint(to, amountIn, minAmountOut);
     }
 
     /// @notice function to redeem VOLT for an underlying asset
@@ -254,7 +262,7 @@ contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
     function mint(
         address to,
         uint256 amountIn,
-        uint256 minAmountOut
+        uint256 minAmountVoltOut
     )
         external
         virtual
@@ -264,7 +272,7 @@ contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
         whileMintingNotPaused
         returns (uint256 amountVoltOut)
     {
-        amountVoltOut = _mint(to, amountIn, minAmountOut);
+        amountVoltOut = _mint(to, amountIn, minAmountVoltOut);
     }
 
     // ----------- Public View-Only API ----------
@@ -391,4 +399,53 @@ contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
         view
         virtual
     {}
+
+    /**
+     * @dev Hook that is called before VOLT is minted
+     *  to is the address VOLT is being minted to
+     *  amountIn is the the amount of stablecoin beind deposited
+     *  minAmountOut is minimum amount of VOLT to be received
+     */
+
+    function _beforeVoltMint(
+        address to,
+        uint256 amountIn,
+        uint256 minAmountOut
+    ) internal virtual {}
+
+    /**
+     * @dev Hook that is called after VOLT is minted
+     *  to is the address VOLT is being minted to
+     *  amountIn is the the amount of underyling stablecoin beind deposited
+     *  minAmountOut is minimum amount of VOLT to be received
+     */
+    function _afterVoltMint(
+        address to,
+        uint256 amountIn,
+        uint256 minAmountOut
+    ) internal virtual {}
+
+    /**
+     * @dev Hook that is called before VOLT is redeemed
+     *  to is the address in which the underlying stablecoin will be sent to when VOLT redeemed
+     *  amountVoltIn is the the amount of VOLT beind deposited
+     *  minAmountOut is minimum amount of underlying stablecoin to be received
+     */
+    function _beforeVoltRedeem(
+        address to,
+        uint256 amountVoltIn,
+        uint256 minAmountOut
+    ) internal virtual {}
+
+    /**
+     * @dev Hook that is called after VOLT is redeemed
+     *  to is the address in which the underlying stablecoin will be sent to when VOLT redeemed
+     *  amountVoltIn is the the amount of VOLT beind deposited
+     *  minAmountOut is minimum amount of underlying stablecoin to be received
+     */
+    function _afterVoltRedeem(
+        address to,
+        uint256 amountVoltIn,
+        uint256 minAmountOut
+    ) internal virtual {}
 }
