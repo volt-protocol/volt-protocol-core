@@ -13,7 +13,8 @@ library MainnetAddresses {
         0x2c2b362e6ae0F080F39b90Cb5657E5550090D6C3;
     address public constant DEPLOYER =
         0x25dCffa22EEDbF0A69F6277e24C459108c186ecB;
-
+    address public constant VOLT_TIMELOCK =
+        0x860fa85f04f9d35B3471D8F7F7fA3Ad31Ce4D5Ae;
     address public constant VOLT_FEI_PSM =
         0x985f9C331a9E4447C782B98D6693F5c7dF8e560e;
 
