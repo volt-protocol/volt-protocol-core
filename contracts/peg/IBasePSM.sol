@@ -84,15 +84,6 @@ interface IBasePSM {
     /// @notice event emitted when excess PCV is allocated
     event AllocateSurplus(address indexed caller, uint256 amount);
 
-    /// @notice event emitted when a new max fee is set
-    event MaxFeeUpdate(uint256 oldMaxFee, uint256 newMaxFee);
-
-    /// @notice event emitted when a new mint fee is set
-    event MintFeeUpdate(uint256 oldMintFee, uint256 newMintFee);
-
-    /// @notice event emitted when a new redeem fee is set
-    event RedeemFeeUpdate(uint256 oldRedeemFee, uint256 newRedeemFee);
-
     /// @notice event emitted when reservesThreshold is updated
     event ReservesThresholdUpdate(
         uint256 oldReservesThreshold,
