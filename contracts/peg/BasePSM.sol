@@ -5,11 +5,10 @@ import "./../pcv/PCVDeposit.sol";
 import "./IBasePSM.sol";
 import "./../refs/OracleRef.sol";
 import "../Constants.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
+abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
     using Decimal for Decimal.D256;
     using SafeCast for *;
     using SafeERC20 for IERC20;
@@ -136,14 +135,7 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
         address to,
         uint256 amountVoltIn,
         uint256 minAmountOut
-    )
-        external
-        virtual
-        override
-        nonReentrant
-        whenNotPaused
-        returns (uint256 amountOut)
-    {
+    ) external virtual override whenNotPaused returns (uint256 amountOut) {
         amountOut = _getRedeemAmountOut(amountVoltIn);
         require(
             amountOut >= minAmountOut,
@@ -170,14 +162,7 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
         address to,
         uint256 amountIn,
         uint256 minAmountVoltOut
-    )
-        external
-        virtual
-        override
-        nonReentrant
-        whenNotPaused
-        returns (uint256 amountVoltOut)
-    {
+    ) external virtual override whenNotPaused returns (uint256 amountVoltOut) {
         amountVoltOut = _getMintAmountOut(amountIn);
         require(
             amountVoltOut >= minAmountVoltOut,
