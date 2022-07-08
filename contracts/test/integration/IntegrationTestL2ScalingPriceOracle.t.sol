@@ -51,6 +51,7 @@ contract IntegrationTestL2ScalingPriceOracle is DSTest {
     uint256 public startOraclePrice = scalingPriceOracle.oraclePrice();
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
+
     VoltTestAddresses public addresses = getAddresses();
 
     function setUp() public {
