@@ -23,12 +23,6 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
     /// @notice the token this PSM will exchange for VOLT
     IERC20 public immutable override underlyingToken;
 
-    /// @notice boolean switch that indicates whether redemptions are paused
-    bool public redeemPaused;
-
-    /// @notice boolean switch that indicates whether minting is paused
-    bool public mintPaused;
-
     /// @notice struct for passing constructor parameters related to OracleRef
     struct OracleParams {
         address coreAddress;
@@ -137,12 +131,19 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
         }
     }
 
-    /// @notice internal helper method to redeem VOLT in exchange for an external asset
-    function _redeem(
+    /// @notice function to redeem VOLT for an underlying asset
+    function redeem(
         address to,
         uint256 amountVoltIn,
         uint256 minAmountOut
-    ) internal virtual returns (uint256 amountOut) {
+    )
+        external
+        virtual
+        override
+        nonReentrant
+        whenNotPaused
+        returns (uint256 amountOut)
+    {
         amountOut = _getRedeemAmountOut(amountVoltIn);
         require(
             amountOut >= minAmountOut,
@@ -164,19 +165,26 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
         _afterVoltRedeem(to, amountVoltIn, minAmountOut);
     }
 
-    /// @notice internal helper method to mint VOLT in exchange for an external asset
-    function _mint(
+    /// @notice function to buy VOLT for an underlying asset
+    function mint(
         address to,
         uint256 amountIn,
-        uint256 minAmountOut
-    ) internal virtual returns (uint256 amountVoltOut) {
+        uint256 minAmountVoltOut
+    )
+        external
+        virtual
+        override
+        nonReentrant
+        whenNotPaused
+        returns (uint256 amountVoltOut)
+    {
         amountVoltOut = _getMintAmountOut(amountIn);
         require(
-            amountVoltOut >= minAmountOut,
+            amountVoltOut >= minAmountVoltOut,
             "PegStabilityModule: Mint not enough out"
         );
 
-        _beforeVoltMint(to, amountIn, minAmountOut);
+        _beforeVoltMint(to, amountIn, minAmountVoltOut);
 
         SafeERC20.safeTransferFrom(
             underlyingToken,
@@ -194,39 +202,7 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
             IERC20(volt()).safeTransfer(to, amountVoltToTransfer);
         }
 
-        _afterVoltMint(to, amountIn, minAmountOut);
-    }
-
-    /// @notice function to redeem VOLT for an underlying asset
-    function redeem(
-        address to,
-        uint256 amountVoltIn,
-        uint256 minAmountOut
-    )
-        external
-        virtual
-        override
-        nonReentrant
-        whenNotPaused
-        returns (uint256 amountOut)
-    {
-        amountOut = _redeem(to, amountVoltIn, minAmountOut);
-    }
-
-    /// @notice function to buy VOLT for an underlying asset
-    function mint(
-        address to,
-        uint256 amountIn,
-        uint256 minAmountVoltOut
-    )
-        external
-        virtual
-        override
-        nonReentrant
-        whenNotPaused
-        returns (uint256 amountVoltOut)
-    {
-        amountVoltOut = _mint(to, amountIn, minAmountVoltOut);
+        _afterVoltMint(to, amountIn, minAmountVoltOut);
     }
 
     // ----------- Public View-Only API ----------
