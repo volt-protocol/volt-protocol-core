@@ -18,6 +18,20 @@ const vip_2: ProposalDescription = {
       description: 'Set oracle pass through on USDC PSM'
     },
     {
+      target: 'arbitrumDAIPSM',
+      values: '0',
+      method: 'setMintFee(uint256)',
+      arguments: ['5'],
+      description: 'Set mint fee to 5 basis points'
+    },
+    {
+      target: 'arbitrumUSDCPSM',
+      values: '0',
+      method: 'setMintFee(uint256)',
+      arguments: ['5'],
+      description: 'Set mint fee to 5 basis points'
+    },
+    {
       target: 'arbitrumCore',
       values: '0',
       method: 'grantGuardian(address)',

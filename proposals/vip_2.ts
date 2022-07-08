@@ -18,6 +18,20 @@ const vip_2: ProposalDescription = {
       description: 'Set oracle pass through on FEI PSM'
     },
     {
+      target: 'usdcPriceBoundPSM',
+      values: '0',
+      method: 'setMintFee(uint256)',
+      arguments: ['0'],
+      description: 'Set mint fee to 0'
+    },
+    {
+      target: 'feiPriceBoundPSM',
+      values: '0',
+      method: 'setMintFee(uint256)',
+      arguments: ['0'],
+      description: 'Set mint fee to 0'
+    },
+    {
       target: 'core',
       values: '0',
       method: 'grantGuardian(address)',
@@ -46,7 +60,7 @@ const vip_2: ProposalDescription = {
       description: 'Revoke proposer role from revoked EOA'
     }
   ],
-  description: `Point both FEI and USDC PSM to the new OraclePassThrough contract, grant EOA 3 guardian role`
+  description: `Point both FEI and USDC PSM to the new OraclePassThrough contract, grant EOA 3 guardian role, set mint fee to 0 on both PSMs`
 };
 
 export default vip_2;

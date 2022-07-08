@@ -80,8 +80,12 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
   expect(await voltSystemOracle.monthlyChangeRateBasisPoints()).to.be.equal(MONTHLY_CHANGE_RATE_BASIS_POINTS);
   expect(await oraclePassThrough.scalingPriceOracle()).to.be.equal(voltSystemOracle.address);
   expect(await oraclePassThrough.owner()).to.be.equal(optimisticTimelock.address);
+
   expect(await feiPriceBoundPSM.oracle()).to.be.equal(oraclePassThrough.address);
+  expect(await feiPriceBoundPSM.mintFeeBasisPoints()).to.be.equal(0);
+
   expect(await usdcPriceBoundPSM.oracle()).to.be.equal(oraclePassThrough.address);
+  expect(await usdcPriceBoundPSM.mintFeeBasisPoints()).to.be.equal(0);
 
   console.log(`Successfully validated VIP-${vipNumber}`);
 };

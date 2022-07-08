@@ -83,8 +83,12 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
   expect(await voltSystemOracleArbitrum.monthlyChangeRateBasisPoints()).to.be.equal(MONTHLY_CHANGE_RATE_BASIS_POINTS);
   expect(await oraclePassThroughArbitrum.scalingPriceOracle()).to.be.equal(voltSystemOracleArbitrum.address);
   expect(await oraclePassThroughArbitrum.owner()).to.be.equal(arbitrumOptimisticTimelock.address);
+
   expect(await arbitrumUSDCPSM.oracle()).to.be.equal(oraclePassThroughArbitrum.address);
+  expect(await arbitrumUSDCPSM.mintFeeBasisPoints()).to.be.equal(5);
+
   expect(await arbitrumDAIPSM.oracle()).to.be.equal(oraclePassThroughArbitrum.address);
+  expect(await arbitrumDAIPSM.mintFeeBasisPoints()).to.be.equal(5);
 
   console.log(`Successfully validated VIP-${vipNumber} on Arbitrum`);
 };
