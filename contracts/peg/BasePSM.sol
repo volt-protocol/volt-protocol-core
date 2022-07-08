@@ -103,6 +103,11 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
             address(newSurplusTarget) != address(0),
             "PegStabilityModule: Invalid new surplus target"
         );
+        require(
+            newSurplusTarget.balanceReportedIn() == address(underlyingToken),
+            "PegStabilityModule: Underlying token mismatch"
+        );
+
         IPCVDeposit oldTarget = surplusTarget;
         surplusTarget = newSurplusTarget;
 
