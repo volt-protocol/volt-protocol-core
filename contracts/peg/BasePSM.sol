@@ -21,26 +21,13 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
     IPCVDeposit public override surplusTarget;
 
     /// @notice the token this PSM will exchange for VOLT
-    /// This token will be set to WETH9 if the bonding curve accepts eth
     IERC20 public immutable override underlyingToken;
 
     /// @notice boolean switch that indicates whether redemptions are paused
     bool public redeemPaused;
 
-    /// @notice event that is emitted when redemptions are paused
-    event RedemptionsPaused(address account);
-
-    /// @notice event that is emitted when redemptions are unpaused
-    event RedemptionsUnpaused(address account);
-
     /// @notice boolean switch that indicates whether minting is paused
     bool public mintPaused;
-
-    /// @notice event that is emitted when minting is paused
-    event MintingPaused(address account);
-
-    /// @notice event that is emitted when minting is unpaused
-    event MintingUnpaused(address account);
 
     /// @notice struct for passing constructor parameters related to OracleRef
     struct OracleParams {
@@ -72,42 +59,6 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
         _setReservesThreshold(_reservesThreshold);
         _setSurplusTarget(_surplusTarget);
         _setContractAdminRole(keccak256("PSM_ADMIN_ROLE"));
-    }
-
-    /// @notice modifier that allows execution when redemptions are not paused
-    modifier whileRedemptionsNotPaused() {
-        require(!redeemPaused, "PegStabilityModule: Redeem paused");
-        _;
-    }
-
-    /// @notice modifier that allows execution when minting is not paused
-    modifier whileMintingNotPaused() {
-        require(!mintPaused, "PegStabilityModule: Minting paused");
-        _;
-    }
-
-    /// @notice set secondary pausable methods to paused
-    function pauseRedeem() external onlyGovernorOrGuardianOrAdmin {
-        redeemPaused = true;
-        emit RedemptionsPaused(msg.sender);
-    }
-
-    /// @notice set secondary pausable methods to unpaused
-    function unpauseRedeem() external onlyGovernorOrGuardianOrAdmin {
-        redeemPaused = false;
-        emit RedemptionsUnpaused(msg.sender);
-    }
-
-    /// @notice set secondary pausable methods to paused
-    function pauseMint() external onlyGovernorOrGuardianOrAdmin {
-        mintPaused = true;
-        emit MintingPaused(msg.sender);
-    }
-
-    /// @notice set secondary pausable methods to unpaused
-    function unpauseMint() external onlyGovernorOrGuardianOrAdmin {
-        mintPaused = false;
-        emit MintingUnpaused(msg.sender);
     }
 
     /// @notice withdraw assets from PSM to an external address
@@ -206,7 +157,7 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
             amountVoltIn
         );
 
-        _transfer(to, amountOut);
+        SafeERC20.safeTransfer(underlyingToken, to, amountOut);
 
         emit Redeem(to, amountVoltIn, amountOut);
 
@@ -227,7 +178,12 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
 
         _beforeVoltMint(to, amountIn, minAmountOut);
 
-        _transferFrom(msg.sender, address(this), amountIn);
+        SafeERC20.safeTransferFrom(
+            underlyingToken,
+            msg.sender,
+            address(this),
+            amountIn
+        );
 
         uint256 amountVoltToTransfer = Math.min(
             volt().balanceOf(address(this)),
@@ -252,7 +208,6 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
         override
         nonReentrant
         whenNotPaused
-        whileRedemptionsNotPaused
         returns (uint256 amountOut)
     {
         amountOut = _redeem(to, amountVoltIn, minAmountOut);
@@ -269,7 +224,6 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
         override
         nonReentrant
         whenNotPaused
-        whileMintingNotPaused
         returns (uint256 amountVoltOut)
     {
         amountVoltOut = _mint(to, amountIn, minAmountVoltOut);
@@ -348,10 +302,12 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
         virtual
         returns (uint256 amountVoltOut)
     {
-        Decimal.D256 memory price = readOracle();
-        _validatePriceRange(price);
+        Decimal.D256 memory oraclePrice = readOracle();
+        _validatePriceRange(oraclePrice);
 
-        amountVoltOut = amountIn / price.value;
+        uint256 voltPrice = oraclePrice.asUint256();
+
+        amountVoltOut = amountIn / voltPrice;
     }
 
     /// @notice helper function to get redeem amount out based on current market prices
@@ -362,33 +318,21 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
         virtual
         returns (uint256 amountTokenOut)
     {
-        Decimal.D256 memory price = readOracle();
-        _validatePriceRange(price);
+        Decimal.D256 memory oraclePrice = readOracle();
+        _validatePriceRange(oraclePrice);
 
-        amountTokenOut = amountVoltIn * price.value;
+        uint256 voltPrice = oraclePrice.asUint256();
+
+        amountTokenOut = amountVoltIn * voltPrice;
     }
 
     /// @notice Allocates a portion of escrowed PCV to a target PCV deposit
     function _allocate(uint256 amount) internal virtual {
-        _transfer(address(surplusTarget), amount);
+        SafeERC20.safeTransfer(underlyingToken, address(surplusTarget), amount);
 
         surplusTarget.deposit();
 
         emit AllocateSurplus(msg.sender, amount);
-    }
-
-    /// @notice transfer ERC20 token
-    function _transfer(address to, uint256 amount) internal {
-        SafeERC20.safeTransfer(underlyingToken, to, amount);
-    }
-
-    /// @notice transfer assets from user to this contract
-    function _transferFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) internal {
-        SafeERC20.safeTransferFrom(underlyingToken, from, to, amount);
     }
 
     // ----------- Hooks -----------
@@ -400,12 +344,10 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
         virtual
     {}
 
-    /**
-     * @dev Hook that is called before VOLT is minted
-     *  to is the address VOLT is being minted to
-     *  amountIn is the the amount of stablecoin beind deposited
-     *  minAmountOut is minimum amount of VOLT to be received
-     */
+    /// @dev Hook that is called before VOLT is minted
+    //  to is the address VOLT is being minted to
+    //  amountIn is the the amount of stablecoin beind deposited
+    //  minAmountOut is minimum amount of VOLT to be received
 
     function _beforeVoltMint(
         address to,
@@ -425,24 +367,21 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit, ReentrancyGuard {
         uint256 minAmountOut
     ) internal virtual {}
 
-    /**
-     * @dev Hook that is called before VOLT is redeemed
-     *  to is the address in which the underlying stablecoin will be sent to when VOLT redeemed
-     *  amountVoltIn is the the amount of VOLT beind deposited
-     *  minAmountOut is minimum amount of underlying stablecoin to be received
-     */
+    /// @dev Hook that is called before VOLT is redeemed
+    //  to is the address in which the underlying stablecoin will be sent to when VOLT redeemed
+    //  amountVoltIn is the the amount of VOLT beind deposited
+    //  minAmountOut is minimum amount of underlying stablecoin to be received
     function _beforeVoltRedeem(
         address to,
         uint256 amountVoltIn,
         uint256 minAmountOut
     ) internal virtual {}
 
-    /**
-     * @dev Hook that is called after VOLT is redeemed
-     *  to is the address in which the underlying stablecoin will be sent to when VOLT redeemed
-     *  amountVoltIn is the the amount of VOLT beind deposited
-     *  minAmountOut is minimum amount of underlying stablecoin to be received
-     */
+    /// @dev Hook that is called after VOLT is redeemed
+    //  to is the address in which the underlying stablecoin will be sent to when VOLT redeemed
+    //  amountVoltIn is the the amount of VOLT beind deposited
+    //  minAmountOut is minimum amount of underlying stablecoin to be received
+
     function _afterVoltRedeem(
         address to,
         uint256 amountVoltIn,
