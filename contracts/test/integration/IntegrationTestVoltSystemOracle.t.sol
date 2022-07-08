@@ -323,4 +323,26 @@ contract IntegrationTestVoltSystemOracle is DSTest {
         );
         assertEq(amountUsdcOutAfterUpgrade, amountUsdcOut);
     }
+
+    function testSetMintFee() public {
+        uint256 startingFeeFei = feiPSM.mintFeeBasisPoints();
+        uint256 startingFeeUsdc = usdcPSM.mintFeeBasisPoints();
+
+        if (startingFeeFei == 0 && startingFeeUsdc == 0) {
+            return;
+        }
+
+        vm.startPrank(MainnetAddresses.GOVERNOR);
+        feiPSM.setMintFee(0);
+        usdcPSM.setMintFee(0);
+        vm.stopPrank();
+
+        uint256 endingFeeFei = feiPSM.mintFeeBasisPoints();
+        uint256 endingFeeUsdc = usdcPSM.mintFeeBasisPoints();
+
+        assertEq(startingFeeFei, 50);
+        assertEq(startingFeeUsdc, 50);
+        assertEq(endingFeeFei, 0);
+        assertEq(endingFeeUsdc, 0);
+    }
 }

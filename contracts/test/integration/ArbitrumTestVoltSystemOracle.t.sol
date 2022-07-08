@@ -330,4 +330,26 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
         );
         assertEq(amountUsdcOutAfterUpgrade, amountUsdcOut);
     }
+
+    function testSetMintFee() public {
+        uint256 startingFeeDai = daiPSM.mintFeeBasisPoints();
+        uint256 startingFeeUsdc = usdcPSM.mintFeeBasisPoints();
+
+        if (startingFeeDai == 0 && startingFeeUsdc == 0) {
+            return;
+        }
+
+        vm.startPrank(0x980A05105a53eCa7745DA40DF1AdE6674fc73eD5);
+        usdcPSM.setMintFee(5);
+        daiPSM.setMintFee(5);
+        vm.stopPrank();
+
+        uint256 endingFeeDai = daiPSM.mintFeeBasisPoints();
+        uint256 endingFeeUsdc = usdcPSM.mintFeeBasisPoints();
+
+        assertEq(startingFeeDai, 50);
+        assertEq(startingFeeUsdc, 50);
+        assertEq(endingFeeDai, 5);
+        assertEq(endingFeeUsdc, 5);
+    }
 }
