@@ -84,13 +84,13 @@ contract IntegrationTestLoanRepayment is DSTest {
 
     function testRecipientRevokes() public {
         uint256 startingBalanceOtcEscrowFei = fei.balanceOf(address(otcEscrow));
-        uint256 startingBalanceVoltTimeFei = fei.balanceOf(voltTimelock);
+        uint256 startingBalanceVoltTimelockFei = fei.balanceOf(voltTimelock);
 
         vm.prank(voltTimelock);
         otcEscrow.revoke();
 
         uint256 endingBalanceOtcEscrowFei = fei.balanceOf(address(otcEscrow));
-        uint256 endingBalanceVoltTimeFei = fei.balanceOf(voltTimelock);
+        uint256 endingBalanceVoltTimelockFei = fei.balanceOf(voltTimelock);
 
         assertEq(
             startingBalanceOtcEscrowFei - endingBalanceOtcEscrowFei,
@@ -98,7 +98,7 @@ contract IntegrationTestLoanRepayment is DSTest {
         );
         assertEq(endingBalanceOtcEscrowFei, 0);
         assertEq(
-            endingBalanceVoltTimeFei - startingBalanceVoltTimeFei,
+            endingBalanceVoltTimelockFei - startingBalanceVoltTimelockFei,
             feiAmount
         );
     }

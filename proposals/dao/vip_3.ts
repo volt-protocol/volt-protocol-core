@@ -68,9 +68,18 @@ const teardown: TeardownUpgradeFunc = async (addresses, oldContracts, contracts,
 // Run any validations required on the vip using mocha or console logging
 // IE check balances, check state of contracts, etc.
 const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts, logging) => {
-  const { fei, otcEscrowRepayment } = contracts;
+  const { fei, volt, otcEscrowRepayment, optimisticTimelock } = contracts;
+  const { feiDAOTimelock } = addresses;
 
   expect(await fei.balanceOf(otcEscrowRepayment.address)).to.be.equal(feiAmount);
+  expect(await otcEscrowRepayment.recipient()).to.be.equal(optimisticTimelock.address);
+  expect(await otcEscrowRepayment.beneficiary()).to.be.equal(feiDAOTimelock);
+
+  expect(await otcEscrowRepayment.receivedToken()).to.be.equal(volt.address);
+  expect(await otcEscrowRepayment.sentToken()).to.be.equal(fei.address);
+
+  expect(await otcEscrowRepayment.sentAmount()).to.be.equal(feiAmount);
+  expect(await otcEscrowRepayment.receivedAmount()).to.be.equal(VOLT_SWAP_AMOUNT);
 };
 
 export { deploy, setup, teardown, validate };
