@@ -141,6 +141,12 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.External,
     network: Network.Mainnet
   },
+  otcEscrowRepayment: {
+    address: '0x8E4F1Ae2C76eBDbd2baCc3F7c3A4fe980dbe3666',
+    artifactName: 'OtcEscrow',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
   dai: {
     address: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
     artifactName: 'ERC20',
