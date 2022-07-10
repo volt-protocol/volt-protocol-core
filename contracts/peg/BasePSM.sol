@@ -49,8 +49,8 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
     {
         underlyingToken = _underlyingToken;
 
-        _setReservesThreshold(_reservesThreshold);
-        _setSurplusTarget(_surplusTarget);
+        setReservesThreshold(_reservesThreshold);
+        setSurplusTarget(_surplusTarget);
         _setContractAdminRole(keccak256("PSM_ADMIN_ROLE"));
     }
 
@@ -66,28 +66,15 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
 
     /// @notice set the ideal amount of reserves for the contract to hold for redemptions
     function setReservesThreshold(uint256 newReservesThreshold)
-        external
+        public
         override
         onlyGovernorOrAdmin
     {
-        _setReservesThreshold(newReservesThreshold);
-    }
-
-    /// @notice set the target for sending surplus reserves
-    function setSurplusTarget(IPCVDeposit newTarget)
-        external
-        override
-        onlyGovernorOrAdmin
-    {
-        _setSurplusTarget(newTarget);
-    }
-
-    /// @notice helper function to set reserves threshold
-    function _setReservesThreshold(uint256 newReservesThreshold) internal {
         require(
             newReservesThreshold > 0,
             "PegStabilityModule: Invalid new reserves threshold"
         );
+
         uint256 oldReservesThreshold = reservesThreshold;
         reservesThreshold = newReservesThreshold;
 
@@ -97,8 +84,12 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
         );
     }
 
-    /// @notice helper function to set the surplus target
-    function _setSurplusTarget(IPCVDeposit newSurplusTarget) internal {
+    /// @notice set the target for sending surplus reserves
+    function setSurplusTarget(IPCVDeposit newSurplusTarget)
+        public
+        override
+        onlyGovernorOrAdmin
+    {
         require(
             address(newSurplusTarget) != address(0),
             "PegStabilityModule: Invalid new surplus target"
@@ -141,7 +132,7 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
         uint256 amountVoltIn,
         uint256 minAmountOut
     ) external virtual override whenNotPaused returns (uint256 amountOut) {
-        amountOut = _getRedeemAmountOut(amountVoltIn);
+        amountOut = getRedeemAmountOut(amountVoltIn);
         require(
             amountOut >= minAmountOut,
             "PegStabilityModule: Redeem not enough out"
@@ -168,7 +159,7 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
         uint256 amountIn,
         uint256 minAmountVoltOut
     ) external virtual override whenNotPaused returns (uint256 amountVoltOut) {
-        amountVoltOut = _getMintAmountOut(amountIn);
+        amountVoltOut = getMintAmountOut(amountIn);
         require(
             amountVoltOut >= minAmountVoltOut,
             "PegStabilityModule: Mint not enough out"
@@ -207,7 +198,12 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
         override
         returns (uint256 amountVoltOut)
     {
-        amountVoltOut = _getMintAmountOut(amountIn);
+        Decimal.D256 memory oraclePrice = readOracle();
+        _validatePriceRange(oraclePrice);
+
+        uint256 voltPrice = oraclePrice.asUint256();
+
+        amountVoltOut = amountIn / voltPrice;
     }
 
     /// @notice calculate the amount of underlying out for a given `amountVoltIn` of VOLT
@@ -220,7 +216,12 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
         override
         returns (uint256 amountTokenOut)
     {
-        amountTokenOut = _getRedeemAmountOut(amountVoltIn);
+        Decimal.D256 memory oraclePrice = readOracle();
+        _validatePriceRange(oraclePrice);
+
+        uint256 voltPrice = oraclePrice.asUint256();
+
+        amountTokenOut = amountVoltIn * voltPrice;
     }
 
     /// @notice the maximum mint amount out
@@ -259,38 +260,6 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
     }
 
     // ----------- Internal Methods -----------
-
-    /// @notice helper function to get mint amount out based on current market prices
-    /// @dev will revert if price is outside of bounds and bounded PSM is being used
-    function _getMintAmountOut(uint256 amountIn)
-        internal
-        view
-        virtual
-        returns (uint256 amountVoltOut)
-    {
-        Decimal.D256 memory oraclePrice = readOracle();
-        _validatePriceRange(oraclePrice);
-
-        uint256 voltPrice = oraclePrice.asUint256();
-
-        amountVoltOut = amountIn / voltPrice;
-    }
-
-    /// @notice helper function to get redeem amount out based on current market prices
-    /// @dev will revert if price is outside of bounds and bounded PSM is being used
-    function _getRedeemAmountOut(uint256 amountVoltIn)
-        internal
-        view
-        virtual
-        returns (uint256 amountTokenOut)
-    {
-        Decimal.D256 memory oraclePrice = readOracle();
-        _validatePriceRange(oraclePrice);
-
-        uint256 voltPrice = oraclePrice.asUint256();
-
-        amountTokenOut = amountVoltIn * voltPrice;
-    }
 
     /// @notice Allocates a portion of escrowed PCV to a target PCV deposit
     function _allocate(uint256 amount) internal virtual {
