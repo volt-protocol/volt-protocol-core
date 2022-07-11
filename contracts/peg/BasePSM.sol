@@ -49,8 +49,8 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
     {
         underlyingToken = _underlyingToken;
 
-        setReservesThreshold(_reservesThreshold);
-        setSurplusTarget(_surplusTarget);
+        _setReservesThreshold(_reservesThreshold);
+        _setSurplusTarget(_surplusTarget);
         _setContractAdminRole(keccak256("PSM_ADMIN_ROLE"));
     }
 
@@ -66,15 +66,28 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
 
     /// @notice set the ideal amount of reserves for the contract to hold for redemptions
     function setReservesThreshold(uint256 newReservesThreshold)
-        public
+        external
         override
         onlyGovernorOrAdmin
     {
+        _setReservesThreshold(newReservesThreshold);
+    }
+
+    /// @notice set the target for sending surplus reserves
+    function setSurplusTarget(IPCVDeposit newSurplusTarget)
+        external
+        override
+        onlyGovernorOrAdmin
+    {
+        _setSurplusTarget(newSurplusTarget);
+    }
+
+    /// @notice helper function to set reserves threshold
+    function _setReservesThreshold(uint256 newReservesThreshold) internal {
         require(
             newReservesThreshold > 0,
             "PegStabilityModule: Invalid new reserves threshold"
         );
-
         uint256 oldReservesThreshold = reservesThreshold;
         reservesThreshold = newReservesThreshold;
 
@@ -84,12 +97,8 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
         );
     }
 
-    /// @notice set the target for sending surplus reserves
-    function setSurplusTarget(IPCVDeposit newSurplusTarget)
-        public
-        override
-        onlyGovernorOrAdmin
-    {
+    /// @notice helper function to set the surplus target
+    function _setSurplusTarget(IPCVDeposit newSurplusTarget) internal {
         require(
             address(newSurplusTarget) != address(0),
             "PegStabilityModule: Invalid new surplus target"
@@ -227,6 +236,11 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
     /// @notice the maximum mint amount out
     function getMaxMintAmountOut() external view override returns (uint256) {
         return volt().balanceOf(address(this));
+    }
+
+    /// @notice the maximum redeem amount out
+    function getMaxRedeemAmountOut() external view returns (uint256) {
+        return underlyingToken.balanceOf(address(this));
     }
 
     /// @notice a flag for whether the current balance is above (true) or below (false) the reservesThreshold
