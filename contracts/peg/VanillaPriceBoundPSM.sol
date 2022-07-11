@@ -9,7 +9,7 @@ import {VanillaPSM} from "./VanillaPSM.sol";
 /// This contract will allow swaps when the price of DAI is between 98 cents and 1.02 by default
 /// These defaults are changeable by the admin and governance by calling floor and ceiling setters
 /// setOracleFloor and setOracleCeiling
-contract PriceBoundPSM is VanillaPSM, IPriceBound {
+contract VanillaPriceBoundPSM is VanillaPSM, IPriceBound {
     using Decimal for Decimal.D256;
     using SafeERC20 for IERC20;
     using SafeCast for *;

@@ -13,7 +13,7 @@ import {ICore} from "../../core/ICore.sol";
 import {Core} from "../../core/Core.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {BasePSM} from "../../peg/BasePSM.sol";
-import {PriceBoundPSM} from "../../peg/VanillaPriceBoundPSM.sol";
+import {VanillaPriceBoundPSM} from "../../peg/VanillaPriceBoundPSM.sol";
 import {VanillaPSM} from "../../peg/VanillaPSM.sol";
 import {getCore, getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
@@ -27,7 +27,7 @@ import "hardhat/console.sol";
 contract IntegrationTestVanillaPSMTest is DSTest {
     using SafeCast for *;
 
-    PriceBoundPSM private priceBoundPsm;
+    VanillaPriceBoundPSM private priceBoundPsm;
     VanillaPSM private vanillaPsm;
 
     ICore private core = ICore(MainnetAddresses.CORE);
@@ -66,7 +66,7 @@ contract IntegrationTestVanillaPSMTest is DSTest {
         });
 
         /// create PSM
-        priceBoundPsm = new PriceBoundPSM(
+        priceBoundPsm = new VanillaPriceBoundPSM(
             voltFloorPrice,
             voltCeilingPrice,
             oracleParams,
