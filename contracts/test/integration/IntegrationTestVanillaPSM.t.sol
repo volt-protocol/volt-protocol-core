@@ -22,7 +22,6 @@ import {DSTest} from "./../unit/utils/DSTest.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 
 import {Constants} from "../../Constants.sol";
-import "hardhat/console.sol";
 
 contract IntegrationTestVanillaPSMTest is DSTest {
     using SafeCast for *;
