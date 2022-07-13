@@ -17,6 +17,9 @@ library MainnetAddresses {
     address public constant VOLT_FEI_PSM =
         0x985f9C331a9E4447C782B98D6693F5c7dF8e560e;
 
+    address public constant VOLT_USDC_PSM =
+        0x0b9A7EA2FCA868C93640Dd77cF44df335095F501;
+
     // ---------- FEI ADDRESSES ----------
 
     address public constant FEI_CORE =

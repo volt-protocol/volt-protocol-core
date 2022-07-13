@@ -3,7 +3,6 @@ pragma solidity ^0.8.4;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-
 import {MockPCVDepositV2} from "../../mock/MockPCVDepositV2.sol";
 import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
 import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
@@ -16,12 +15,13 @@ import {BasePSM} from "../../peg/BasePSM.sol";
 import {VanillaPriceBoundPSM} from "../../peg/VanillaPriceBoundPSM.sol";
 import {VanillaPSM} from "../../peg/VanillaPSM.sol";
 import {getCore, getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
-import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
+import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
 import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
-
 import {Constants} from "../../Constants.sol";
+
+import "hardhat/console.sol";
 
 contract IntegrationTestVanillaPSMTest is DSTest {
     using SafeCast for *;
@@ -40,8 +40,8 @@ contract IntegrationTestVanillaPSMTest is DSTest {
     uint256 public constant voltMintAmount = 10_000_000e18;
 
     /// @notice live FEI PCV Deposit
-    ERC20CompoundPCVDeposit public immutable rariVoltPCVDeposit =
-        ERC20CompoundPCVDeposit(0x0b9A7EA2FCA868C93640Dd77cF44df335095F501);
+    IPCVDeposit public immutable pcvDeposit =
+        IPCVDeposit(MainnetAddresses.VOLT_USDC_PSM);
 
     /// @notice Oracle Pass Through contract
     OraclePassThrough public oracle =
@@ -71,14 +71,14 @@ contract IntegrationTestVanillaPSMTest is DSTest {
             oracleParams,
             reservesThreshold,
             IERC20(address(usdc)),
-            rariVoltPCVDeposit
+            pcvDeposit
         );
 
         vanillaPsm = new VanillaPSM(
             oracleParams,
             reservesThreshold,
             IERC20(address(usdc)),
-            rariVoltPCVDeposit
+            pcvDeposit
         );
 
         uint256 balance = usdc.balanceOf(makerUSDCPSM);
@@ -161,20 +161,20 @@ contract IntegrationTestVanillaPSMTest is DSTest {
     }
 
     /// @notice pcv deposit receives underlying token on mint
-    function testSwapUnderlyingForVoltAfterPriceIncrease() public {
+    function testSwapUnderlyingForVolt() public {
         uint256 amountStableIn = 101_000;
-        uint256 amountVoltOut = priceBoundPsm.getMintAmountOut(amountStableIn);
+        uint256 amountVoltOut = vanillaPsm.getMintAmountOut(amountStableIn);
         uint256 startingUserVoltBalance = volt.balanceOf(address(this));
         uint256 startingPSMUnderlyingBalance = underlyingToken.balanceOf(
-            address(priceBoundPsm)
+            address(vanillaPsm)
         );
 
-        underlyingToken.approve(address(priceBoundPsm), amountStableIn);
-        priceBoundPsm.mint(address(this), amountStableIn, amountVoltOut);
+        underlyingToken.approve(address(vanillaPsm), amountStableIn);
+        vanillaPsm.mint(address(this), amountStableIn, amountVoltOut);
 
         uint256 endingUserVoltBalance = volt.balanceOf(address(this));
         uint256 endingPSMUnderlyingBalance = underlyingToken.balanceOf(
-            address(priceBoundPsm)
+            address(vanillaPsm)
         );
 
         assertEq(
@@ -192,6 +192,26 @@ contract IntegrationTestVanillaPSMTest is DSTest {
         vm.expectRevert(bytes("ERC20: transfer amount exceeds allowance"));
 
         vanillaPsm.redeem(address(this), mintAmount, mintAmount / 1e12);
+    }
+
+    /// @notice redeem fails without approval
+    function testMintFailsWhenMintExceedsPSMBalance() public {
+        underlyingToken.approve(address(vanillaPsm), type(uint256).max);
+
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
+        uint256 psmVoltBalance = volt.balanceOf(address(vanillaPsm));
+
+        // we get the amount we want to put in by getting the total PSM balance and dividing by the current peg price
+        // this lets us get the maximum amount we can deposit
+        uint256 amountIn = (psmVoltBalance * currentPegPrice) / 1e6;
+
+        // this will revert (correctly) as the math above is less precise than the PSMs, therefore our amountIn
+        // will slightly exceed the balance the PSM can give to us.
+        vm.expectRevert(
+            bytes("PegStabilityModule: Mint amount exceeds balance")
+        );
+
+        vanillaPsm.mint(address(this), amountIn, psmVoltBalance);
     }
 
     /// @notice mint fails without approval
@@ -227,11 +247,12 @@ contract IntegrationTestVanillaPSMTest is DSTest {
     /// @notice set global rate limited minter fails when caller is governor and new address is 0
     function testSetPCVDepositFailureZeroAddress() public {
         vm.startPrank(MainnetAddresses.GOVERNOR);
+        IPCVDeposit surplusTarget = vanillaPsm.surplusTarget();
 
         vm.expectRevert(
             bytes("PegStabilityModule: Invalid new surplus target")
         );
-        vanillaPsm.setSurplusTarget(IPCVDeposit(address(0)));
+        vanillaPsm.setSurplusTarget(surplusTarget);
 
         vm.stopPrank();
     }

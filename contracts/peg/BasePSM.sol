@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
-import "./../pcv/PCVDeposit.sol";
-import "./IBasePSM.sol";
-import "./../refs/OracleRef.sol";
-import "../Constants.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IPCVDeposit, PCVDeposit} from "./../pcv/PCVDeposit.sol";
+import {IBasePSM} from "./IBasePSM.sol";
+import {OracleRef, Decimal, SafeCast} from "./../refs/OracleRef.sol";
+import {Constants} from "../Constants.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {TribeRoles} from "../core/TribeRoles.sol";
 
 abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
     using Decimal for Decimal.D256;
@@ -51,7 +52,7 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
 
         _setReservesThreshold(_reservesThreshold);
         _setSurplusTarget(_surplusTarget);
-        _setContractAdminRole(keccak256("PSM_ADMIN_ROLE"));
+        _setContractAdminRole(TribeRoles.PSM_ADMIN_ROLE);
     }
 
     /// @notice withdraw assets from PSM to an external address
@@ -100,7 +101,7 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
     /// @notice helper function to set the surplus target
     function _setSurplusTarget(IPCVDeposit newSurplusTarget) internal {
         require(
-            address(newSurplusTarget) != address(0),
+            address(newSurplusTarget) != address(surplusTarget),
             "PegStabilityModule: Invalid new surplus target"
         );
         require(
@@ -155,7 +156,7 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
             amountVoltIn
         );
 
-        SafeERC20.safeTransfer(underlyingToken, to, amountOut);
+        underlyingToken.safeTransfer(to, amountOut);
 
         emit Redeem(to, amountVoltIn, amountOut);
 
@@ -169,28 +170,25 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
         uint256 minAmountVoltOut
     ) external virtual override whenNotPaused returns (uint256 amountVoltOut) {
         amountVoltOut = getMintAmountOut(amountIn);
+
         require(
             amountVoltOut >= minAmountVoltOut,
             "PegStabilityModule: Mint not enough out"
         );
+        require(
+            volt().balanceOf(address(this)) >= amountVoltOut,
+            "PegStabilityModule: Mint amount exceeds balance"
+        );
 
         _beforeVoltMint(to, amountIn, minAmountVoltOut);
 
-        SafeERC20.safeTransferFrom(
-            underlyingToken,
-            msg.sender,
-            address(this),
-            amountIn
-        );
+        underlyingToken.safeTransferFrom(msg.sender, address(this), amountIn);
 
-        uint256 amountVoltToTransfer = Math.min(
-            volt().balanceOf(address(this)),
-            amountVoltOut
-        );
-
-        if (amountVoltToTransfer != 0) {
-            IERC20(volt()).safeTransfer(to, amountVoltToTransfer);
+        if (amountVoltOut != 0) {
+            IERC20(volt()).safeTransfer(to, amountVoltOut);
         }
+
+        emit Mint(to, amountIn, amountVoltOut);
 
         _afterVoltMint(to, amountIn, minAmountVoltOut);
     }
@@ -277,7 +275,7 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
 
     /// @notice Allocates a portion of escrowed PCV to a target PCV deposit
     function _allocate(uint256 amount) internal virtual {
-        SafeERC20.safeTransfer(underlyingToken, address(surplusTarget), amount);
+        underlyingToken.safeTransfer(address(surplusTarget), amount);
 
         surplusTarget.deposit();
 
