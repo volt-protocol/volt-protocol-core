@@ -7,7 +7,7 @@ import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.s
 import {IVoltSystemOracle} from "./IVoltSystemOracle.sol";
 
 /// @notice contract that receives a fixed interest rate upon construction,
-/// and then linearly interpolates that rate over a 1 year period into the VOLT price
+/// and then linearly interpolates that rate over a 30.42 day period into the VOLT price
 /// after the oracle start time.
 /// Interest can compound annually. Assumption is that this oracle will only be used until
 /// Volt 2.0 ships. Maximum amount of compounding periods on this contract at 2% APR
@@ -33,7 +33,7 @@ contract VoltSystemOracle is IVoltSystemOracle {
     /// one month was chosen because this is a temporary oracle
     uint256 public constant TIMEFRAME = 30.42 days;
 
-    /// @param _monthlyChangeRateBasisPoints yearly change rate in the Volt price
+    /// @param _monthlyChangeRateBasisPoints monthly change rate in the Volt price
     /// @param _periodStartTime start time at which oracle starts interpolating prices
     /// @param _oraclePrice starting oracle price
     constructor(
@@ -49,7 +49,7 @@ contract VoltSystemOracle is IVoltSystemOracle {
     // ----------- Getter -----------
 
     /// @notice get the current scaled oracle price
-    /// applies the change rate smoothly over a 365 day period
+    /// applies the change rate smoothly over a 30.42 day period
     /// scaled by 18 decimals
     // prettier-ignore
     function getCurrentOraclePrice() public view override returns (uint256) {
