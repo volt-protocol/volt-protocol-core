@@ -10,7 +10,7 @@ If the current block timestamp is past the periodStart + timeframe, and `compoun
 
 Overflows can cause reverts in getCurrentOraclePrice if the oraclePrice is too large. This would take approximately ~6,000 years to become an issue at current interest rates.
 
-The timeframe set in the Volt Oracle was chosen at 30.42 days, which is 0.04 days longer than 1 year, this was intentional and done for readability as the correct timeframe would be 365.25 days. However, a shorter timespan was chosen to address the compound interest issue.
+The timeframe set in the Volt Oracle was chosen at 30.42 days, which is the average amount of time in a month, this was intentional and done for readability.
 
 Leap years are not accounted for in this oracle because we are not in a leap year, and this oracle is a temporary solution until Volt 2.0 ships.
 

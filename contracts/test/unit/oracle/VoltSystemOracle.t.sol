@@ -82,7 +82,7 @@ contract VoltSystemOracleUnitTest is DSTest {
         }
     }
 
-    function testCompoundSucceedsAfterOneYear() public {
+    function testCompoundSucceedsAfterOnePeriod() public {
         vm.warp(
             block.timestamp +
                 voltSystemOracle.periodStartTime() +
@@ -110,25 +110,25 @@ contract VoltSystemOracleUnitTest is DSTest {
         vm.warp(
             voltSystemOracle.periodStartTime() + voltSystemOracle.TIMEFRAME()
         );
-        uint256 yearOneEndPrice = 1065997259354468954;
+        uint256 periodOneEndPrice = 1065997259354468954;
 
         assertEq(
             voltSystemOracle.getCurrentOraclePrice(),
-            yearOneEndPrice /// oracle value after 1 year at 2% increase
+            periodOneEndPrice /// oracle value after 1 period at 2% increase
         );
 
         uint256 previousStartTime = voltSystemOracle.periodStartTime();
         voltSystemOracle.compoundInterest();
         vm.warp(block.timestamp + voltSystemOracle.TIMEFRAME());
 
-        assertEq(yearOneEndPrice, voltSystemOracle.oraclePrice());
+        assertEq(periodOneEndPrice, voltSystemOracle.oraclePrice());
         assertEq(
             previousStartTime + voltSystemOracle.TIMEFRAME(),
             voltSystemOracle.periodStartTime()
         );
         assertEq(
             voltSystemOracle.getCurrentOraclePrice(),
-            1087317204541558333 /// oracle value after 2 years at 2% increase, compounded annually
+            1087317204541558333 /// oracle value after 2 periods at 2% increase, compounded annually
         );
     }
 
