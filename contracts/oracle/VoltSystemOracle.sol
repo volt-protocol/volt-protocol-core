@@ -18,11 +18,11 @@ contract VoltSystemOracle is IVoltSystemOracle {
 
     /// @notice acts as an accumulator for interest earned in previous periods
     /// returns the oracle price from the end of the last period
-    uint256 public override oraclePrice;
+    uint256 public oraclePrice;
 
     /// @notice start time at which point interest will start accruing, and the
     /// current ScalingPriceOracle price will be snapshotted and saved
-    uint256 public override periodStartTime;
+    uint256 public periodStartTime;
 
     /// ---------- Immutable Variables ----------
 
@@ -31,7 +31,7 @@ contract VoltSystemOracle is IVoltSystemOracle {
 
     /// @notice the time frame over which all changes in the APR are applied
     /// one month was chosen because this is a temporary oracle
-    uint256 public constant override TIMEFRAME = 30.42 days;
+    uint256 public constant TIMEFRAME = 30.42 days;
 
     /// @param _monthlyChangeRateBasisPoints yearly change rate in the Volt price
     /// @param _periodStartTime start time at which oracle starts interpolating prices
