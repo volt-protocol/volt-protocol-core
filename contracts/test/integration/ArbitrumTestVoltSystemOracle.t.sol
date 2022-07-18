@@ -335,11 +335,12 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
         uint256 startingFeeDai = daiPSM.mintFeeBasisPoints();
         uint256 startingFeeUsdc = usdcPSM.mintFeeBasisPoints();
 
-        if (startingFeeDai == 0 && startingFeeUsdc == 0) {
+        /// if starting fee is 5 bips, no need to run this test as upgrade has been applied
+        if (startingFeeDai == 5 && startingFeeUsdc == 5) {
             return;
         }
 
-        vm.startPrank(0x980A05105a53eCa7745DA40DF1AdE6674fc73eD5);
+        vm.startPrank(ArbitrumAddresses.TIMELOCK);
         usdcPSM.setMintFee(5);
         daiPSM.setMintFee(5);
         vm.stopPrank();

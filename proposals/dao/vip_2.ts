@@ -17,7 +17,7 @@ Volt Protocol Improvement Proposal #2
 Description: Patch in a new system oracle and repoint all PSM's to it
 
 Steps:
-  1 - Deploy Volt System Oacle
+  1 - Deploy Volt System Oracle
   2 - Deploy Oracle Pass Through
   3 - Grant ownership of Oracle Pass Through to the timelock
   4 - Point both FEI and USDC PSM to the new OraclePassThrough
