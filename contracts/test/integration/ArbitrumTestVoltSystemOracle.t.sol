@@ -22,7 +22,7 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
     /// @notice reference to Volt
     IVolt private volt = IVolt(ArbitrumAddresses.VOLT);
 
-    /// @notice reference to Fei
+    /// @notice reference to Dai
     IERC20 private dai = IERC20(ArbitrumAddresses.DAI);
 
     /// @notice reference to USDC
@@ -45,7 +45,7 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
     /// @notice increase price by x% per month
     uint256 public constant annualChangeRateBasisPoints = 200;
 
-    /// @notice fei volt PSM
+    /// @notice dai volt PSM
     PriceBoundPSM private immutable daiPSM =
         PriceBoundPSM(ArbitrumAddresses.VOLT_DAI_PSM);
 
@@ -117,7 +117,7 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
         _warpToStart();
 
         uint256 mintAmount = 100_000e18;
-        uint256 startingAmountOutFei = daiPSM.getMintAmountOut(mintAmount);
+        uint256 startingAmountOutDai = daiPSM.getMintAmountOut(mintAmount);
         uint256 startingAmountOutUSDC = usdcPSM.getMintAmountOut(mintAmount);
 
         vm.startPrank(ArbitrumAddresses.GOVERNOR);
@@ -125,10 +125,10 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
         usdcPSM.setOracle(address(oraclePassThrough));
         vm.stopPrank();
 
-        uint256 endingAmountOutFei = daiPSM.getMintAmountOut(mintAmount);
+        uint256 endingAmountOutDai = daiPSM.getMintAmountOut(mintAmount);
         uint256 endingAmountOutUSDC = usdcPSM.getMintAmountOut(mintAmount);
 
-        assertEq(endingAmountOutFei, startingAmountOutFei);
+        assertEq(endingAmountOutDai, startingAmountOutDai);
         assertEq(endingAmountOutUSDC, startingAmountOutUSDC);
     }
 
@@ -138,7 +138,7 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
         _warpToStart();
 
         uint256 redeemAmount = 100_000e18;
-        uint256 startingAmountOutFei = daiPSM.getRedeemAmountOut(redeemAmount);
+        uint256 startingAmountOutDai = daiPSM.getRedeemAmountOut(redeemAmount);
         uint256 startingAmountOutUSDC = usdcPSM.getRedeemAmountOut(
             redeemAmount
         );
@@ -148,14 +148,14 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
         usdcPSM.setOracle(address(oraclePassThrough));
         vm.stopPrank();
 
-        uint256 endingAmountOutFei = daiPSM.getRedeemAmountOut(redeemAmount);
+        uint256 endingAmountOutDai = daiPSM.getRedeemAmountOut(redeemAmount);
         uint256 endingAmountOutUSDC = usdcPSM.getRedeemAmountOut(redeemAmount);
 
-        assertEq(endingAmountOutFei, startingAmountOutFei);
+        assertEq(endingAmountOutDai, startingAmountOutDai);
         assertEq(endingAmountOutUSDC, startingAmountOutUSDC);
     }
 
-    /// assert swaps function the same after upgrading the scaling price oracle for Fei
+    /// assert swaps function the same after upgrading the scaling price oracle for Dai
     function testMintParityAfterOracleUpgradeDAI() public {
         _warpToStart();
         uint256 amountStableIn = 101_000;
@@ -248,7 +248,7 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
         assertEq(amountVoltOutAfterUpgrade, amountVoltOut);
     }
 
-    /// assert redemptions function the same after upgrading the scaling price oracle for Fei
+    /// assert redemptions function the same after upgrading the scaling price oracle for Dai
     function testRedeemParityAfterOracleUpgradeDAI() public {
         _warpToStart();
 
