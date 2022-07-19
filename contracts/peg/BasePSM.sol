@@ -117,7 +117,7 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
 
     // ----------- Public State Changing API -----------
 
-    /// @notice send any surplus reserves to the PCV allocation
+    ///@notice send any surplus reserves to the PCV Deposit
     function allocateSurplus() external override {
         int256 currentSurplus = reservesSurplus();
         require(
