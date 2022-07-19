@@ -2,8 +2,8 @@ import { ethers } from 'ethers';
 
 const config = {
   /// Volt System Oracle Params
-  STARTING_ORACLE_PRICE: '1045095352308302897',
-  ORACLE_PERIOD_START_TIME: '1657670923',
+  STARTING_ORACLE_PRICE: '1045095352308302897', /// placeholder value, update this right before deployment to the proper values
+  ORACLE_PERIOD_START_TIME: '1657670923', /// placeholder value, update this right before deployment to the proper values
   MONTHLY_CHANGE_RATE_BASIS_POINTS: 10, /// placeholder value, this is tbd based on yield in underlying venues
 
   /// Mainnet
