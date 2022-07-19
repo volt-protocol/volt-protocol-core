@@ -31,6 +31,7 @@ interface ICurveRouter {
     /// @param amountIn, the amount of stablecoin to deposit
     /// @param minAmountOut, the minimum amountOfVolt expected to be received
     /// @param psm, the PSM the router should mint from
+    /// @param path, the path the router should take with curve pools to swap for volt
     /// @return amountVoltOut the amount of Volt returned from the mint function
 
     function mint(
@@ -46,6 +47,7 @@ interface ICurveRouter {
     /// @param amountVoltIn, the amount of VOLT to deposit
     /// @param minAmountOut, the minimum amount of stablecoin expected to be received
     /// @param psm, the PSM the router should redeem from
+    /// @param path, the path the router should take with curve pools to redeem volt
     /// @return amountOut the amount of stablecoin returned from the mint function
     function redeem(
         address to,
