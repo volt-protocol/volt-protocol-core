@@ -8,6 +8,7 @@ import {IVolt, Volt} from "../../volt/Volt.sol";
 import {OtcEscrow} from "./../../utils/OtcEscrow.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {IFeiPCVGuardian} from "../../pcv/IFeiPCVGuardian.sol";
 
 contract IntegrationTestLoanRepayment is DSTest {
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
@@ -23,12 +24,15 @@ contract IntegrationTestLoanRepayment is DSTest {
     /// @notice escrow contract
     OtcEscrow public otcEscrow;
 
-    address public feiDaoTimelock = MainnetAddresses.FEI_DAO_TIMELOCK;
+    address public feiTcTimelock = MainnetAddresses.FEI_TC_TIMELOCK;
     address public voltTimelock = MainnetAddresses.VOLT_TIMELOCK;
+
+    IFeiPCVGuardian private pcvGuardian =
+        IFeiPCVGuardian(MainnetAddresses.FEI_PCV_GUARDIAN);
 
     function setUp() public {
         otcEscrow = new OtcEscrow(
-            MainnetAddresses.FEI_DAO_TIMELOCK, /// beneficiary
+            MainnetAddresses.FEI_TC_TIMELOCK, /// beneficiary
             MainnetAddresses.VOLT_TIMELOCK, /// recipient
             MainnetAddresses.VOLT, /// received token
             MainnetAddresses.FEI, /// sent token
@@ -36,9 +40,23 @@ contract IntegrationTestLoanRepayment is DSTest {
             feiAmount /// sent amount
         );
 
-        if (volt.allowance(feiDaoTimelock, address(otcEscrow)) < voltAmount) {
-            vm.prank(feiDaoTimelock);
+        if (volt.allowance(feiTcTimelock, address(otcEscrow)) < voltAmount) {
+            vm.prank(feiTcTimelock);
             volt.approve(address(otcEscrow), voltAmount);
+        }
+        if (!pcvGuardian.isSafeAddress(feiTcTimelock)) {
+            vm.prank(feiTcTimelock);
+            pcvGuardian.setSafeAddress(feiTcTimelock);
+        }
+        if (volt.balanceOf(feiTcTimelock) < voltAmount) {
+            vm.prank(feiTcTimelock);
+            pcvGuardian.withdrawToSafeAddress(
+                MainnetAddresses.VOLT_DEPOSIT,
+                feiTcTimelock,
+                voltAmount,
+                false,
+                false
+            );
         }
         if (fei.balanceOf(address(otcEscrow)) < feiAmount) {
             vm.prank(MainnetAddresses.GOVERNOR);
@@ -47,13 +65,10 @@ contract IntegrationTestLoanRepayment is DSTest {
     }
 
     function testSetup() public {
-        assertEq(
-            volt.allowance(feiDaoTimelock, address(otcEscrow)),
-            voltAmount
-        );
+        assertEq(volt.allowance(feiTcTimelock, address(otcEscrow)), voltAmount);
         assertEq(fei.balanceOf(address(otcEscrow)), feiAmount);
 
-        assertEq(otcEscrow.beneficiary(), feiDaoTimelock);
+        assertEq(otcEscrow.beneficiary(), feiTcTimelock);
         assertEq(otcEscrow.recipient(), voltTimelock);
         assertEq(otcEscrow.receivedToken(), MainnetAddresses.VOLT);
         assertEq(otcEscrow.sentToken(), MainnetAddresses.FEI);
@@ -63,13 +78,13 @@ contract IntegrationTestLoanRepayment is DSTest {
 
     function testSwap() public {
         uint256 startingBalanceOtcEscrowFei = fei.balanceOf(address(otcEscrow));
-        uint256 startingBalanceFeiTimelockVolt = volt.balanceOf(feiDaoTimelock);
+        uint256 startingBalanceFeiTimelockVolt = volt.balanceOf(feiTcTimelock);
 
-        vm.prank(feiDaoTimelock);
+        vm.prank(feiTcTimelock);
         otcEscrow.swap();
 
         uint256 endingBalanceOtcEscrowFei = fei.balanceOf(address(otcEscrow));
-        uint256 endingBalanceFeiTimelockVolt = volt.balanceOf(feiDaoTimelock);
+        uint256 endingBalanceFeiTimelockVolt = volt.balanceOf(feiTcTimelock);
 
         assertEq(
             startingBalanceFeiTimelockVolt - endingBalanceFeiTimelockVolt,

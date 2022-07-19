@@ -5,6 +5,7 @@ import {Vm} from "./../unit/utils/Vm.sol";
 import {ICore} from "../../core/ICore.sol";
 import {DSTest} from "../unit/utils/DSTest.sol";
 import {StdLib} from "../unit/utils/StdLib.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
@@ -21,6 +22,8 @@ import {NonCustodialPSM, GlobalRateLimitedMinter} from "./../../peg/NonCustodial
 // - Oracle Pass Through
 
 contract IntegrationTestVoltDeployment is DSTest, StdLib {
+    using SafeCast for *;
+
     GlobalRateLimitedMinter private rateLimitedMinter;
     NonCustodialPSM private psm;
     ICore private core;
@@ -202,10 +205,16 @@ contract IntegrationTestVoltDeployment is DSTest, StdLib {
         uint256 endingUserVoltBalance = volt.balanceOf(address(this));
         uint256 endingPCVDepositFeiBalance = rariFEIPCVDeposit.balance();
 
-        assertEq(endingUserVoltBalance - startingUserVoltBalance, mintAmount);
-        assertEq(
-            (endingPCVDepositFeiBalance - startingPCVDepositFeiBalance),
-            (mintAmount - 1) /// goes down by 1 because of cToken pricing rounding down
+        assertApproxEq(
+            (endingUserVoltBalance - startingUserVoltBalance).toInt256(),
+            mintAmount.toInt256(),
+            0
+        );
+        assertApproxEq(
+            (endingPCVDepositFeiBalance - startingPCVDepositFeiBalance)
+                .toInt256(),
+            mintAmount.toInt256(), /// goes down by 1 because of cToken pricing rounding down
+            0
         );
     }
 
@@ -226,13 +235,16 @@ contract IntegrationTestVoltDeployment is DSTest, StdLib {
         uint256 endingUserVoltBalance = volt.balanceOf(address(this));
         uint256 endingPCVDepositFeiBalance = rariFEIPCVDeposit.balance();
 
-        assertEq(
-            endingUserVoltBalance - startingUserVoltBalance,
-            amountVoltOut
+        assertApproxEq(
+            (endingUserVoltBalance - startingUserVoltBalance).toInt256(),
+            amountVoltOut.toInt256(),
+            0
         );
-        assertEq(
-            endingPCVDepositFeiBalance - startingPCVDepositFeiBalance,
-            amountFeiIn
+        assertApproxEq(
+            (endingPCVDepositFeiBalance - startingPCVDepositFeiBalance)
+                .toInt256(),
+            amountFeiIn.toInt256(),
+            0
         );
     }
 
@@ -253,10 +265,16 @@ contract IntegrationTestVoltDeployment is DSTest, StdLib {
         uint256 endingUserVoltBalance = volt.balanceOf(address(this));
         uint256 endingPCVDepositFeiBalance = rariFEIPCVDeposit.balance();
 
-        assertEq(startingUserVoltBalance - endingUserVoltBalance, amountVoltIn);
-        assertEq(
-            startingPCVDepositFeiBalance - endingPCVDepositFeiBalance,
-            amountFeiOut
+        assertApproxEq(
+            (startingUserVoltBalance - endingUserVoltBalance).toInt256(),
+            amountVoltIn.toInt256(),
+            0
+        );
+        assertApproxEq(
+            (startingPCVDepositFeiBalance - endingPCVDepositFeiBalance)
+                .toInt256(),
+            amountFeiOut.toInt256(),
+            0
         );
     }
 

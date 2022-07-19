@@ -135,6 +135,12 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.External,
     network: Network.Mainnet
   },
+  tribalCouncilTimelock: {
+    address: '0xe0C7DE94395B629860Cbb3c42995F300F56e6d7a',
+    artifactName: 'unknown', /// Timelock Controller
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
   feiVoltOTCSwap: {
     address: '0xeF152E462B59940616E667E801762dA9F2AF97b9',
     artifactName: 'OtcEscrow',

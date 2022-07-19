@@ -26,8 +26,17 @@ library MainnetAddresses {
     address public constant FEI_DAO_TIMELOCK =
         0xd51dbA7a94e1adEa403553A8235C302cEbF41a3c;
 
+    address public constant FEI_TC_TIMELOCK =
+        0xe0C7DE94395B629860Cbb3c42995F300F56e6d7a;
+
     address public constant FEI_GOVERNOR =
         0xd51dbA7a94e1adEa403553A8235C302cEbF41a3c;
+
+    address public constant FEI_PCV_GUARDIAN =
+        0x02435948F84d7465FB71dE45ABa6098Fc6eC2993;
+
+    address public constant VOLT_DEPOSIT =
+        0xBDC01c9743989429df9a4Fe24c908D87e462AbC1;
 
     // ---------- USDC ADDRESSES ----------
 

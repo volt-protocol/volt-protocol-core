@@ -19,12 +19,12 @@ Description:
 Steps:
   1 - Send the OTC Escrow contract 10.17m FEI from the timelock
   2 - Wait for TribeDAO to approve
-  3 - Swap occurs in TribeDAO script
+  3 - Swap occurs from TribeDAO Tribal Council timelock
 
 */
 
 // volt is sent to volt timelock
-// fei is sent to tribe dao timelock
+// fei is sent to tribe dao tribal council timelock
 
 const vipNumber = '3';
 const feiAmount = ethers.constants.WeiPerEther.mul(10_170_000);
@@ -33,11 +33,11 @@ const { VOLT_SWAP_AMOUNT } = config;
 // Do any deployments
 // This should exclusively include new contract deployments
 const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: NamedAddresses, logging: boolean) => {
-  const { fei, volt, feiDAOTimelock, optimisticTimelock } = addresses;
+  const { fei, volt, tribalCouncilTimelock, optimisticTimelock } = addresses;
 
   const factory = await ethers.getContractFactory('OtcEscrow');
   const otcEscrowRepayment = await factory.deploy(
-    feiDAOTimelock, // FEI DAO timelock receives the FEI
+    tribalCouncilTimelock, // FEI tribal council timelock receives the FEI
     optimisticTimelock, // Volt optimisticTimelock is the recipient of the VOLT
     volt, // transfer VOLT from fei dao timelock to the volt timelock
     fei, // transfer FEI to the FEI DAO timelock
@@ -69,11 +69,11 @@ const teardown: TeardownUpgradeFunc = async (addresses, oldContracts, contracts,
 // IE check balances, check state of contracts, etc.
 const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts, logging) => {
   const { fei, volt, otcEscrowRepayment, optimisticTimelock } = contracts;
-  const { feiDAOTimelock } = addresses;
+  const { tribalCouncilTimelock } = addresses;
 
   expect(await fei.balanceOf(otcEscrowRepayment.address)).to.be.equal(feiAmount);
   expect(await otcEscrowRepayment.recipient()).to.be.equal(optimisticTimelock.address);
-  expect(await otcEscrowRepayment.beneficiary()).to.be.equal(feiDAOTimelock);
+  expect(await otcEscrowRepayment.beneficiary()).to.be.equal(tribalCouncilTimelock);
 
   expect(await otcEscrowRepayment.receivedToken()).to.be.equal(volt.address);
   expect(await otcEscrowRepayment.sentToken()).to.be.equal(fei.address);
