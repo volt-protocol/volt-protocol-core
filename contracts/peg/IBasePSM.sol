@@ -45,17 +45,6 @@ interface IBasePSM {
         uint256 minAmountOut
     ) external returns (uint256 amountOut);
 
-    /// @notice send any surplus reserves to the PCV allocation
-    function allocateSurplus() external;
-
-    // ----------- Governor or Admin Only State Changing API -----------
-
-    /// @notice set the ideal amount of reserves for the contract to hold for redemptions
-    function setReservesThreshold(uint256 newReservesThreshold) external;
-
-    /// @notice set the target for sending surplus reserves
-    function setSurplusTarget(IPCVDeposit newTarget) external;
-
     // ----------- Getters -----------
 
     /// @notice calculate the amount of VOLT out for a given `amountIn` of underlying
@@ -73,20 +62,8 @@ interface IBasePSM {
     /// @notice the maximum mint amount out
     function getMaxMintAmountOut() external view returns (uint256);
 
-    /// @notice a flag for whether the current balance is above (true) or below and equal (false) to the reservesThreshold
-    function hasSurplus() external view returns (bool);
-
-    /// @notice an integer representing the positive surplus or negative deficit of contract balance vs reservesThreshold
-    function reservesSurplus() external view returns (int256);
-
-    /// @notice the ideal amount of reserves for the contract to hold for redemptions
-    function reservesThreshold() external view returns (uint256);
-
     /// @notice the underlying token exchanged for VOLT
     function underlyingToken() external view returns (IERC20);
-
-    /// @notice the PCV deposit target to send surplus reserves
-    function surplusTarget() external view returns (IPCVDeposit);
 
     // ----------- Events -----------
 

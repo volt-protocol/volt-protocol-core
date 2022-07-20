@@ -70,17 +70,10 @@ contract IntegrationTestVanillaPSMTest is DSTest {
             voltFloorPrice,
             voltCeilingPrice,
             oracleParams,
-            reservesThreshold,
-            IERC20(address(usdc)),
-            pcvDeposit
+            IERC20(address(usdc))
         );
 
-        vanillaPsm = new VanillaPSM(
-            oracleParams,
-            reservesThreshold,
-            IERC20(address(usdc)),
-            pcvDeposit
-        );
+        vanillaPsm = new VanillaPSM(oracleParams, IERC20(address(usdc)));
 
         uint256 balance = usdc.balanceOf(makerUSDCPSM);
         vm.prank(makerUSDCPSM);
@@ -111,14 +104,12 @@ contract IntegrationTestVanillaPSMTest is DSTest {
         assertEq(address(priceBoundPsm.backupOracle()), address(0));
         assertEq(priceBoundPsm.decimalsNormalizer(), 12);
         assertEq(address(priceBoundPsm.underlyingToken()), address(usdc));
-        assertEq(priceBoundPsm.reservesThreshold(), reservesThreshold);
 
         assertTrue(!vanillaPsm.doInvert());
         assertEq(address(vanillaPsm.oracle()), address(oracle));
         assertEq(address(vanillaPsm.backupOracle()), address(0));
         assertEq(vanillaPsm.decimalsNormalizer(), 12);
         assertEq(address(vanillaPsm.underlyingToken()), address(usdc));
-        assertEq(vanillaPsm.reservesThreshold(), reservesThreshold);
     }
 
     /// @notice PSM is set up correctly and redeem view function is working
@@ -243,45 +234,6 @@ contract IntegrationTestVanillaPSMTest is DSTest {
         uint256 endingBalance = underlyingToken.balanceOf(address(this));
 
         assertEq(endingBalance - startingBalance, mintAmount);
-    }
-
-    /// @notice set global rate limited minter fails when caller is governor and new address is 0
-    function testSetPCVDepositFailureZeroAddress() public {
-        vm.startPrank(MainnetAddresses.GOVERNOR);
-        IPCVDeposit surplusTarget = vanillaPsm.surplusTarget();
-
-        vm.expectRevert(
-            bytes("PegStabilityModule: Invalid new surplus target")
-        );
-        vanillaPsm.setSurplusTarget(surplusTarget);
-
-        vm.stopPrank();
-    }
-
-    /// @notice set PCV deposit fails when caller is governor and new address is 0
-    function testSetPCVDepositFailureNonGovernor() public {
-        vm.expectRevert(
-            bytes("CoreRef: Caller is not a governor or contract admin")
-        );
-        vanillaPsm.setSurplusTarget(IPCVDeposit(address(0)));
-    }
-
-    /// @notice set PCV Deposit succeeds when caller is governor and underlying tokens match
-    function testSetPCVDepositSuccess() public {
-        vm.startPrank(MainnetAddresses.GOVERNOR);
-
-        MockPCVDepositV2 newPCVDeposit = new MockPCVDepositV2(
-            address(core),
-            address(underlyingToken),
-            0,
-            0
-        );
-
-        vanillaPsm.setSurplusTarget(IPCVDeposit(address(newPCVDeposit)));
-
-        vm.stopPrank();
-
-        assertEq(address(newPCVDeposit), address(vanillaPsm.surplusTarget()));
     }
 
     /// @notice redeem fails when paused

@@ -14,23 +14,12 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
     using SafeCast for *;
     using SafeERC20 for IERC20;
 
-    /// @notice the amount of reserves to be held for redemptions
-    uint256 public override reservesThreshold;
-
-    /// @notice the PCV deposit target
-    IPCVDeposit public override surplusTarget;
-
     /// @notice the token this PSM will exchange for VOLT
     IERC20 public immutable override underlyingToken;
 
     /// @notice constructor
     /// @param params PSM constructor parameter struct
-    constructor(
-        OracleParams memory params,
-        uint256 _reservesThreshold,
-        IERC20 _underlyingToken,
-        IPCVDeposit _surplusTarget
-    )
+    constructor(OracleParams memory params, IERC20 _underlyingToken)
         OracleRef(
             params.coreAddress,
             params.oracleAddress,
@@ -41,8 +30,6 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
     {
         underlyingToken = _underlyingToken;
 
-        _setReservesThreshold(_reservesThreshold);
-        _setSurplusTarget(_surplusTarget);
         _setContractAdminRole(TribeRoles.PSM_ADMIN_ROLE);
     }
 
@@ -54,77 +41,6 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
         onlyPCVController
     {
         _withdrawERC20(address(underlyingToken), to, amount);
-    }
-
-    /// @notice set the ideal amount of reserves for the contract to hold for redemptions
-    function setReservesThreshold(uint256 newReservesThreshold)
-        external
-        override
-        onlyGovernorOrAdmin
-    {
-        _setReservesThreshold(newReservesThreshold);
-    }
-
-    /// @notice set the target for sending surplus reserves
-    function setSurplusTarget(IPCVDeposit newSurplusTarget)
-        external
-        override
-        onlyGovernorOrAdmin
-    {
-        _setSurplusTarget(newSurplusTarget);
-    }
-
-    /// @notice helper function to set reserves threshold
-    function _setReservesThreshold(uint256 newReservesThreshold) internal {
-        require(
-            newReservesThreshold > 0,
-            "PegStabilityModule: Invalid new reserves threshold"
-        );
-        uint256 oldReservesThreshold = reservesThreshold;
-        reservesThreshold = newReservesThreshold;
-
-        emit ReservesThresholdUpdate(
-            oldReservesThreshold,
-            newReservesThreshold
-        );
-    }
-
-    /// @notice helper function to set the surplus target
-    function _setSurplusTarget(IPCVDeposit newSurplusTarget) internal {
-        require(
-            address(newSurplusTarget) != address(surplusTarget),
-            "PegStabilityModule: Invalid new surplus target"
-        );
-        require(
-            newSurplusTarget.balanceReportedIn() == address(underlyingToken),
-            "PegStabilityModule: Underlying token mismatch"
-        );
-
-        IPCVDeposit oldTarget = surplusTarget;
-        surplusTarget = newSurplusTarget;
-
-        emit SurplusTargetUpdate(oldTarget, newSurplusTarget);
-    }
-
-    // ----------- Public State Changing API -----------
-
-    ///@notice send any surplus reserves to the PCV Deposit
-    function allocateSurplus() external override {
-        int256 currentSurplus = reservesSurplus();
-        require(
-            currentSurplus > 0,
-            "PegStabilityModule: No surplus to allocate"
-        );
-
-        _allocate(currentSurplus.toUint256());
-    }
-
-    /// @notice function to receive ERC20 tokens from external contracts
-    function deposit() external override {
-        int256 currentSurplus = reservesSurplus();
-        if (currentSurplus > 0) {
-            _allocate(currentSurplus.toUint256());
-        }
     }
 
     /// @notice function to redeem VOLT for an underlying asset
@@ -184,6 +100,12 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
         _afterVoltMint(to, amountIn, minAmountVoltOut);
     }
 
+    // ----------- Public State Changing API ----------
+
+    /// @notice function to receive ERC20 tokens from external contracts
+
+    function deposit() external virtual override {}
+
     // ----------- Public View-Only API ----------
 
     /// @notice calculate the amount of VOLT out for a given `amountIn` of underlying
@@ -234,16 +156,6 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
         return underlyingToken.balanceOf(address(this));
     }
 
-    /// @notice a flag for whether the current balance is above (true) or below (false) the reservesThreshold
-    function hasSurplus() external view override returns (bool) {
-        return balance() > reservesThreshold;
-    }
-
-    /// @notice an integer representing the positive surplus or negative deficit of contract balance vs reservesThreshold
-    function reservesSurplus() public view override returns (int256) {
-        return balance().toInt256() - reservesThreshold.toInt256();
-    }
-
     /// @notice function from PCVDeposit that must be overriden
     function balance() public view virtual override returns (uint256) {
         return underlyingToken.balanceOf(address(this));
@@ -262,17 +174,6 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
         returns (uint256, uint256)
     {
         return (balance(), voltBalance());
-    }
-
-    // ----------- Internal Methods -----------
-
-    /// @notice Allocates a portion of escrowed PCV to a target PCV deposit
-    function _allocate(uint256 amount) internal virtual {
-        underlyingToken.safeTransfer(address(surplusTarget), amount);
-
-        surplusTarget.deposit();
-
-        emit AllocateSurplus(msg.sender, amount);
     }
 
     // ----------- Hooks -----------

@@ -28,17 +28,8 @@ contract VanillaPriceBoundPSM is VanillaPSM, IPriceBound {
         uint256 _floor,
         uint256 _ceiling,
         OracleParams memory _params,
-        uint256 _reservesThreshold,
-        IERC20 _underlyingToken,
-        IPCVDeposit _surplusTarget
-    )
-        VanillaPSM(
-            _params,
-            _reservesThreshold,
-            _underlyingToken,
-            _surplusTarget
-        )
-    {
+        IERC20 _underlyingToken
+    ) VanillaPSM(_params, _underlyingToken) {
         _setCeilingBasisPoints(_ceiling);
         _setFloorBasisPoints(_floor);
     }
