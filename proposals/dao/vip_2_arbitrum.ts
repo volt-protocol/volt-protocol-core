@@ -20,7 +20,7 @@ Steps:
   1 - Deploy Volt System Oacle
   2 - Deploy Oracle Pass Through
   3 - Grant ownership of Oracle Pass Through to the timelock
-  4 - Point both FEI and USDC PSM to the new OraclePassThrough
+  4 - Point both DAI and USDC PSM to the new OraclePassThrough
 
 */
 
@@ -38,8 +38,12 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
   );
   await voltSystemOracleArbitrum.deployed();
 
+  console.log(`Arbitrum Volt System Oracle ${voltSystemOracleArbitrum.address}`);
+
   const oraclePassThroughArbitrum = await OraclePassThroughFactory.deploy(voltSystemOracleArbitrum.address);
   await oraclePassThroughArbitrum.deployed();
+
+  console.log(`Arbitrum Oracle Pass Through ${oraclePassThroughArbitrum.address}`);
 
   await oraclePassThroughArbitrum.transferOwnership(arbitrumOptimisticTimelock);
 
@@ -64,18 +68,8 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
     voltSystemOracleArbitrum,
     arbitrumDAIPSM,
     arbitrumUSDCPSM,
-    arbitrumOptimisticTimelock,
-    arbitrumCore
+    arbitrumOptimisticTimelock
   } = contracts;
-  const { pcvGuardEOA1, pcvGuardEOA2, pcvGuardRevoked1 } = addresses;
-
-  expect(await arbitrumCore.isGuardian(pcvGuardEOA1)).to.be.true;
-  expect(await arbitrumCore.isGuardian(pcvGuardEOA2)).to.be.true;
-
-  const proposerRole = await arbitrumOptimisticTimelock.PROPOSER_ROLE();
-  expect(await arbitrumOptimisticTimelock.hasRole(proposerRole, pcvGuardEOA1)).to.be.true;
-  expect(await arbitrumOptimisticTimelock.hasRole(proposerRole, pcvGuardEOA2)).to.be.true;
-  expect(await arbitrumOptimisticTimelock.hasRole(proposerRole, pcvGuardRevoked1)).to.be.false;
 
   expect(await voltSystemOracleArbitrum.oraclePrice()).to.be.equal(STARTING_ORACLE_PRICE);
   expect(await voltSystemOracleArbitrum.getCurrentOraclePrice()).to.be.equal(STARTING_ORACLE_PRICE);
