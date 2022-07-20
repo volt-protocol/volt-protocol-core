@@ -196,12 +196,10 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
         uint256 minAmountOut
     ) internal virtual {}
 
-    /**
-     * @dev Hook that is called after VOLT is minted
-     *  to is the address VOLT is being minted to
-     *  amountIn is the the amount of underyling stablecoin beind deposited
-     *  minAmountOut is minimum amount of VOLT to be received
-     */
+    /// @dev Hook that is called after VOLT is minted
+    ///  to is the address VOLT is being minted to
+    ///  amountIn is the the amount of underyling stablecoin beind deposited
+    ///  minAmountOut is minimum amount of VOLT to be received
     function _afterVoltMint(
         address to,
         uint256 amountIn,

@@ -63,14 +63,7 @@ contract VanillaPriceBoundPSM is VanillaPSM, IPriceBound {
             "PegStabilityModule: invalid ceiling"
         );
         require(
-            Decimal
-                .ratio(
-                    newCeilingBasisPoints,
-                    Constants.BASIS_POINTS_GRANULARITY
-                )
-                .greaterThan(
-                    Decimal.ratio(floor, Constants.BASIS_POINTS_GRANULARITY)
-                ),
+            newCeilingBasisPoints > floor,
             "PegStabilityModule: ceiling must be greater than floor"
         );
         uint256 oldCeiling = ceiling;
@@ -83,11 +76,7 @@ contract VanillaPriceBoundPSM is VanillaPSM, IPriceBound {
     function _setFloorBasisPoints(uint256 newFloorBasisPoints) internal {
         require(newFloorBasisPoints != 0, "PegStabilityModule: invalid floor");
         require(
-            Decimal
-                .ratio(newFloorBasisPoints, Constants.BASIS_POINTS_GRANULARITY)
-                .lessThan(
-                    Decimal.ratio(ceiling, Constants.BASIS_POINTS_GRANULARITY)
-                ),
+            newFloorBasisPoints < ceiling,
             "PegStabilityModule: floor must be less than ceiling"
         );
         uint256 oldFloor = floor;
