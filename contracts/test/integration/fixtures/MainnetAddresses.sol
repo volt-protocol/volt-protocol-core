@@ -17,6 +17,8 @@ library MainnetAddresses {
         0x860fa85f04f9d35B3471D8F7F7fA3Ad31Ce4D5Ae;
     address public constant VOLT_FEI_PSM =
         0x985f9C331a9E4447C782B98D6693F5c7dF8e560e;
+    address public constant OTC_LOAN_REPAYMENT =
+        0x590eb1a809377f786a11fa1968eF8c15eB44A12F;
 
     // ---------- FEI ADDRESSES ----------
 

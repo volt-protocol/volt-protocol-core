@@ -22,7 +22,7 @@ contract IntegrationTestLoanRepayment is DSTest {
     uint256 public constant voltAmount = 10_000_000e18;
 
     /// @notice escrow contract
-    OtcEscrow public otcEscrow;
+    OtcEscrow public otcEscrow = OtcEscrow(MainnetAddresses.OTC_LOAN_REPAYMENT);
 
     address public feiTcTimelock = MainnetAddresses.FEI_TC_TIMELOCK;
     address public voltTimelock = MainnetAddresses.VOLT_TIMELOCK;
@@ -31,15 +31,6 @@ contract IntegrationTestLoanRepayment is DSTest {
         IFeiPCVGuardian(MainnetAddresses.FEI_PCV_GUARDIAN);
 
     function setUp() public {
-        otcEscrow = new OtcEscrow(
-            MainnetAddresses.FEI_TC_TIMELOCK, /// beneficiary
-            MainnetAddresses.VOLT_TIMELOCK, /// recipient
-            MainnetAddresses.VOLT, /// received token
-            MainnetAddresses.FEI, /// sent token
-            voltAmount, /// received amount
-            feiAmount /// sent amount
-        );
-
         if (volt.allowance(feiTcTimelock, address(otcEscrow)) < voltAmount) {
             vm.prank(feiTcTimelock);
             volt.approve(address(otcEscrow), voltAmount);

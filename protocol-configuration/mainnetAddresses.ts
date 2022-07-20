@@ -148,7 +148,7 @@ const MainnetAddresses: MainnetAddresses = {
     network: Network.Mainnet
   },
   otcEscrowRepayment: {
-    address: '0x8E4F1Ae2C76eBDbd2baCc3F7c3A4fe980dbe3666',
+    address: '0x590eb1a809377f786a11fa1968eF8c15eB44A12F',
     artifactName: 'OtcEscrow',
     category: AddressCategory.External,
     network: Network.Mainnet
