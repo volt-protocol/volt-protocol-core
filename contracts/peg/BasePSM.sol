@@ -193,6 +193,7 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
     function getMintAmountOut(uint256 amountIn)
         public
         view
+        virtual
         override
         returns (uint256 amountVoltOut)
     {
@@ -211,6 +212,7 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
     function getRedeemAmountOut(uint256 amountVoltIn)
         public
         view
+        virtual
         override
         returns (uint256 amountTokenOut)
     {
