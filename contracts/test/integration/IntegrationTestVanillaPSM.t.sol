@@ -50,9 +50,8 @@ contract IntegrationTestVanillaPSMTest is DSTest {
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
-    uint256 voltFloorPrice = 9_000e12;
-    uint256 voltCeilingPrice = 10_500e12;
-    uint256 reservesThreshold = type(uint256).max; /// max uint so that surplus can never be allocated into the pcv deposit
+    uint128 voltFloorPrice = 9_000e12;
+    uint128 voltCeilingPrice = 10_500e12;
 
     function setUp() public {
         BasePSM.OracleParams memory oracleParams;

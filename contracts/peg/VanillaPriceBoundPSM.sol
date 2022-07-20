@@ -2,31 +2,29 @@
 pragma solidity ^0.8.4;
 
 import {PegStabilityModule, Decimal, SafeERC20, SafeCast, IERC20, IPCVDeposit, Constants} from "./PegStabilityModule.sol";
-import {IPriceBound} from "./IPriceBound.sol";
+import {IPriceBoundPSM} from "./IPriceBoundPSM.sol";
 import {VanillaPSM} from "./VanillaPSM.sol";
 
-/// @notice contract to create a price bound DAI PSM
-/// This contract will allow swaps when the price of DAI is between 98 cents and 1.02 by default
-/// These defaults are changeable by the admin and governance by calling floor and ceiling setters
-/// setOracleFloor and setOracleCeiling
-contract VanillaPriceBoundPSM is VanillaPSM, IPriceBound {
+/// @notice contract to create a price bound PSM
+/// This contract will allow swaps when the price of the underlying token is within a certain ranges
+contract VanillaPriceBoundPSM is VanillaPSM, IPriceBoundPSM {
     using Decimal for Decimal.D256;
     using SafeERC20 for IERC20;
     using SafeCast for *;
 
     /// @notice the default minimum acceptable oracle price floor is 98 cents
-    uint256 public override floor;
+    uint128 public override floor;
 
     /// @notice the default maximum acceptable oracle price ceiling is $1.02
-    uint256 public override ceiling;
+    uint128 public override ceiling;
 
     /// @notice constructor
     /// @param _floor minimum acceptable oracle price
     /// @param _ceiling maximum  acceptable oracle price
     /// @param _params PSM construction params
     constructor(
-        uint256 _floor,
-        uint256 _ceiling,
+        uint128 _floor,
+        uint128 _ceiling,
         OracleParams memory _params,
         IERC20 _underlyingToken
     ) VanillaPSM(_params, _underlyingToken) {
@@ -35,7 +33,7 @@ contract VanillaPriceBoundPSM is VanillaPSM, IPriceBound {
     }
 
     /// @notice sets the floor price in BP
-    function setOracleFloorBasisPoints(uint256 newFloorBasisPoints)
+    function setOracleFloorBasisPoints(uint128 newFloorBasisPoints)
         external
         override
         onlyGovernorOrAdmin
@@ -44,7 +42,7 @@ contract VanillaPriceBoundPSM is VanillaPSM, IPriceBound {
     }
 
     /// @notice sets the ceiling price in BP
-    function setOracleCeilingBasisPoints(uint256 newCeilingBasisPoints)
+    function setOracleCeilingBasisPoints(uint128 newCeilingBasisPoints)
         external
         override
         onlyGovernorOrAdmin
@@ -57,7 +55,7 @@ contract VanillaPriceBoundPSM is VanillaPSM, IPriceBound {
     }
 
     /// @notice helper function to set the ceiling in basis points
-    function _setCeilingBasisPoints(uint256 newCeilingBasisPoints) internal {
+    function _setCeilingBasisPoints(uint128 newCeilingBasisPoints) internal {
         require(
             newCeilingBasisPoints != 0,
             "PegStabilityModule: invalid ceiling"
@@ -66,20 +64,20 @@ contract VanillaPriceBoundPSM is VanillaPSM, IPriceBound {
             newCeilingBasisPoints > floor,
             "PegStabilityModule: ceiling must be greater than floor"
         );
-        uint256 oldCeiling = ceiling;
+        uint128 oldCeiling = ceiling;
         ceiling = newCeilingBasisPoints;
 
         emit OracleCeilingUpdate(oldCeiling, ceiling);
     }
 
     /// @notice helper function to set the floor in basis points
-    function _setFloorBasisPoints(uint256 newFloorBasisPoints) internal {
+    function _setFloorBasisPoints(uint128 newFloorBasisPoints) internal {
         require(newFloorBasisPoints != 0, "PegStabilityModule: invalid floor");
         require(
             newFloorBasisPoints < ceiling,
             "PegStabilityModule: floor must be less than ceiling"
         );
-        uint256 oldFloor = floor;
+        uint128 oldFloor = floor;
         floor = newFloorBasisPoints;
 
         emit OracleFloorUpdate(oldFloor, floor);
