@@ -172,15 +172,27 @@ const MainnetAddresses: MainnetAddresses = {
     network: Network.Mainnet
   },
   pcvGuardEOA1: {
-    address: '0xf8D0387538E8e03F3B4394dA89f221D7565a28Ee',
+    address: '0xB320e376Be6459421695F2b6B1E716AE4bc8129A',
     artifactName: 'unknown',
     category: AddressCategory.Guardian,
     network: Network.Mainnet
   },
   pcvGuardEOA2: {
     address: '0xd90E9181B20D8D1B5034d9f5737804Da182039F6',
-    artifactName: 'OtcEscrow',
+    artifactName: 'unknown',
     category: AddressCategory.Guardian,
+    network: Network.Mainnet
+  },
+  pcvGuardEOA3: {
+    address: '0xA96D4a5c343d6fE141751399Fc230E9E8Ecb6fb6',
+    artifactName: 'unknown',
+    category: AddressCategory.Guardian,
+    network: Network.Mainnet
+  },
+  pcvGuardRevoked1: {
+    address: '0xf8D0387538E8e03F3B4394dA89f221D7565a28Ee',
+    artifactName: 'unknown',
+    category: AddressCategory.Deprecated,
     network: Network.Mainnet
   },
   arbitrumCore: {
