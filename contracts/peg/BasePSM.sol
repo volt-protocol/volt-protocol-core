@@ -23,15 +23,6 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
     /// @notice the token this PSM will exchange for VOLT
     IERC20 public immutable override underlyingToken;
 
-    /// @notice struct for passing constructor parameters related to OracleRef
-    struct OracleParams {
-        address coreAddress;
-        address oracleAddress;
-        address backupOracle;
-        int256 decimalsNormalizer;
-        bool doInvert;
-    }
-
     /// @notice constructor
     /// @param params PSM constructor parameter struct
     constructor(

@@ -18,6 +18,15 @@ import "../pcv/IPCVDeposit.sol";
  *
  */
 interface IBasePSM {
+    /// @notice struct for passing constructor parameters related to OracleRef
+    struct OracleParams {
+        address coreAddress;
+        address oracleAddress;
+        address backupOracle;
+        int256 decimalsNormalizer;
+        bool doInvert;
+    }
+
     // ----------- Public State Changing API -----------
 
     /// @notice mint `amountVoltOut` VOLT to address `to` for `amountIn` underlying tokens

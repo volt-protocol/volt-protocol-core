@@ -12,6 +12,7 @@ import {ICore} from "../../core/ICore.sol";
 import {Core} from "../../core/Core.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {BasePSM} from "../../peg/BasePSM.sol";
+import {IBasePSM} from "../../peg/IBasePSM.sol";
 import {VanillaPriceBoundPSM} from "../../peg/VanillaPriceBoundPSM.sol";
 import {VanillaPSM} from "../../peg/VanillaPSM.sol";
 import {getCore, getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
@@ -56,7 +57,7 @@ contract IntegrationTestVanillaPSMTest is DSTest {
     function setUp() public {
         BasePSM.OracleParams memory oracleParams;
 
-        oracleParams = BasePSM.OracleParams({
+        oracleParams = IBasePSM.OracleParams({
             coreAddress: address(core),
             oracleAddress: address(oracle),
             backupOracle: address(0),
