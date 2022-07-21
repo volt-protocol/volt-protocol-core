@@ -12,10 +12,10 @@ contract VanillaPriceBoundPSM is VanillaPSM, IPriceBoundPSM {
     using SafeERC20 for IERC20;
     using SafeCast for *;
 
-    /// @notice the default minimum acceptable oracle price floor is 98 cents
+    /// @notice the default minimum acceptable oracle price floor
     uint128 public override floor;
 
-    /// @notice the default maximum acceptable oracle price ceiling is $1.02
+    /// @notice the default maximum acceptable oracle price ceiling
     uint128 public override ceiling;
 
     /// @notice constructor
