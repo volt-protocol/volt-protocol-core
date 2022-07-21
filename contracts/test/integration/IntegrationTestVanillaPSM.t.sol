@@ -234,20 +234,20 @@ contract IntegrationTestVanillaPSMTest is DSTest {
     }
 
     /// @notice redeem fails when paused
-    function testRedeemFailsWhenPaused() public {
+    function testRedeemFailsWhenPaused(uint256 x, uint256 y) public {
         vm.prank(MainnetAddresses.GOVERNOR);
         vanillaPsm.pause();
 
         vm.expectRevert(bytes("Pausable: paused"));
-        vanillaPsm.redeem(address(this), 100, 100);
+        vanillaPsm.redeem(address(this), x, y);
     }
 
     /// @notice mint fails when paused
-    function testMintFailsWhenPaused() public {
+    function testMintFailsWhenPaused(uint256 x, uint256 y) public {
         vm.prank(MainnetAddresses.GOVERNOR);
         vanillaPsm.pause();
 
         vm.expectRevert(bytes("Pausable: paused"));
-        vanillaPsm.mint(address(this), 100, 100);
+        vanillaPsm.mint(address(this), x, y);
     }
 }
