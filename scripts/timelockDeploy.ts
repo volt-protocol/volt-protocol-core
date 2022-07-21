@@ -24,8 +24,11 @@ async function deploy(proposers: string[], executors: string[], multisig: string
   console.log(`\nTimelock deployed to: ${timelock.address}`);
 
   const TIMELOCK_ADMIN_ROLE = await timelock.TIMELOCK_ADMIN_ROLE();
-  await timelock.grantRole(TIMELOCK_ADMIN_ROLE, multisig);
-  await timelock.renounceRole(TIMELOCK_ADMIN_ROLE, deployer.address);
+  let tx = await timelock.grantRole(TIMELOCK_ADMIN_ROLE, multisig);
+  await tx.wait(1);
+
+  tx = await timelock.renounceRole(TIMELOCK_ADMIN_ROLE, deployer.address);
+  await tx.wait(1);
 
   console.log('\nDeployer renounced admin role, and granted admin to multisig');
 

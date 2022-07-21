@@ -117,10 +117,16 @@ const MainnetAddresses: MainnetAddresses = {
     network: Network.Arbitrum
   },
   /// Volt Protocol Timelock
+  timelockController: {
+    address: '0xACce8F8661f7f214b94f94e3e1A09d81f0B924D6',
+    artifactName: 'TimelockController',
+    category: AddressCategory.Governance,
+    network: Network.Mainnet
+  },
   optimisticTimelock: {
     address: '0x860fa85f04f9d35B3471D8F7F7fA3Ad31Ce4D5Ae',
     artifactName: 'OptimisticTimelock',
-    category: AddressCategory.Governance,
+    category: AddressCategory.Deprecated,
     network: Network.Mainnet
   },
   feiDaiFixedPricePSM: {
@@ -204,7 +210,13 @@ const MainnetAddresses: MainnetAddresses = {
   arbitrumOptimisticTimelock: {
     address: '0x980A05105a53eCa7745DA40DF1AdE6674fc73eD5',
     artifactName: 'OptimisticTimelock',
-    category: AddressCategory.Core,
+    category: AddressCategory.Deprecated,
+    network: Network.Arbitrum
+  },
+  arbitrumTimelockController: {
+    address: '0x93Aa9590e33599302238103ee55494f143A949E6',
+    artifactName: 'TimelockController',
+    category: AddressCategory.Governance,
     network: Network.Arbitrum
   },
   arbitrumScalingPriceOracle: {
