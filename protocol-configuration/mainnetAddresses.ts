@@ -118,7 +118,7 @@ const MainnetAddresses: MainnetAddresses = {
   },
   /// Volt Protocol Timelock
   timelockController: {
-    address: '0xACce8F8661f7f214b94f94e3e1A09d81f0B924D6',
+    address: '0x89D6f9e4D0756971a316ce8f6BDf0B92073b8050',
     artifactName: 'TimelockController',
     category: AddressCategory.Governance,
     network: Network.Mainnet
@@ -214,7 +214,7 @@ const MainnetAddresses: MainnetAddresses = {
     network: Network.Arbitrum
   },
   arbitrumTimelockController: {
-    address: '0x93Aa9590e33599302238103ee55494f143A949E6',
+    address: '0x1630F94f3CE9eb777953d862F1cDB60b1DfEF347',
     artifactName: 'TimelockController',
     category: AddressCategory.Governance,
     network: Network.Arbitrum
