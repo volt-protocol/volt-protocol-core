@@ -67,18 +67,6 @@ interface IBasePSM {
 
     // ----------- Events -----------
 
-    /// @notice event emitted when excess PCV is allocated
-    event AllocateSurplus(address indexed caller, uint256 amount);
-
-    /// @notice event emitted when reservesThreshold is updated
-    event ReservesThresholdUpdate(
-        uint256 oldReservesThreshold,
-        uint256 newReservesThreshold
-    );
-
-    /// @notice event emitted when surplus target is updated
-    event SurplusTargetUpdate(IPCVDeposit oldTarget, IPCVDeposit newTarget);
-
     /// @notice event emitted upon a redemption
     event Redeem(address to, uint256 amountVoltIn, uint256 amountAssetOut);
 
