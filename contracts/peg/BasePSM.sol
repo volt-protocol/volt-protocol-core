@@ -81,18 +81,12 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
             amountVoltOut >= minAmountVoltOut,
             "PegStabilityModule: Mint not enough out"
         );
-        require(
-            volt().balanceOf(address(this)) >= amountVoltOut,
-            "PegStabilityModule: Mint amount exceeds balance"
-        );
 
         _beforeVoltMint(to, amountIn, minAmountVoltOut);
 
         underlyingToken.safeTransferFrom(msg.sender, address(this), amountIn);
 
-        if (amountVoltOut != 0) {
-            IERC20(volt()).safeTransfer(to, amountVoltOut);
-        }
+        IERC20(volt()).safeTransfer(to, amountVoltOut);
 
         emit Mint(to, amountIn, amountVoltOut);
 

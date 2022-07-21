@@ -198,9 +198,7 @@ contract IntegrationTestVanillaPSMTest is DSTest {
 
         // this will revert (correctly) as the math above is less precise than the PSMs, therefore our amountIn
         // will slightly exceed the balance the PSM can give to us.
-        vm.expectRevert(
-            bytes("PegStabilityModule: Mint amount exceeds balance")
-        );
+        vm.expectRevert(bytes("ERC20: transfer amount exceeds balance"));
 
         vanillaPsm.mint(address(this), amountIn, psmVoltBalance);
     }
