@@ -2,7 +2,6 @@
 pragma solidity ^0.8.4;
 
 import {IVolt} from "../../volt/IVolt.sol";
-import {ICurveFactory} from "./ICurveFactory.sol";
 import {IPegStabilityModule} from "../IPegStabilityModule.sol";
 
 interface ICurveRouter {
@@ -11,13 +10,11 @@ interface ICurveRouter {
     /// @notice reference to the Volt contract used.
     function volt() external returns (IVolt);
 
-    /// @notice Explain to an end user what this does
-    function curveFactory() external returns (ICurveFactory);
-
     /// @notice calculate the amount of VOLT out for a given `amountIn` of underlying
     function getMintAmountOut(
         uint256 amountIn,
         IPegStabilityModule psm,
+        address curvePool,
         address tokenA,
         address tokenB
     ) external returns (uint256 amountTokenBReceived, uint256 amountVoltOut);
@@ -43,6 +40,7 @@ interface ICurveRouter {
         address to,
         uint256 amountIn,
         IPegStabilityModule psm,
+        address curvePool,
         address tokenA,
         address tokenB
     ) external returns (uint256 amountVoltOut);
