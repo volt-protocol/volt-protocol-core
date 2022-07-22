@@ -12,7 +12,7 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 import {console} from "hardhat/console.sol";
 
-contract AllMainnetRoles {
+contract AllMainnetRoles is DSTest {
     /// @notice all roles
     bytes32[] private allRoles;
     /// how many of each role exists
@@ -21,7 +21,7 @@ contract AllMainnetRoles {
     Core private core = Core(MainnetAddresses.CORE);
 
     /// @notice array of arrays that has all addresses in each role
-    address[9][] private allAddresses;
+    address[][9] private allAddresses;
 
     /// ------ @notice number of each role in the system ------
 
@@ -86,6 +86,24 @@ contract AllMainnetRoles {
             numEachRole.push(core.getRoleMemberCount(allRoles[i]));
         }
 
+        allAddresses[0].push(MainnetAddresses.CORE);
+        allAddresses[0].push(MainnetAddresses.GOVERNOR);
+
+        allAddresses[1].push(MainnetAddresses.GOVERNOR);
+        allAddresses[1].push(MainnetAddresses.GUARDIAN);
+        allAddresses[1].push(MainnetAddresses.EOA_1);
+
+        allAddresses[2].push(MainnetAddresses.NC_PSM);
+        allAddresses[2].push(MainnetAddresses.GOVERNOR);
+        allAddresses[2].push(MainnetAddresses.GUARDIAN);
+
+        allAddresses[3].push(MainnetAddresses.GRLM);
+
+        allAddresses[4].push(MainnetAddresses.REVOKED_EOA_1);
+        allAddresses[4].push(MainnetAddresses.EOA_2);
+
+        allAddresses[7].push(MainnetAddresses.PCV_GUARD_ADMIN);
+
         /// sanity check
         assert(numEachRole.length == allRoles.length);
     }
@@ -108,6 +126,15 @@ contract AllMainnetRoles {
                         )
                     )
                 );
+            }
+        }
+    }
+
+    /// assert that all addresses have the proper role
+    function testRoleAddresses() public {
+        for (uint256 i = 0; i < allRoles.length; i++) {
+            for (uint256 j = 0; j < allAddresses[i].length; j++) {
+                assertTrue(core.hasRole(allRoles[i], allAddresses[i][j]));
             }
         }
     }

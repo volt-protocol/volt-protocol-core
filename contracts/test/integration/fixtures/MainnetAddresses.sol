@@ -16,6 +16,14 @@ library MainnetAddresses {
 
     address public constant VOLT_FEI_PSM =
         0x985f9C331a9E4447C782B98D6693F5c7dF8e560e;
+    address public constant EOA_1 = 0xB320e376Be6459421695F2b6B1E716AE4bc8129A;
+    address public constant EOA_2 = 0xd90E9181B20D8D1B5034d9f5737804Da182039F6;
+    address public constant REVOKED_EOA_1 =
+        0xf8D0387538E8e03F3B4394dA89f221D7565a28Ee;
+    address public constant NC_PSM = 0x18f251FC3CE0Cb690F13f62213aba343657d0E72;
+    address public constant GRLM = 0x87945f59E008aDc9ed6210a8e061f009d6ace718;
+    address public constant PCV_GUARD_ADMIN =
+        0x868F58Ae8F6B2Dc31D9ADc97a8A09B16f05E9cd7;
 
     // ---------- FEI ADDRESSES ----------
 
