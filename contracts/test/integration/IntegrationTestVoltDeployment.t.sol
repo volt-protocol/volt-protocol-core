@@ -209,56 +209,56 @@ contract IntegrationTestVoltDeployment is DSTest, StdLib {
         );
     }
 
-    /// this test uses FEI as the underlying asset and hooks into a FEI PCV Deposit
-    function testMintAfterPriceIncrease() public {
-        uint256 amountFeiIn = 101_000;
-        uint256 amountVoltOut = 99_999;
+    // /// this test uses FEI as the underlying asset and hooks into a FEI PCV Deposit
+    // function testMintAfterPriceIncrease() public {
+    //     uint256 amountFeiIn = 101_000;
+    //     uint256 amountVoltOut = 99_999;
 
-        rariFEIPCVDeposit.deposit(); // get env cleaned up and ready for testing
-        vm.warp(28 days + block.timestamp);
+    //     rariFEIPCVDeposit.deposit(); // get env cleaned up and ready for testing
+    //     vm.warp(28 days + block.timestamp);
 
-        uint256 startingUserVoltBalance = volt.balanceOf(address(this));
-        uint256 startingPCVDepositFeiBalance = rariFEIPCVDeposit.balance();
+    //     uint256 startingUserVoltBalance = volt.balanceOf(address(this));
+    //     uint256 startingPCVDepositFeiBalance = rariFEIPCVDeposit.balance();
 
-        fei.approve(address(psm), amountFeiIn);
-        psm.mint(address(this), amountFeiIn, amountVoltOut);
+    //     fei.approve(address(psm), amountFeiIn);
+    //     psm.mint(address(this), amountFeiIn, amountVoltOut);
 
-        uint256 endingUserVoltBalance = volt.balanceOf(address(this));
-        uint256 endingPCVDepositFeiBalance = rariFEIPCVDeposit.balance();
+    //     uint256 endingUserVoltBalance = volt.balanceOf(address(this));
+    //     uint256 endingPCVDepositFeiBalance = rariFEIPCVDeposit.balance();
 
-        assertEq(
-            endingUserVoltBalance - startingUserVoltBalance,
-            amountVoltOut
-        );
-        assertEq(
-            endingPCVDepositFeiBalance - startingPCVDepositFeiBalance,
-            amountFeiIn
-        );
-    }
+    //     assertEq(
+    //         endingUserVoltBalance - startingUserVoltBalance,
+    //         amountVoltOut
+    //     );
+    //     assertEq(
+    //         endingPCVDepositFeiBalance - startingPCVDepositFeiBalance,
+    //         amountFeiIn
+    //     );
+    // }
 
-    /// this test uses FEI as the underlying asset and hooks into a FEI PCV Deposit
-    function testRedeemAfterPriceIncrease() public {
-        uint256 amountVoltIn = 100_000;
-        uint256 amountFeiOut = 101_000;
+    // /// this test uses FEI as the underlying asset and hooks into a FEI PCV Deposit
+    // function testRedeemAfterPriceIncrease() public {
+    //     uint256 amountVoltIn = 100_000;
+    //     uint256 amountFeiOut = 101_000;
 
-        rariFEIPCVDeposit.deposit(); // get env cleaned up and ready for testing
-        vm.warp(28 days + block.timestamp);
+    //     rariFEIPCVDeposit.deposit(); // get env cleaned up and ready for testing
+    //     vm.warp(28 days + block.timestamp);
 
-        uint256 startingUserVoltBalance = volt.balanceOf(address(this));
-        uint256 startingPCVDepositFeiBalance = rariFEIPCVDeposit.balance();
+    //     uint256 startingUserVoltBalance = volt.balanceOf(address(this));
+    //     uint256 startingPCVDepositFeiBalance = rariFEIPCVDeposit.balance();
 
-        volt.approve(address(psm), amountVoltIn);
-        psm.redeem(address(this), amountVoltIn, amountFeiOut);
+    //     volt.approve(address(psm), amountVoltIn);
+    //     psm.redeem(address(this), amountVoltIn, amountFeiOut);
 
-        uint256 endingUserVoltBalance = volt.balanceOf(address(this));
-        uint256 endingPCVDepositFeiBalance = rariFEIPCVDeposit.balance();
+    //     uint256 endingUserVoltBalance = volt.balanceOf(address(this));
+    //     uint256 endingPCVDepositFeiBalance = rariFEIPCVDeposit.balance();
 
-        assertEq(startingUserVoltBalance - endingUserVoltBalance, amountVoltIn);
-        assertEq(
-            startingPCVDepositFeiBalance - endingPCVDepositFeiBalance,
-            amountFeiOut
-        );
-    }
+    //     assertEq(startingUserVoltBalance - endingUserVoltBalance, amountVoltIn);
+    //     assertEq(
+    //         startingPCVDepositFeiBalance - endingPCVDepositFeiBalance,
+    //         amountFeiOut
+    //     );
+    // }
 
     function testGlobalRateLimitedMint() public {
         uint256 voltAvailableToMint = rateLimitedMinter.individualBuffer(

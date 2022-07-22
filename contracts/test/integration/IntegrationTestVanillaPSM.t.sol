@@ -112,8 +112,8 @@ contract IntegrationTestVanillaPSMTest is DSTest {
     }
 
     /// @notice PSM is set up correctly and redeem view function is working
-    function testGetRedeemAmountOut() public {
-        uint256 amountVoltIn = 100e18;
+    function testGetRedeemAmountOut(uint256 amountVoltIn) public {
+        if (amountVoltIn > voltMintAmount) return;
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
 
         uint256 amountOut = (amountVoltIn * currentPegPrice) / 1e6;
@@ -132,8 +132,10 @@ contract IntegrationTestVanillaPSMTest is DSTest {
     }
 
     /// @notice PSM is set up correctly and view functions are working
-    function testGetMintAmountOut() public {
-        uint256 amountUSDCIn = 100e18;
+    function testGetMintAmountOut(uint256 amountUSDCIn) public {
+        if (amountUSDCIn > usdc.balanceOf(address(this))) return;
+        amountUSDCIn = amountUSDCIn * 1e18;
+
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
 
         uint256 amountOut = ((amountUSDCIn * 1e6) / currentPegPrice);

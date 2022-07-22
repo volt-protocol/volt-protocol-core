@@ -111,8 +111,9 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     }
 
     /// @notice PSM is set up correctly and redeem view function is working
-    function testGetRedeemAmountOut() public {
-        uint256 amountVoltIn = 100e18;
+    function testGetRedeemAmountOut(uint256 amountVoltIn) public {
+        if (amountVoltIn > voltMintAmount) return;
+
         uint256 currentPegPrice = oracle.getCurrentOraclePrice() / 1e12;
 
         uint256 fee = (amountVoltIn * psm.redeemFeeBasisPoints()) /
@@ -143,10 +144,11 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     }
 
     /// @notice PSM is set up correctly and view functions are working
-    function testGetMintAmountOut() public {
-        uint256 amountUSDCIn = 100e18;
-        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
+    function testGetMintAmountOut(uint256 amountUSDCIn) public {
+        if (amountUSDCIn > usdc.balanceOf(address(this))) return;
+        amountUSDCIn = amountUSDCIn * 1e18;
 
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
         // The USDC PSM returns a result scaled up 1e12, so we scale the amountOut and fee
         // by this same amount to maintain precision
 

@@ -182,7 +182,6 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
     /// @param to is the address VOLT is being minted to
     /// @param amountIn is the the amount of stablecoin beind deposited
     /// @param minAmountOut is minimum amount of VOLT to be received
-
     function _beforeVoltMint(
         address to,
         uint256 amountIn,
@@ -213,7 +212,6 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
     /// @param  to is the address in which the underlying stablecoin will be sent to when VOLT redeemed
     /// @param amountVoltIn is the the amount of VOLT beind deposited
     /// @param minAmountOut is minimum amount of underlying stablecoin to be received
-
     function _afterVoltRedeem(
         address to,
         uint256 amountVoltIn,

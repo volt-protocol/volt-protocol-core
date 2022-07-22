@@ -114,15 +114,17 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     }
 
     /// @notice PSM is set up correctly and view functions are working
-    function testGetRedeemAmountOut() public {
+    function testGetRedeemAmountOut(uint256 amountVoltIn) public {
+        if (amountVoltIn > mintAmount) return;
+
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
-        uint256 fee = (mintAmount * psm.redeemFeeBasisPoints()) /
+        uint256 fee = (amountVoltIn * psm.redeemFeeBasisPoints()) /
             Constants.BASIS_POINTS_GRANULARITY;
 
-        uint256 amountOut = ((mintAmount * currentPegPrice) / 1e18) - fee;
+        uint256 amountOut = ((amountVoltIn * currentPegPrice) / 1e18) - fee;
 
         assertApproxEq(
-            psm.getRedeemAmountOut(mintAmount).toInt256(),
+            psm.getRedeemAmountOut(amountVoltIn).toInt256(),
             amountOut.toInt256(),
             1
         );
@@ -144,7 +146,9 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     }
 
     /// @notice PSM is set up correctly and view functions are working
-    function testGetMintAmountOut() public {
+    function testGetMintAmountOut(uint256 amountFeiIn) public {
+        if (amountFeiIn > fei.balanceOf(address(this))) return;
+
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
 
         uint256 fee = (mintAmount * psm.mintFeeBasisPoints()) /
