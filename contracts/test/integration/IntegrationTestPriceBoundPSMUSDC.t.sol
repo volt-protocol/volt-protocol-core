@@ -145,7 +145,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
 
     /// @notice PSM is set up correctly and view functions are working
     function testGetMintAmountOut(uint256 amountUSDCIn) public {
-        if (amountUSDCIn > usdc.balanceOf(address(this))) return;
+        vm.assume(mintAmount >= amountUSDCIn);
         amountUSDCIn = amountUSDCIn * 1e18;
 
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();

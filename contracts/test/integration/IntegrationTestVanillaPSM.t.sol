@@ -54,7 +54,7 @@ contract IntegrationTestVanillaPSMTest is DSTest {
     uint128 voltCeilingPrice = 10_500e12;
 
     function setUp() public {
-        BasePSM.OracleParams memory oracleParams;
+        IBasePSM.OracleParams memory oracleParams;
 
         oracleParams = IBasePSM.OracleParams({
             coreAddress: address(core),
@@ -113,7 +113,7 @@ contract IntegrationTestVanillaPSMTest is DSTest {
 
     /// @notice PSM is set up correctly and redeem view function is working
     function testGetRedeemAmountOut(uint256 amountVoltIn) public {
-        if (amountVoltIn > voltMintAmount) return;
+        vm.assume(voltMintAmount >= amountVoltIn);
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
 
         uint256 amountOut = (amountVoltIn * currentPegPrice) / 1e6;
@@ -133,7 +133,7 @@ contract IntegrationTestVanillaPSMTest is DSTest {
 
     /// @notice PSM is set up correctly and view functions are working
     function testGetMintAmountOut(uint256 amountUSDCIn) public {
-        if (amountUSDCIn > usdc.balanceOf(address(this))) return;
+        vm.assume(mintAmount >= amountUSDCIn);
         amountUSDCIn = amountUSDCIn * 1e18;
 
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();

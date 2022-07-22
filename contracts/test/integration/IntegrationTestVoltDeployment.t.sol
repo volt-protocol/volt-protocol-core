@@ -190,25 +190,6 @@ contract IntegrationTestVoltDeployment is DSTest, StdLib {
         assertEq(psm.getRedeemAmountOut(amountVoltIn), expectedAmountStableOut);
     }
 
-    /// this test uses FEI as the underlying asset and hooks into a FEI PCV Deposit
-    function testSwap() public {
-        rariFEIPCVDeposit.deposit(); // get env cleaned up and ready for testing
-        uint256 startingUserVoltBalance = volt.balanceOf(address(this));
-        uint256 startingPCVDepositFeiBalance = rariFEIPCVDeposit.balance();
-
-        fei.approve(address(psm), mintAmount);
-        psm.mint(address(this), mintAmount, mintAmount);
-
-        uint256 endingUserVoltBalance = volt.balanceOf(address(this));
-        uint256 endingPCVDepositFeiBalance = rariFEIPCVDeposit.balance();
-
-        assertEq(endingUserVoltBalance - startingUserVoltBalance, mintAmount);
-        assertEq(
-            (endingPCVDepositFeiBalance - startingPCVDepositFeiBalance),
-            (mintAmount - 1) /// goes down by 1 because of cToken pricing rounding down
-        );
-    }
-
     function testGlobalRateLimitedMint() public {
         uint256 voltAvailableToMint = rateLimitedMinter.individualBuffer(
             address(this)
