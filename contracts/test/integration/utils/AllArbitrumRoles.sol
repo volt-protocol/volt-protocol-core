@@ -69,7 +69,7 @@ contract AllArbitrumRoles {
         numPSMAdmins
     ];
 
-    constructor() {
+    function testSetup() public {
         allRoles.push(TribeRoles.GOVERNOR);
         allRoles.push(TribeRoles.GUARDIAN);
         allRoles.push(TribeRoles.PCV_CONTROLLER);
