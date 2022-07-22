@@ -70,8 +70,10 @@ contract AllMainnetRoles {
         numPSMAdmins
     ];
 
-    constructor() {
+    function setup() public {
+        console.log("core: ", address(core));
         allRoles.push(TribeRoles.GOVERNOR);
+        console.log("0");
         allRoles.push(TribeRoles.GUARDIAN);
         allRoles.push(TribeRoles.PCV_CONTROLLER);
         allRoles.push(TribeRoles.MINTER);
@@ -82,12 +84,15 @@ contract AllMainnetRoles {
         allRoles.push(TribeRoles.ADD_MINTER_ROLE);
         allRoles.push(TribeRoles.PSM_ADMIN_ROLE);
 
+        console.log("1");
         for (uint256 i = 0; i < allRoles.length; i++) {
             numEachRole.push(core.getRoleMemberCount(allRoles[i]));
         }
+        console.log("2");
 
         /// sanity check
         assert(numEachRole.length == allRoles.length);
+        console.log("3");
     }
 
     /// load up number of roles from Core and ensure that they match up with numbers here
