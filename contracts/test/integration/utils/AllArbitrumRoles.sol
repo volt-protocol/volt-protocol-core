@@ -69,7 +69,7 @@ contract AllArbitrumRoles {
         numPSMAdmins
     ];
 
-    function testSetup() public {
+    function setup() public {
         allRoles.push(TribeRoles.GOVERNOR);
         allRoles.push(TribeRoles.GUARDIAN);
         allRoles.push(TribeRoles.PCV_CONTROLLER);
@@ -81,24 +81,8 @@ contract AllArbitrumRoles {
         allRoles.push(TribeRoles.ADD_MINTER_ROLE);
         allRoles.push(TribeRoles.PSM_ADMIN_ROLE);
 
-        for (uint256 i = 0; i < allRoles.length; i++) {
-            numEachRole.push(core.getRoleMemberCount(allRoles[i]));
-        }
-    }
-
-    /// load up numbers from Core and ensure that they match up with numbers here
-    function testRoleArity() public view {
-        for (uint256 i = 0; i < allRoles.length; i++) {
-            if (numEachRole[i] != roleCounts[i]) {
-                revert(
-                    string(
-                        abi.encodePacked(
-                            "Arity mismatch for role ",
-                            Strings.toHexString(uint256(allRoles[i]), 32)
-                        )
-                    )
-                );
-            }
-        }
+        // for (uint256 i = 0; i < allRoles.length; i++) {
+        //     numEachRole.push(core.getRoleMemberCount(allRoles[i]));
+        // }
     }
 }
