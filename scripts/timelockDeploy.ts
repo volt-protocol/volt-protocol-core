@@ -60,8 +60,13 @@ async function main() {
 
   const multisig =
     network === 'mainnet' ? contractAddresses.protocolMultisig : contractAddresses.arbitrumProtocolMultisig;
-  const executors = [contractAddresses.pcvGuardEOA1, contractAddresses.pcvGuardEOA2, contractAddresses.pcvGuardEOA3];
-  const proposers = [multisig, ...executors];
+  const executors = [multisig]; /// only the multisig can execute
+  const proposers = [
+    multisig,
+    contractAddresses.pcvGuardEOA1,
+    contractAddresses.pcvGuardEOA2,
+    contractAddresses.pcvGuardEOA3
+  ];
 
   const timelock = await deploy(proposers, executors);
 
