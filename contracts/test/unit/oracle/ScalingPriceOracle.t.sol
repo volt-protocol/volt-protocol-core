@@ -10,7 +10,7 @@ import {Decimal} from "./../../../external/Decimal.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 
-contract ScalingPriceOracleTest is DSTest {
+contract UnitTestScalingPriceOracle is DSTest {
     using Decimal for Decimal.D256;
     using SafeCast for *;
 

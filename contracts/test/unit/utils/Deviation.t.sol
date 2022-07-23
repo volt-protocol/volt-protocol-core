@@ -9,7 +9,7 @@ import {getCore, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol"
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-contract DeviationTest is DSTest {
+contract UnitTestDeviation is DSTest {
     using SafeCast for *;
     using Deviation for *;
 

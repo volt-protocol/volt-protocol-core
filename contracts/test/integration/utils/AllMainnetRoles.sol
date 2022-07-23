@@ -12,7 +12,7 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {RoleTesting} from "./RoleTesting.sol";
 import {console} from "hardhat/console.sol";
 
-contract AllMainnetRoles is RoleTesting {
+contract IntegrationTestAllMainnetRoles is RoleTesting {
     /// @notice all roles
     bytes32[] private allRoles;
     /// how many of each role exists
@@ -70,7 +70,7 @@ contract AllMainnetRoles is RoleTesting {
         numPSMAdmins
     ];
 
-    function setup() public {
+    function setUp() public {
         allRoles.push(TribeRoles.GOVERNOR);
         allRoles.push(TribeRoles.GUARDIAN);
         allRoles.push(TribeRoles.PCV_CONTROLLER);

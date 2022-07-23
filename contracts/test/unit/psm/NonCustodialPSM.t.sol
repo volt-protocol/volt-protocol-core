@@ -18,7 +18,7 @@ import {Vm} from "./../utils/Vm.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {getCore, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
 
-contract NonCustodialPSMTest is DSTest {
+contract UnitTestNonCustodialPSM is DSTest {
     using SafeCast for *;
 
     GlobalRateLimitedMinter private rateLimitedMinter;
