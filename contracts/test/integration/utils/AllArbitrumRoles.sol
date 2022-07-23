@@ -2,6 +2,7 @@
 pragma solidity ^0.8.4;
 
 import {Core, Vcon, Volt, IERC20, IVolt} from "../../../core/Core.sol";
+import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
 import {TribeRoles} from "../../../core/TribeRoles.sol";
 import {DSTest} from "./../../unit/utils/DSTest.sol";
@@ -12,13 +13,13 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {RoleTesting} from "./RoleTesting.sol";
 import {console} from "hardhat/console.sol";
 
-contract AllMainnetRoles is RoleTesting {
+contract ArbitrumTestAllArbitrumRoles is RoleTesting {
     /// @notice all roles
     bytes32[] private allRoles;
     /// how many of each role exists
     uint256[] private numEachRole;
 
-    Core private core = Core(MainnetAddresses.CORE);
+    Core private core = Core(ArbitrumAddresses.CORE);
 
     /// @notice array of arrays that has all addresses in each role
     address[][10] private allAddresses;
@@ -28,15 +29,14 @@ contract AllMainnetRoles is RoleTesting {
     /// timelock (currently deprecated), multisig, core
     uint256 public constant numGovernors = 2;
 
-    /// EOA1, multisig, pcv guardian
-    uint256 public constant numGuardians = 3;
+    /// pcv guardian
+    uint256 public constant numGuardians = 1;
 
-    /// NonCustodial PSM, multisig, PCV Guardian
+    /// Optimistic Timelock, multisig, PCV Guardian
     uint256 public constant numPCVControllers = 3;
 
-    /// Global Rate Limited Minter
-    /// TODO deprecate the global rate limited minter
-    uint256 public constant numMinters = 1;
+    /// NA on Arbitrum
+    uint256 public constant numMinters = 0;
 
     /// Revoked EOA 1, EOA2
     uint256 public constant numPCVGuards = 2;
@@ -70,7 +70,7 @@ contract AllMainnetRoles is RoleTesting {
         numPSMAdmins
     ];
 
-    function setup() public {
+    function setUp() public {
         allRoles.push(TribeRoles.GOVERNOR);
         allRoles.push(TribeRoles.GUARDIAN);
         allRoles.push(TribeRoles.PCV_CONTROLLER);
@@ -86,23 +86,19 @@ contract AllMainnetRoles is RoleTesting {
             numEachRole.push(core.getRoleMemberCount(allRoles[i]));
         }
 
-        allAddresses[0].push(MainnetAddresses.CORE);
-        allAddresses[0].push(MainnetAddresses.GOVERNOR);
+        allAddresses[0].push(ArbitrumAddresses.CORE);
+        allAddresses[0].push(ArbitrumAddresses.GOVERNOR);
 
-        allAddresses[1].push(MainnetAddresses.GOVERNOR);
-        allAddresses[1].push(MainnetAddresses.GUARDIAN);
-        allAddresses[1].push(MainnetAddresses.EOA_1);
+        allAddresses[1].push(ArbitrumAddresses.GUARDIAN);
 
-        allAddresses[2].push(MainnetAddresses.NC_PSM);
-        allAddresses[2].push(MainnetAddresses.GOVERNOR);
-        allAddresses[2].push(MainnetAddresses.GUARDIAN);
-
-        allAddresses[3].push(MainnetAddresses.GRLM);
+        allAddresses[2].push(ArbitrumAddresses.GOVERNOR);
+        allAddresses[2].push(ArbitrumAddresses.GUARDIAN);
+        allAddresses[2].push(ArbitrumAddresses.DEPRECATED_TIMELOCK);
 
         allAddresses[4].push(MainnetAddresses.REVOKED_EOA_1);
         allAddresses[4].push(MainnetAddresses.EOA_2);
 
-        allAddresses[7].push(MainnetAddresses.PCV_GUARD_ADMIN);
+        allAddresses[7].push(ArbitrumAddresses.PCV_GUARD_ADMIN);
 
         /// sanity check
         assert(numEachRole.length == allRoles.length);

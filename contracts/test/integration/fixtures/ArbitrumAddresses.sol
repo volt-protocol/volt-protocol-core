@@ -24,6 +24,9 @@ library ArbitrumAddresses {
     address public constant VOLT_USDC_PSM =
         0x278A903dA9Fb0ea8B90c2b1b089eF90033FDd868;
 
+    address public constant PCV_GUARD_ADMIN =
+        0x0d6d0600BEa83FaAF172C2E8aCDd2F5140e235D3;
+
     // ---------- TOKEN ADDRESSES ----------
 
     address public constant USDC = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
