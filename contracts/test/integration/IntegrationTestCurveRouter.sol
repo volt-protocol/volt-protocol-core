@@ -110,7 +110,9 @@ contract IntegrationTestCurveRouter is DSTest {
     function testRedeem(uint256 amountVoltIn) public {
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
         vm.assume(
-            (usdc.balanceOf(address(VOLT_USDC_PSM)) * 1e12) / currentPegPrice >=
+            ((usdc.balanceOf(address(VOLT_USDC_PSM)) * 1e12) /
+                currentPegPrice) *
+                1e18 >=
                 amountVoltIn
         );
 
