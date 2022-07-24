@@ -9,7 +9,6 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {MainnetAddresses} from "../../test/integration/fixtures/MainnetAddresses.sol";
 import {Constants} from "../../Constants.sol";
-
 import "hardhat/console.sol";
 
 contract CurveRouter is ICurveRouter {
@@ -23,6 +22,10 @@ contract CurveRouter is ICurveRouter {
     constructor(IVolt _volt) {
         volt = _volt;
 
+        IERC20(MainnetAddresses.VOLT).approve(
+            address(MainnetAddresses.VOLT_USDC_PSM),
+            type(uint256).max
+        );
         IERC20(MainnetAddresses.USDC).approve(
             address(MainnetAddresses.VOLT_USDC_PSM),
             type(uint256).max
@@ -76,7 +79,22 @@ contract CurveRouter is ICurveRouter {
         address tokenA,
         address tokenB,
         uint256 noOfTokens
-    ) external view override returns (uint256 amountOut) {}
+    )
+        external
+        view
+        override
+        returns (uint256 amountTokenAReceived, uint256 amountTokenBReceived)
+    {
+        amountTokenAReceived = psm.getRedeemAmountOut(amountVoltIn);
+
+        (amountTokenBReceived, , ) = calculateSwap(
+            amountTokenAReceived,
+            curvePool,
+            tokenA,
+            tokenB,
+            noOfTokens
+        );
+    }
 
     // ---------- State-Changing API ----------
 
@@ -134,7 +152,34 @@ contract CurveRouter is ICurveRouter {
         address tokenA,
         address tokenB,
         uint256 noOfTokens
-    ) external override returns (uint256 amountOut) {}
+    ) external override returns (uint256) {
+        volt.transferFrom(msg.sender, address(this), amountVoltIn);
+
+        uint256 amountTokenAReceived = psm.redeem(
+            address(this),
+            amountVoltIn,
+            minAmountOut
+        );
+
+        (uint256 amountOut, uint256 index_i, uint256 index_j) = calculateSwap(
+            amountTokenAReceived,
+            curvePool,
+            tokenA,
+            tokenB,
+            noOfTokens
+        );
+
+        ICurvePool(curvePool).exchange(
+            index_i.toInt256().toInt128(),
+            index_j.toInt256().toInt128(),
+            amountTokenAReceived,
+            amountOut
+        );
+
+        IERC20(tokenB).transferFrom(address(this), to, amountOut);
+
+        return amountOut;
+    }
 
     function calculateSwap(
         uint256 amountIn,
@@ -166,7 +211,7 @@ contract CurveRouter is ICurveRouter {
                 index_i.toInt256().toInt128(),
                 index_j.toInt256().toInt128(),
                 amountIn
-            ) * 999) /
-            1000;
+            ) * 9999) /
+            10000;
     }
 }

@@ -28,7 +28,7 @@ interface ICurveRouter {
         address tokenA,
         address tokenB,
         uint256 noOfTokens
-    ) external view returns (uint256 amountOut);
+    ) external view returns (uint256 amountTokenBReceived, uint256 amountOut);
 
     // ---------- State-Changing API ----------
 
