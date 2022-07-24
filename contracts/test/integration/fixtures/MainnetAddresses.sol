@@ -50,6 +50,8 @@ library MainnetAddresses {
 
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
+    address public constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
+
     // ---------- CHAINLINK ADDRESSES ----------
 
     address public constant CHAINLINK_ORACLE_ADDRESS =

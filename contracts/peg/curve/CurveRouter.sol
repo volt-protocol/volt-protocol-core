@@ -5,13 +5,16 @@ import {ICurveRouter} from "./ICurveRouter.sol";
 import {ICurvePool} from "./ICurvePool.sol";
 import {IVolt} from "../../volt/IVolt.sol";
 import {IPegStabilityModule} from "../IPegStabilityModule.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "hardhat/console.sol";
-
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {MainnetAddresses} from "../../test/integration/fixtures/MainnetAddresses.sol";
 import {Constants} from "../../Constants.sol";
+
+import "hardhat/console.sol";
 
 contract CurveRouter is ICurveRouter {
     using SafeERC20 for IERC20;
+    using SafeCast for *;
 
     /// @notice reference to the Volt contract used.
     /// Router can be redeployed if Volt address changes
@@ -19,6 +22,25 @@ contract CurveRouter is ICurveRouter {
 
     constructor(IVolt _volt) {
         volt = _volt;
+
+        IERC20(MainnetAddresses.USDC).approve(
+            address(MainnetAddresses.VOLT_USDC_PSM),
+            type(uint256).max
+        );
+
+        IERC20(MainnetAddresses.USDC).approve(
+            address(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL),
+            type(uint256).max
+        );
+
+        IERC20(MainnetAddresses.USDT).safeApprove(
+            address(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL),
+            type(uint256).max
+        );
+        IERC20(MainnetAddresses.DAI).approve(
+            address(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL),
+            type(uint256).max
+        );
     }
 
     /// @notice calculate the amount of VOLT out for a given `amountIn` of underlying
@@ -27,60 +49,67 @@ contract CurveRouter is ICurveRouter {
         IPegStabilityModule psm,
         address curvePool,
         address tokenA,
-        address tokenB
+        address tokenB,
+        uint256 noOfTokens
     )
         public
         view
         override
-        returns (uint256 amountTokenBReceived, uint256 amountVoltOut)
+        returns (uint256 amountTokenBReceived, uint256 amountOut)
     {
-        (amountTokenBReceived, amountVoltOut, , ) = _calculateSwap(
+        (amountTokenBReceived, , ) = calculateSwap(
             amountIn,
-            psm,
             curvePool,
             tokenA,
-            tokenB
+            tokenB,
+            noOfTokens
         );
+
+        amountOut = psm.getMintAmountOut(amountTokenBReceived);
     }
 
     /// @notice calculate the amount of underlying out for a given `amountVoltIn` of VOLT
     function getRedeemAmountOut(
         uint256 amountVoltIn,
+        IPegStabilityModule psm,
+        address curvePool,
         address tokenA,
-        address tokenB
+        address tokenB,
+        uint256 noOfTokens
     ) external view override returns (uint256 amountOut) {}
 
     // ---------- State-Changing API ----------
 
     /// @notice Mint volt for stablecoins via curve
     /// @param to, the address to mint Volt to
+    /// @param amountIn, the amount of stablecoin to deposit
+    /// @param amountVoltOut the amount of Volt we should get out, calculated externally from PSM and passed here
     /// @param psm, the PSM the router should mint from
     /// @param tokenA, the inital token that the user would like to swap
     /// @param tokenB, the token the user would route through
+    /// @param noOfTokens, the number of tokens in the curve pool
     /// @return amountOut the amount of Volt returned from the mint function
-
     function mint(
         address to,
         uint256 amountIn,
+        uint256 amountVoltOut,
         IPegStabilityModule psm,
         address curvePool,
         address tokenA,
-        address tokenB
+        address tokenB,
+        uint256 noOfTokens
     ) external override returns (uint256 amountOut) {
         (
             uint256 amountTokenBReceived,
-            uint256 amountVoltOut,
-            int256 index_i,
-            int256 index_j
-        ) = _calculateSwap(amountIn, psm, curvePool, tokenA, tokenB);
+            uint256 index_i,
+            uint256 index_j
+        ) = calculateSwap(amountIn, curvePool, tokenA, tokenB, noOfTokens);
 
         IERC20(tokenA).transferFrom(msg.sender, address(this), amountIn);
 
-        IERC20(tokenA).approve(address(curvePool), type(uint256).max);
-
         ICurvePool(curvePool).exchange(
-            int128(index_i),
-            int128(index_j),
+            index_i.toInt256().toInt128(),
+            index_j.toInt256().toInt128(),
             amountIn,
             amountTokenBReceived
         );
@@ -100,55 +129,44 @@ contract CurveRouter is ICurveRouter {
         address to,
         uint256 amountVoltIn,
         uint256 minAmountOut,
-        address psm,
-        address tokenA,
-        address tokenB
-    ) external override returns (uint256 amountOut) {}
-
-    // ---------- Private functions ----------
-
-    function _calculateSwap(
-        uint256 amountIn,
         IPegStabilityModule psm,
         address curvePool,
         address tokenA,
-        address tokenB
+        address tokenB,
+        uint256 noOfTokens
+    ) external override returns (uint256 amountOut) {}
+
+    function calculateSwap(
+        uint256 amountIn,
+        address curvePool,
+        address tokenA,
+        address tokenB,
+        uint256 noOfTokens
     )
-        private
+        public
         view
         returns (
             uint256 amountTokenBReceived,
-            uint256 amountVoltOut,
-            int256 index_i,
-            int256 index_j
+            uint256 index_i,
+            uint256 index_j
         )
     {
-        require(
-            address(psm.underlyingToken()) == tokenB,
-            "CurveRouter: Unsupported Token"
-        );
-
-        // todo to be able to search up to 4 tokens -- curve reverts the call when accessing an index that doesn't exist
-        // maybe pass number of tokens in the pool in the function
-
-        for (int256 i = 0; i < 3; i++) {
-            if (ICurvePool(curvePool).coins(uint256(i)) == tokenA) {
+        for (uint256 i = 0; i < noOfTokens; i++) {
+            if (ICurvePool(curvePool).coins(i) == tokenA) {
                 index_i = i;
             }
 
-            if (ICurvePool(curvePool).coins(uint256(i)) == tokenB) {
+            if (ICurvePool(curvePool).coins(i) == tokenB) {
                 index_j = i;
             }
         }
 
-        // console.log(uint256(index_i), uint256(index_j));
-
-        amountTokenBReceived = ICurvePool(curvePool).get_dy(
-            int128(index_i),
-            int128(index_j),
-            amountIn
-        );
-
-        amountVoltOut = psm.getMintAmountOut(amountTokenBReceived);
+        amountTokenBReceived =
+            (ICurvePool(curvePool).get_dy(
+                index_i.toInt256().toInt128(),
+                index_j.toInt256().toInt128(),
+                amountIn
+            ) * 999) /
+            1000;
     }
 }
