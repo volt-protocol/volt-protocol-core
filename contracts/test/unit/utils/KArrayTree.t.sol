@@ -2,10 +2,9 @@ pragma solidity =0.8.13;
 
 import {KArrayTree} from "../../integration/utils/KArrayTree.sol";
 import {TribeRoles} from "../../../core/TribeRoles.sol";
-import {DSTest} from "./../utils/DSTest.sol";
-import "hardhat/console.sol";
+import "forge-std/Test.sol";
 
-contract KArrayTreeUnitTest is DSTest {
+contract KArrayTreeUnitTest is Test {
     using KArrayTree for KArrayTree.Node;
 
     KArrayTree.Node public tree;

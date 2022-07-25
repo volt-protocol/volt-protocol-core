@@ -43,7 +43,7 @@ library KArrayTree {
 
         if (found) {
             uint256 index = elem.childArray.length;
-            insert(self, keyToAdd);
+            insert(elem, keyToAdd);
             return (true, elem.childMap[index]);
         }
 
