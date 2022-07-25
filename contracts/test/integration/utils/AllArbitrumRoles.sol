@@ -14,11 +14,6 @@ import {RoleTesting} from "./RoleTesting.sol";
 import {ArbitrumRolesConfig} from "./ArbitrumRolesConfig.sol";
 
 contract ArbitrumTestAllArbitrumRoles is RoleTesting, ArbitrumRolesConfig {
-    /// @notice all roles
-    bytes32[] private allRoles;
-    /// how many of each role exists
-    uint256[] private numEachRole;
-
     Core private core = Core(ArbitrumAddresses.CORE);
 
     function setUp() public {

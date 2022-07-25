@@ -10,8 +10,6 @@ import {Core} from "../../../core/Core.sol";
 import {Vm} from "./../../unit/utils/Vm.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
-import {console} from "hardhat/console.sol";
-
 contract RoleTesting is DSTest {
     /// load up number of roles from Core and ensure that they match up with numbers here
     function _testRoleArity(

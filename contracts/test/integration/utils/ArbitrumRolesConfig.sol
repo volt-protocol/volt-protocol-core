@@ -1,6 +1,11 @@
 pragma solidity =0.8.13;
 
 contract ArbitrumRolesConfig {
+    /// @notice all roles
+    bytes32[] public allRoles;
+    /// how many of each role exists
+    uint256[] public numEachRole;
+
     /// @notice array of arrays that has all addresses in each role
     address[][7] public allAddresses;
 

@@ -13,11 +13,6 @@ import {RoleTesting} from "./RoleTesting.sol";
 import {MainnetRolesConfig} from "./MainnetRolesConfig.sol";
 
 contract IntegrationTestAllMainnetRoles is RoleTesting, MainnetRolesConfig {
-    /// @notice all roles
-    bytes32[] private allRoles;
-    /// how many of each role exists
-    uint256[] private numEachRole;
-
     Core private core = Core(MainnetAddresses.CORE);
 
     function setUp() public {
