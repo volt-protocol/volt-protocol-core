@@ -16,7 +16,7 @@ contract RoleTesting is DSTest {
     /// load up number of roles from Core and ensure that they match up with numbers here
     function _testRoleArity(
         bytes32[] memory allRoles,
-        uint256[10] memory roleCounts,
+        uint256[7] memory roleCounts,
         uint256[] memory numEachRole
     ) internal pure {
         for (uint256 i = 0; i < allRoles.length; i++) {
@@ -42,7 +42,7 @@ contract RoleTesting is DSTest {
     /// assert that all addresses have the proper role
     function _testRoleAddresses(
         bytes32[] memory allRoles,
-        address[][10] memory allAddresses,
+        address[][7] memory allAddresses,
         Core core
     ) internal {
         for (uint256 i = 0; i < allRoles.length; i++) {

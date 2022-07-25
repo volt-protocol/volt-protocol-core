@@ -64,7 +64,7 @@ const MainnetAddresses: MainnetAddresses = {
   },
   globalRateLimitedMinter: {
     address: '0x87945f59E008aDc9ed6210a8e061f009d6ace718',
-    artifactName: 'GlobalRateLimitedMinter',
+    artifactName: 'IGlobalRateLimitedMinter',
     category: AddressCategory.Core,
     network: Network.Mainnet
   },

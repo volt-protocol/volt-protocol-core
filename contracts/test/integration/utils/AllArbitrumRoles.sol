@@ -22,7 +22,7 @@ contract ArbitrumTestAllArbitrumRoles is RoleTesting {
     Core private core = Core(ArbitrumAddresses.CORE);
 
     /// @notice array of arrays that has all addresses in each role
-    address[][10] private allAddresses;
+    address[][7] private allAddresses;
 
     /// ------ @notice number of each role in the system ------
 
@@ -41,32 +41,20 @@ contract ArbitrumTestAllArbitrumRoles is RoleTesting {
     /// Revoked EOA 1, EOA2
     uint256 public constant numPCVGuards = 2;
 
-    /// NA
-    uint256 public constant numParamAdmins = 0;
-
-    /// NA
-    uint256 public constant numPCVGuardianAdmins = 0;
-
     /// PCV Guard Admin
     uint256 public constant numPCVGuardAdmins = 1;
-
-    /// NA
-    uint256 public constant numAddMinters = 0;
 
     /// NA
     uint256 public constant numPSMAdmins = 0;
 
     /// @notice all the number of each roles in order of the allRoles array
-    uint256[10] private roleCounts = [
+    uint256[7] private roleCounts = [
         numGovernors,
         numGuardians,
         numPCVControllers,
         numMinters,
         numPCVGuards,
-        numParamAdmins,
-        numPCVGuardianAdmins,
         numPCVGuardAdmins,
-        numAddMinters,
         numPSMAdmins
     ];
 
@@ -76,10 +64,7 @@ contract ArbitrumTestAllArbitrumRoles is RoleTesting {
         allRoles.push(TribeRoles.PCV_CONTROLLER);
         allRoles.push(TribeRoles.MINTER);
         allRoles.push(TribeRoles.PCV_GUARD);
-        allRoles.push(TribeRoles.PARAMETER_ADMIN);
-        allRoles.push(TribeRoles.PCV_GUARDIAN_ADMIN);
         allRoles.push(TribeRoles.PCV_GUARD_ADMIN);
-        allRoles.push(TribeRoles.ADD_MINTER_ROLE);
         allRoles.push(TribeRoles.PSM_ADMIN_ROLE);
 
         for (uint256 i = 0; i < allRoles.length; i++) {
@@ -98,7 +83,7 @@ contract ArbitrumTestAllArbitrumRoles is RoleTesting {
         allAddresses[4].push(MainnetAddresses.REVOKED_EOA_1);
         allAddresses[4].push(MainnetAddresses.EOA_2);
 
-        allAddresses[7].push(ArbitrumAddresses.PCV_GUARD_ADMIN);
+        allAddresses[5].push(ArbitrumAddresses.PCV_GUARD_ADMIN);
 
         /// sanity check
         assert(numEachRole.length == allRoles.length);

@@ -28,12 +28,6 @@ contract RoleHierarchyMainnetIntegrationTest is RoleTesting {
         roleHierarchy.insert(TribeRoles.GOVERNOR, TribeRoles.PCV_GUARD_ADMIN);
         roleHierarchy.insert(TribeRoles.PCV_GUARD_ADMIN, TribeRoles.PCV_GUARD);
 
-        roleHierarchy.insert(TribeRoles.GOVERNOR, TribeRoles.PARAMETER_ADMIN);
-        roleHierarchy.insert(
-            TribeRoles.GOVERNOR,
-            TribeRoles.PCV_GUARDIAN_ADMIN
-        );
-        roleHierarchy.insert(TribeRoles.GOVERNOR, TribeRoles.ADD_MINTER_ROLE);
         roleHierarchy.insert(TribeRoles.GOVERNOR, TribeRoles.PSM_ADMIN_ROLE);
 
         roleToAddress[TribeRoles.GUARDIAN] = MainnetAddresses.GUARDIAN;

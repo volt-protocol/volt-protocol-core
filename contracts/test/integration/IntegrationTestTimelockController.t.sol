@@ -5,12 +5,11 @@ import {Vm} from "../unit/utils/Vm.sol";
 import {ICore} from "../../core/ICore.sol";
 import {DSTest} from "../unit/utils/DSTest.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
-import {INonCustodialPSM} from "./../../peg/NonCustodialPSM.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {getCore, getAddresses, getVoltAddresses, VoltAddresses} from "../unit/utils/Fixtures.sol";
 
-contract IntegrationTestOATimelock is DSTest {
+contract IntegrationTestTimelockController is DSTest {
     Vm public constant vm = Vm(HEVM_ADDRESS);
     TimelockController public oaTimelock;
     VoltAddresses public voltAddresses = getVoltAddresses();

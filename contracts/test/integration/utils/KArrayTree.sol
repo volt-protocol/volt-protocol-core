@@ -61,6 +61,7 @@ library KArrayTree {
     /// @return true and pointer to first key found, return false and incorrect pointer if not
     function traverse(Node storage root, bytes32 key)
         internal
+        view
         returns (bool, Node storage)
     {
         if (root.role == key) {
@@ -86,6 +87,7 @@ library KArrayTree {
     /// @return all immediate children of the root
     function getAllChildRoles(Node storage root)
         internal
+        view
         returns (bytes32[] memory)
     {
         uint256 len = root.childArray.length;
@@ -102,6 +104,7 @@ library KArrayTree {
     /// @param root the node to return length of all immediate children from
     function getCountImmediateChildren(Node storage root)
         internal
+        view
         returns (uint256)
     {
         return root.childArray.length;
@@ -110,7 +113,11 @@ library KArrayTree {
     /// @notice check whether a node exists in the given tree
     /// @param root the node to start traversal from
     /// @param key to search for in tree
-    function exists(Node storage root, bytes32 key) internal returns (bool) {
+    function exists(Node storage root, bytes32 key)
+        internal
+        view
+        returns (bool)
+    {
         (bool found, ) = traverse(root, key);
         return found;
     }
@@ -121,6 +128,7 @@ library KArrayTree {
     /// @return the depth of the tree
     function treeDepth(Node storage root, uint256 currentDepth)
         internal
+        view
         returns (uint256)
     {
         uint256 len = root.childArray.length;
@@ -146,7 +154,7 @@ library KArrayTree {
 
     /// @notice returns the maximum tree depth
     /// @param root the root node to measure depth from
-    function getMaxDepth(Node storage root) internal returns (uint256) {
+    function getMaxDepth(Node storage root) internal view returns (uint256) {
         return treeDepth(root, 1);
     }
 
