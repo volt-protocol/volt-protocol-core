@@ -35,6 +35,8 @@ interface ICurveRouter {
     /// @notice Mint volt for stablecoins via curve
     /// @param to, the address to mint Volt to
     /// @param amountIn, the amount of stablecoin to deposit
+    /// @param amountStableOut, the amount we expect to recieve from curve
+    /// @param amountVoltOut the amount of Volt we should get out, calculated externally from PSM and passed here
     /// @param psm, the PSM the router should mint from
     /// @param tokenA, the inital token that the user would like to swap
     /// @param tokenB, the token the user would route through
@@ -43,6 +45,7 @@ interface ICurveRouter {
     function mint(
         address to,
         uint256 amountIn,
+        uint256 amountStableOut,
         uint256 amountVoltOut,
         IPegStabilityModule psm,
         address curvePool,
@@ -54,7 +57,8 @@ interface ICurveRouter {
     /// @notice Redeems volt for stablecoin via curve
     /// @param to, the address to send redeemed stablecoin to
     /// @param amountVoltIn, the amount of VOLT to deposit
-    /// @param minAmountOut, the minimum amount of stablecoin expected to be received
+    /// @param amountStableOut, the amount of stablecoin we expect from the PSM
+    /// @param minAmountOut, the minimum amount of stablecoin expect to receive from curve
     /// @param psm, the PSM the router should redeem from
     /// @param curvePool, address of the curve pool
     /// @param tokenA, the token to route through on redemption
@@ -64,6 +68,7 @@ interface ICurveRouter {
     function redeem(
         address to,
         uint256 amountVoltIn,
+        uint256 amountStableOut,
         uint256 minAmountOut,
         IPegStabilityModule psm,
         address curvePool,

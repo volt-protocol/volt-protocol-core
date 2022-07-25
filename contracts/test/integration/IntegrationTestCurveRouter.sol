@@ -43,13 +43,11 @@ contract IntegrationTestCurveRouter is DSTest {
             address(this),
             dai.balanceOf(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL) / 2
         );
-
         vm.stopPrank();
 
         vm.startPrank(MainnetAddresses.GOVERNOR);
         core.grantMinter(MainnetAddresses.GOVERNOR);
         volt.mint(address(this), voltMintAmount);
-        VOLT_USDC_PSM.unpauseRedeem();
         vm.stopPrank();
     }
 
@@ -60,21 +58,20 @@ contract IntegrationTestCurveRouter is DSTest {
         amountDaiIn = amountDaiIn * 1e18;
         uint256 startingVoltBalance = volt.balanceOf(address(this));
 
-        (uint256 amountTokenBReceived, , ) = curveRouter.calculateSwap(
-            amountDaiIn,
-            MainnetAddresses.DAI_USDC_USDT_CURVE_POOL,
-            address(dai),
-            address(usdc),
-            3
-        );
-
-        uint256 amountVoltOut = VOLT_USDC_PSM.getMintAmountOut(
-            amountTokenBReceived
-        );
+        (uint256 amountTokenBReceived, uint256 amountVoltOut) = curveRouter
+            .getMintAmountOut(
+                amountDaiIn,
+                VOLT_USDC_PSM,
+                MainnetAddresses.DAI_USDC_USDT_CURVE_POOL,
+                address(dai),
+                address(usdc),
+                3
+            );
 
         curveRouter.mint(
             address(this),
             amountDaiIn,
+            amountTokenBReceived,
             amountVoltOut,
             VOLT_USDC_PSM,
             MainnetAddresses.DAI_USDC_USDT_CURVE_POOL,
@@ -123,19 +120,23 @@ contract IntegrationTestCurveRouter is DSTest {
 
         uint256 startingDaiBalance = dai.balanceOf(address(this));
 
-        (uint256 amountTokenAReceived, ) = curveRouter.getRedeemAmountOut(
-            amountVoltIn,
-            VOLT_USDC_PSM,
-            MainnetAddresses.DAI_USDC_USDT_CURVE_POOL,
-            address(usdc),
-            address(dai),
-            3
-        );
+        (
+            uint256 amountTokenAReceived,
+            uint256 amountTokenBReceived
+        ) = curveRouter.getRedeemAmountOut(
+                amountVoltIn,
+                VOLT_USDC_PSM,
+                MainnetAddresses.DAI_USDC_USDT_CURVE_POOL,
+                address(usdc),
+                address(dai),
+                3
+            );
 
         uint256 amountDaiOut = curveRouter.redeem(
             address(this),
             amountVoltIn,
             amountTokenAReceived,
+            amountTokenBReceived,
             VOLT_USDC_PSM,
             MainnetAddresses.DAI_USDC_USDT_CURVE_POOL,
             address(usdc),
