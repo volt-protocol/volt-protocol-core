@@ -126,7 +126,9 @@ contract IntegrationTestCurveRouter is DSTest {
 
         (
             uint256 amountTokenAReceived,
-            uint256 amountTokenBReceived
+            uint256 amountTokenBReceived,
+            uint256 index_i,
+            uint256 index_j
         ) = curveRouter.getRedeemAmountOut(
                 amountVoltIn,
                 VOLT_USDC_PSM,
@@ -143,9 +145,9 @@ contract IntegrationTestCurveRouter is DSTest {
             amountTokenBReceived,
             VOLT_USDC_PSM,
             MainnetAddresses.DAI_USDC_USDT_CURVE_POOL,
-            address(usdc),
             address(dai),
-            3
+            index_i,
+            index_j
         );
 
         uint256 endingDaiBalance = dai.balanceOf(address(this));
@@ -156,7 +158,7 @@ contract IntegrationTestCurveRouter is DSTest {
     function testGetRedeemAmountOut(uint256 amountVoltIn) public {
         vm.assume(volt.balanceOf(address(VOLT_USDC_PSM)) >= amountVoltIn);
 
-        (uint256 amountTokenAReceived, ) = curveRouter.getRedeemAmountOut(
+        (uint256 amountTokenAReceived, , , ) = curveRouter.getRedeemAmountOut(
             amountVoltIn,
             VOLT_USDC_PSM,
             MainnetAddresses.DAI_USDC_USDT_CURVE_POOL,

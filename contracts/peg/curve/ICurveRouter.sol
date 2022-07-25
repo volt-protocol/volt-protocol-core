@@ -35,7 +35,15 @@ interface ICurveRouter {
         address tokenA,
         address tokenB,
         uint256 noOfTokens
-    ) external view returns (uint256 amountTokenBReceived, uint256 amountOut);
+    )
+        external
+        view
+        returns (
+            uint256 amountTokenBReceived,
+            uint256 amountOut,
+            uint256 index_i,
+            uint256 index_j
+        );
 
     // ---------- State-Changing API ----------
 
@@ -47,7 +55,6 @@ interface ICurveRouter {
     /// @param psm, the PSM the router should mint from
     /// @param tokenA, the inital token that the user would like to swap
     /// @return amountOut the amount of Volt returned from the mint function
-
     function mint(
         address to,
         uint256 amountIn,
@@ -67,9 +74,7 @@ interface ICurveRouter {
     /// @param minAmountOut, the minimum amount of stablecoin expect to receive from curve
     /// @param psm, the PSM the router should redeem from
     /// @param curvePool, address of the curve pool
-    /// @param tokenA, the token to route through on redemption
     /// @param tokenB, the token the user would like to redeem
-    /// @param noOfTokens, the number of tokens in the pool
     /// @return amountOut the amount of stablecoin returned from the mint function
     function redeem(
         address to,
@@ -78,8 +83,9 @@ interface ICurveRouter {
         uint256 minAmountOut,
         IPegStabilityModule psm,
         address curvePool,
-        address tokenA,
+        // address tokenA,
         address tokenB,
-        uint256 noOfTokens
+        uint256 index_i,
+        uint256 index_j
     ) external returns (uint256 amountOut);
 }

@@ -88,11 +88,16 @@ contract CurveRouter is ICurveRouter {
         external
         view
         override
-        returns (uint256 amountTokenAReceived, uint256 amountTokenBReceived)
+        returns (
+            uint256 amountTokenAReceived,
+            uint256 amountTokenBReceived,
+            uint256 index_i,
+            uint256 index_j
+        )
     {
         amountTokenAReceived = psm.getRedeemAmountOut(amountVoltIn);
 
-        (amountTokenBReceived, , ) = calculateSwap(
+        (amountTokenBReceived, index_i, index_j) = calculateSwap(
             amountTokenAReceived,
             curvePool,
             tokenA,
@@ -140,7 +145,6 @@ contract CurveRouter is ICurveRouter {
     /// @param amountStableOut, the amount of stablecoin we expect from the PSM
     /// @param minAmountOut, the minimum amount of stablecoin expect to receive from curve
     /// @param psm, the PSM the router should redeem from
-    /// @param tokenA, the token to route through on redemption
     /// @param tokenB, the token the user would like to redeem
     /// @return amountOut the amount of stablecoin returned from the mint function
     function redeem(
@@ -150,21 +154,12 @@ contract CurveRouter is ICurveRouter {
         uint256 minAmountOut,
         IPegStabilityModule psm,
         address curvePool,
-        address tokenA,
         address tokenB,
-        uint256 noOfTokens
+        uint256 index_i,
+        uint256 index_j
     ) external override returns (uint256) {
         volt.transferFrom(msg.sender, address(this), amountVoltIn);
-
         psm.redeem(address(this), amountVoltIn, amountStableOut);
-
-        (, uint256 index_i, uint256 index_j) = calculateSwap(
-            amountStableOut,
-            curvePool,
-            tokenA,
-            tokenB,
-            noOfTokens
-        );
 
         ICurvePool(curvePool).exchange(
             index_i.toInt256().toInt128(),
