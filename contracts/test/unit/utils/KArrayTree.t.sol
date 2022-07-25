@@ -62,4 +62,10 @@ contract KArrayTreeUnitTest is Test {
         vm.expectRevert("cannot set duplicate");
         tree.setRole(TribeRoles.GOVERNOR);
     }
+
+    function testFree() public {
+        tree.free();
+        assertEq(tree.getMaxDepth(), 1); /// assert the whole tree got dropped except the root node
+        assertEq(tree.getCountImmediateChildren(), 0);
+    }
 }

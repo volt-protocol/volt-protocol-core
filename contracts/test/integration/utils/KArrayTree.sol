@@ -166,7 +166,8 @@ library KArrayTree {
 
         for (uint256 i = 0; i < len; i++) {
             delete root.childMap[root.childArray[i]];
-            delete root.childArray[i];
         }
+
+        delete root.childArray;
     }
 }
