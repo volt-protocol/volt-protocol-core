@@ -49,9 +49,7 @@ library KArrayTree {
         (bool found, Node storage elem) = traverse(self, keyToFind);
 
         if (found) {
-            uint256 index = elem.childArray.length;
-            insert(elem, keyToAdd);
-            return (true, elem.childMap[index]);
+            return insert(elem, keyToAdd);
         }
 
         return (false, self);
