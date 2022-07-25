@@ -139,7 +139,7 @@ contract CurveRouter is ICurveRouter {
         amountOut = psm.mint(to, amountStableOut, amountVoltOut);
     }
 
-    /// @notice Redeems volt for stablecoin via curve
+    /// @notice Redeems volt for stable via PSM then performs swap on curve
     /// @param to, the address to send redeemed stablecoin to
     /// @param amountVoltIn, the amount of VOLT to deposit
     /// @param amountStableOut, the amount of stablecoin we expect from the PSM

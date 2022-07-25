@@ -83,7 +83,6 @@ interface ICurveRouter {
         uint256 minAmountOut,
         IPegStabilityModule psm,
         address curvePool,
-        // address tokenA,
         address tokenB,
         uint256 index_i,
         uint256 index_j
