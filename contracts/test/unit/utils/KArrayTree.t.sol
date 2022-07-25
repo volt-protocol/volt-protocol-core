@@ -35,7 +35,7 @@ contract KArrayTreeUnitTest is DSTest {
         assertTrue(found);
         assertEq(pcvGuardAdmin.getCountImmediateChildren(), 1);
 
-        (bool foundGuard, ) = tree.traverse(TribeRoles.PCV_GUARD_ADMIN);
+        (bool foundGuard, ) = tree.traverse(TribeRoles.PCV_GUARD);
         assertTrue(foundGuard);
     }
 

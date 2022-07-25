@@ -9,7 +9,7 @@ library MainnetAddresses {
         0x84dc71500D504163A87756dB6368CC8bB654592f;
     address public constant GOVERNOR =
         0xcBB83206698E8788F85EFbEeeCAd17e53366EBDf;
-    address public constant GUARDIAN =
+    address public constant PCV_GUARDIAN =
         0x2c2b362e6ae0F080F39b90Cb5657E5550090D6C3;
     address public constant DEPLOYER =
         0x25dCffa22EEDbF0A69F6277e24C459108c186ecB;

@@ -32,12 +32,12 @@ contract IntegrationTestAllMainnetRoles is RoleTesting, MainnetRolesConfig {
         allAddresses[0].push(MainnetAddresses.GOVERNOR);
 
         allAddresses[1].push(MainnetAddresses.GOVERNOR);
-        allAddresses[1].push(MainnetAddresses.GUARDIAN);
+        allAddresses[1].push(MainnetAddresses.PCV_GUARDIAN);
         allAddresses[1].push(MainnetAddresses.EOA_1);
 
         allAddresses[2].push(MainnetAddresses.NC_PSM);
         allAddresses[2].push(MainnetAddresses.GOVERNOR);
-        allAddresses[2].push(MainnetAddresses.GUARDIAN);
+        allAddresses[2].push(MainnetAddresses.PCV_GUARDIAN);
 
         allAddresses[3].push(MainnetAddresses.GRLM);
 
