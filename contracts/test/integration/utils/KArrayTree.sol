@@ -7,6 +7,13 @@ library KArrayTree {
         bytes32 role;
     }
 
+    /// @notice function to set the role of a node
+    /// @param self the node to set the role
+    /// @param role to assign to the node
+    function setRole(Node storage self, bytes32 role) internal {
+        self.role = role;
+    }
+
     /// @notice function that inserts a new node at the given node
     /// @param self the element to add another node to
     /// @param keyToAdd the key in the new element
@@ -14,7 +21,6 @@ library KArrayTree {
         internal
         returns (bool, Node storage)
     {
-        require(!exists(self, keyToAdd), "cannot insert duplicate");
         uint256 index = self.childArray.length; /// index of the new element
 
         self.childArray.push(index);
@@ -33,12 +39,11 @@ library KArrayTree {
         bytes32 keyToFind,
         bytes32 keyToAdd
     ) internal returns (bool, Node storage) {
-        require(!exists(self, keyToAdd), "cannot insert duplicate");
         (bool found, Node storage elem) = traverse(self, keyToFind);
 
         if (found) {
             uint256 index = elem.childArray.length;
-            insert(elem, keyToAdd);
+            insert(self, keyToAdd);
             return (true, elem.childMap[index]);
         }
 
@@ -69,6 +74,23 @@ library KArrayTree {
         }
 
         return (false, root);
+    }
+
+    /// @notice return all immediate children
+    /// @param root the node to return all children from
+    /// @return all immediate children of the root
+    function getAllChildRoles(Node storage root)
+        internal
+        returns (bytes32[] memory)
+    {
+        uint256 len = root.childArray.length;
+
+        bytes32[] memory allChildNodes = new bytes32[](len);
+        for (uint256 i = 0; i < len; i++) {
+            allChildNodes[i] = root.childMap[root.childArray[i]].role;
+        }
+
+        return allChildNodes;
     }
 
     /// @notice return number of all immediate children
@@ -109,12 +131,10 @@ library KArrayTree {
         return maxDepth;
     }
 
+    /// @notice returns the maximum tree depth
+    /// @param root the root node to measure depth from
     function getMaxDepth(Node storage root) internal returns (uint256) {
         return treeDepth(root, 1);
-    }
-
-    function exists(Node storage root, bytes32 key) internal returns (bool) {
-        (bool found, ) = traverse(root, key);
     }
 
     /// @notice delete all child nodes recursively

@@ -11,7 +11,7 @@ contract KArrayTreeUnitTest is DSTest {
     KArrayTree.Node public tree;
 
     function setUp() public {
-        tree.role = TribeRoles.GOVERNOR;
+        tree.setRole(TribeRoles.GOVERNOR);
         tree.insert(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER);
         tree.insert(TribeRoles.GOVERNOR, TribeRoles.MINTER);
         tree.insert(TribeRoles.GOVERNOR, TribeRoles.GUARDIAN);
