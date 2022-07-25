@@ -1,7 +1,7 @@
 import { ethers } from 'hardhat';
 import { MainnetContracts, NamedAddresses, ProposalDescription } from '@custom-types/types';
 import format from 'string-template';
-import { OptimisticTimelock } from '@custom-types/contracts';
+import { TimelockController } from '@custom-types/contracts';
 import { getImpersonatedSigner, time } from '@test/helpers';
 import { Contract } from '@ethersproject/contracts';
 
@@ -12,7 +12,7 @@ export async function simulateOAProposal(
   contractAddresses: NamedAddresses,
   logging = false
 ): Promise<void> {
-  const timelockOA = contracts.optimisticTimelock as OptimisticTimelock;
+  const timelockOA = contracts.timelockController as TimelockController;
   const multisigAddressOA = contractAddresses.protocolMultisig as string;
   await simulateTimelockProposal(timelockOA, multisigAddressOA, proposalInfo, contracts, contractAddresses, logging);
 }
@@ -24,13 +24,13 @@ export async function simulateOAProposalArbitrum(
   contractAddresses: NamedAddresses,
   logging = false
 ): Promise<void> {
-  const timelockOA = contracts.optimisticTimelockArbitrum as OptimisticTimelock;
+  const timelockOA = contracts.arbitrumTimelockController as TimelockController;
   const multisigAddressOA = contractAddresses.protocolMultisigArbitrum as string;
   await simulateTimelockProposal(timelockOA, multisigAddressOA, proposalInfo, contracts, contractAddresses, logging);
 }
 
 export async function simulateTimelockProposal(
-  timelock: OptimisticTimelock,
+  timelock: TimelockController,
   multisigAddress: string,
   proposalInfo: ProposalDescription,
   contracts: MainnetContracts,
