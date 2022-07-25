@@ -58,9 +58,14 @@ contract CurveRouter is ICurveRouter {
         public
         view
         override
-        returns (uint256 amountTokenBReceived, uint256 amountOut)
+        returns (
+            uint256 amountTokenBReceived,
+            uint256 amountOut,
+            uint256 index_i,
+            uint256 index_j
+        )
     {
-        (amountTokenBReceived, , ) = calculateSwap(
+        (amountTokenBReceived, index_i, index_j) = calculateSwap(
             amountIn,
             curvePool,
             tokenA,
@@ -105,8 +110,6 @@ contract CurveRouter is ICurveRouter {
     /// @param amountVoltOut the amount of Volt we should get out, calculated externally from PSM and passed here
     /// @param psm, the PSM the router should mint from
     /// @param tokenA, the inital token that the user would like to swap
-    /// @param tokenB, the token the user would route through
-    /// @param noOfTokens, the number of tokens in the curve pool
     /// @return amountOut the amount of Volt returned from the mint function
     function mint(
         address to,
@@ -116,17 +119,9 @@ contract CurveRouter is ICurveRouter {
         IPegStabilityModule psm,
         address curvePool,
         address tokenA,
-        address tokenB,
-        uint256 noOfTokens
+        uint256 index_i,
+        uint256 index_j
     ) external override returns (uint256 amountOut) {
-        (, uint256 index_i, uint256 index_j) = calculateSwap(
-            amountIn,
-            curvePool,
-            tokenA,
-            tokenB,
-            noOfTokens
-        );
-
         IERC20(tokenA).transferFrom(msg.sender, address(this), amountIn);
 
         ICurvePool(curvePool).exchange(

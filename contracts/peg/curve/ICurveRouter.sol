@@ -18,7 +18,14 @@ interface ICurveRouter {
         address tokenA,
         address tokenB,
         uint256 noOfTokens
-    ) external returns (uint256 amountTokenBReceived, uint256 amountOut);
+    )
+        external
+        returns (
+            uint256 amountTokenBReceived,
+            uint256 amountOut,
+            uint256 index_i,
+            uint256 index_j
+        );
 
     /// @notice calculate the amount of underlying out for a given `amountVoltIn` of VOLT
     function getRedeemAmountOut(
@@ -39,7 +46,6 @@ interface ICurveRouter {
     /// @param amountVoltOut the amount of Volt we should get out, calculated externally from PSM and passed here
     /// @param psm, the PSM the router should mint from
     /// @param tokenA, the inital token that the user would like to swap
-    /// @param tokenB, the token the user would route through
     /// @return amountOut the amount of Volt returned from the mint function
 
     function mint(
@@ -50,8 +56,8 @@ interface ICurveRouter {
         IPegStabilityModule psm,
         address curvePool,
         address tokenA,
-        address tokenB,
-        uint256 noOfTokens
+        uint256 index_i,
+        uint256 index_j
     ) external returns (uint256 amountOut);
 
     /// @notice Redeems volt for stablecoin via curve

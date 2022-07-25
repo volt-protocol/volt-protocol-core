@@ -58,8 +58,12 @@ contract IntegrationTestCurveRouter is DSTest {
         amountDaiIn = amountDaiIn * 1e18;
         uint256 startingVoltBalance = volt.balanceOf(address(this));
 
-        (uint256 amountTokenBReceived, uint256 amountVoltOut) = curveRouter
-            .getMintAmountOut(
+        (
+            uint256 amountTokenBReceived,
+            uint256 amountVoltOut,
+            uint256 index_i,
+            uint256 index_j
+        ) = curveRouter.getMintAmountOut(
                 amountDaiIn,
                 VOLT_USDC_PSM,
                 MainnetAddresses.DAI_USDC_USDT_CURVE_POOL,
@@ -76,8 +80,8 @@ contract IntegrationTestCurveRouter is DSTest {
             VOLT_USDC_PSM,
             MainnetAddresses.DAI_USDC_USDT_CURVE_POOL,
             address(dai),
-            address(usdc),
-            3
+            index_i,
+            index_j
         );
 
         uint256 endingVoltBalance = volt.balanceOf(address(this));
@@ -88,7 +92,7 @@ contract IntegrationTestCurveRouter is DSTest {
     function testGetMintAmountOut(uint256 amountDaiIn) public {
         vm.assume(volt.balanceOf(address(VOLT_USDC_PSM)) >= amountDaiIn);
 
-        (uint256 amountTokenBReceived, uint256 amountVoltOut) = curveRouter
+        (uint256 amountTokenBReceived, uint256 amountVoltOut, , ) = curveRouter
             .getMintAmountOut(
                 amountDaiIn,
                 VOLT_USDC_PSM,
