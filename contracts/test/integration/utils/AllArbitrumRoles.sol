@@ -11,52 +11,15 @@ import {Core} from "../../../core/Core.sol";
 import {Vm} from "./../../unit/utils/Vm.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {RoleTesting} from "./RoleTesting.sol";
-import {console} from "hardhat/console.sol";
+import {ArbitrumRolesConfig} from "./ArbitrumRolesConfig.sol";
 
-contract ArbitrumTestAllArbitrumRoles is RoleTesting {
+contract ArbitrumTestAllArbitrumRoles is RoleTesting, ArbitrumRolesConfig {
     /// @notice all roles
     bytes32[] private allRoles;
     /// how many of each role exists
     uint256[] private numEachRole;
 
     Core private core = Core(ArbitrumAddresses.CORE);
-
-    /// @notice array of arrays that has all addresses in each role
-    address[][7] private allAddresses;
-
-    /// ------ @notice number of each role in the system ------
-
-    /// timelock (currently deprecated), multisig, core
-    uint256 public constant numGovernors = 2;
-
-    /// pcv guardian
-    uint256 public constant numGuardians = 1;
-
-    /// Optimistic Timelock, multisig, PCV Guardian
-    uint256 public constant numPCVControllers = 3;
-
-    /// NA on Arbitrum
-    uint256 public constant numMinters = 0;
-
-    /// Revoked EOA 1, EOA2
-    uint256 public constant numPCVGuards = 2;
-
-    /// PCV Guard Admin
-    uint256 public constant numPCVGuardAdmins = 1;
-
-    /// NA
-    uint256 public constant numPSMAdmins = 0;
-
-    /// @notice all the number of each roles in order of the allRoles array
-    uint256[7] private roleCounts = [
-        numGovernors,
-        numGuardians,
-        numPCVControllers,
-        numMinters,
-        numPCVGuards,
-        numPCVGuardAdmins,
-        numPSMAdmins
-    ];
 
     function setUp() public {
         allRoles.push(TribeRoles.GOVERNOR);
