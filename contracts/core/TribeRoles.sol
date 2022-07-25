@@ -33,13 +33,6 @@ library TribeRoles {
                                  Admin Roles
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice can manage the majority of Tribe protocol parameters. Sets boundaries for MINOR_PARAM_ROLE.
-    bytes32 internal constant PARAMETER_ADMIN = keccak256("PARAMETER_ADMIN");
-
-    /// @notice admin of PCVGuardian
-    bytes32 internal constant PCV_GUARDIAN_ADMIN =
-        keccak256("PCV_GUARDIAN_ADMIN_ROLE");
-
     /// @notice manages the granting and revocation of PCV Guard roles
     bytes32 internal constant PCV_GUARD_ADMIN =
         keccak256("PCV_GUARD_ADMIN_ROLE");
@@ -47,9 +40,6 @@ library TribeRoles {
     /*///////////////////////////////////////////////////////////////
                                  Minor Roles
     //////////////////////////////////////////////////////////////*/
-
-    /// @notice capable of adding an address to multi rate limited
-    bytes32 internal constant ADD_MINTER_ROLE = keccak256("ADD_MINTER_ROLE");
 
     /// @notice capable of changing PCV Deposit and Global Rate Limited Minter in the PSM
     bytes32 internal constant PSM_ADMIN_ROLE = keccak256("PSM_ADMIN_ROLE");

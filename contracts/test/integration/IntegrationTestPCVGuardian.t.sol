@@ -120,7 +120,7 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testGuardianWithdrawToSafeAddress() public {
-        vm.startPrank(MainnetAddresses.GUARDIAN);
+        vm.startPrank(MainnetAddresses.PCV_GUARDIAN);
 
         assertEq(fei.balanceOf(address(this)), 0);
         pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), withdrawAmount);
@@ -131,7 +131,7 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testGuardianWithdrawAllToSafeAddress() public {
-        vm.startPrank(MainnetAddresses.GUARDIAN);
+        vm.startPrank(MainnetAddresses.PCV_GUARDIAN);
 
         assertEq(fei.balanceOf(address(this)), 0);
         uint256 amountToWithdraw = pcvDeposit.balance();
@@ -211,7 +211,7 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testWithdrawToSafeAddressFailWhenGuardRevokedGuardian() public {
-        vm.prank(MainnetAddresses.GUARDIAN);
+        vm.prank(MainnetAddresses.PCV_GUARDIAN);
         pcvGuardAdmin.revokePCVGuardRole(guard);
 
         vm.prank(guard);
@@ -221,7 +221,7 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testWithdrawAllToSafeAddressFailWhenGuardRevokedGuardian() public {
-        vm.prank(MainnetAddresses.GUARDIAN);
+        vm.prank(MainnetAddresses.PCV_GUARDIAN);
         pcvGuardAdmin.revokePCVGuardRole(guard);
 
         vm.prank(guard);

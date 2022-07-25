@@ -11,7 +11,7 @@ library ArbitrumAddresses {
         0x138F30D35557FA72478663b601f0f0FD7cc4E39E;
     address public constant GOVERNOR =
         0x1A1075cef632624153176CCf19Ae0175953CF010;
-    address public constant GUARDIAN =
+    address public constant PCV_GUARDIAN =
         0x14eCB5Ff2A78364E0FF443B7F0F6e0e393531484;
     address public constant DEPLOYER =
         0x25dCffa22EEDbF0A69F6277e24C459108c186ecB;
@@ -23,6 +23,9 @@ library ArbitrumAddresses {
 
     address public constant VOLT_USDC_PSM =
         0x278A903dA9Fb0ea8B90c2b1b089eF90033FDd868;
+
+    address public constant PCV_GUARD_ADMIN =
+        0x0d6d0600BEa83FaAF172C2E8aCDd2F5140e235D3;
 
     // ---------- TOKEN ADDRESSES ----------
 

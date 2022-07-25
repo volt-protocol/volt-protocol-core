@@ -13,7 +13,7 @@ import {getL2Core, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.so
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {MockERC20} from "./../../../mock/MockERC20.sol";
 
-contract L2CoreTest is DSTest {
+contract UnitTestL2Core is DSTest {
     L2Core private core;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
