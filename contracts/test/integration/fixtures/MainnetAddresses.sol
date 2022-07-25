@@ -52,6 +52,8 @@ library MainnetAddresses {
 
     address public constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
 
+    address public constant FRAX = 0x853d955aCEf822Db058eb8505911ED77F175b99e;
+
     // ---------- CHAINLINK ADDRESSES ----------
 
     address public constant CHAINLINK_ORACLE_ADDRESS =
@@ -69,4 +71,7 @@ library MainnetAddresses {
 
     address public constant DAI_USDC_USDT_CURVE_POOL =
         0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7;
+
+    address public constant FRAX_3POOL =
+        0xd632f22692FaC7611d2AA1C0D552930D43CAEd3B;
 }

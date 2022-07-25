@@ -19,29 +19,35 @@ contract CurveRouter is ICurveRouter {
     /// Router can be redeployed if Volt address changes
     IVolt public immutable override volt;
 
-    constructor(IVolt _volt) {
+    constructor(IVolt _volt, CurveApproval[5] memory curveApprovals) {
         volt = _volt;
+
+        unchecked {
+            for (uint256 i = 0; i < curveApprovals.length; i++) {
+                IERC20(curveApprovals[i].token).safeApprove(
+                    curveApprovals[i].pool,
+                    type(uint256).max
+                );
+            }
+        }
 
         IERC20(MainnetAddresses.VOLT).approve(
             address(MainnetAddresses.VOLT_USDC_PSM),
             type(uint256).max
         );
+
         IERC20(MainnetAddresses.USDC).approve(
             address(MainnetAddresses.VOLT_USDC_PSM),
             type(uint256).max
         );
 
-        IERC20(MainnetAddresses.USDC).approve(
-            address(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL),
+        IERC20(MainnetAddresses.FEI).approve(
+            address(MainnetAddresses.VOLT_FEI_PSM),
             type(uint256).max
         );
 
-        IERC20(MainnetAddresses.USDT).safeApprove(
-            address(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL),
-            type(uint256).max
-        );
-        IERC20(MainnetAddresses.DAI).approve(
-            address(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL),
+        IERC20(MainnetAddresses.VOLT).approve(
+            address(MainnetAddresses.VOLT_FEI_PSM),
             type(uint256).max
         );
     }
@@ -106,6 +112,46 @@ contract CurveRouter is ICurveRouter {
         );
     }
 
+    /// @notice calculate the amount of VOLT out for a given `amountIn` of underlying
+    function getMintAmountOutMetaPool(
+        uint256 amountIn,
+        IPegStabilityModule psm,
+        address curvePool,
+        uint256 index_i,
+        uint256 index_j
+    ) public view returns (uint256 amountTokenBReceived, uint256 amountOut) {
+        amountTokenBReceived = calculateSwapUnderlying(
+            amountIn,
+            curvePool,
+            index_i,
+            index_j
+        );
+
+        amountOut = psm.getMintAmountOut(amountTokenBReceived);
+    }
+
+    /// @notice calculate the amount of underlying out for a given `amountVoltIn` of VOLT
+    function getRedeemAmountOutMetaPool(
+        uint256 amountVoltIn,
+        IPegStabilityModule psm,
+        address curvePool,
+        uint256 index_i,
+        uint256 index_j
+    )
+        external
+        view
+        returns (uint256 amountTokenAReceived, uint256 amountTokenBReceived)
+    {
+        amountTokenAReceived = psm.getRedeemAmountOut(amountVoltIn);
+
+        amountTokenBReceived = calculateSwapUnderlying(
+            amountTokenAReceived,
+            curvePool,
+            index_i,
+            index_j
+        );
+    }
+
     // ---------- State-Changing API ----------
 
     /// @notice Mint volt for stablecoins via curve
@@ -130,6 +176,37 @@ contract CurveRouter is ICurveRouter {
         IERC20(tokenA).transferFrom(msg.sender, address(this), amountIn);
 
         ICurvePool(curvePool).exchange(
+            index_i.toInt256().toInt128(),
+            index_j.toInt256().toInt128(),
+            amountIn,
+            amountStableOut
+        );
+
+        amountOut = psm.mint(to, amountStableOut, amountVoltOut);
+    }
+
+    /// @notice Mint volt for stablecoins via curve
+    /// @param to, the address to mint Volt to
+    /// @param amountIn, the amount of stablecoin to deposit
+    /// @param amountStableOut, the amount we expect to recieve from curve
+    /// @param amountVoltOut the amount of Volt we should get out, calculated externally from PSM and passed here
+    /// @param psm, the PSM the router should mint from
+    /// @param tokenA, the inital token that the user would like to swap
+    /// @return amountOut the amount of Volt returned from the mint function
+    function mintMetaPool(
+        address to,
+        uint256 amountIn,
+        uint256 amountStableOut,
+        uint256 amountVoltOut,
+        IPegStabilityModule psm,
+        address curvePool,
+        address tokenA,
+        uint256 index_i,
+        uint256 index_j
+    ) external returns (uint256 amountOut) {
+        IERC20(tokenA).transferFrom(msg.sender, address(this), amountIn);
+
+        ICurvePool(curvePool).exchange_underlying(
             index_i.toInt256().toInt128(),
             index_j.toInt256().toInt128(),
             amountIn,
@@ -200,6 +277,21 @@ contract CurveRouter is ICurveRouter {
 
         amountTokenBReceived =
             (ICurvePool(curvePool).get_dy(
+                index_i.toInt256().toInt128(),
+                index_j.toInt256().toInt128(),
+                amountIn
+            ) * 9999) /
+            10000;
+    }
+
+    function calculateSwapUnderlying(
+        uint256 amountIn,
+        address curvePool,
+        uint256 index_i,
+        uint256 index_j
+    ) public view returns (uint256 amountTokenBReceived) {
+        amountTokenBReceived =
+            (ICurvePool(curvePool).get_dy_underlying(
                 index_i.toInt256().toInt128(),
                 index_j.toInt256().toInt128(),
                 amountIn

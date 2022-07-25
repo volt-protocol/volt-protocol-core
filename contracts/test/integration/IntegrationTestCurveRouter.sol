@@ -24,6 +24,7 @@ contract IntegrationTestCurveRouter is DSTest {
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
     IVolt private usdc = IVolt(MainnetAddresses.USDC);
     IVolt private dai = IVolt(MainnetAddresses.DAI);
+    IVolt private frax = IVolt(MainnetAddresses.FRAX);
 
     ICore private core = ICore(MainnetAddresses.CORE);
 
@@ -36,12 +37,42 @@ contract IntegrationTestCurveRouter is DSTest {
     uint256 voltMintAmount = 100_000_000e18;
 
     function setUp() public {
-        curveRouter = new CurveRouter(volt);
+        ICurveRouter.CurveApproval[5] memory curveApprovals = [
+            ICurveRouter.CurveApproval({
+                token: MainnetAddresses.DAI,
+                pool: MainnetAddresses.DAI_USDC_USDT_CURVE_POOL
+            }),
+            ICurveRouter.CurveApproval({
+                token: MainnetAddresses.USDT,
+                pool: MainnetAddresses.DAI_USDC_USDT_CURVE_POOL
+            }),
+            ICurveRouter.CurveApproval({
+                token: MainnetAddresses.USDC,
+                pool: MainnetAddresses.DAI_USDC_USDT_CURVE_POOL
+            }),
+            ICurveRouter.CurveApproval({
+                token: MainnetAddresses.FRAX,
+                pool: MainnetAddresses.FRAX_3POOL
+            }),
+            ICurveRouter.CurveApproval({
+                token: MainnetAddresses.USDC,
+                pool: MainnetAddresses.FRAX_3POOL
+            })
+        ];
+
+        curveRouter = new CurveRouter(volt, curveApprovals);
 
         vm.startPrank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
         dai.transfer(
             address(this),
             dai.balanceOf(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL) / 2
+        );
+        vm.stopPrank();
+
+        vm.startPrank(MainnetAddresses.FRAX_3POOL);
+        frax.transfer(
+            address(this),
+            frax.balanceOf(MainnetAddresses.FRAX_3POOL) / 2
         );
         vm.stopPrank();
 
@@ -170,6 +201,63 @@ contract IntegrationTestCurveRouter is DSTest {
         assertEq(
             amountTokenAReceived,
             VOLT_USDC_PSM.getRedeemAmountOut(amountVoltIn)
+        );
+    }
+
+    function testMintMetaPool(uint256 amountFraxIn) public {
+        vm.assume(
+            volt.balanceOf(address(VOLT_USDC_PSM)) >= amountFraxIn &&
+                amountFraxIn > 2
+        );
+
+        frax.approve(address(curveRouter), type(uint256).max);
+
+        uint256 startingVoltBalance = volt.balanceOf(address(this));
+
+        (uint256 amountTokenBReceived, uint256 amountVoltOut) = curveRouter
+            .getMintAmountOutMetaPool(
+                amountFraxIn,
+                VOLT_USDC_PSM,
+                MainnetAddresses.FRAX_3POOL,
+                0,
+                2
+            );
+
+        curveRouter.mintMetaPool(
+            address(this),
+            amountFraxIn,
+            amountTokenBReceived,
+            amountVoltOut,
+            VOLT_USDC_PSM,
+            MainnetAddresses.FRAX_3POOL,
+            MainnetAddresses.FRAX,
+            0,
+            2
+        );
+
+        uint256 endingVoltBalance = volt.balanceOf(address(this));
+
+        assertEq(amountVoltOut, endingVoltBalance - startingVoltBalance);
+    }
+
+    function testGetMintAmountOutMetaPool(uint256 amountFraxIn) public {
+        vm.assume(
+            volt.balanceOf(address(VOLT_USDC_PSM)) >= amountFraxIn &&
+                amountFraxIn > 2
+        );
+
+        (uint256 amountTokenBReceived, uint256 amountVoltOut) = curveRouter
+            .getMintAmountOutMetaPool(
+                amountFraxIn,
+                VOLT_USDC_PSM,
+                MainnetAddresses.FRAX_3POOL,
+                0,
+                2
+            );
+
+        assertEq(
+            amountVoltOut,
+            VOLT_USDC_PSM.getMintAmountOut(amountTokenBReceived)
         );
     }
 }

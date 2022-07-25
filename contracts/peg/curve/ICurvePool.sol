@@ -9,6 +9,8 @@ interface ICurvePool {
 
     function fee() external view returns (uint256);
 
+    function base_coins(uint256 arg0) external view returns (address);
+
     function admin_fee() external view returns (uint256);
 
     function owner() external view returns (address);
@@ -82,8 +84,7 @@ interface ICurvePool {
         int128 i,
         int128 j,
         uint256 dx,
-        uint256 min_dy,
-        address receiver
+        uint256 min_dy
     ) external;
 
     function calc_withdraw_one_coin(uint256 _token_amount, int128 i)

@@ -5,6 +5,11 @@ import {IVolt} from "../../volt/IVolt.sol";
 import {IPegStabilityModule} from "../IPegStabilityModule.sol";
 
 interface ICurveRouter {
+    struct CurveApproval {
+        address token;
+        address pool;
+    }
+
     // ---------- View-Only API ----------
 
     /// @notice reference to the Volt contract used.
