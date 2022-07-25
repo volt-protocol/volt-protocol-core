@@ -122,6 +122,10 @@ library KArrayTree {
         return found;
     }
 
+    function getRole(Node storage root) internal view returns (bytes32) {
+        return root.role;
+    }
+
     /// @notice function to return the depth of the tree
     /// @param root the node to return the depth from
     /// @param currentDepth the current recorded tree depth
