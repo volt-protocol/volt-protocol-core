@@ -2,12 +2,14 @@ pragma solidity =0.8.13;
 
 import {KArrayTree} from "../../integration/utils/KArrayTree.sol";
 import {TribeRoles} from "../../../core/TribeRoles.sol";
-import "forge-std/Test.sol";
+import {DSTest} from "./DSTest.sol";
+import {Vm} from "./Vm.sol";
 
-contract KArrayTreeUnitTest is Test {
+contract KArrayTreeUnitTest is DSTest {
     using KArrayTree for KArrayTree.Node;
 
     KArrayTree.Node public tree;
+    Vm public constant vm = Vm(HEVM_ADDRESS);
 
     function setUp() public {
         tree.setRole(TribeRoles.GOVERNOR);
