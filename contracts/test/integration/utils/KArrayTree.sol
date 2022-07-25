@@ -1,5 +1,7 @@
 pragma solidity =0.8.13;
 
+/// @notice Library that implements a K-array tree where each node has a role
+/// no node can duplicate an existing role on another node
 library KArrayTree {
     struct Node {
         mapping(uint256 => Node) childMap;
@@ -11,6 +13,7 @@ library KArrayTree {
     /// @param self the node to set the role
     /// @param role to assign to the node
     function setRole(Node storage self, bytes32 role) internal {
+        require(!exists(self, role), "cannot set duplicate");
         self.role = role;
     }
 
@@ -21,6 +24,8 @@ library KArrayTree {
         internal
         returns (bool, Node storage)
     {
+        require(!exists(self, keyToAdd), "cannot insert duplicate");
+
         uint256 index = self.childArray.length; /// index of the new element
 
         self.childArray.push(index);
@@ -39,6 +44,8 @@ library KArrayTree {
         bytes32 keyToFind,
         bytes32 keyToAdd
     ) internal returns (bool, Node storage) {
+        require(!exists(self, keyToAdd), "cannot insert duplicate");
+
         (bool found, Node storage elem) = traverse(self, keyToFind);
 
         if (found) {
@@ -100,6 +107,14 @@ library KArrayTree {
         returns (uint256)
     {
         return root.childArray.length;
+    }
+
+    /// @notice check whether a node exists in the given tree
+    /// @param root the node to start traversal from
+    /// @param key to search for in tree
+    function exists(Node storage root, bytes32 key) internal returns (bool) {
+        (bool found, ) = traverse(root, key);
+        return found;
     }
 
     /// @notice function to return the depth of the tree

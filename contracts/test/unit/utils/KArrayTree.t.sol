@@ -38,4 +38,28 @@ contract KArrayTreeUnitTest is Test {
         );
         assertTrue(foundGuard);
     }
+
+    function testAddDuplicateFails() public {
+        vm.expectRevert("cannot insert duplicate");
+        tree.insert(TribeRoles.GOVERNOR);
+    }
+
+    function testAddDuplicateFailsFind() public {
+        vm.expectRevert("cannot insert duplicate");
+        tree.insert(TribeRoles.GOVERNOR, TribeRoles.PCV_GUARD);
+    }
+
+    function testCanChangeRole() public {
+        (bool foundGuard, KArrayTree.Node storage pcvGuard) = tree.traverse(
+            TribeRoles.PCV_GUARD_ADMIN
+        );
+        assertTrue(foundGuard);
+        pcvGuard.setRole(bytes32(0));
+        assertTrue(tree.exists(bytes32(0)));
+    }
+
+    function testCannotChangeToExistingRole() public {
+        vm.expectRevert("cannot set duplicate");
+        tree.setRole(TribeRoles.GOVERNOR);
+    }
 }
