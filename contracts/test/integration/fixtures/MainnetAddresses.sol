@@ -9,7 +9,7 @@ library MainnetAddresses {
         0x84dc71500D504163A87756dB6368CC8bB654592f;
     address public constant GOVERNOR =
         0xcBB83206698E8788F85EFbEeeCAd17e53366EBDf;
-    address public constant GUARDIAN =
+    address public constant PCV_GUARDIAN =
         0x2c2b362e6ae0F080F39b90Cb5657E5550090D6C3;
     address public constant DEPLOYER =
         0x25dCffa22EEDbF0A69F6277e24C459108c186ecB;
@@ -19,6 +19,14 @@ library MainnetAddresses {
         0x985f9C331a9E4447C782B98D6693F5c7dF8e560e;
     address public constant OTC_LOAN_REPAYMENT =
         0x590eb1a809377f786a11fa1968eF8c15eB44A12F;
+    address public constant EOA_1 = 0xB320e376Be6459421695F2b6B1E716AE4bc8129A;
+    address public constant EOA_2 = 0xd90E9181B20D8D1B5034d9f5737804Da182039F6;
+    address public constant REVOKED_EOA_1 =
+        0xf8D0387538E8e03F3B4394dA89f221D7565a28Ee;
+    address public constant NC_PSM = 0x18f251FC3CE0Cb690F13f62213aba343657d0E72;
+    address public constant GRLM = 0x87945f59E008aDc9ed6210a8e061f009d6ace718;
+    address public constant PCV_GUARD_ADMIN =
+        0x868F58Ae8F6B2Dc31D9ADc97a8A09B16f05E9cd7;
 
     // ---------- FEI ADDRESSES ----------
 

@@ -76,7 +76,7 @@ jobs:
           name: Run tests
           command: |
             source /home/circleci/.bashrc
-            export PATH=$PATH:/home/circleci/.foundry/bin; npm run clean && npm run compile && npm run test && npm run test:integration
+            export PATH=$PATH:/home/circleci/.foundry/bin; npm run clean && npm run compile && npm run test && npm run test:integration && npm run test:integration:arbitrum
 
 workflows:
   main:

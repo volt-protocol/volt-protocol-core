@@ -64,7 +64,7 @@ const MainnetAddresses: MainnetAddresses = {
   },
   globalRateLimitedMinter: {
     address: '0x87945f59E008aDc9ed6210a8e061f009d6ace718',
-    artifactName: 'GlobalRateLimitedMinter',
+    artifactName: 'IGlobalRateLimitedMinter',
     category: AddressCategory.Core,
     network: Network.Mainnet
   },
@@ -117,10 +117,16 @@ const MainnetAddresses: MainnetAddresses = {
     network: Network.Arbitrum
   },
   /// Volt Protocol Timelock
+  timelockController: {
+    address: '0x75d078248eE49c585b73E73ab08bb3eaF93383Ae',
+    artifactName: 'TimelockController',
+    category: AddressCategory.Governance,
+    network: Network.Mainnet
+  },
   optimisticTimelock: {
     address: '0x860fa85f04f9d35B3471D8F7F7fA3Ad31Ce4D5Ae',
     artifactName: 'OptimisticTimelock',
-    category: AddressCategory.Governance,
+    category: AddressCategory.Deprecated,
     network: Network.Mainnet
   },
   feiDaiFixedPricePSM: {
@@ -184,15 +190,27 @@ const MainnetAddresses: MainnetAddresses = {
     network: Network.Mainnet
   },
   pcvGuardEOA1: {
-    address: '0xf8D0387538E8e03F3B4394dA89f221D7565a28Ee',
+    address: '0xB320e376Be6459421695F2b6B1E716AE4bc8129A',
     artifactName: 'unknown',
     category: AddressCategory.Guardian,
     network: Network.Mainnet
   },
   pcvGuardEOA2: {
     address: '0xd90E9181B20D8D1B5034d9f5737804Da182039F6',
-    artifactName: 'OtcEscrow',
+    artifactName: 'unknown',
     category: AddressCategory.Guardian,
+    network: Network.Mainnet
+  },
+  pcvGuardEOA3: {
+    address: '0xA96D4a5c343d6fE141751399Fc230E9E8Ecb6fb6',
+    artifactName: 'unknown',
+    category: AddressCategory.Guardian,
+    network: Network.Mainnet
+  },
+  pcvGuardRevoked1: {
+    address: '0xf8D0387538E8e03F3B4394dA89f221D7565a28Ee',
+    artifactName: 'unknown',
+    category: AddressCategory.Deprecated,
     network: Network.Mainnet
   },
   arbitrumCore: {
@@ -204,7 +222,13 @@ const MainnetAddresses: MainnetAddresses = {
   arbitrumOptimisticTimelock: {
     address: '0x980A05105a53eCa7745DA40DF1AdE6674fc73eD5',
     artifactName: 'OptimisticTimelock',
-    category: AddressCategory.Core,
+    category: AddressCategory.Deprecated,
+    network: Network.Arbitrum
+  },
+  arbitrumTimelockController: {
+    address: '0x2c01C9166FA3e16c24c118053E346B1DD8e72dE8',
+    artifactName: 'TimelockController',
+    category: AddressCategory.Governance,
     network: Network.Arbitrum
   },
   arbitrumScalingPriceOracle: {

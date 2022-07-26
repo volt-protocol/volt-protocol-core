@@ -3,7 +3,7 @@ pragma solidity ^0.8.4;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPCVDeposit} from "../pcv/IPCVDeposit.sol";
-import {GlobalRateLimitedMinter} from "../utils/GlobalRateLimitedMinter.sol";
+import {IGlobalRateLimitedMinter} from "../utils/IGlobalRateLimitedMinter.sol";
 
 /**
  * @title Fei Peg Stability Module
@@ -50,7 +50,7 @@ interface INonCustodialPSM {
     function setPCVDeposit(IPCVDeposit newTarget) external;
 
     /// @notice set the target to call for FEI minting
-    function setGlobalRateLimitedMinter(GlobalRateLimitedMinter newMinter)
+    function setGlobalRateLimitedMinter(IGlobalRateLimitedMinter newMinter)
         external;
 
     /// @notice withdraw ERC20 from the contract
@@ -93,7 +93,7 @@ interface INonCustodialPSM {
     function rateLimitedMinter()
         external
         view
-        returns (GlobalRateLimitedMinter);
+        returns (IGlobalRateLimitedMinter);
 
     /// @notice the max mint and redeem fee in basis points
     function MAX_FEE() external view returns (uint256);
@@ -134,8 +134,8 @@ interface INonCustodialPSM {
 
     /// @notice event emitted when global rate limited minter is updated
     event GlobalRateLimitedMinterUpdate(
-        GlobalRateLimitedMinter oldMinter,
-        GlobalRateLimitedMinter newMinter
+        IGlobalRateLimitedMinter oldMinter,
+        IGlobalRateLimitedMinter newMinter
     );
 
     /// @notice event that is emitted when redemptions are paused

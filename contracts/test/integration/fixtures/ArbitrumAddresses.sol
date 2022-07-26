@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+pragma solidity ^0.8.4;
+
+library ArbitrumAddresses {
+    // ---------- VOLT ADDRESSES ----------
+    address public constant CORE = 0x31A38B79fDcFBC3095E3268CAFac1b9791796736;
+    address public constant VOLT = 0x6Ba6f18a290Cd55cf1B00be2bEc5c954cb29fAc5;
+    address public constant ORACLE_PASS_THROUGH =
+        0x7A23eB9bf043471dE7422a9CcdB5Ef809F34CbdE;
+    address public constant SCALING_PRICE_ORACLE =
+        0x138F30D35557FA72478663b601f0f0FD7cc4E39E;
+    address public constant GOVERNOR =
+        0x1A1075cef632624153176CCf19Ae0175953CF010;
+    address public constant PCV_GUARDIAN =
+        0x14eCB5Ff2A78364E0FF443B7F0F6e0e393531484;
+    address public constant DEPLOYER =
+        0x25dCffa22EEDbF0A69F6277e24C459108c186ecB;
+    address public constant DEPRECATED_TIMELOCK =
+        0x980A05105a53eCa7745DA40DF1AdE6674fc73eD5;
+
+    address public constant VOLT_DAI_PSM =
+        0x4d2cF840FDe4210A96F485fC01f1459Bfb2EFABb;
+
+    address public constant VOLT_USDC_PSM =
+        0x278A903dA9Fb0ea8B90c2b1b089eF90033FDd868;
+
+    address public constant PCV_GUARD_ADMIN =
+        0x0d6d0600BEa83FaAF172C2E8aCDd2F5140e235D3;
+
+    // ---------- TOKEN ADDRESSES ----------
+
+    address public constant USDC = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
+    address public constant DAI = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
+
+    address public constant DAI_MINTER_1 =
+        0x10E6593CDda8c58a1d0f14C5164B376352a55f2F;
+    address public constant DAI_MINTER_2 =
+        0x467194771dAe2967Aef3ECbEDD3Bf9a310C76C65;
+
+    address public constant USDC_WHALE =
+        0x489ee077994B6658eAfA855C308275EAd8097C4A;
+
+    // ---------- CHAINLINK ADDRESSES ----------
+
+    address public constant CHAINLINK_ORACLE_ADDRESS =
+        0xf76F586F6aAC0c8dE147Eea75D76AB7c2f23eDC2;
+}
