@@ -43,9 +43,7 @@ async function main() {
     { token: contractAddresses.usdt, contractToApprove: contractAddresses.daiUsdcUsdtCurvePool },
     { token: contractAddresses.usdc, contractToApprove: contractAddresses.daiUsdcUsdtCurvePool },
     { token: contractAddresses.frax, contractToApprove: contractAddresses.frax3CurvePool },
-    { token: contractAddresses.usdc, contractToApprove: contractAddresses.frax3CurvePool },
-    { token: contractAddresses.tusd, contractToApprove: contractAddresses.tusd3CurvePool },
-    { token: contractAddresses.usdc, contractToApprove: contractAddresses.tusd3CurvePool }
+    { token: contractAddresses.usdc, contractToApprove: contractAddresses.frax3CurvePool }
   ];
   const curveRouter = await deploy(contractAddresses.core, tokenApprovals);
 
