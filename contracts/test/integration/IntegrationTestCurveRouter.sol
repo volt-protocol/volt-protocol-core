@@ -59,15 +59,6 @@ contract IntegrationTestCurveRouter is DSTest {
                 token: MainnetAddresses.USDC,
                 contractToApprove: MainnetAddresses.FRAX_3CURVE
             }),
-            // TUSD_3CURVE
-            // ICurveRouter.TokenApproval({
-            //     token: MainnetAddresses.TUSD,
-            //     contractToApprove: MainnetAddresses.TUSD_3CURVE
-            // }),
-            // ICurveRouter.TokenApproval({
-            //     token: MainnetAddresses.USDC,
-            //     contractToApprove: MainnetAddresses.TUSD_3CURVE
-            // }),
             // PSM APPROVALS
             ICurveRouter.TokenApproval({
                 token: MainnetAddresses.VOLT,
