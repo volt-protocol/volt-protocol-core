@@ -76,9 +76,6 @@ library MainnetAddresses {
 
     // ---------- CURVE ADDRESSES ----------
 
-    address public constant CURVE_FACTORY =
-        0xB9fC157394Af804a3578134A6585C0dc9cc990d4;
-
     address public constant DAI_USDC_USDT_CURVE_POOL =
         0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7;
 
