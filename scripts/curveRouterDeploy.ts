@@ -18,7 +18,7 @@ async function verifyEtherscan(curveRouter: string, volt: string, tokenApprovals
     constructorArguments: [volt, tokenApprovals]
   });
 
-  console.log('\nSuccessfully Verified Timelock on Block Explorer');
+  console.log('\nSuccessfully Verified Curve Router on Block Explorer');
 }
 
 async function main() {
