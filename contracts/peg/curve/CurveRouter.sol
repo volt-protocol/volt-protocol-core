@@ -314,8 +314,9 @@ contract CurveRouter is ICurveRouter, CoreRef {
             10000;
     }
 
-    function setApproval(TokenApproval[] memory tokenApprovals)
+    function setTokenApproval(TokenApproval[] memory tokenApprovals)
         external
+        override
         onlyGovernor
     {
         unchecked {

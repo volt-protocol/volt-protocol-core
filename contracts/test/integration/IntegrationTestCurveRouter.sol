@@ -387,7 +387,7 @@ contract IntegrationTestCurveRouter is DSTest {
 
         vm.prank(MainnetAddresses.GOVERNOR);
 
-        curveRouter.setApproval(tokenApproval);
+        curveRouter.setTokenApproval(tokenApproval);
 
         tusd.approve(address(curveRouter), type(uint256).max);
 
@@ -493,7 +493,7 @@ contract IntegrationTestCurveRouter is DSTest {
             contractToApprove: MainnetAddresses.TUSD_3CURVE
         });
 
-        curveRouter.setApproval(tokenApproval);
+        curveRouter.setTokenApproval(tokenApproval);
         VOLT_USDC_PSM.unpauseRedeem();
 
         vm.stopPrank();
@@ -543,6 +543,6 @@ contract IntegrationTestCurveRouter is DSTest {
             contractToApprove: MainnetAddresses.TUSD_3CURVE
         });
 
-        curveRouter.setApproval(tokenApproval);
+        curveRouter.setTokenApproval(tokenApproval);
     }
 }

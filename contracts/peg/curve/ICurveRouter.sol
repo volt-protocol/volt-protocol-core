@@ -152,4 +152,9 @@ interface ICurveRouter {
         uint256 index_i,
         uint256 index_j
     ) external returns (uint256);
+
+    /// @notice Approves different curve pools and PSMs to use the routers tokens
+    /// @dev should only be callable by a governor
+    /// @param tokenApprovals, the array of tokens and addresses to approve
+    function setTokenApproval(TokenApproval[] memory tokenApprovals) external;
 }
