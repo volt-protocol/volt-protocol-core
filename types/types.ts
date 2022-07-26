@@ -4,7 +4,6 @@ import {
   Volt,
   IERC20,
   Vcon,
-  OptimisticTimelock,
   L2Core,
   PCVGuardAdmin,
   PCVGuardian,
@@ -185,10 +184,10 @@ export interface MainnetContracts {
   rai: IERC20;
   timelockController: TimelockController;
   arbitrumTimelockController: TimelockController;
-  optimisticTimelock: OptimisticTimelock;
-  optimisticTimelockArbitrum: OptimisticTimelock;
+  optimisticTimelock: TimelockController;
+  optimisticTimelockArbitrum: TimelockController;
   curve3Metapool: IERC20;
-  arbitrumOptimisticTimelock: OptimisticTimelock;
+  arbitrumOptimisticTimelock: TimelockController;
   arbitrumScalingPriceOracle: L2ScalingPriceOracle;
   arbitrumCore: L2Core;
   arbitrumPCVGuardAdmin: PCVGuardAdmin;

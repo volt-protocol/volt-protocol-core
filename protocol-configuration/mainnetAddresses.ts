@@ -82,7 +82,7 @@ const MainnetAddresses: MainnetAddresses = {
   },
   nonCustodialFusePSM: {
     address: '0x18f251FC3CE0Cb690F13f62213aba343657d0E72',
-    artifactName: 'NonCustodialPSM',
+    artifactName: 'INonCustodialPSM',
     category: AddressCategory.Deprecated,
     network: Network.Mainnet
   },
@@ -125,7 +125,7 @@ const MainnetAddresses: MainnetAddresses = {
   },
   optimisticTimelock: {
     address: '0x860fa85f04f9d35B3471D8F7F7fA3Ad31Ce4D5Ae',
-    artifactName: 'OptimisticTimelock',
+    artifactName: 'TimelockController',
     category: AddressCategory.Deprecated,
     network: Network.Mainnet
   },
@@ -209,7 +209,7 @@ const MainnetAddresses: MainnetAddresses = {
   },
   arbitrumOptimisticTimelock: {
     address: '0x980A05105a53eCa7745DA40DF1AdE6674fc73eD5',
-    artifactName: 'OptimisticTimelock',
+    artifactName: 'TimelockController',
     category: AddressCategory.Deprecated,
     network: Network.Arbitrum
   },
