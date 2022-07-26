@@ -9,7 +9,6 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {MainnetAddresses} from "../../test/integration/fixtures/MainnetAddresses.sol";
 import {Constants} from "../../Constants.sol";
-import "hardhat/console.sol";
 
 contract CurveRouter is ICurveRouter {
     using SafeERC20 for IERC20;
@@ -119,7 +118,12 @@ contract CurveRouter is ICurveRouter {
         address curvePool,
         uint256 index_i,
         uint256 index_j
-    ) public view returns (uint256 amountTokenBReceived, uint256 amountOut) {
+    )
+        external
+        view
+        override
+        returns (uint256 amountTokenBReceived, uint256 amountOut)
+    {
         amountTokenBReceived = calculateSwapUnderlying(
             amountIn,
             curvePool,
@@ -140,11 +144,10 @@ contract CurveRouter is ICurveRouter {
     )
         external
         view
+        override
         returns (uint256 amountTokenAReceived, uint256 amountTokenBReceived)
     {
         amountTokenAReceived = psm.getRedeemAmountOut(amountVoltIn);
-
-        console.log(amountTokenAReceived);
 
         amountTokenBReceived = calculateSwapUnderlying(
             amountTokenAReceived,
@@ -205,7 +208,7 @@ contract CurveRouter is ICurveRouter {
         address tokenA,
         uint256 index_i,
         uint256 index_j
-    ) external returns (uint256 amountOut) {
+    ) external override returns (uint256 amountOut) {
         IERC20(tokenA).transferFrom(msg.sender, address(this), amountIn);
 
         ICurvePool(curvePool).exchange_underlying(
@@ -222,7 +225,7 @@ contract CurveRouter is ICurveRouter {
     /// @param to, the address to send redeemed stablecoin to
     /// @param amountVoltIn, the amount of VOLT to deposit
     /// @param amountStableOut, the amount of stablecoin we expect from the PSM
-    /// @param minAmountOut, the minimum amount of stablecoin expect to receive from curve
+    /// @param minAmountOut, the minimum amount of asset we expect to receive from curve
     /// @param psm, the PSM the router should redeem from
     /// @param tokenB, the token the user would like to redeem
     /// @return amountOut the amount of stablecoin returned from the mint function
@@ -256,7 +259,7 @@ contract CurveRouter is ICurveRouter {
     /// @param to, the address to send redeemed stablecoin to
     /// @param amountVoltIn, the amount of VOLT to deposit
     /// @param amountStableOut, the amount of stablecoin we expect from the PSM
-    /// @param minAmountOut, the minimum amount of stablecoin expect to receive from curve
+    /// @param minAmountOut, the minimum amount of asset we expect to receive from curve
     /// @param psm, the PSM the router should redeem from
     /// @param tokenB, the token the user would like to redeem
     /// @return amountOut the amount of stablecoin returned from the mint function
@@ -270,7 +273,7 @@ contract CurveRouter is ICurveRouter {
         address tokenB,
         uint256 index_i,
         uint256 index_j
-    ) external returns (uint256) {
+    ) external override returns (uint256) {
         volt.transferFrom(msg.sender, address(this), amountVoltIn);
         psm.redeem(address(this), amountVoltIn, amountStableOut);
 

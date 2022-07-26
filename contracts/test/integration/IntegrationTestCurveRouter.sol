@@ -12,8 +12,6 @@ import {ICore, Core} from "../../core/Core.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
 
-import "hardhat/console.sol";
-
 contract IntegrationTestCurveRouter is DSTest {
     using SafeCast for *;
 
@@ -205,6 +203,7 @@ contract IntegrationTestCurveRouter is DSTest {
     }
 
     function testMintMetaPool(uint256 amountFraxIn) public {
+        // curve reverts when a value less than 3 is entered
         vm.assume(
             volt.balanceOf(address(VOLT_USDC_PSM)) >= amountFraxIn &&
                 amountFraxIn > 2
@@ -241,6 +240,7 @@ contract IntegrationTestCurveRouter is DSTest {
     }
 
     function testGetMintAmountOutMetaPool(uint256 amountFraxIn) public {
+        // curve reverts when a value less than 3 is entered
         vm.assume(
             volt.balanceOf(address(VOLT_USDC_PSM)) >= amountFraxIn &&
                 amountFraxIn > 2
@@ -263,6 +263,8 @@ contract IntegrationTestCurveRouter is DSTest {
 
     function testGetRedeemAmountOutMetaPool(uint64 amountVoltIn) public {
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
+
+        // bind value to be above 0 to prevent reversion from curve
         vm.assume(amountVoltIn / currentPegPrice > 0);
 
         (uint256 amountTokenAReceived, ) = curveRouter
@@ -282,6 +284,9 @@ contract IntegrationTestCurveRouter is DSTest {
 
     function testRedeemMetaPool(uint256 amountVoltIn) public {
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
+
+        // bind value to be above 0 to prevent reversion from curve
+        // make sure we don't deposit more than can be redeemed
         vm.assume(
             amountVoltIn / currentPegPrice > 0 &&
                 amountVoltIn <
