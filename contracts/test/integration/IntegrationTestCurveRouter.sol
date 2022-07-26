@@ -36,7 +36,7 @@ contract IntegrationTestCurveRouter is DSTest {
     uint256 voltMintAmount = 100_000_000e18;
 
     function setUp() public {
-        ICurveRouter.TokenApproval[11] memory tokenApprovals = [
+        ICurveRouter.TokenApproval[9] memory tokenApprovals = [
             //DAI_USDC_USDT
             ICurveRouter.TokenApproval({
                 token: MainnetAddresses.DAI,
@@ -60,14 +60,14 @@ contract IntegrationTestCurveRouter is DSTest {
                 contractToApprove: MainnetAddresses.FRAX_3CURVE
             }),
             // TUSD_3CURVE
-            ICurveRouter.TokenApproval({
-                token: MainnetAddresses.TUSD,
-                contractToApprove: MainnetAddresses.TUSD_3CURVE
-            }),
-            ICurveRouter.TokenApproval({
-                token: MainnetAddresses.USDC,
-                contractToApprove: MainnetAddresses.TUSD_3CURVE
-            }),
+            // ICurveRouter.TokenApproval({
+            //     token: MainnetAddresses.TUSD,
+            //     contractToApprove: MainnetAddresses.TUSD_3CURVE
+            // }),
+            // ICurveRouter.TokenApproval({
+            //     token: MainnetAddresses.USDC,
+            //     contractToApprove: MainnetAddresses.TUSD_3CURVE
+            // }),
             // PSM APPROVALS
             ICurveRouter.TokenApproval({
                 token: MainnetAddresses.VOLT,
@@ -365,12 +365,29 @@ contract IntegrationTestCurveRouter is DSTest {
         assertEq(amountOut, endingFraxBalance - startingFraxBalance);
     }
 
-    function testMintMetaPoolTUSD(uint256 amountFraxIn) public {
+    function testMintMetaPoolAfterSetApproval(uint256 amountFraxIn) public {
         // curve reverts when a value less than 3 is entered
         vm.assume(
             volt.balanceOf(address(VOLT_USDC_PSM)) >= amountFraxIn &&
                 amountFraxIn > 2
         );
+
+        ICurveRouter.TokenApproval[]
+            memory tokenApproval = new ICurveRouter.TokenApproval[](2);
+
+        tokenApproval[0] = ICurveRouter.TokenApproval({
+            token: MainnetAddresses.USDC,
+            contractToApprove: MainnetAddresses.TUSD_3CURVE
+        });
+
+        tokenApproval[1] = ICurveRouter.TokenApproval({
+            token: MainnetAddresses.TUSD,
+            contractToApprove: MainnetAddresses.TUSD_3CURVE
+        });
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+
+        curveRouter.setApproval(tokenApproval);
 
         tusd.approve(address(curveRouter), type(uint256).max);
 
@@ -424,7 +441,7 @@ contract IntegrationTestCurveRouter is DSTest {
         );
     }
 
-    function testGetRedeemAmountOutMetaPoolTUSD(uint64 amountVoltIn) public {
+    function testGetRedeemAmountOutTUSD(uint64 amountVoltIn) public {
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
 
         // bind value to be above 0 to prevent reversion from curve
@@ -445,7 +462,9 @@ contract IntegrationTestCurveRouter is DSTest {
         );
     }
 
-    function testRedeemMetaPoolTUSD(uint256 amountVoltIn) public {
+    function testRedeemMetaPoolTUSDAfterSetApproval(uint256 amountVoltIn)
+        public
+    {
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
 
         // bind value to be above 0 to prevent reversion from curve
@@ -459,8 +478,25 @@ contract IntegrationTestCurveRouter is DSTest {
         );
 
         volt.approve(address(curveRouter), type(uint256).max);
-        vm.prank(MainnetAddresses.GOVERNOR);
+
+        vm.startPrank(MainnetAddresses.GOVERNOR);
+        ICurveRouter.TokenApproval[]
+            memory tokenApproval = new ICurveRouter.TokenApproval[](2);
+
+        tokenApproval[0] = ICurveRouter.TokenApproval({
+            token: MainnetAddresses.USDC,
+            contractToApprove: MainnetAddresses.TUSD_3CURVE
+        });
+
+        tokenApproval[1] = ICurveRouter.TokenApproval({
+            token: MainnetAddresses.TUSD,
+            contractToApprove: MainnetAddresses.TUSD_3CURVE
+        });
+
+        curveRouter.setApproval(tokenApproval);
         VOLT_USDC_PSM.unpauseRedeem();
+
+        vm.stopPrank();
 
         uint256 startingTUSDBalance = tusd.balanceOf(address(this));
 
@@ -490,5 +526,23 @@ contract IntegrationTestCurveRouter is DSTest {
         uint256 endingTUSDBalance = tusd.balanceOf(address(this));
 
         assertEq(amountOut, endingTUSDBalance - startingTUSDBalance);
+    }
+
+    function testRevertWhenNotGovernorSetApproval() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        ICurveRouter.TokenApproval[]
+            memory tokenApproval = new ICurveRouter.TokenApproval[](2);
+
+        tokenApproval[0] = ICurveRouter.TokenApproval({
+            token: MainnetAddresses.USDC,
+            contractToApprove: MainnetAddresses.TUSD_3CURVE
+        });
+
+        tokenApproval[1] = ICurveRouter.TokenApproval({
+            token: MainnetAddresses.TUSD,
+            contractToApprove: MainnetAddresses.TUSD_3CURVE
+        });
+
+        curveRouter.setApproval(tokenApproval);
     }
 }
