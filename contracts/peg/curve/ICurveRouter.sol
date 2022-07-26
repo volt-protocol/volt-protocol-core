@@ -5,9 +5,9 @@ import {IVolt} from "../../volt/IVolt.sol";
 import {IPegStabilityModule} from "../IPegStabilityModule.sol";
 
 interface ICurveRouter {
-    struct CurveApproval {
+    struct TokenApproval {
         address token;
-        address pool;
+        address contractToApprove;
     }
 
     // ---------- View-Only API ----------

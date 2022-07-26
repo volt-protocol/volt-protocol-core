@@ -18,37 +18,17 @@ contract CurveRouter is ICurveRouter {
     /// Router can be redeployed if Volt address changes
     IVolt public immutable override volt;
 
-    constructor(IVolt _volt, CurveApproval[5] memory curveApprovals) {
+    constructor(IVolt _volt, TokenApproval[9] memory tokenApprovals) {
         volt = _volt;
 
         unchecked {
-            for (uint256 i = 0; i < curveApprovals.length; i++) {
-                IERC20(curveApprovals[i].token).safeApprove(
-                    curveApprovals[i].pool,
+            for (uint256 i = 0; i < tokenApprovals.length; i++) {
+                IERC20(tokenApprovals[i].token).safeApprove(
+                    tokenApprovals[i].contractToApprove,
                     type(uint256).max
                 );
             }
         }
-
-        IERC20(MainnetAddresses.VOLT).approve(
-            address(MainnetAddresses.VOLT_USDC_PSM),
-            type(uint256).max
-        );
-
-        IERC20(MainnetAddresses.USDC).approve(
-            address(MainnetAddresses.VOLT_USDC_PSM),
-            type(uint256).max
-        );
-
-        IERC20(MainnetAddresses.FEI).approve(
-            address(MainnetAddresses.VOLT_FEI_PSM),
-            type(uint256).max
-        );
-
-        IERC20(MainnetAddresses.VOLT).approve(
-            address(MainnetAddresses.VOLT_FEI_PSM),
-            type(uint256).max
-        );
     }
 
     /// @notice calculate the amount of VOLT out for a given `amountIn` of underlying

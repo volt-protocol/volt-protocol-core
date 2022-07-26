@@ -35,30 +35,46 @@ contract IntegrationTestCurveRouter is DSTest {
     uint256 voltMintAmount = 100_000_000e18;
 
     function setUp() public {
-        ICurveRouter.CurveApproval[5] memory curveApprovals = [
-            ICurveRouter.CurveApproval({
+        ICurveRouter.TokenApproval[9] memory tokenApprovals = [
+            ICurveRouter.TokenApproval({
                 token: MainnetAddresses.DAI,
-                pool: MainnetAddresses.DAI_USDC_USDT_CURVE_POOL
+                contractToApprove: MainnetAddresses.DAI_USDC_USDT_CURVE_POOL
             }),
-            ICurveRouter.CurveApproval({
+            ICurveRouter.TokenApproval({
                 token: MainnetAddresses.USDT,
-                pool: MainnetAddresses.DAI_USDC_USDT_CURVE_POOL
+                contractToApprove: MainnetAddresses.DAI_USDC_USDT_CURVE_POOL
             }),
-            ICurveRouter.CurveApproval({
+            ICurveRouter.TokenApproval({
                 token: MainnetAddresses.USDC,
-                pool: MainnetAddresses.DAI_USDC_USDT_CURVE_POOL
+                contractToApprove: MainnetAddresses.DAI_USDC_USDT_CURVE_POOL
             }),
-            ICurveRouter.CurveApproval({
+            ICurveRouter.TokenApproval({
                 token: MainnetAddresses.FRAX,
-                pool: MainnetAddresses.FRAX_3POOL
+                contractToApprove: MainnetAddresses.FRAX_3POOL
             }),
-            ICurveRouter.CurveApproval({
+            ICurveRouter.TokenApproval({
                 token: MainnetAddresses.USDC,
-                pool: MainnetAddresses.FRAX_3POOL
+                contractToApprove: MainnetAddresses.FRAX_3POOL
+            }),
+            ICurveRouter.TokenApproval({
+                token: MainnetAddresses.VOLT,
+                contractToApprove: MainnetAddresses.VOLT_USDC_PSM
+            }),
+            ICurveRouter.TokenApproval({
+                token: MainnetAddresses.USDC,
+                contractToApprove: MainnetAddresses.VOLT_USDC_PSM
+            }),
+            ICurveRouter.TokenApproval({
+                token: MainnetAddresses.VOLT,
+                contractToApprove: MainnetAddresses.VOLT_FEI_PSM
+            }),
+            ICurveRouter.TokenApproval({
+                token: MainnetAddresses.FEI,
+                contractToApprove: MainnetAddresses.VOLT_FEI_PSM
             })
         ];
 
-        curveRouter = new CurveRouter(volt, curveApprovals);
+        curveRouter = new CurveRouter(volt, tokenApprovals);
 
         vm.startPrank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
         dai.transfer(
