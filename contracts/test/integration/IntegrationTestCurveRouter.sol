@@ -260,4 +260,67 @@ contract IntegrationTestCurveRouter is DSTest {
             VOLT_USDC_PSM.getMintAmountOut(amountTokenBReceived)
         );
     }
+
+    function testGetRedeemAmountOutMetaPool(uint64 amountVoltIn) public {
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
+        vm.assume(amountVoltIn / currentPegPrice > 0);
+
+        (uint256 amountTokenAReceived, ) = curveRouter
+            .getRedeemAmountOutMetaPool(
+                amountVoltIn,
+                VOLT_USDC_PSM,
+                MainnetAddresses.FRAX_3POOL,
+                2,
+                0
+            );
+
+        assertEq(
+            amountTokenAReceived,
+            VOLT_USDC_PSM.getRedeemAmountOut(amountVoltIn)
+        );
+    }
+
+    function testRedeemMetaPool(uint256 amountVoltIn) public {
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
+        vm.assume(
+            amountVoltIn / currentPegPrice > 0 &&
+                amountVoltIn <
+                ((usdc.balanceOf(address(VOLT_USDC_PSM)) * 1e12) /
+                    currentPegPrice) *
+                    1e18
+        );
+
+        volt.approve(address(curveRouter), type(uint256).max);
+        vm.prank(MainnetAddresses.GOVERNOR);
+        VOLT_USDC_PSM.unpauseRedeem();
+
+        uint256 startingFraxBalance = frax.balanceOf(address(this));
+
+        (
+            uint256 amountTokenAReceived,
+            uint256 amountTokenBReceived
+        ) = curveRouter.getRedeemAmountOutMetaPool(
+                amountVoltIn,
+                VOLT_USDC_PSM,
+                MainnetAddresses.FRAX_3POOL,
+                2,
+                0
+            );
+
+        uint256 amountOut = curveRouter.redeemMetaPool(
+            address(this),
+            amountVoltIn,
+            amountTokenAReceived,
+            amountTokenBReceived,
+            VOLT_USDC_PSM,
+            MainnetAddresses.FRAX_3POOL,
+            MainnetAddresses.FRAX,
+            2,
+            0
+        );
+
+        uint256 endingFraxBalance = frax.balanceOf(address(this));
+
+        assertEq(amountOut, endingFraxBalance - startingFraxBalance);
+    }
 }

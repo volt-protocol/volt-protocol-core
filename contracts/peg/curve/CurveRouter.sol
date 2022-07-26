@@ -144,6 +144,8 @@ contract CurveRouter is ICurveRouter {
     {
         amountTokenAReceived = psm.getRedeemAmountOut(amountVoltIn);
 
+        console.log(amountTokenAReceived);
+
         amountTokenBReceived = calculateSwapUnderlying(
             amountTokenAReceived,
             curvePool,
@@ -245,7 +247,41 @@ contract CurveRouter is ICurveRouter {
             minAmountOut
         );
 
-        IERC20(tokenB).transferFrom(address(this), to, minAmountOut);
+        IERC20(tokenB).safeTransfer(to, minAmountOut);
+
+        return minAmountOut;
+    }
+
+    /// @notice Redeems volt for stable via PSM then performs swap on curve
+    /// @param to, the address to send redeemed stablecoin to
+    /// @param amountVoltIn, the amount of VOLT to deposit
+    /// @param amountStableOut, the amount of stablecoin we expect from the PSM
+    /// @param minAmountOut, the minimum amount of stablecoin expect to receive from curve
+    /// @param psm, the PSM the router should redeem from
+    /// @param tokenB, the token the user would like to redeem
+    /// @return amountOut the amount of stablecoin returned from the mint function
+    function redeemMetaPool(
+        address to,
+        uint256 amountVoltIn,
+        uint256 amountStableOut,
+        uint256 minAmountOut,
+        IPegStabilityModule psm,
+        address curvePool,
+        address tokenB,
+        uint256 index_i,
+        uint256 index_j
+    ) external returns (uint256) {
+        volt.transferFrom(msg.sender, address(this), amountVoltIn);
+        psm.redeem(address(this), amountVoltIn, amountStableOut);
+
+        ICurvePool(curvePool).exchange_underlying(
+            index_i.toInt256().toInt128(),
+            index_j.toInt256().toInt128(),
+            amountStableOut,
+            minAmountOut
+        );
+
+        IERC20(tokenB).safeTransfer(to, minAmountOut);
 
         return minAmountOut;
     }
