@@ -87,7 +87,7 @@ contract IntegrationTestCurveRouter is DSTest {
             })
         ];
 
-        curveRouter = new CurveRouter(volt, tokenApprovals);
+        curveRouter = new CurveRouter(address(core), tokenApprovals);
 
         vm.startPrank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
         dai.transfer(

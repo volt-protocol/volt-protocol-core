@@ -8,19 +8,15 @@ import {IPegStabilityModule} from "../IPegStabilityModule.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {MainnetAddresses} from "../../test/integration/fixtures/MainnetAddresses.sol";
-import {Constants} from "../../Constants.sol";
+import {CoreRef} from "../../refs/CoreRef.sol";
 
-contract CurveRouter is ICurveRouter {
+contract CurveRouter is ICurveRouter, CoreRef {
     using SafeERC20 for IERC20;
     using SafeCast for *;
 
-    /// @notice reference to the Volt contract used.
-    /// Router can be redeployed if Volt address changes
-    IVolt public immutable override volt;
-
-    constructor(IVolt _volt, TokenApproval[11] memory tokenApprovals) {
-        volt = _volt;
-
+    constructor(address _core, TokenApproval[11] memory tokenApprovals)
+        CoreRef(_core)
+    {
         unchecked {
             for (uint256 i = 0; i < tokenApprovals.length; i++) {
                 IERC20(tokenApprovals[i].token).safeApprove(
@@ -220,7 +216,7 @@ contract CurveRouter is ICurveRouter {
         uint256 index_i,
         uint256 index_j
     ) external override returns (uint256) {
-        volt.transferFrom(msg.sender, address(this), amountVoltIn);
+        volt().transferFrom(msg.sender, address(this), amountVoltIn);
         psm.redeem(address(this), amountVoltIn, amountStableOut);
 
         ICurvePool(curvePool).exchange(
@@ -254,7 +250,7 @@ contract CurveRouter is ICurveRouter {
         uint256 index_i,
         uint256 index_j
     ) external override returns (uint256) {
-        volt.transferFrom(msg.sender, address(this), amountVoltIn);
+        volt().transferFrom(msg.sender, address(this), amountVoltIn);
         psm.redeem(address(this), amountVoltIn, amountStableOut);
 
         ICurvePool(curvePool).exchange_underlying(
@@ -316,5 +312,19 @@ contract CurveRouter is ICurveRouter {
                 amountIn
             ) * 9999) /
             10000;
+    }
+
+    function setApproval(TokenApproval[] memory tokenApprovals)
+        external
+        onlyGovernor
+    {
+        unchecked {
+            for (uint256 i = 0; i < tokenApprovals.length; i++) {
+                IERC20(tokenApprovals[i].token).safeApprove(
+                    tokenApprovals[i].contractToApprove,
+                    type(uint256).max
+                );
+            }
+        }
     }
 }

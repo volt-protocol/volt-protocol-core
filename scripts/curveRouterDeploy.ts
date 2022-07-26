@@ -3,8 +3,8 @@ import NetworksForVerification from '@protocol/networksForVerification';
 import { getAllContractAddresses } from './utils/loadContracts';
 import { CurveRouter } from '@custom-types/contracts';
 
-async function deploy(volt: string, tokenApprovals) {
-  const curveRouter = await (await ethers.getContractFactory('CurveRouter')).deploy(volt, tokenApprovals);
+async function deploy(core: string, tokenApprovals) {
+  const curveRouter = await (await ethers.getContractFactory('CurveRouter')).deploy(core, tokenApprovals);
 
   await curveRouter.deployed();
 
@@ -22,10 +22,10 @@ async function validate(curveRouter: CurveRouter, tokenApprovals) {
   console.log('\nSuccessfully Validated Deployment');
 }
 
-async function verifyEtherscan(curveRouter: string, volt: string, tokenApprovals) {
+async function verifyEtherscan(curveRouter: string, core: string, tokenApprovals) {
   await hre.run('verify:verify', {
     address: curveRouter,
-    constructorArguments: [volt, tokenApprovals]
+    constructorArguments: [core, tokenApprovals]
   });
 
   console.log('\nSuccessfully Verified Curve Router on Block Explorer');
@@ -47,12 +47,12 @@ async function main() {
     { token: contractAddresses.tusd, contractToApprove: contractAddresses.tusd3CurvePool },
     { token: contractAddresses.usdc, contractToApprove: contractAddresses.tusd3CurvePool }
   ];
-  const curveRouter = await deploy(contractAddresses.volt, tokenApprovals);
+  const curveRouter = await deploy(contractAddresses.core, tokenApprovals);
 
   await validate(curveRouter, tokenApprovals);
 
   if (NetworksForVerification[hre.network.name]) {
-    await verifyEtherscan(curveRouter.address, contractAddresses.volt, tokenApprovals);
+    await verifyEtherscan(curveRouter.address, contractAddresses.core, tokenApprovals);
   }
 }
 

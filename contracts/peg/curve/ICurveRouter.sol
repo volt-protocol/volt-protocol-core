@@ -12,9 +12,6 @@ interface ICurveRouter {
 
     // ---------- View-Only API ----------
 
-    /// @notice reference to the Volt contract used.
-    function volt() external returns (IVolt);
-
     /// @notice calculate the amount of VOLT out for a given `amountIn` of asset from curve
     function getMintAmountOut(
         uint256 amountIn,
