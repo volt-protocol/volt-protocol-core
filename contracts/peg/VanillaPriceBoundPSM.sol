@@ -36,7 +36,7 @@ contract VanillaPriceBoundPSM is VanillaPSM, IPriceBoundPSM {
     function setOracleFloorBasisPoints(uint128 newFloorBasisPoints)
         external
         override
-        onlyGovernorOrAdmin
+        onlyGovernor
     {
         _setFloorBasisPoints(newFloorBasisPoints);
     }
@@ -45,7 +45,7 @@ contract VanillaPriceBoundPSM is VanillaPSM, IPriceBoundPSM {
     function setOracleCeilingBasisPoints(uint128 newCeilingBasisPoints)
         external
         override
-        onlyGovernorOrAdmin
+        onlyGovernor
     {
         _setCeilingBasisPoints(newCeilingBasisPoints);
     }

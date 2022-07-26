@@ -7,7 +7,6 @@ import {OracleRef, Decimal, SafeCast} from "./../refs/OracleRef.sol";
 import {Constants} from "../Constants.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {TribeRoles} from "../core/TribeRoles.sol";
 
 abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
     using Decimal for Decimal.D256;
@@ -29,8 +28,6 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
         )
     {
         underlyingToken = _underlyingToken;
-
-        _setContractAdminRole(TribeRoles.PSM_ADMIN_ROLE);
     }
 
     /// @notice withdraw assets from PSM to an external address
