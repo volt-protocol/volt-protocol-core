@@ -4,16 +4,14 @@ pragma solidity ^0.8.4;
 import {Vm} from "../unit/utils/Vm.sol";
 import {ICore} from "../../core/ICore.sol";
 import {DSTest} from "../unit/utils/DSTest.sol";
-import {OptimisticTimelock} from "./../../dao/OptimisticTimelock.sol";
-import {INonCustodialPSM} from "./../../peg/NonCustodialPSM.sol";
+import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {getCore, getAddresses, getVoltAddresses, VoltAddresses} from "../unit/utils/Fixtures.sol";
 
-contract IntegrationTestOATimelock is DSTest {
+contract IntegrationTestTimelockController is DSTest {
     Vm public constant vm = Vm(HEVM_ADDRESS);
-    ICore public core = ICore(0xEC7AD284f7Ad256b64c6E69b84Eb0F48f42e8196);
-    OptimisticTimelock public oaTimelock;
+    TimelockController public oaTimelock;
     VoltAddresses public voltAddresses = getVoltAddresses();
     address public proposer1 = voltAddresses.pcvGuardAddress1;
     address public proposer2 = voltAddresses.pcvGuardAddress2;
@@ -28,8 +26,7 @@ contract IntegrationTestOATimelock is DSTest {
         address[] memory executorAddresses = new address[](1);
         executorAddresses[0] = voltAddresses.executorAddress;
 
-        oaTimelock = new OptimisticTimelock(
-            address(core),
+        oaTimelock = new TimelockController(
             600,
             proposerCancellerAddresses,
             executorAddresses
