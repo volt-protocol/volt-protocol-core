@@ -62,6 +62,8 @@ library MainnetAddresses {
 
     address public constant FRAX = 0x853d955aCEf822Db058eb8505911ED77F175b99e;
 
+    address public constant TUSD = 0x0000000000085d4780B73119b644AE5ecd22b376;
+
     // ---------- CHAINLINK ADDRESSES ----------
 
     address public constant CHAINLINK_ORACLE_ADDRESS =
@@ -80,6 +82,9 @@ library MainnetAddresses {
     address public constant DAI_USDC_USDT_CURVE_POOL =
         0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7;
 
-    address public constant FRAX_3POOL =
+    address public constant FRAX_3CURVE =
         0xd632f22692FaC7611d2AA1C0D552930D43CAEd3B;
+
+    address public constant TUSD_3CURVE =
+        0xEcd5e75AFb02eFa118AF914515D6521aaBd189F1;
 }

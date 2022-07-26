@@ -23,6 +23,7 @@ contract IntegrationTestCurveRouter is DSTest {
     IVolt private usdc = IVolt(MainnetAddresses.USDC);
     IVolt private dai = IVolt(MainnetAddresses.DAI);
     IVolt private frax = IVolt(MainnetAddresses.FRAX);
+    IVolt private tusd = IVolt(MainnetAddresses.TUSD);
 
     ICore private core = ICore(MainnetAddresses.CORE);
 
@@ -35,7 +36,8 @@ contract IntegrationTestCurveRouter is DSTest {
     uint256 voltMintAmount = 100_000_000e18;
 
     function setUp() public {
-        ICurveRouter.TokenApproval[9] memory tokenApprovals = [
+        ICurveRouter.TokenApproval[11] memory tokenApprovals = [
+            //DAI_USDC_USDT
             ICurveRouter.TokenApproval({
                 token: MainnetAddresses.DAI,
                 contractToApprove: MainnetAddresses.DAI_USDC_USDT_CURVE_POOL
@@ -48,14 +50,25 @@ contract IntegrationTestCurveRouter is DSTest {
                 token: MainnetAddresses.USDC,
                 contractToApprove: MainnetAddresses.DAI_USDC_USDT_CURVE_POOL
             }),
+            // FRAX_3CURVE
             ICurveRouter.TokenApproval({
                 token: MainnetAddresses.FRAX,
-                contractToApprove: MainnetAddresses.FRAX_3POOL
+                contractToApprove: MainnetAddresses.FRAX_3CURVE
             }),
             ICurveRouter.TokenApproval({
                 token: MainnetAddresses.USDC,
-                contractToApprove: MainnetAddresses.FRAX_3POOL
+                contractToApprove: MainnetAddresses.FRAX_3CURVE
             }),
+            // TUSD_3CURVE
+            ICurveRouter.TokenApproval({
+                token: MainnetAddresses.TUSD,
+                contractToApprove: MainnetAddresses.TUSD_3CURVE
+            }),
+            ICurveRouter.TokenApproval({
+                token: MainnetAddresses.USDC,
+                contractToApprove: MainnetAddresses.TUSD_3CURVE
+            }),
+            // PSM APPROVALS
             ICurveRouter.TokenApproval({
                 token: MainnetAddresses.VOLT,
                 contractToApprove: MainnetAddresses.VOLT_USDC_PSM
@@ -83,10 +96,17 @@ contract IntegrationTestCurveRouter is DSTest {
         );
         vm.stopPrank();
 
-        vm.startPrank(MainnetAddresses.FRAX_3POOL);
+        vm.startPrank(MainnetAddresses.FRAX_3CURVE);
         frax.transfer(
             address(this),
-            frax.balanceOf(MainnetAddresses.FRAX_3POOL) / 2
+            frax.balanceOf(MainnetAddresses.FRAX_3CURVE) / 2
+        );
+        vm.stopPrank();
+
+        vm.startPrank(MainnetAddresses.TUSD_3CURVE);
+        tusd.transfer(
+            address(this),
+            tusd.balanceOf(MainnetAddresses.TUSD_3CURVE) / 2
         );
         vm.stopPrank();
 
@@ -233,7 +253,7 @@ contract IntegrationTestCurveRouter is DSTest {
             .getMintAmountOutMetaPool(
                 amountFraxIn,
                 VOLT_USDC_PSM,
-                MainnetAddresses.FRAX_3POOL,
+                MainnetAddresses.FRAX_3CURVE,
                 0,
                 2
             );
@@ -244,7 +264,7 @@ contract IntegrationTestCurveRouter is DSTest {
             amountTokenBReceived,
             amountVoltOut,
             VOLT_USDC_PSM,
-            MainnetAddresses.FRAX_3POOL,
+            MainnetAddresses.FRAX_3CURVE,
             MainnetAddresses.FRAX,
             0,
             2
@@ -266,7 +286,7 @@ contract IntegrationTestCurveRouter is DSTest {
             .getMintAmountOutMetaPool(
                 amountFraxIn,
                 VOLT_USDC_PSM,
-                MainnetAddresses.FRAX_3POOL,
+                MainnetAddresses.FRAX_3CURVE,
                 0,
                 2
             );
@@ -287,7 +307,7 @@ contract IntegrationTestCurveRouter is DSTest {
             .getRedeemAmountOutMetaPool(
                 amountVoltIn,
                 VOLT_USDC_PSM,
-                MainnetAddresses.FRAX_3POOL,
+                MainnetAddresses.FRAX_3CURVE,
                 2,
                 0
             );
@@ -323,7 +343,7 @@ contract IntegrationTestCurveRouter is DSTest {
         ) = curveRouter.getRedeemAmountOutMetaPool(
                 amountVoltIn,
                 VOLT_USDC_PSM,
-                MainnetAddresses.FRAX_3POOL,
+                MainnetAddresses.FRAX_3CURVE,
                 2,
                 0
             );
@@ -334,7 +354,7 @@ contract IntegrationTestCurveRouter is DSTest {
             amountTokenAReceived,
             amountTokenBReceived,
             VOLT_USDC_PSM,
-            MainnetAddresses.FRAX_3POOL,
+            MainnetAddresses.FRAX_3CURVE,
             MainnetAddresses.FRAX,
             2,
             0
@@ -343,5 +363,132 @@ contract IntegrationTestCurveRouter is DSTest {
         uint256 endingFraxBalance = frax.balanceOf(address(this));
 
         assertEq(amountOut, endingFraxBalance - startingFraxBalance);
+    }
+
+    function testMintMetaPoolTUSD(uint256 amountFraxIn) public {
+        // curve reverts when a value less than 3 is entered
+        vm.assume(
+            volt.balanceOf(address(VOLT_USDC_PSM)) >= amountFraxIn &&
+                amountFraxIn > 2
+        );
+
+        tusd.approve(address(curveRouter), type(uint256).max);
+
+        uint256 startingVoltBalance = volt.balanceOf(address(this));
+
+        (uint256 amountTokenBReceived, uint256 amountVoltOut) = curveRouter
+            .getMintAmountOutMetaPool(
+                amountFraxIn,
+                VOLT_USDC_PSM,
+                MainnetAddresses.TUSD_3CURVE,
+                0,
+                2
+            );
+
+        curveRouter.mintMetaPool(
+            address(this),
+            amountFraxIn,
+            amountTokenBReceived,
+            amountVoltOut,
+            VOLT_USDC_PSM,
+            MainnetAddresses.TUSD_3CURVE,
+            MainnetAddresses.TUSD,
+            0,
+            2
+        );
+
+        uint256 endingVoltBalance = volt.balanceOf(address(this));
+
+        assertEq(amountVoltOut, endingVoltBalance - startingVoltBalance);
+    }
+
+    function testGetMintAmountOutMetaPoolTUSD(uint256 amountTUSDIn) public {
+        // curve reverts when a value less than 3 is entered
+        vm.assume(
+            volt.balanceOf(address(VOLT_USDC_PSM)) >= amountTUSDIn &&
+                amountTUSDIn > 2
+        );
+
+        (uint256 amountTokenBReceived, uint256 amountVoltOut) = curveRouter
+            .getMintAmountOutMetaPool(
+                amountTUSDIn,
+                VOLT_USDC_PSM,
+                MainnetAddresses.TUSD_3CURVE,
+                0,
+                2
+            );
+
+        assertEq(
+            amountVoltOut,
+            VOLT_USDC_PSM.getMintAmountOut(amountTokenBReceived)
+        );
+    }
+
+    function testGetRedeemAmountOutMetaPoolTUSD(uint64 amountVoltIn) public {
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
+
+        // bind value to be above 0 to prevent reversion from curve
+        vm.assume(amountVoltIn / currentPegPrice > 0);
+
+        (uint256 amountTokenAReceived, ) = curveRouter
+            .getRedeemAmountOutMetaPool(
+                amountVoltIn,
+                VOLT_USDC_PSM,
+                MainnetAddresses.TUSD_3CURVE,
+                2,
+                0
+            );
+
+        assertEq(
+            amountTokenAReceived,
+            VOLT_USDC_PSM.getRedeemAmountOut(amountVoltIn)
+        );
+    }
+
+    function testRedeemMetaPoolTUSD(uint256 amountVoltIn) public {
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
+
+        // bind value to be above 0 to prevent reversion from curve
+        // make sure we don't deposit more than can be redeemed
+        vm.assume(
+            amountVoltIn / currentPegPrice > 0 &&
+                amountVoltIn <
+                ((usdc.balanceOf(address(VOLT_USDC_PSM)) * 1e12) /
+                    currentPegPrice) *
+                    1e18
+        );
+
+        volt.approve(address(curveRouter), type(uint256).max);
+        vm.prank(MainnetAddresses.GOVERNOR);
+        VOLT_USDC_PSM.unpauseRedeem();
+
+        uint256 startingTUSDBalance = tusd.balanceOf(address(this));
+
+        (
+            uint256 amountTokenAReceived,
+            uint256 amountTokenBReceived
+        ) = curveRouter.getRedeemAmountOutMetaPool(
+                amountVoltIn,
+                VOLT_USDC_PSM,
+                MainnetAddresses.TUSD_3CURVE,
+                2,
+                0
+            );
+
+        uint256 amountOut = curveRouter.redeemMetaPool(
+            address(this),
+            amountVoltIn,
+            amountTokenAReceived,
+            amountTokenBReceived,
+            VOLT_USDC_PSM,
+            MainnetAddresses.TUSD_3CURVE,
+            MainnetAddresses.TUSD,
+            2,
+            0
+        );
+
+        uint256 endingTUSDBalance = tusd.balanceOf(address(this));
+
+        assertEq(amountOut, endingTUSDBalance - startingTUSDBalance);
     }
 }

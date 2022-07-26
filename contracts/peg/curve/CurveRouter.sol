@@ -18,7 +18,7 @@ contract CurveRouter is ICurveRouter {
     /// Router can be redeployed if Volt address changes
     IVolt public immutable override volt;
 
-    constructor(IVolt _volt, TokenApproval[9] memory tokenApprovals) {
+    constructor(IVolt _volt, TokenApproval[11] memory tokenApprovals) {
         volt = _volt;
 
         unchecked {
