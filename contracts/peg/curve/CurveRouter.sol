@@ -265,6 +265,24 @@ contract CurveRouter is ICurveRouter, CoreRef {
         return minAmountOut;
     }
 
+    /// @notice Approves different curve pools and PSMs to use the routers tokens
+    /// @dev should only be callable by a governor
+    /// @param tokenApprovals, the array of tokens and addresses to approve
+    function setTokenApproval(TokenApproval[] memory tokenApprovals)
+        external
+        override
+        onlyGovernor
+    {
+        unchecked {
+            for (uint256 i = 0; i < tokenApprovals.length; i++) {
+                IERC20(tokenApprovals[i].token).safeApprove(
+                    tokenApprovals[i].contractToApprove,
+                    type(uint256).max
+                );
+            }
+        }
+    }
+
     function calculateSwap(
         uint256 amountIn,
         address curvePool,
@@ -312,20 +330,5 @@ contract CurveRouter is ICurveRouter, CoreRef {
                 amountIn
             ) * 9999) /
             10000;
-    }
-
-    function setTokenApproval(TokenApproval[] memory tokenApprovals)
-        external
-        override
-        onlyGovernor
-    {
-        unchecked {
-            for (uint256 i = 0; i < tokenApprovals.length; i++) {
-                IERC20(tokenApprovals[i].token).safeApprove(
-                    tokenApprovals[i].contractToApprove,
-                    type(uint256).max
-                );
-            }
-        }
     }
 }
