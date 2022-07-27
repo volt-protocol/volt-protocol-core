@@ -191,14 +191,14 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
         assertApproxEq(
             psm.getMintAmountOut(amountUSDCIn).toInt256(),
             amountOut.toInt256(),
-            0
+            1
         );
 
         assertApproxEq(
             (vanillaPriceBoundPSM.getMintAmountOut(amountUSDCIn) - fee)
                 .toInt256(),
             psm.getMintAmountOut(amountUSDCIn).toInt256(),
-            0
+            1
         );
     }
 
