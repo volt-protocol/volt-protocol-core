@@ -4,13 +4,18 @@ pragma solidity ^0.8.4;
 library MainnetAddresses {
     // ---------- VOLT ADDRESSES ----------
     address public constant CORE = 0xEC7AD284f7Ad256b64c6E69b84Eb0F48f42e8196;
+
     address public constant VOLT = 0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18;
+
     address public constant ORACLE_PASS_THROUGH =
         0x84dc71500D504163A87756dB6368CC8bB654592f;
+
     address public constant GOVERNOR =
         0xcBB83206698E8788F85EFbEeeCAd17e53366EBDf;
+
     address public constant PCV_GUARDIAN =
         0x2c2b362e6ae0F080F39b90Cb5657E5550090D6C3;
+
     address public constant DEPLOYER =
         0x25dCffa22EEDbF0A69F6277e24C459108c186ecB;
 
@@ -25,6 +30,9 @@ library MainnetAddresses {
     address public constant PCV_GUARD_ADMIN =
         0x868F58Ae8F6B2Dc31D9ADc97a8A09B16f05E9cd7;
 
+    address public constant VOLT_USDC_PSM =
+        0x0b9A7EA2FCA868C93640Dd77cF44df335095F501;
+
     // ---------- FEI ADDRESSES ----------
 
     address public constant FEI_CORE =
@@ -33,16 +41,40 @@ library MainnetAddresses {
     address public constant FEI_DAO_TIMELOCK =
         0xd51dbA7a94e1adEa403553A8235C302cEbF41a3c;
 
+    address public constant FEI_DAI_PSM =
+        0x2A188F9EB761F70ECEa083bA6c2A40145078dfc2;
+
     address public constant FEI_GOVERNOR =
         0xd51dbA7a94e1adEa403553A8235C302cEbF41a3c;
 
-    // ---------- USDC ADDRESSES ----------
+    // ---------- TOKEN RELATED ADDRESSES ----------
 
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
 
     address public constant MAKER_USDC_PSM =
         0xAe2D4617c862309A3d75A0fFB358c7a5009c673F;
+
     address public constant FEI = 0x956F47F50A910163D8BF957Cf5846D573E7f87CA;
+
+    address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+
+    address public constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
+
+    address public constant FRAX = 0x853d955aCEf822Db058eb8505911ED77F175b99e;
+
+    address public constant TUSD = 0x0000000000085d4780B73119b644AE5ecd22b376;
+
+    address public constant SUSD = 0x57Ab1ec28D129707052df4dF418D58a2D46d5f51;
+
+    address public constant RAI = 0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919;
+
+    address public constant LUSD = 0x5f98805A4E8be255a32880FDeC7F6728C6568bA0;
+
+    address public constant BUSD = 0x4Fabb145d64652a948d72533023f6E7A623C7C53;
+
+    address public constant USDN = 0x674C6Ad92Fd080e4004b2312b45f796a192D27a0;
+
+    address public constant USDP = 0x8E870D67F660D95d5be530380D0eC0bd388289E1;
 
     // ---------- CHAINLINK ADDRESSES ----------
 
@@ -53,4 +85,33 @@ library MainnetAddresses {
 
     address public constant RARI_VOLT_PCV_DEPOSIT =
         0xFeBDf448C8484834bb399d930d7E1bdC773E23bA;
+
+    // ---------- CURVE ADDRESSES ----------
+
+    address public constant DAI_USDC_USDT_CURVE_POOL =
+        0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7;
+
+    address public constant FRAX_3CURVE =
+        0xd632f22692FaC7611d2AA1C0D552930D43CAEd3B;
+
+    address public constant TUSD_3CURVE =
+        0xEcd5e75AFb02eFa118AF914515D6521aaBd189F1;
+
+    address public constant SUSD_3CURVE =
+        0xA5407eAE9Ba41422680e2e00537571bcC53efBfD;
+
+    address public constant RAI_3CURVE =
+        0x618788357D0EBd8A37e763ADab3bc575D54c2C7d;
+
+    address public constant LUSD_3CURVE =
+        0xEd279fDD11cA84bEef15AF5D39BB4d4bEE23F0cA;
+
+    address public constant BUSD_3CURVE =
+        0x4807862AA8b2bF68830e4C8dc86D0e9A998e085a;
+
+    address public constant USDN_3CURVE =
+        0x0f9cb53Ebe405d49A0bbdBD291A65Ff571bC83e1;
+
+    address public constant USDP_3CURVE =
+        0xc270b3B858c335B6BA5D5b10e2Da8a09976005ad;
 }

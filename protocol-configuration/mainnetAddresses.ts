@@ -159,6 +159,54 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.External,
     network: Network.Mainnet
   },
+  frax: {
+    address: '0x853d955aCEf822Db058eb8505911ED77F175b99e',
+    artifactName: 'ERC20',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  tusd: {
+    address: '0x0000000000085d4780B73119b644AE5ecd22b376',
+    artifactName: 'ERC20',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  susd: {
+    address: '0x57Ab1ec28D129707052df4dF418D58a2D46d5f51',
+    artifactName: 'ERC20',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  rai: {
+    address: '0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919',
+    artifactName: 'ERC20',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  lusd: {
+    address: '0x5f98805A4E8be255a32880FDeC7F6728C6568bA0',
+    artifactName: 'ERC20',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  busd: {
+    address: '0x4Fabb145d64652a948d72533023f6E7A623C7C53',
+    artifactName: 'ERC20',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  usdn: {
+    address: '0x674C6Ad92Fd080e4004b2312b45f796a192D27a0',
+    artifactName: 'ERC20',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  usdp: {
+    address: '0x8E870D67F660D95d5be530380D0eC0bd388289E1',
+    artifactName: 'ERC20',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
   pool8Fei: {
     address: '0xd8553552f8868C1Ef160eEdf031cF0BCf9686945',
     artifactName: 'unknown', /// CErc20Delegator
@@ -199,6 +247,60 @@ const MainnetAddresses: MainnetAddresses = {
     address: '0xf8D0387538E8e03F3B4394dA89f221D7565a28Ee',
     artifactName: 'unknown',
     category: AddressCategory.Deprecated,
+    network: Network.Mainnet
+  },
+  daiUsdcUsdtCurvePool: {
+    address: '0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7',
+    artifactName: 'ICurvePool',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  frax3CurvePool: {
+    address: '0xd632f22692FaC7611d2AA1C0D552930D43CAEd3B',
+    artifactName: 'ICurvePool',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  tusd3CurvePool: {
+    address: '0xEcd5e75AFb02eFa118AF914515D6521aaBd189F1',
+    artifactName: 'ICurvePool',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  susd3CurvePool: {
+    address: '0xA5407eAE9Ba41422680e2e00537571bcC53efBfD',
+    artifactName: 'ICurvePool',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  rai3CurvePool: {
+    address: '0x618788357D0EBd8A37e763ADab3bc575D54c2C7d',
+    artifactName: 'ICurvePool',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  lusd3CurvePool: {
+    address: '0xEd279fDD11cA84bEef15AF5D39BB4d4bEE23F0cA',
+    artifactName: 'ICurvePool',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  busd3CurvePool: {
+    address: '0x4807862AA8b2bF68830e4C8dc86D0e9A998e085a',
+    artifactName: 'ICurvePool',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  usdn3CurvePool: {
+    address: '0x0f9cb53Ebe405d49A0bbdBD291A65Ff571bC83e1',
+    artifactName: 'ICurvePool',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  usdp3CurvePool: {
+    address: '0xc270b3B858c335B6BA5D5b10e2Da8a09976005ad',
+    artifactName: 'ICurvePool',
+    category: AddressCategory.External,
     network: Network.Mainnet
   },
   arbitrumCore: {
