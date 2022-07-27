@@ -48,8 +48,8 @@ contract IntegrationTestVanillaPSMTest is DSTest {
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
-    uint128 voltFloorPrice = 9_000e12;
-    uint128 voltCeilingPrice = 10_500e12;
+    uint128 voltFloorPrice = 900_000;
+    uint128 voltCeilingPrice = 105_0000;
 
     function setUp() public {
         IBasePSM.OracleParams memory oracleParams;
@@ -58,7 +58,7 @@ contract IntegrationTestVanillaPSMTest is DSTest {
             coreAddress: address(core),
             oracleAddress: address(oracle),
             backupOracle: address(0),
-            decimalsNormalizer: 12,
+            decimalsNormalizer: -12,
             doInvert: false
         });
 
@@ -99,22 +99,23 @@ contract IntegrationTestVanillaPSMTest is DSTest {
         assertEq(priceBoundPsm.ceiling(), voltCeilingPrice);
         assertEq(address(priceBoundPsm.oracle()), address(oracle));
         assertEq(address(priceBoundPsm.backupOracle()), address(0));
-        assertEq(priceBoundPsm.decimalsNormalizer(), 12);
+        assertEq(priceBoundPsm.decimalsNormalizer(), -12);
         assertEq(address(priceBoundPsm.underlyingToken()), address(usdc));
 
         assertTrue(!vanillaPsm.doInvert());
         assertEq(address(vanillaPsm.oracle()), address(oracle));
         assertEq(address(vanillaPsm.backupOracle()), address(0));
-        assertEq(vanillaPsm.decimalsNormalizer(), 12);
+        assertEq(vanillaPsm.decimalsNormalizer(), -12);
         assertEq(address(vanillaPsm.underlyingToken()), address(usdc));
     }
 
     /// @notice PSM is set up correctly and redeem view function is working
-    function testGetRedeemAmountOut(uint256 amountVoltIn) public {
-        vm.assume(voltMintAmount >= amountVoltIn);
-        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
+    function testGetRedeemAmountOut(uint128 amountVoltIn) public {
+        vm.assume(amountVoltIn >= 1e18);
 
-        uint256 amountOut = (amountVoltIn * currentPegPrice) / 1e6;
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice() / 1e12;
+
+        uint256 amountOut = (amountVoltIn * currentPegPrice) / 1e18;
 
         assertApproxEq(
             priceBoundPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
@@ -130,22 +131,22 @@ contract IntegrationTestVanillaPSMTest is DSTest {
     }
 
     /// @notice PSM is set up correctly and view functions are working
-    function testGetMintAmountOut(uint256 amountFeiIn) public {
-        vm.assume(mintAmount >= amountFeiIn);
-        amountFeiIn = amountFeiIn * 1e18;
+    function testGetMintAmountOut(uint256 amountUSDCIn) public {
+        vm.assume(mintAmount >= amountUSDCIn);
+        amountUSDCIn = amountUSDCIn * 1e18;
 
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
 
-        uint256 amountOut = ((amountFeiIn * 1e6) / currentPegPrice);
+        uint256 amountOut = ((amountUSDCIn * 1e18) / currentPegPrice) * 1e12;
 
         assertApproxEq(
-            priceBoundPsm.getMintAmountOut(amountFeiIn).toInt256(),
-            vanillaPsm.getMintAmountOut(amountFeiIn).toInt256(),
+            priceBoundPsm.getMintAmountOut(amountUSDCIn).toInt256(),
+            vanillaPsm.getMintAmountOut(amountUSDCIn).toInt256(),
             0
         );
 
         assertApproxEq(
-            vanillaPsm.getMintAmountOut(amountFeiIn).toInt256(),
+            vanillaPsm.getMintAmountOut(amountUSDCIn).toInt256(),
             amountOut.toInt256(),
             0
         );
