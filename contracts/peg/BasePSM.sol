@@ -112,9 +112,6 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
         Decimal.D256 memory oraclePrice = readOracle();
         _validatePriceRange(oraclePrice);
 
-        console.log("NEW PSM ORACLE PRICE", oraclePrice.value);
-        console.log("NEW PSM  AMOUNT IN", amountIn);
-
         amountVoltOut = (amountIn * 1e18) / oraclePrice.value;
     }
 
