@@ -268,7 +268,7 @@ contract CurveRouter is ICurveRouter, CoreRef {
     /// @notice Approves different curve pools and PSMs to use the routers tokens
     /// @dev should only be callable by a governor
     /// @param tokenApprovals, the array of tokens and addresses to approve
-    function setTokenApproval(TokenApproval[] memory tokenApprovals)
+    function setTokenApproval(TokenApproval[] calldata tokenApprovals)
         external
         override
         onlyGovernor
