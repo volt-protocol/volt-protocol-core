@@ -14,7 +14,7 @@ contract CurveRouter is ICurveRouter, CoreRef {
     using SafeERC20 for IERC20;
     using SafeCast for *;
 
-    constructor(address _core, TokenApproval[9] memory tokenApprovals)
+    constructor(address _core, TokenApproval[21] memory tokenApprovals)
         CoreRef(_core)
     {
         unchecked {

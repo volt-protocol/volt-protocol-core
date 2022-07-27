@@ -43,8 +43,21 @@ async function main() {
     { token: contractAddresses.usdt, contractToApprove: contractAddresses.daiUsdcUsdtCurvePool },
     { token: contractAddresses.usdc, contractToApprove: contractAddresses.daiUsdcUsdtCurvePool },
     { token: contractAddresses.frax, contractToApprove: contractAddresses.frax3CurvePool },
-    { token: contractAddresses.usdc, contractToApprove: contractAddresses.frax3CurvePool }
+    { token: contractAddresses.usdc, contractToApprove: contractAddresses.frax3CurvePool },
+    { token: contractAddresses.susd, contractToApprove: contractAddresses.susd3CurvePool },
+    { token: contractAddresses.usdc, contractToApprove: contractAddresses.susd3CurvePool },
+    { token: contractAddresses.rai, contractToApprove: contractAddresses.rai3CurvePool },
+    { token: contractAddresses.usdc, contractToApprove: contractAddresses.rai3CurvePool },
+    { token: contractAddresses.lusd, contractToApprove: contractAddresses.lusd3CurvePool },
+    { token: contractAddresses.usdc, contractToApprove: contractAddresses.lusd3CurvePool },
+    { token: contractAddresses.busd, contractToApprove: contractAddresses.busd3CurvePool },
+    { token: contractAddresses.usdc, contractToApprove: contractAddresses.busd3CurvePool },
+    { token: contractAddresses.usdn, contractToApprove: contractAddresses.usdn3CurvePool },
+    { token: contractAddresses.usdc, contractToApprove: contractAddresses.usdn3CurvePool },
+    { token: contractAddresses.usdp, contractToApprove: contractAddresses.usdp3CurvePool },
+    { token: contractAddresses.usdc, contractToApprove: contractAddresses.usdp3CurvePool }
   ];
+
   const curveRouter = await deploy(contractAddresses.core, tokenApprovals);
 
   await validate(curveRouter, tokenApprovals);

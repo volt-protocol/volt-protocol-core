@@ -36,7 +36,7 @@ contract IntegrationTestCurveRouter is DSTest {
     uint256 voltMintAmount = 100_000_000e18;
 
     function setUp() public {
-        ICurveRouter.TokenApproval[9] memory tokenApprovals = [
+        ICurveRouter.TokenApproval[21] memory tokenApprovals = [
             //DAI_USDC_USDT
             ICurveRouter.TokenApproval({
                 token: MainnetAddresses.DAI,
@@ -58,6 +58,60 @@ contract IntegrationTestCurveRouter is DSTest {
             ICurveRouter.TokenApproval({
                 token: MainnetAddresses.USDC,
                 contractToApprove: MainnetAddresses.FRAX_3CURVE
+            }),
+            // SUSD_3CURVE
+            ICurveRouter.TokenApproval({
+                token: MainnetAddresses.SUSD,
+                contractToApprove: MainnetAddresses.SUSD_3CURVE
+            }),
+            ICurveRouter.TokenApproval({
+                token: MainnetAddresses.USDC,
+                contractToApprove: MainnetAddresses.SUSD_3CURVE
+            }),
+            // RAI_3CURVE
+            ICurveRouter.TokenApproval({
+                token: MainnetAddresses.RAI,
+                contractToApprove: MainnetAddresses.RAI_3CURVE
+            }),
+            ICurveRouter.TokenApproval({
+                token: MainnetAddresses.USDC,
+                contractToApprove: MainnetAddresses.RAI_3CURVE
+            }),
+            // LUSD_3CURVE
+            ICurveRouter.TokenApproval({
+                token: MainnetAddresses.LUSD,
+                contractToApprove: MainnetAddresses.LUSD_3CURVE
+            }),
+            ICurveRouter.TokenApproval({
+                token: MainnetAddresses.USDC,
+                contractToApprove: MainnetAddresses.LUSD_3CURVE
+            }),
+            // BUSD_3CURVE
+            ICurveRouter.TokenApproval({
+                token: MainnetAddresses.BUSD,
+                contractToApprove: MainnetAddresses.BUSD_3CURVE
+            }),
+            ICurveRouter.TokenApproval({
+                token: MainnetAddresses.USDC,
+                contractToApprove: MainnetAddresses.BUSD_3CURVE
+            }),
+            // USDN_3CURVE
+            ICurveRouter.TokenApproval({
+                token: MainnetAddresses.USDN,
+                contractToApprove: MainnetAddresses.USDN_3CURVE
+            }),
+            ICurveRouter.TokenApproval({
+                token: MainnetAddresses.USDC,
+                contractToApprove: MainnetAddresses.USDN_3CURVE
+            }),
+            // USDP_3CURVE
+            ICurveRouter.TokenApproval({
+                token: MainnetAddresses.USDP,
+                contractToApprove: MainnetAddresses.USDP_3CURVE
+            }),
+            ICurveRouter.TokenApproval({
+                token: MainnetAddresses.USDC,
+                contractToApprove: MainnetAddresses.USDP_3CURVE
             }),
             // PSM APPROVALS
             ICurveRouter.TokenApproval({
