@@ -149,12 +149,12 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
         assertApproxEq(
             psm.getRedeemAmountOut(amountVoltIn).toInt256(),
             vanillaPriceBoundPSM.getRedeemAmountOut(amountVoltIn).toInt256(),
-            0
+            1
         );
         assertApproxEq(
             psm.getRedeemAmountOut(amountVoltIn).toInt256(),
             amountOut.toInt256(),
-            0
+            1
         );
     }
 
