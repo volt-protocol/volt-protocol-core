@@ -2,6 +2,7 @@ import hre, { ethers } from 'hardhat';
 import NetworksForVerification from '@protocol/networksForVerification';
 import { getAllContractAddresses } from './utils/loadContracts';
 import { CurveRouter } from '@custom-types/contracts';
+import { expect } from 'chai';
 
 async function deploy(core: string, tokenApprovals) {
   const curveRouter = await (await ethers.getContractFactory('CurveRouter')).deploy(core, tokenApprovals);
@@ -16,7 +17,11 @@ async function deploy(core: string, tokenApprovals) {
 async function validate(curveRouter: CurveRouter, tokenApprovals) {
   for (let i = 0; i < tokenApprovals.length; i++) {
     const token = await ethers.getContractAt('IERC20', tokenApprovals[i].token);
-    token.allowance(curveRouter.address, tokenApprovals[i].contractToApprove);
+    await token.allowance(curveRouter.address, tokenApprovals[i].contractToApprove);
+
+    expect(await token.allowance(curveRouter.address, tokenApprovals[i].contractToApprove)).to.equal(
+      ethers.constants.MaxUint256
+    );
   }
 
   console.log('\nSuccessfully Validated Deployment');
