@@ -19,12 +19,16 @@ import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposi
 import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
-
+import {IBasePSM} from "../../peg/IBasePSM.sol";
+import {VanillaPriceBoundPSM} from "../../peg/VanillaPriceBoundPSM.sol";
 import {Constants} from "../../Constants.sol";
 
 contract IntegrationTestPriceBoundPSMTest is DSTest {
     using SafeCast for *;
+
     PriceBoundPSM private psm;
+    VanillaPriceBoundPSM private vanillaPriceBoundPSM;
+
     ICore private core = ICore(MainnetAddresses.CORE);
     ICore private feiCore = ICore(MainnetAddresses.FEI_CORE);
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
@@ -67,6 +71,9 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     uint256 voltFloorPrice = 9_000; /// 1 volt for .9 fei is the max allowable price
     uint256 voltCeilingPrice = 10_000; /// 1 volt for 1 fei is the minimum price
 
+    uint128 vanillaFloorPrice = 1e18;
+    uint128 vanillaCeilingPrice = 1.05e18;
+
     function setUp() public {
         PegStabilityModule.OracleParams memory oracleParams;
 
@@ -92,6 +99,22 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
             rariVoltPCVDeposit
         );
 
+        IBasePSM.OracleParams memory vanillaParams = IBasePSM.OracleParams({
+            coreAddress: address(core),
+            oracleAddress: address(oracle),
+            backupOracle: address(0),
+            decimalsNormalizer: 0,
+            doInvert: false
+        });
+
+        /// create PSM
+        vanillaPriceBoundPSM = new VanillaPriceBoundPSM(
+            vanillaFloorPrice,
+            vanillaCeilingPrice,
+            vanillaParams,
+            IERC20(address(fei))
+        );
+
         vm.prank(feiDAOTimelock);
         fei.mint(address(this), mintAmount);
 
@@ -114,8 +137,8 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     }
 
     /// @notice PSM is set up correctly and view functions are working
-    function testGetRedeemAmountOut(uint256 amountVoltIn) public {
-        if (amountVoltIn > mintAmount) return;
+    function testGetRedeemAmountOut(uint128 amountVoltIn) public {
+        vm.assume(amountVoltIn >= 1e18);
 
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
         uint256 fee = (amountVoltIn * psm.redeemFeeBasisPoints()) /
@@ -125,8 +148,13 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
 
         assertApproxEq(
             psm.getRedeemAmountOut(amountVoltIn).toInt256(),
+            vanillaPriceBoundPSM.getRedeemAmountOut(amountVoltIn).toInt256(),
+            0
+        );
+        assertApproxEq(
+            psm.getRedeemAmountOut(amountVoltIn).toInt256(),
             amountOut.toInt256(),
-            1
+            0
         );
     }
 
@@ -147,18 +175,26 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
 
     /// @notice PSM is set up correctly and view functions are working
     function testGetMintAmountOut(uint256 amountFeiIn) public {
-        if (amountFeiIn > fei.balanceOf(address(this))) return;
+        vm.assume(fei.balanceOf(address(this)) > amountFeiIn);
+        amountFeiIn = amountFeiIn * 1e18;
 
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
 
-        uint256 fee = (mintAmount * psm.mintFeeBasisPoints()) /
+        uint256 fee = (amountFeiIn * psm.mintFeeBasisPoints()) /
             Constants.BASIS_POINTS_GRANULARITY;
 
-        uint256 amountOut = (((mintAmount * 1e18) / currentPegPrice)) - fee;
+        uint256 amountOut = (((amountFeiIn * 1e18) / currentPegPrice)) - fee;
 
         assertApproxEq(
-            psm.getMintAmountOut(mintAmount).toInt256(),
+            psm.getMintAmountOut(amountFeiIn).toInt256(),
             amountOut.toInt256(),
+            1
+        );
+
+        assertApproxEq(
+            (vanillaPriceBoundPSM.getMintAmountOut(amountFeiIn) - fee)
+                .toInt256(),
+            psm.getMintAmountOut(amountFeiIn).toInt256(),
             1
         );
     }

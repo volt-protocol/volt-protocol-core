@@ -112,9 +112,10 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
         Decimal.D256 memory oraclePrice = readOracle();
         _validatePriceRange(oraclePrice);
 
-        uint256 voltPrice = oraclePrice.asUint256();
+        console.log("NEW PSM ORACLE PRICE", oraclePrice.value);
+        console.log("NEW PSM  AMOUNT IN", amountIn);
 
-        amountVoltOut = amountIn / voltPrice;
+        amountVoltOut = (amountIn * 1e18) / oraclePrice.value;
     }
 
     /// @notice calculate the amount of underlying out for a given `amountVoltIn` of VOLT
@@ -131,9 +132,7 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
         Decimal.D256 memory oraclePrice = readOracle();
         _validatePriceRange(oraclePrice);
 
-        uint256 voltPrice = oraclePrice.asUint256();
-
-        amountTokenOut = amountVoltIn * voltPrice;
+        amountTokenOut = oraclePrice.mul(amountVoltIn).asUint256();
     }
 
     /// @notice the maximum mint amount out

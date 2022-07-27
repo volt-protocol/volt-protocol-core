@@ -56,13 +56,10 @@ contract VanillaPriceBoundPSM is VanillaPSM, IPriceBoundPSM {
 
     /// @notice helper function to set the ceiling in basis points
     function _setCeilingBasisPoints(uint128 newCeilingBasisPoints) internal {
-        require(
-            newCeilingBasisPoints != 0,
-            "PegStabilityModule: invalid ceiling"
-        );
+        require(newCeilingBasisPoints != 0, "VPSM: invalid ceiling");
         require(
             newCeilingBasisPoints > floor,
-            "PegStabilityModule: ceiling must be greater than floor"
+            "VPSM: ceiling must be greater than floor"
         );
         uint128 oldCeiling = ceiling;
         ceiling = newCeilingBasisPoints;
@@ -72,10 +69,10 @@ contract VanillaPriceBoundPSM is VanillaPSM, IPriceBoundPSM {
 
     /// @notice helper function to set the floor in basis points
     function _setFloorBasisPoints(uint128 newFloorBasisPoints) internal {
-        require(newFloorBasisPoints != 0, "PegStabilityModule: invalid floor");
+        require(newFloorBasisPoints != 0, "VPSM: invalid floor");
         require(
             newFloorBasisPoints < ceiling,
-            "PegStabilityModule: floor must be less than ceiling"
+            "VPSM: floor must be less than ceiling"
         );
         uint128 oldFloor = floor;
         floor = newFloorBasisPoints;
@@ -89,13 +86,7 @@ contract VanillaPriceBoundPSM is VanillaPSM, IPriceBoundPSM {
         view
         returns (bool valid)
     {
-        valid =
-            price.greaterThan(
-                Decimal.ratio(floor, Constants.BASIS_POINTS_GRANULARITY)
-            ) &&
-            price.lessThan(
-                Decimal.ratio(ceiling, Constants.BASIS_POINTS_GRANULARITY)
-            );
+        valid = price.value > floor && price.value < ceiling;
     }
 
     /// @notice reverts if the price is greater than or equal to the ceiling or less than or equal to the floor
@@ -104,6 +95,6 @@ contract VanillaPriceBoundPSM is VanillaPSM, IPriceBoundPSM {
         view
         override
     {
-        require(_validPrice(price), "PegStabilityModule: price out of bounds");
+        require(_validPrice(price), "VPSM: price out of bounds");
     }
 }

@@ -22,8 +22,6 @@ import {DSTest} from "./../unit/utils/DSTest.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {Constants} from "../../Constants.sol";
 
-import "hardhat/console.sol";
-
 contract IntegrationTestVanillaPSMTest is DSTest {
     using SafeCast for *;
 
@@ -121,35 +119,35 @@ contract IntegrationTestVanillaPSMTest is DSTest {
         assertApproxEq(
             priceBoundPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
             amountOut.toInt256(),
-            1
+            0
         );
 
         assertApproxEq(
             vanillaPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
             amountOut.toInt256(),
-            1
+            0
         );
     }
 
     /// @notice PSM is set up correctly and view functions are working
-    function testGetMintAmountOut(uint256 amountUSDCIn) public {
-        vm.assume(mintAmount >= amountUSDCIn);
-        amountUSDCIn = amountUSDCIn * 1e18;
+    function testGetMintAmountOut(uint256 amountFeiIn) public {
+        vm.assume(mintAmount >= amountFeiIn);
+        amountFeiIn = amountFeiIn * 1e18;
 
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
 
-        uint256 amountOut = ((amountUSDCIn * 1e6) / currentPegPrice);
+        uint256 amountOut = ((amountFeiIn * 1e6) / currentPegPrice);
 
         assertApproxEq(
-            priceBoundPsm.getMintAmountOut(amountUSDCIn).toInt256(),
-            amountOut.toInt256(),
-            1
+            priceBoundPsm.getMintAmountOut(amountFeiIn).toInt256(),
+            vanillaPsm.getMintAmountOut(amountFeiIn).toInt256(),
+            0
         );
 
         assertApproxEq(
-            vanillaPsm.getMintAmountOut(amountUSDCIn).toInt256(),
+            vanillaPsm.getMintAmountOut(amountFeiIn).toInt256(),
             amountOut.toInt256(),
-            1
+            0
         );
     }
 
