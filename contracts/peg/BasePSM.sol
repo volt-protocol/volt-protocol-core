@@ -46,10 +46,7 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
         uint256 minAmountOut
     ) external virtual override whenNotPaused returns (uint256 amountOut) {
         amountOut = getRedeemAmountOut(amountVoltIn);
-        require(
-            amountOut >= minAmountOut,
-            "PegStabilityModule: Redeem not enough out"
-        );
+        require(amountOut >= minAmountOut, "BasePSM: Redeem not enough out");
 
         _beforeVoltRedeem(to, amountVoltIn, minAmountOut);
 
@@ -76,7 +73,7 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
 
         require(
             amountVoltOut >= minAmountVoltOut,
-            "PegStabilityModule: Mint not enough out"
+            "BasePSM: Mint not enough out"
         );
 
         _beforeVoltMint(to, amountIn, minAmountVoltOut);
