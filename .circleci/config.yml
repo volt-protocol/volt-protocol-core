@@ -33,10 +33,22 @@ jobs:
   unit-test:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:14
-    parallelism: 16
+      - image: cimg/node:16.14
     resource_class: large
     steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - repo-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: Setup env
+          command: echo "export PATH=$PATH:$(pwd)/.circleci" >> /home/circleci/.bashrc
+      - run:
+          name: Finish setting up env
+          command: echo "export PATH=$PATH:$(pwd)/.foundry/bin" >> /home/circleci/.bashrc
+      - run:
+          name: Install Foundry
+          command: curl -L https://foundry.paradigm.xyz | bash; source /home/circleci/.bashrc; $HOME/.foundry/bin/foundryup
       - restore_cache:
           keys:
             - repo-{{ .Environment.CIRCLE_SHA1 }}
@@ -54,7 +66,7 @@ jobs:
     working_directory: ~/repo
     docker:
       - image: cimg/node:16.14
-    resource_class: xlarge
+    resource_class: large
     steps:
       - checkout
       - restore_cache:
