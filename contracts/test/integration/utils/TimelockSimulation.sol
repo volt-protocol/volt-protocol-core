@@ -23,7 +23,10 @@ contract TimelockSimulation is DSTest {
         Vm vm
     ) public {
         uint256 delay = timelock.getMinDelay();
-        bytes32 salt = bytes32(0);
+        bytes32 salt = keccak256(abi.encode(proposal[0].description));
+        console.log("salt: ");
+        emit log_bytes32(salt);
+
         bytes32 predecessor = bytes32(0);
 
         uint256 proposalLength = proposal.length;
@@ -31,7 +34,21 @@ contract TimelockSimulation is DSTest {
         uint256[] memory values = new uint256[](proposalLength);
         bytes[] memory payloads = new bytes[](proposalLength);
 
+        /// target cannot be address 0 as that call will fail
+        /// value can be 0
+        /// arguments can be 0 as long as eth is sent
         for (uint256 i = 0; i < proposalLength; i++) {
+            require(
+                proposal[i].target != address(0),
+                "Invalid target for timelock"
+            );
+            /// if there are no args and no eth, the action is not valid
+            require(
+                (proposal[i].arguments.length == 0 && proposal[i].value > 0) ||
+                    proposal[i].arguments.length > 0,
+                "Invalid arguments for timelock"
+            );
+
             targets[i] = proposal[i].target;
             values[i] = proposal[i].value;
             payloads[i] = proposal[i].arguments;

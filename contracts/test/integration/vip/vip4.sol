@@ -3,21 +3,23 @@ pragma solidity =0.8.13;
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {TimelockSimulation} from "../utils/TimelockSimulation.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
+import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
 import {DSTest} from "./../../unit/utils/DSTest.sol";
 import {Core} from "../../../core/Core.sol";
 import {Vm} from "./../../unit/utils/Vm.sol";
+import {IVIP} from "./IVIP.sol";
+import {AllRoles} from "./../utils/AllRoles.sol";
 
-import "hardhat/console.sol";
-
-contract vip4 is DSTest {
+contract VIP4 is DSTest, IVIP, AllRoles {
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
-    function getVIP()
+    function getMainnetProposal()
         public
         pure
+        override
         returns (TimelockSimulation.action[] memory proposal)
     {
-        proposal = new TimelockSimulation.action[](7);
+        proposal = new TimelockSimulation.action[](8);
 
         proposal[0].target = MainnetAddresses.PCV_GUARD_ADMIN;
         proposal[0].value = 0;
@@ -54,81 +56,131 @@ contract vip4 is DSTest {
         proposal[3]
             .description = "Revoke Non Custodial PSM PCV Controller role";
 
-        proposal[4].target = MainnetAddresses.PCV_GUARD_ADMIN;
+        proposal[4].target = MainnetAddresses.CORE;
         proposal[4].value = 0;
         proposal[4].arguments = abi.encodeWithSignature(
-            "grantPCVGuardRole(address)",
-            MainnetAddresses.EOA_1
+            "revokeGuardian(address)",
+            MainnetAddresses.GOVERNOR
         );
-        proposal[4].description = "Grant EOA 1 PCV Guard Role";
+        proposal[4].description = "Revoke Guardian Role from Multisig";
 
         proposal[5].target = MainnetAddresses.PCV_GUARD_ADMIN;
         proposal[5].value = 0;
         proposal[5].arguments = abi.encodeWithSignature(
             "grantPCVGuardRole(address)",
-            MainnetAddresses.EOA_2
+            MainnetAddresses.EOA_1
         );
-        proposal[5].description = "Grant EOA 2 PCV Guard Role";
+        proposal[5].description = "Grant EOA 1 PCV Guard Role";
 
         proposal[6].target = MainnetAddresses.PCV_GUARD_ADMIN;
         proposal[6].value = 0;
         proposal[6].arguments = abi.encodeWithSignature(
             "grantPCVGuardRole(address)",
+            MainnetAddresses.EOA_2
+        );
+        proposal[6].description = "Grant EOA 2 PCV Guard Role";
+
+        proposal[7].target = MainnetAddresses.PCV_GUARD_ADMIN;
+        proposal[7].value = 0;
+        proposal[7].arguments = abi.encodeWithSignature(
+            "grantPCVGuardRole(address)",
             MainnetAddresses.EOA_3
         );
-        proposal[6].description = "Grant EOA 3 PCV Guard Role";
+        proposal[7].description = "Grant EOA 3 PCV Guard Role";
     }
 
-    function setup() internal {
+    function mainnetSetup() public override {
         vm.prank(MainnetAddresses.GOVERNOR);
         Core(MainnetAddresses.CORE).grantGovernor(
             MainnetAddresses.TIMELOCK_CONTROLLER
         );
     }
 
-    function testPrintScheduleAndExecuteCalldata() public {
-        uint256 delay = TimelockController(
-            payable(MainnetAddresses.TIMELOCK_CONTROLLER)
-        ).getMinDelay();
-        bytes32 salt = bytes32(0);
-        bytes32 predecessor = bytes32(0);
+    /// assert all contracts have their correct number of roles now,
+    /// and that the proper addresses have the correct role after the governance upgrade
+    function mainnetValidate() public override {
+        _setupMainnet(Core(MainnetAddresses.CORE));
+        testRoleArity();
 
-        TimelockSimulation.action[] memory proposal = getVIP();
+        _setupMainnet(Core(MainnetAddresses.CORE));
+        testRoleAddresses(Core(MainnetAddresses.CORE));
+    }
 
-        uint256 proposalLength = proposal.length;
-        address[] memory targets = new address[](proposalLength);
-        uint256[] memory values = new uint256[](proposalLength);
-        bytes[] memory payloads = new bytes[](proposalLength);
+    function getArbitrumProposal()
+        public
+        pure
+        override
+        returns (TimelockSimulation.action[] memory proposal)
+    {
+        proposal = new TimelockSimulation.action[](6);
 
-        for (uint256 i = 0; i < proposalLength; i++) {
-            targets[i] = proposal[i].target;
-            values[i] = proposal[i].value;
-            payloads[i] = proposal[i].arguments;
-        }
-
-        console.log("schedule batch calldata");
-        emit log_bytes(
-            abi.encodeWithSignature(
-                "scheduleBatch(address[],uint256[],bytes[],bytes32,bytes32,uint256)",
-                targets,
-                values,
-                payloads,
-                predecessor,
-                salt,
-                delay
-            )
+        /// Role revocations
+        proposal[0].target = ArbitrumAddresses.PCV_GUARD_ADMIN;
+        proposal[0].value = 0;
+        proposal[0].arguments = abi.encodeWithSignature(
+            "revokePCVGuardRole(address)",
+            ArbitrumAddresses.REVOKED_EOA_1
         );
+        proposal[0]
+            .description = "Revoke PCV Guard role from revoked EOA1 by calling PCVGuardAdmin";
 
-        console.log("execute batch calldata");
-        emit log_bytes(
-            abi.encodeWithSignature(
-                "executeBatch(address[],uint256[],bytes[],bytes32,bytes32)",
-                targets,
-                values,
-                payloads,
-                predecessor,
-                salt
-            )
+        proposal[1].target = ArbitrumAddresses.CORE;
+        proposal[1].value = 0;
+        proposal[1].arguments = abi.encodeWithSignature(
+            "revokeGuardian(address)",
+            ArbitrumAddresses.EOA_1
         );
+        proposal[1].description = "Revoke EOA1 as a guardian";
+
+        proposal[2].target = ArbitrumAddresses.CORE;
+        proposal[2].value = 0;
+        proposal[2].arguments = abi.encodeWithSignature(
+            "revokePCVController(address)",
+            ArbitrumAddresses.DEPRECATED_TIMELOCK
+        );
+        proposal[2]
+            .description = "Revoke Deprecated Timelock's PCV Controller role";
+
+        /// Role additions
+        proposal[3].target = ArbitrumAddresses.PCV_GUARD_ADMIN;
+        proposal[3].value = 0;
+        proposal[3].arguments = abi.encodeWithSignature(
+            "grantPCVGuardRole(address)",
+            ArbitrumAddresses.EOA_1
+        );
+        proposal[3].description = "Grant EOA 1 PCV Guard Role";
+
+        proposal[4].target = ArbitrumAddresses.PCV_GUARD_ADMIN;
+        proposal[4].value = 0;
+        proposal[4].arguments = abi.encodeWithSignature(
+            "grantPCVGuardRole(address)",
+            ArbitrumAddresses.EOA_2
+        );
+        proposal[4].description = "Grant EOA 2 PCV Guard Role";
+
+        proposal[5].target = ArbitrumAddresses.PCV_GUARD_ADMIN;
+        proposal[5].value = 0;
+        proposal[5].arguments = abi.encodeWithSignature(
+            "grantPCVGuardRole(address)",
+            ArbitrumAddresses.EOA_3
+        );
+        proposal[5].description = "Grant EOA 3 PCV Guard Role";
+    }
+
+    function arbitrumSetup() public override {
+        vm.prank(ArbitrumAddresses.GOVERNOR);
+        Core(ArbitrumAddresses.CORE).grantGovernor(
+            ArbitrumAddresses.TIMELOCK_CONTROLLER
+        );
+    }
+
+    /// assert all contracts have their correct number of roles now,
+    /// and that the proper addresses have the correct role after the governance upgrade
+    function arbitrumValidate() public override {
+        _setupArbitrum(Core(ArbitrumAddresses.CORE));
+        testRoleArity();
+
+        _setupArbitrum(Core(ArbitrumAddresses.CORE));
+        testRoleAddresses(Core(ArbitrumAddresses.CORE));
     }
 }

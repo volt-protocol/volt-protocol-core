@@ -11,21 +11,20 @@ contract MainnetRolesConfig {
 
     /// ------ @notice number of each role in the system ------
 
-    /// timelock (currently deprecated), multisig, core
-    uint256 public constant numGovernors = 2;
+    /// new timelock, multisig, core
+    uint256 public constant numGovernors = 3;
 
-    /// EOA1, multisig, pcv guardian
-    uint256 public constant numGuardians = 3;
+    /// PCV Guardian
+    uint256 public constant numGuardians = 1;
 
-    /// NonCustodial PSM, multisig, PCV Guardian
-    uint256 public constant numPCVControllers = 3;
+    /// multisig, PCV Guardian
+    uint256 public constant numPCVControllers = 2;
 
     /// Global Rate Limited Minter
-    /// TODO deprecate the global rate limited minter
-    uint256 public constant numMinters = 1;
+    uint256 public constant numMinters = 0;
 
-    /// Revoked EOA 1, EOA2
-    uint256 public constant numPCVGuards = 2;
+    /// EOA1, EOA2 & EOA3
+    uint256 public constant numPCVGuards = 3;
 
     /// PCV Guard Admin
     uint256 public constant numPCVGuardAdmins = 1;
