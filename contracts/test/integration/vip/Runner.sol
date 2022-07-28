@@ -1,6 +1,6 @@
 pragma solidity =0.8.13;
 
-import {VIP4} from "./VIP4.sol";
+import {VIP4} from "./vip4.sol";
 import {TimelockSimulation} from "../utils/TimelockSimulation.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
 import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
