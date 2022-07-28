@@ -33,7 +33,7 @@ jobs:
           name: Run linter
           command: npm run lint
 
-  test:
+  test-unit:
     working_directory: ~/repo
     docker:
       - image: circleci/node:14
@@ -44,10 +44,10 @@ jobs:
           keys:
             - repo-{{ .Environment.CIRCLE_SHA1 }}
       - run:
-          name: Run tests
+          name: Run unit tests
           command: |
-            circleci tests glob "test/unit/**/*.ts" | circleci tests split --split-by=filesize > /tmp/tests-to-run
-            npm run test:hardhat $(cat /tmp/tests-to-run)
+            circleci tests glob "contracts/test/unit/**/*.sol" | circleci tests split --split-by=filesize > /tmp/tests-to-run
+            npm run test $(cat /tmp/tests-to-run)
       - store_test_results:
           path: test-results
       - store_artifacts:
@@ -76,7 +76,7 @@ jobs:
           name: Run tests
           command: |
             source /home/circleci/.bashrc
-            export PATH=$PATH:/home/circleci/.foundry/bin; npm run clean && npm run compile && npm run test && npm run test:integration && npm run test:integration:arbitrum && test:proposal:mainnet && test:proposal:arbitrum
+            export PATH=$PATH:/home/circleci/.foundry/bin; npm run test && npm run test:integration && npm run test:integration:arbitrum && test:proposal:mainnet && test:proposal:arbitrum
 
 workflows:
   main:
