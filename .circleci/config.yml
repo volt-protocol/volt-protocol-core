@@ -33,7 +33,7 @@ jobs:
           name: Run linter
           command: npm run lint
 
-  test-unit:
+  unit-test:
     working_directory: ~/repo
     docker:
       - image: circleci/node:14
@@ -85,7 +85,7 @@ workflows:
       - lint:
           requires:
             - build
-      - test:
+      - unit-test:
           requires:
             - build
       - test-forge:
