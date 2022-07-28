@@ -49,9 +49,6 @@ jobs:
       - run:
           name: Install Foundry
           command: curl -L https://foundry.paradigm.xyz | bash; source /home/circleci/.bashrc; $HOME/.foundry/bin/foundryup
-      - restore_cache:
-          keys:
-            - repo-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Run unit tests
           command: |
