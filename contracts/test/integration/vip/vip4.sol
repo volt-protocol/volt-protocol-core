@@ -10,7 +10,7 @@ import {Vm} from "./../../unit/utils/Vm.sol";
 import {IVIP} from "./IVIP.sol";
 import {AllRoles} from "./../utils/AllRoles.sol";
 
-contract VIP4 is DSTest, IVIP, AllRoles {
+contract vip4 is DSTest, IVIP, AllRoles {
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
     function getMainnetProposal()
