@@ -14,7 +14,7 @@ import {Core} from "../../core/Core.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {PriceBoundPSM, PegStabilityModule} from "../../peg/PriceBoundPSM.sol";
 import {getCore, getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
-import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
+import {MockPCVDepositV2} from "../../mock/MockPCVDepositV2.sol";
 import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
@@ -45,9 +45,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     uint256 public constant individualMaxBufferCap = 5_000_000e18;
     uint256 public constant rps = 10_000e18;
 
-    /// @notice live FEI PCV Deposit
-    ERC20CompoundPCVDeposit public immutable rariVoltPCVDeposit =
-        ERC20CompoundPCVDeposit(MainnetAddresses.RARI_VOLT_PCV_DEPOSIT);
+    MockPCVDepositV2 public pcvDeposit;
 
     /// @notice Oracle Pass Through contract
     OraclePassThrough public oracle =
@@ -65,6 +63,13 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
 
     function setUp() public {
         PegStabilityModule.OracleParams memory oracleParams;
+
+        pcvDeposit = new MockPCVDepositV2(
+            address(core),
+            address(underlyingToken),
+            0,
+            0
+        );
 
         oracleParams = PegStabilityModule.OracleParams({
             coreAddress: address(core),
@@ -85,7 +90,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
             10_000e18,
             10_000_000e18,
             IERC20(address(usdc)),
-            rariVoltPCVDeposit
+            pcvDeposit
         );
 
         IBasePSM.OracleParams memory vanillaParams = IBasePSM.OracleParams({

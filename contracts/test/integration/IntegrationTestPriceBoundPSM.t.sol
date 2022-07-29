@@ -15,15 +15,13 @@ import {Core} from "../../core/Core.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {PriceBoundPSM, PegStabilityModule} from "../../peg/PriceBoundPSM.sol";
 import {getCore, getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
-import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
+import {MockPCVDepositV2} from "../../mock/MockPCVDepositV2.sol";
 import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {IBasePSM} from "../../peg/IBasePSM.sol";
 import {VanillaPriceBoundPSM} from "../../peg/VanillaPriceBoundPSM.sol";
 import {Constants} from "../../Constants.sol";
-
-import "hardhat/console.sol";
 
 contract IntegrationTestPriceBoundPSMTest is DSTest {
     using SafeCast for *;
@@ -36,6 +34,8 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
     IVolt private fei = IVolt(MainnetAddresses.FEI);
     IVolt private underlyingToken = fei;
+
+    MockPCVDepositV2 public pcvDeposit;
 
     /// ------------ Minting and RateLimited System Params ------------
 
@@ -57,10 +57,6 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     address public immutable oracleAddress =
         MainnetAddresses.CHAINLINK_ORACLE_ADDRESS;
 
-    /// @notice live FEI PCV Deposit
-    ERC20CompoundPCVDeposit public immutable rariVoltPCVDeposit =
-        ERC20CompoundPCVDeposit(MainnetAddresses.RARI_VOLT_PCV_DEPOSIT);
-
     /// @notice fei DAO timelock address
     address public immutable feiDAOTimelock = MainnetAddresses.FEI_DAO_TIMELOCK;
 
@@ -78,6 +74,13 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
 
     function setUp() public {
         PegStabilityModule.OracleParams memory oracleParams;
+
+        pcvDeposit = new MockPCVDepositV2(
+            address(core),
+            address(underlyingToken),
+            0,
+            0
+        );
 
         oracleParams = PegStabilityModule.OracleParams({
             coreAddress: address(core),
@@ -98,7 +101,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
             10_000e18,
             10_000_000e18,
             IERC20(address(fei)),
-            rariVoltPCVDeposit
+            pcvDeposit
         );
 
         IBasePSM.OracleParams memory vanillaParams = IBasePSM.OracleParams({
