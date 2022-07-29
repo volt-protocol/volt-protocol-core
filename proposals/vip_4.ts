@@ -59,7 +59,7 @@ const vip_4: ProposalDescription = {
       values: '0',
       method: 'grantPCVGuardRole(address)',
       arguments: ['{pcvGuardEOA3}'],
-      description: 'Grant EOA2 PCV Guard role'
+      description: 'Grant EOA3 PCV Guard role'
     }
   ],
   description: `Revoke unused roles, add new roles`

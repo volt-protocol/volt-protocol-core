@@ -1,6 +1,6 @@
 pragma solidity =0.8.13;
 
-contract MainnetRolesConfig {
+contract AllRolesConfig {
     /// @notice all roles
     bytes32[] public allRoles;
     /// how many of each role exists

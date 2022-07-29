@@ -11,9 +11,9 @@ import {Core} from "../../../core/Core.sol";
 import {Vm} from "./../../unit/utils/Vm.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {RoleTesting} from "./RoleTesting.sol";
-import {MainnetRolesConfig} from "./MainnetRolesConfig.sol";
+import {AllRolesConfig} from "./AllRolesConfig.sol";
 
-contract AllRoles is RoleTesting, MainnetRolesConfig {
+contract AllRoles is RoleTesting, AllRolesConfig {
     constructor() {
         allRoles.push(TribeRoles.GOVERNOR);
         allRoles.push(TribeRoles.GUARDIAN);
