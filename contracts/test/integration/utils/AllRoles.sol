@@ -14,16 +14,6 @@ import {RoleTesting} from "./RoleTesting.sol";
 import {AllRolesConfig} from "./AllRolesConfig.sol";
 
 contract AllRoles is RoleTesting, AllRolesConfig {
-    constructor() {
-        allRoles.push(TribeRoles.GOVERNOR);
-        allRoles.push(TribeRoles.GUARDIAN);
-        allRoles.push(TribeRoles.PCV_CONTROLLER);
-        allRoles.push(TribeRoles.MINTER);
-        allRoles.push(TribeRoles.PCV_GUARD);
-        allRoles.push(TribeRoles.PCV_GUARD_ADMIN);
-        allRoles.push(TribeRoles.PSM_ADMIN_ROLE);
-    }
-
     /// System should look the same in terms of who has roles, and what roles exist
     /// on both mainnet and arbitrum
     function _setupMainnet(Core core) internal {
@@ -52,9 +42,6 @@ contract AllRoles is RoleTesting, AllRolesConfig {
         allAddresses[4].push(MainnetAddresses.EOA_3);
 
         allAddresses[5].push(MainnetAddresses.PCV_GUARD_ADMIN);
-
-        /// sanity check
-        assert(numEachRole.length == allRoles.length);
     }
 
     function _setupArbitrum(Core core) internal {
@@ -90,11 +77,11 @@ contract AllRoles is RoleTesting, AllRolesConfig {
 
     /// load up number of roles from Core and ensure that they match up with numbers here
     function testRoleArity() public {
-        _testRoleArity(allRoles, roleCounts, numEachRole);
+        _testRoleArity(getAllRoles(), roleCounts, numEachRole);
     }
 
     /// assert that all addresses have the proper role
     function testRoleAddresses(Core core) public {
-        _testRoleAddresses(allRoles, allAddresses, core);
+        _testRoleAddresses(getAllRoles(), allAddresses, core);
     }
 }
