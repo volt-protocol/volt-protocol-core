@@ -72,7 +72,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     uint256 voltCeilingPrice = 10_000; /// 1 volt for 1 fei is the minimum price
 
     uint128 vanillaFloorPrice = 1e18;
-    uint128 vanillaCeilingPrice = 1.05e18;
+    uint128 vanillaCeilingPrice = 2.05e18;
 
     function setUp() public {
         PegStabilityModule.OracleParams memory oracleParams;

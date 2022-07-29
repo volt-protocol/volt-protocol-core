@@ -59,7 +59,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     uint256 reservesThreshold = type(uint256).max; /// max uint so that surplus can never be allocated into the pcv deposit
 
     uint128 vanillaFloorPrice = 900_000;
-    uint128 vanillaCeilingPrice = 105_0000;
+    uint128 vanillaCeilingPrice = 205_0000;
 
     function setUp() public {
         PegStabilityModule.OracleParams memory oracleParams;
