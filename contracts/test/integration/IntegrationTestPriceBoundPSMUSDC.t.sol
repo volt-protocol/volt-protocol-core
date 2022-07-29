@@ -113,6 +113,9 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
         /// mint VOLT to the user
         volt.mint(address(psm), voltMintAmount);
         volt.mint(address(this), voltMintAmount);
+
+        psm.setRedeemFee(0);
+        psm.setMintFee(0);
         vm.stopPrank();
 
         usdc.transfer(address(psm), balance / 2);
@@ -127,7 +130,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
         assertEq(address(psm.oracle()), address(oracle));
         assertEq(address(psm.backupOracle()), address(0));
         assertEq(psm.decimalsNormalizer(), 12);
-        assertEq(psm.mintFeeBasisPoints(), 30); /// mint costs 30 bps
+        assertEq(psm.mintFeeBasisPoints(), 0);
         assertEq(psm.redeemFeeBasisPoints(), 0); /// redeem has no fee
         assertEq(address(psm.underlyingToken()), address(usdc));
         assertEq(psm.reservesThreshold(), reservesThreshold);
@@ -191,14 +194,13 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
         assertApproxEq(
             psm.getMintAmountOut(amountUSDCIn).toInt256(),
             amountOut.toInt256(),
-            1
+            0
         );
 
         assertApproxEq(
-            (vanillaPriceBoundPSM.getMintAmountOut(amountUSDCIn) - fee)
-                .toInt256(),
+            vanillaPriceBoundPSM.getMintAmountOut(amountUSDCIn).toInt256(),
             psm.getMintAmountOut(amountUSDCIn).toInt256(),
-            1
+            0
         );
     }
 

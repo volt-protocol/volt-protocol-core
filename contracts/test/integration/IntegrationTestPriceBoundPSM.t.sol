@@ -125,6 +125,9 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
         /// mint VOLT to the user
         volt.mint(address(psm), mintAmount);
         volt.mint(address(this), mintAmount);
+
+        psm.setRedeemFee(0);
+        psm.setMintFee(0);
         vm.stopPrank();
 
         vm.prank(MainnetAddresses.FEI_GOVERNOR);
@@ -188,14 +191,13 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
         assertApproxEq(
             psm.getMintAmountOut(amountFeiIn).toInt256(),
             amountOut.toInt256(),
-            1
+            0
         );
 
         assertApproxEq(
-            (vanillaPriceBoundPSM.getMintAmountOut(amountFeiIn) - fee)
-                .toInt256(),
+            vanillaPriceBoundPSM.getMintAmountOut(amountFeiIn).toInt256(),
             psm.getMintAmountOut(amountFeiIn).toInt256(),
-            1
+            0
         );
     }
 
