@@ -1,13 +1,15 @@
 import { getAllContracts, getAllContractAddresses } from './loadContracts';
-import { NamedContracts, UpgradeFuncs } from '@custom-types/types';
+import { NamedContracts, UpgradeFuncs, namedContractsToNamedAddresses } from '@custom-types/types';
 import { simulateOAProposal } from '../simulation/simulateTimelockProposal';
 import { MainnetContracts, ProposalDescription } from '@custom-types/types';
+import { ethers } from 'hardhat';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
 
 const proposalName = process.env.DEPLOY_FILE;
 const doSetup = process.env.DO_SETUP;
+const doDeploy = process.env.DO_DEPLOY;
 
 if (!proposalName) {
   throw new Error('DEPLOY_FILE env variable not set');
@@ -21,11 +23,25 @@ async function checkProposal(proposalName: string, doSetup?: string) {
   // Get the upgrade setup, run and teardown scripts
   const proposalFuncs: UpgradeFuncs = await import(`@proposals/dao/${proposalName}`);
 
-  const contracts = (await getAllContracts()) as unknown as NamedContracts;
+  let contracts = (await getAllContracts()) as unknown as NamedContracts;
 
-  const contractAddresses = getAllContractAddresses();
+  let contractAddresses = getAllContractAddresses();
 
   const proposalInfo = (await import(`@proposals/${proposalName}`)).default as ProposalDescription;
+  const deployer = (await ethers.getSigners())[0];
+
+  if (doDeploy) {
+    console.log('Deploy');
+    const deployed = await proposalFuncs.deploy(deployer.address, contractAddresses, true);
+    contracts = {
+      ...contracts,
+      ...deployed
+    };
+    contractAddresses = {
+      ...contractAddresses,
+      ...namedContractsToNamedAddresses(deployed)
+    };
+  }
 
   if (doSetup) {
     console.log('Setup');
