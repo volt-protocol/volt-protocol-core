@@ -90,7 +90,6 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
     // ----------- Public State Changing API ----------
 
     /// @notice function to receive ERC20 tokens from external contracts
-
     function deposit() external virtual override {}
 
     // ----------- Public View-Only API ----------
