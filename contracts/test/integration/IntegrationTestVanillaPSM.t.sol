@@ -149,6 +149,110 @@ contract IntegrationTestVanillaPSMTest is DSTest {
         );
     }
 
+    function testMintFuzz(uint32 amountStableIn) public {
+        uint256 amountVoltOut = vanillaPsm.getMintAmountOut(amountStableIn);
+
+        uint256 amountVoltOutPriceBound = priceBoundPsm.getMintAmountOut(
+            amountStableIn
+        );
+
+        uint256 startingUserVoltBalance = volt.balanceOf(address(this));
+
+        underlyingToken.approve(address(vanillaPsm), amountStableIn);
+        vanillaPsm.mint(address(this), amountStableIn, amountVoltOut);
+
+        uint256 endingUserVoltBalance1 = volt.balanceOf(address(this));
+        uint256 endingPSMUnderlyingBalance = underlyingToken.balanceOf(
+            address(vanillaPsm)
+        );
+
+        underlyingToken.approve(address(priceBoundPsm), amountStableIn);
+
+        priceBoundPsm.mint(
+            address(this),
+            amountStableIn,
+            amountVoltOutPriceBound
+        );
+
+        uint256 endingUserVoltBalance2 = volt.balanceOf(address(this));
+
+        uint256 endingPSMUnderlyingBalancePriceBound = underlyingToken
+            .balanceOf(address(priceBoundPsm));
+
+        assertEq(
+            endingUserVoltBalance1,
+            startingUserVoltBalance + amountVoltOut
+        );
+
+        assertEq(
+            endingPSMUnderlyingBalance,
+            endingPSMUnderlyingBalancePriceBound
+        );
+
+        assertEq(
+            endingUserVoltBalance2 - endingUserVoltBalance1,
+            amountVoltOut
+        );
+
+        assertEq(
+            endingUserVoltBalance2 - endingUserVoltBalance1,
+            amountVoltOutPriceBound
+        );
+    }
+
+    function testRedeemFuzz(uint32 amountVoltIn) public {
+        uint256 amountOut = vanillaPsm.getRedeemAmountOut(amountVoltIn);
+
+        uint256 underlyingOutPriceBound = priceBoundPsm.getRedeemAmountOut(
+            amountVoltIn
+        );
+
+        uint256 startingUserUnderlyingBalance = underlyingToken.balanceOf(
+            address(this)
+        );
+
+        volt.approve(address(vanillaPsm), amountVoltIn);
+        vanillaPsm.redeem(address(this), amountVoltIn, amountOut);
+
+        uint256 endingUserUnderlyingBalance1 = underlyingToken.balanceOf(
+            address(this)
+        );
+        uint256 endingPSMVoltBalance = volt.balanceOf(address(vanillaPsm));
+
+        volt.approve(address(priceBoundPsm), amountVoltIn);
+
+        priceBoundPsm.redeem(
+            address(this),
+            amountVoltIn,
+            underlyingOutPriceBound
+        );
+
+        uint256 endingUserUnderlyingBalance2 = underlyingToken.balanceOf(
+            address(this)
+        );
+
+        uint256 endingPSMUnderlyingBalancePriceBound = volt.balanceOf(
+            address(priceBoundPsm)
+        );
+
+        assertEq(
+            endingUserUnderlyingBalance1,
+            startingUserUnderlyingBalance + amountOut
+        );
+
+        assertEq(endingPSMVoltBalance, endingPSMUnderlyingBalancePriceBound);
+
+        assertEq(
+            endingUserUnderlyingBalance2 - endingUserUnderlyingBalance1,
+            amountOut
+        );
+
+        assertEq(
+            endingUserUnderlyingBalance2 - endingUserUnderlyingBalance1,
+            underlyingOutPriceBound
+        );
+    }
+
     /// @notice pcv deposit receives underlying token on mint
     function testSwapUnderlyingForVolt() public {
         uint256 amountStableIn = 101_000;
@@ -206,6 +310,25 @@ contract IntegrationTestVanillaPSMTest is DSTest {
         vm.expectRevert(bytes("ERC20: transfer amount exceeds allowance"));
 
         vanillaPsm.mint(address(this), mintAmount, 0);
+    }
+
+    /// @notice withdraw succeeds with correct permissions
+    function testWithdrawSuccess() public {
+        vm.prank(MainnetAddresses.GOVERNOR);
+        core.grantPCVController(address(this));
+
+        uint256 startingBalance = underlyingToken.balanceOf(address(this));
+        vanillaPsm.withdraw(address(this), mintAmount);
+        uint256 endingBalance = underlyingToken.balanceOf(address(this));
+
+        assertEq(endingBalance - startingBalance, mintAmount);
+    }
+
+    /// @notice withdraw fails without correct permissions
+    function testWithdrawFailure() public {
+        vm.expectRevert(bytes("CoreRef: Caller is not a PCV controller"));
+
+        vanillaPsm.withdraw(address(this), 100);
     }
 
     /// @notice withdraw erc20 fails without correct permissions
