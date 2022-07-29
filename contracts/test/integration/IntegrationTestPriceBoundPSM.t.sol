@@ -23,6 +23,8 @@ import {IBasePSM} from "../../peg/IBasePSM.sol";
 import {VanillaPriceBoundPSM} from "../../peg/VanillaPriceBoundPSM.sol";
 import {Constants} from "../../Constants.sol";
 
+import "hardhat/console.sol";
+
 contract IntegrationTestPriceBoundPSMTest is DSTest {
     using SafeCast for *;
 
@@ -90,7 +92,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
             voltFloorPrice,
             voltCeilingPrice,
             oracleParams,
-            30,
+            0,
             0,
             10_000_000_000e18,
             10_000e18,
@@ -126,8 +128,6 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
         volt.mint(address(psm), mintAmount);
         volt.mint(address(this), mintAmount);
 
-        psm.setRedeemFee(0);
-        psm.setMintFee(0);
         vm.stopPrank();
 
         vm.prank(MainnetAddresses.FEI_GOVERNOR);
@@ -141,13 +141,9 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
 
     /// @notice PSM is set up correctly and view functions are working
     function testGetRedeemAmountOut(uint128 amountVoltIn) public {
-        vm.assume(amountVoltIn >= 1e18);
-
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
-        uint256 fee = (amountVoltIn * psm.redeemFeeBasisPoints()) /
-            Constants.BASIS_POINTS_GRANULARITY;
 
-        uint256 amountOut = ((amountVoltIn * currentPegPrice) / 1e18) - fee;
+        uint256 amountOut = ((amountVoltIn * currentPegPrice) / 1e18);
 
         assertApproxEq(
             psm.getRedeemAmountOut(amountVoltIn).toInt256(),
@@ -179,14 +175,9 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     /// @notice PSM is set up correctly and view functions are working
     function testGetMintAmountOut(uint256 amountFeiIn) public {
         vm.assume(fei.balanceOf(address(this)) > amountFeiIn);
-        amountFeiIn = amountFeiIn * 1e18;
 
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
-
-        uint256 fee = (amountFeiIn * psm.mintFeeBasisPoints()) /
-            Constants.BASIS_POINTS_GRANULARITY;
-
-        uint256 amountOut = (((amountFeiIn * 1e18) / currentPegPrice)) - fee;
+        uint256 amountOut = (amountFeiIn * 1e18) / currentPegPrice;
 
         assertApproxEq(
             psm.getMintAmountOut(amountFeiIn).toInt256(),

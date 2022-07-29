@@ -22,6 +22,8 @@ import {Constants} from "../../Constants.sol";
 import {IBasePSM} from "../../peg/IBasePSM.sol";
 import {VanillaPriceBoundPSM} from "../../peg/VanillaPriceBoundPSM.sol";
 
+import "hardhat/console.sol";
+
 contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     using SafeCast for *;
     PriceBoundPSM private psm;
@@ -77,7 +79,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
             voltFloorPrice,
             voltCeilingPrice,
             oracleParams,
-            30,
+            0,
             0,
             reservesThreshold,
             10_000e18,
@@ -114,8 +116,6 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
         volt.mint(address(psm), voltMintAmount);
         volt.mint(address(this), voltMintAmount);
 
-        psm.setRedeemFee(0);
-        psm.setMintFee(0);
         vm.stopPrank();
 
         usdc.transfer(address(psm), balance / 2);
@@ -138,14 +138,9 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
 
     /// @notice PSM is set up correctly and redeem view function is working
     function testGetRedeemAmountOut(uint128 amountVoltIn) public {
-        vm.assume(amountVoltIn >= 1e18);
-
         uint256 currentPegPrice = oracle.getCurrentOraclePrice() / 1e12;
 
-        uint256 fee = (amountVoltIn * psm.redeemFeeBasisPoints()) /
-            Constants.BASIS_POINTS_GRANULARITY;
-
-        uint256 amountOut = ((amountVoltIn * currentPegPrice) / 1e18) - fee;
+        uint256 amountOut = ((amountVoltIn * currentPegPrice) / 1e18);
 
         assertApproxEq(
             psm.getRedeemAmountOut(amountVoltIn).toInt256(),
@@ -178,18 +173,10 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     /// @notice PSM is set up correctly and view functions are working
     function testGetMintAmountOut(uint256 amountUSDCIn) public {
         vm.assume(usdc.balanceOf(address(this)) > amountUSDCIn);
-        amountUSDCIn = amountUSDCIn * 1e12;
 
-        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
-        // The USDC PSM returns a result scaled up 1e12, so we scale the amountOut and fee
-        // by this same amount to maintain precision
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice() / 1e12;
 
-        uint256 fee = ((amountUSDCIn * psm.mintFeeBasisPoints()) /
-            Constants.BASIS_POINTS_GRANULARITY) * 1e12;
-
-        uint256 amountOut = (((amountUSDCIn * 1e18) / currentPegPrice)) *
-            1e12 -
-            fee;
+        uint256 amountOut = (((amountUSDCIn * 1e18) / currentPegPrice));
 
         assertApproxEq(
             psm.getMintAmountOut(amountUSDCIn).toInt256(),
