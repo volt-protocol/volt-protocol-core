@@ -48,7 +48,7 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
         amountOut = getRedeemAmountOut(amountVoltIn);
         require(amountOut >= minAmountOut, "BasePSM: Redeem not enough out");
 
-        _beforeVoltRedeem(to, amountVoltIn, minAmountOut);
+        _beforeVoltRedeem(to, amountVoltIn, minAmountOut, amountOut);
 
         IERC20(volt()).safeTransferFrom(
             msg.sender,
@@ -60,7 +60,7 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
 
         emit Redeem(to, amountVoltIn, amountOut);
 
-        _afterVoltRedeem(to, amountVoltIn, minAmountOut);
+        _afterVoltRedeem(to, amountVoltIn, minAmountOut, amountOut);
     }
 
     /// @notice function to buy VOLT for an underlying asset
@@ -76,7 +76,7 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
             "BasePSM: Mint not enough out"
         );
 
-        _beforeVoltMint(to, amountIn, minAmountVoltOut);
+        _beforeVoltMint(to, amountIn, minAmountVoltOut, amountVoltOut);
 
         underlyingToken.safeTransferFrom(msg.sender, address(this), amountIn);
 
@@ -84,7 +84,7 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
 
         emit Mint(to, amountIn, amountVoltOut);
 
-        _afterVoltMint(to, amountIn, minAmountVoltOut);
+        _afterVoltMint(to, amountIn, minAmountVoltOut, amountVoltOut);
     }
 
     // ----------- Public State Changing API ----------
@@ -172,20 +172,24 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
     /// @param to is the address VOLT is being minted to
     /// @param amountIn is the the amount of stablecoin beind deposited
     /// @param minAmountOut is minimum amount of VOLT to be received
+    /// @param amountVoltOut the amount of VOLT received from the PSM
     function _beforeVoltMint(
         address to,
         uint256 amountIn,
-        uint256 minAmountOut
+        uint256 minAmountOut,
+        uint256 amountVoltOut
     ) internal virtual {}
 
     /// @dev Hook that is called after VOLT is minted
     /// @param to is the address VOLT is being minted to
     /// @param  amountIn is the the amount of underyling stablecoin beind deposited
     /// @param minAmountOut is minimum amount of VOLT to be received
+    /// @param amountVoltOut the amount of VOLT received from the PSM
     function _afterVoltMint(
         address to,
         uint256 amountIn,
-        uint256 minAmountOut
+        uint256 minAmountOut,
+        uint256 amountVoltOut
     ) internal virtual {}
 
     /// @dev Hook that is called before VOLT is redeemed
@@ -195,7 +199,8 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
     function _beforeVoltRedeem(
         address to,
         uint256 amountVoltIn,
-        uint256 minAmountOut
+        uint256 minAmountOut,
+        uint256 amountOut
     ) internal virtual {}
 
     /// @dev Hook that is called after VOLT is redeemed
@@ -205,6 +210,7 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
     function _afterVoltRedeem(
         address to,
         uint256 amountVoltIn,
-        uint256 minAmountOut
+        uint256 minAmountOut,
+        uint256 amountOut
     ) internal virtual {}
 }
