@@ -15,21 +15,27 @@ import {Core} from "../../core/Core.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {PriceBoundPSM, PegStabilityModule} from "../../peg/PriceBoundPSM.sol";
 import {getCore, getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
-import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
+import {MockPCVDepositV2} from "../../mock/MockPCVDepositV2.sol";
 import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
-
+import {IBasePSM} from "../../peg/IBasePSM.sol";
+import {VanillaPriceBoundPSM} from "../../peg/VanillaPriceBoundPSM.sol";
 import {Constants} from "../../Constants.sol";
 
 contract IntegrationTestPriceBoundPSMTest is DSTest {
     using SafeCast for *;
+
     PriceBoundPSM private psm;
+    VanillaPriceBoundPSM private vanillaPriceBoundPSM;
+
     ICore private core = ICore(MainnetAddresses.CORE);
     ICore private feiCore = ICore(MainnetAddresses.FEI_CORE);
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
     IVolt private fei = IVolt(MainnetAddresses.FEI);
     IVolt private underlyingToken = fei;
+
+    MockPCVDepositV2 public pcvDeposit;
 
     /// ------------ Minting and RateLimited System Params ------------
 
@@ -51,10 +57,6 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     address public immutable oracleAddress =
         MainnetAddresses.CHAINLINK_ORACLE_ADDRESS;
 
-    /// @notice live FEI PCV Deposit
-    ERC20CompoundPCVDeposit public immutable rariVoltPCVDeposit =
-        ERC20CompoundPCVDeposit(MainnetAddresses.RARI_VOLT_PCV_DEPOSIT);
-
     /// @notice fei DAO timelock address
     address public immutable feiDAOTimelock = MainnetAddresses.FEI_DAO_TIMELOCK;
 
@@ -67,8 +69,18 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     uint256 voltFloorPrice = 9_000; /// 1 volt for .9 fei is the max allowable price
     uint256 voltCeilingPrice = 10_000; /// 1 volt for 1 fei is the minimum price
 
+    uint128 vanillaFloorPrice = 1e18;
+    uint128 vanillaCeilingPrice = 2.05e18;
+
     function setUp() public {
         PegStabilityModule.OracleParams memory oracleParams;
+
+        pcvDeposit = new MockPCVDepositV2(
+            address(core),
+            address(underlyingToken),
+            0,
+            0
+        );
 
         oracleParams = PegStabilityModule.OracleParams({
             coreAddress: address(core),
@@ -83,13 +95,29 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
             voltFloorPrice,
             voltCeilingPrice,
             oracleParams,
-            30,
+            0,
             0,
             10_000_000_000e18,
             10_000e18,
             10_000_000e18,
             IERC20(address(fei)),
-            rariVoltPCVDeposit
+            pcvDeposit
+        );
+
+        IBasePSM.OracleParams memory vanillaParams = IBasePSM.OracleParams({
+            coreAddress: address(core),
+            oracleAddress: address(oracle),
+            backupOracle: address(0),
+            decimalsNormalizer: 0,
+            doInvert: false
+        });
+
+        /// create PSM
+        vanillaPriceBoundPSM = new VanillaPriceBoundPSM(
+            vanillaFloorPrice,
+            vanillaCeilingPrice,
+            vanillaParams,
+            IERC20(address(fei))
         );
 
         vm.prank(feiDAOTimelock);
@@ -102,6 +130,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
         /// mint VOLT to the user
         volt.mint(address(psm), mintAmount);
         volt.mint(address(this), mintAmount);
+
         vm.stopPrank();
 
         vm.prank(MainnetAddresses.FEI_GOVERNOR);
@@ -114,17 +143,20 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     }
 
     /// @notice PSM is set up correctly and view functions are working
-    function testGetRedeemAmountOut() public {
+    function testGetRedeemAmountOut(uint128 amountVoltIn) public {
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
-        uint256 fee = (mintAmount * psm.redeemFeeBasisPoints()) /
-            Constants.BASIS_POINTS_GRANULARITY;
 
-        uint256 amountOut = ((mintAmount * currentPegPrice) / 1e18) - fee;
+        uint256 amountOut = ((amountVoltIn * currentPegPrice) / 1e18);
 
         assertApproxEq(
-            psm.getRedeemAmountOut(mintAmount).toInt256(),
+            psm.getRedeemAmountOut(amountVoltIn).toInt256(),
+            vanillaPriceBoundPSM.getRedeemAmountOut(amountVoltIn).toInt256(),
+            0
+        );
+        assertApproxEq(
+            psm.getRedeemAmountOut(amountVoltIn).toInt256(),
             amountOut.toInt256(),
-            1
+            0
         );
     }
 
@@ -144,18 +176,22 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     }
 
     /// @notice PSM is set up correctly and view functions are working
-    function testGetMintAmountOut() public {
+    function testGetMintAmountOut(uint256 amountFeiIn) public {
+        vm.assume(fei.balanceOf(address(this)) > amountFeiIn);
+
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
-
-        uint256 fee = (mintAmount * psm.mintFeeBasisPoints()) /
-            Constants.BASIS_POINTS_GRANULARITY;
-
-        uint256 amountOut = (((mintAmount * 1e18) / currentPegPrice)) - fee;
+        uint256 amountOut = (amountFeiIn * 1e18) / currentPegPrice;
 
         assertApproxEq(
-            psm.getMintAmountOut(mintAmount).toInt256(),
+            psm.getMintAmountOut(amountFeiIn).toInt256(),
             amountOut.toInt256(),
-            1
+            0
+        );
+
+        assertApproxEq(
+            vanillaPriceBoundPSM.getMintAmountOut(amountFeiIn).toInt256(),
+            psm.getMintAmountOut(amountFeiIn).toInt256(),
+            0
         );
     }
 

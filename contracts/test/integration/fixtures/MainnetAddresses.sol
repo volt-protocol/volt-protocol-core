@@ -37,6 +37,9 @@ library MainnetAddresses {
     address public constant PCV_GUARD_ADMIN =
         0x868F58Ae8F6B2Dc31D9ADc97a8A09B16f05E9cd7;
 
+    address public constant VOLT_USDC_PSM =
+        0x0b9A7EA2FCA868C93640Dd77cF44df335095F501;
+
     // ---------- FEI ADDRESSES ----------
 
     address public constant FEI_CORE =

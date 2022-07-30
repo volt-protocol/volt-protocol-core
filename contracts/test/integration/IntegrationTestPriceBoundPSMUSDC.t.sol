@@ -14,15 +14,21 @@ import {Core} from "../../core/Core.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {PriceBoundPSM, PegStabilityModule} from "../../peg/PriceBoundPSM.sol";
 import {getCore, getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
-import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
+import {MockPCVDepositV2} from "../../mock/MockPCVDepositV2.sol";
 import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {Constants} from "../../Constants.sol";
+import {IBasePSM} from "../../peg/IBasePSM.sol";
+import {VanillaPriceBoundPSM} from "../../peg/VanillaPriceBoundPSM.sol";
+
+import "hardhat/console.sol";
 
 contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     using SafeCast for *;
     PriceBoundPSM private psm;
+    VanillaPriceBoundPSM private vanillaPriceBoundPSM;
+
     ICore private core = ICore(MainnetAddresses.CORE);
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
     IERC20 private usdc = IERC20(MainnetAddresses.USDC);
@@ -39,9 +45,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     uint256 public constant individualMaxBufferCap = 5_000_000e18;
     uint256 public constant rps = 10_000e18;
 
-    /// @notice live FEI PCV Deposit
-    ERC20CompoundPCVDeposit public immutable rariVoltPCVDeposit =
-        ERC20CompoundPCVDeposit(MainnetAddresses.RARI_VOLT_PCV_DEPOSIT);
+    MockPCVDepositV2 public pcvDeposit;
 
     /// @notice Oracle Pass Through contract
     OraclePassThrough public oracle =
@@ -54,8 +58,18 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     uint256 voltCeilingPrice = 10_000e12; /// 1 volt for 1 usdc is the minimum price
     uint256 reservesThreshold = type(uint256).max; /// max uint so that surplus can never be allocated into the pcv deposit
 
+    uint128 vanillaFloorPrice = 900_000;
+    uint128 vanillaCeilingPrice = 205_0000;
+
     function setUp() public {
         PegStabilityModule.OracleParams memory oracleParams;
+
+        pcvDeposit = new MockPCVDepositV2(
+            address(core),
+            address(underlyingToken),
+            0,
+            0
+        );
 
         oracleParams = PegStabilityModule.OracleParams({
             coreAddress: address(core),
@@ -70,13 +84,29 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
             voltFloorPrice,
             voltCeilingPrice,
             oracleParams,
-            30,
+            0,
             0,
             reservesThreshold,
             10_000e18,
             10_000_000e18,
             IERC20(address(usdc)),
-            rariVoltPCVDeposit
+            pcvDeposit
+        );
+
+        IBasePSM.OracleParams memory vanillaParams = IBasePSM.OracleParams({
+            coreAddress: address(core),
+            oracleAddress: address(oracle),
+            backupOracle: address(0),
+            decimalsNormalizer: -12,
+            doInvert: false
+        });
+
+        /// create PSM
+        vanillaPriceBoundPSM = new VanillaPriceBoundPSM(
+            vanillaFloorPrice,
+            vanillaCeilingPrice,
+            vanillaParams,
+            IERC20(address(usdc))
         );
 
         uint256 balance = usdc.balanceOf(makerUSDCPSM);
@@ -90,6 +120,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
         /// mint VOLT to the user
         volt.mint(address(psm), voltMintAmount);
         volt.mint(address(this), voltMintAmount);
+
         vm.stopPrank();
 
         usdc.transfer(address(psm), balance / 2);
@@ -104,26 +135,28 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
         assertEq(address(psm.oracle()), address(oracle));
         assertEq(address(psm.backupOracle()), address(0));
         assertEq(psm.decimalsNormalizer(), 12);
-        assertEq(psm.mintFeeBasisPoints(), 30); /// mint costs 30 bps
+        assertEq(psm.mintFeeBasisPoints(), 0);
         assertEq(psm.redeemFeeBasisPoints(), 0); /// redeem has no fee
         assertEq(address(psm.underlyingToken()), address(usdc));
         assertEq(psm.reservesThreshold(), reservesThreshold);
     }
 
     /// @notice PSM is set up correctly and redeem view function is working
-    function testGetRedeemAmountOut() public {
-        uint256 amountVoltIn = 100e18;
+    function testGetRedeemAmountOut(uint128 amountVoltIn) public {
         uint256 currentPegPrice = oracle.getCurrentOraclePrice() / 1e12;
 
-        uint256 fee = (amountVoltIn * psm.redeemFeeBasisPoints()) /
-            Constants.BASIS_POINTS_GRANULARITY;
+        uint256 amountOut = ((amountVoltIn * currentPegPrice) / 1e18);
 
-        uint256 amountOut = ((amountVoltIn * currentPegPrice) / 1e18) - fee;
+        assertApproxEq(
+            psm.getRedeemAmountOut(amountVoltIn).toInt256(),
+            vanillaPriceBoundPSM.getRedeemAmountOut(amountVoltIn).toInt256(),
+            0
+        );
 
         assertApproxEq(
             psm.getRedeemAmountOut(amountVoltIn).toInt256(),
             amountOut.toInt256(),
-            1
+            0
         );
     }
 
@@ -143,24 +176,23 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     }
 
     /// @notice PSM is set up correctly and view functions are working
-    function testGetMintAmountOut() public {
-        uint256 amountUSDCIn = 100e18;
-        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
+    function testGetMintAmountOut(uint256 amountUSDCIn) public {
+        vm.assume(usdc.balanceOf(address(this)) > amountUSDCIn);
 
-        // The USDC PSM returns a result scaled up 1e12, so we scale the amountOut and fee
-        // by this same amount to maintain precision
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice() / 1e12;
 
-        uint256 fee = ((amountUSDCIn * psm.mintFeeBasisPoints()) /
-            Constants.BASIS_POINTS_GRANULARITY) * 1e12;
-
-        uint256 amountOut = (((amountUSDCIn * 1e18) / currentPegPrice)) *
-            1e12 -
-            fee;
+        uint256 amountOut = (((amountUSDCIn * 1e18) / currentPegPrice));
 
         assertApproxEq(
             psm.getMintAmountOut(amountUSDCIn).toInt256(),
             amountOut.toInt256(),
-            1
+            0
+        );
+
+        assertApproxEq(
+            vanillaPriceBoundPSM.getMintAmountOut(amountUSDCIn).toInt256(),
+            psm.getMintAmountOut(amountUSDCIn).toInt256(),
+            0
         );
     }
 
