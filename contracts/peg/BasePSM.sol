@@ -108,6 +108,12 @@ abstract contract BasePSM is IBasePSM, OracleRef, PCVDeposit {
         Decimal.D256 memory oraclePrice = readOracle();
         _validatePriceRange(oraclePrice);
 
+        // This was included to make sure that precision is retained when dividing
+        // In the case where 1 USDC is deposited, which is 1e6, at the time of writing
+        // the VOLT price is $1.05 so the price we retrieve from the oracle will be 1.05e6
+        // VOLT contains 18 decimals, so when we perform the below calculation, it amounts to
+        // 1e16 * 1e18 / 1.05e6 = 1e24 / 1.05e6 which lands us at around 0.95e17, which is 0.95
+        // VOLT for 1 USDC which is consistent with the exchange rate
         amountVoltOut = (amountIn * 1e18) / oraclePrice.value;
     }
 
