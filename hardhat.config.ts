@@ -61,7 +61,7 @@ export default {
       forking: enableMainnetForking
         ? {
             url: `https://eth-mainnet.alchemyapi.io/v2/${mainnetAlchemyApiKey}`,
-            blockNumber: 14899146
+            blockNumber: 15175278
           }
         : undefined
     },

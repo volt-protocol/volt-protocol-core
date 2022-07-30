@@ -11,20 +11,12 @@ import {Core} from "../../../core/Core.sol";
 import {Vm} from "./../../unit/utils/Vm.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {RoleTesting} from "./RoleTesting.sol";
-import {ArbitrumRolesConfig} from "./ArbitrumRolesConfig.sol";
+import {AllRolesConfig} from "./AllRolesConfig.sol";
 
-contract ArbitrumTestAllArbitrumRoles is RoleTesting, ArbitrumRolesConfig {
+contract ArbitrumTestAllArbitrumRoles is RoleTesting, AllRolesConfig {
     Core private core = Core(ArbitrumAddresses.CORE);
 
     function setUp() public {
-        allRoles.push(TribeRoles.GOVERNOR);
-        allRoles.push(TribeRoles.GUARDIAN);
-        allRoles.push(TribeRoles.PCV_CONTROLLER);
-        allRoles.push(TribeRoles.MINTER);
-        allRoles.push(TribeRoles.PCV_GUARD);
-        allRoles.push(TribeRoles.PCV_GUARD_ADMIN);
-        allRoles.push(TribeRoles.PSM_ADMIN_ROLE);
-
         for (uint256 i = 0; i < allRoles.length; i++) {
             numEachRole.push(core.getRoleMemberCount(allRoles[i]));
         }
@@ -49,11 +41,11 @@ contract ArbitrumTestAllArbitrumRoles is RoleTesting, ArbitrumRolesConfig {
 
     /// load up number of roles from Core and ensure that they match up with numbers here
     function testRoleArity() public view {
-        _testRoleArity(allRoles, roleCounts, numEachRole);
+        _testRoleArity(getAllRoles(), roleCounts, numEachRole);
     }
 
     /// assert that all addresses have the proper role
     function testRoleAddresses() public {
-        _testRoleAddresses(allRoles, allAddresses, core);
+        _testRoleAddresses(getAllRoles(), allAddresses, core);
     }
 }

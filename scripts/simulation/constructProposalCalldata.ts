@@ -31,7 +31,10 @@ function getTimelockCalldata(proposal: ExtendedAlphaProposal, proposalInfo: Prop
     combinedCalldatas.push(`${sighash}${proposal.calldatas[i].slice(2)}`);
   }
 
-  const salt = ethers.utils.id(proposalInfo.title);
+  const abiEncodedString = ethers.utils.defaultAbiCoder.encode(['string'], [proposalInfo.commands[0].description]);
+  const salt = ethers.utils.keccak256(abiEncodedString);
+  console.log(`salt: ${salt}`);
+
   const predecessor = ethers.constants.HashZero;
 
   const calldata = proposeFuncFrag.encodeFunctionData('scheduleBatch', [
@@ -40,7 +43,7 @@ function getTimelockCalldata(proposal: ExtendedAlphaProposal, proposalInfo: Prop
     combinedCalldatas,
     predecessor,
     salt,
-    600
+    86400
   ]);
 
   const executeCalldata = proposeFuncFrag.encodeFunctionData('executeBatch', [
