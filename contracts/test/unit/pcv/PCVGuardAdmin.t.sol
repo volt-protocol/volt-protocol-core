@@ -8,7 +8,7 @@ import {ICore} from "../../../core/ICore.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {Vm} from "./../utils/Vm.sol";
 
-contract PCVGuardAdminUnitTest is DSTest {
+contract UnitTestPCVGuardAdmin is DSTest {
     PCVGuardAdmin private pcvGuardAdmin;
     ICore private core;
 

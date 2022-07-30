@@ -58,7 +58,7 @@ const MainnetAddresses: MainnetAddresses = {
   },
   globalRateLimitedMinter: {
     address: '0x87945f59E008aDc9ed6210a8e061f009d6ace718',
-    artifactName: 'GlobalRateLimitedMinter',
+    artifactName: 'IGlobalRateLimitedMinter',
     category: AddressCategory.Core,
     network: Network.Mainnet
   },
@@ -76,7 +76,7 @@ const MainnetAddresses: MainnetAddresses = {
   },
   nonCustodialFusePSM: {
     address: '0x18f251FC3CE0Cb690F13f62213aba343657d0E72',
-    artifactName: 'NonCustodialPSM',
+    artifactName: 'INonCustodialPSM',
     category: AddressCategory.Deprecated,
     network: Network.Mainnet
   },
@@ -111,10 +111,16 @@ const MainnetAddresses: MainnetAddresses = {
     network: Network.Arbitrum
   },
   /// Volt Protocol Timelock
+  timelockController: {
+    address: '0x75d078248eE49c585b73E73ab08bb3eaF93383Ae',
+    artifactName: 'TimelockController',
+    category: AddressCategory.Governance,
+    network: Network.Mainnet
+  },
   optimisticTimelock: {
     address: '0x860fa85f04f9d35B3471D8F7F7fA3Ad31Ce4D5Ae',
-    artifactName: 'OptimisticTimelock',
-    category: AddressCategory.Governance,
+    artifactName: 'TimelockController',
+    category: AddressCategory.Deprecated,
     network: Network.Mainnet
   },
   feiDaiFixedPricePSM: {
@@ -129,8 +135,20 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.External,
     network: Network.Mainnet
   },
+  tribalCouncilTimelock: {
+    address: '0xe0C7DE94395B629860Cbb3c42995F300F56e6d7a',
+    artifactName: 'unknown', /// Timelock Controller
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
   feiVoltOTCSwap: {
     address: '0xeF152E462B59940616E667E801762dA9F2AF97b9',
+    artifactName: 'OtcEscrow',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  otcEscrowRepayment: {
+    address: '0x590eb1a809377f786a11fa1968eF8c15eB44A12F',
     artifactName: 'OtcEscrow',
     category: AddressCategory.External,
     network: Network.Mainnet
@@ -197,8 +215,14 @@ const MainnetAddresses: MainnetAddresses = {
   },
   arbitrumOptimisticTimelock: {
     address: '0x980A05105a53eCa7745DA40DF1AdE6674fc73eD5',
-    artifactName: 'OptimisticTimelock',
-    category: AddressCategory.Core,
+    artifactName: 'TimelockController',
+    category: AddressCategory.Deprecated,
+    network: Network.Arbitrum
+  },
+  arbitrumTimelockController: {
+    address: '0x2c01C9166FA3e16c24c118053E346B1DD8e72dE8',
+    artifactName: 'TimelockController',
+    category: AddressCategory.Governance,
     network: Network.Arbitrum
   },
   arbitrumScalingPriceOracle: {

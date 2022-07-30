@@ -282,7 +282,7 @@ contract IntegrationTestVoltSystemOracle is DSTest {
     function testRedeemParityAfterOracleUpgradeUSDC() public {
         _warpToStart();
         if (usdcPSM.redeemPaused()) {
-            vm.prank(MainnetAddresses.GUARDIAN);
+            vm.prank(MainnetAddresses.PCV_GUARDIAN);
             usdcPSM.unpauseRedeem();
         }
 

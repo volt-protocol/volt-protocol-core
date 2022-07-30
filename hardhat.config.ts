@@ -62,7 +62,7 @@ export default {
       forking: enableMainnetForking
         ? {
             url: `https://eth-mainnet.alchemyapi.io/v2/${mainnetAlchemyApiKey}`,
-            blockNumber: 15064572
+            blockNumber: 15175278
           }
         : enableArbitrumForking
         ? {
@@ -104,6 +104,15 @@ export default {
     compilers: [
       {
         version: '0.8.10',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200
+          }
+        }
+      },
+      {
+        version: '0.8.13',
         settings: {
           optimizer: {
             enabled: true,

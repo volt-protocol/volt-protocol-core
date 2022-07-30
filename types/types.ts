@@ -4,13 +4,13 @@ import {
   Volt,
   IERC20,
   Vcon,
-  OptimisticTimelock,
   L2Core,
   PCVGuardAdmin,
   PCVGuardian,
   OraclePassThrough,
   PriceBoundPSM,
-  L2ScalingPriceOracle
+  L2ScalingPriceOracle,
+  TimelockController
 } from './contracts';
 
 export type Env = {
@@ -182,9 +182,12 @@ export interface MainnetContracts {
   dpi: IERC20;
   dai: IERC20;
   rai: IERC20;
-  optimisticTimelock: OptimisticTimelock;
+  timelockController: TimelockController;
+  arbitrumTimelockController: TimelockController;
+  optimisticTimelock: TimelockController;
+  optimisticTimelockArbitrum: TimelockController;
   curve3Metapool: IERC20;
-  arbitrumOptimisticTimelock: OptimisticTimelock;
+  arbitrumOptimisticTimelock: TimelockController;
   arbitrumScalingPriceOracle: L2ScalingPriceOracle;
   arbitrumCore: L2Core;
   arbitrumPCVGuardAdmin: PCVGuardAdmin;

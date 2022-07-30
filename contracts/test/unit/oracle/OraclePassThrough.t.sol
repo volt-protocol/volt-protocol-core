@@ -9,7 +9,7 @@ import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
 import {ScalingPriceOracle} from "../../../oracle/ScalingPriceOracle.sol";
 import {Decimal} from "./../../../external/Decimal.sol";
 
-contract OraclePassThroughUnitTest is DSTest {
+contract UnitTestOraclePassThrough is DSTest {
     using Decimal for Decimal.D256;
 
     MockScalingPriceOracle private scalingPriceOracle;

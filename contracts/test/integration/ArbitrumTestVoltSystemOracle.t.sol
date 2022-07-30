@@ -289,7 +289,7 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
     function testRedeemParityAfterOracleUpgradeUSDC() public {
         _warpToStart();
         if (usdcPSM.redeemPaused()) {
-            vm.prank(ArbitrumAddresses.GUARDIAN);
+            vm.prank(ArbitrumAddresses.PCV_GUARDIAN);
             usdcPSM.unpauseRedeem();
         }
 
@@ -340,7 +340,7 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
             return;
         }
 
-        vm.startPrank(ArbitrumAddresses.TIMELOCK);
+        vm.startPrank(ArbitrumAddresses.TIMELOCK_CONTROLLER);
         usdcPSM.setMintFee(5);
         daiPSM.setMintFee(5);
         vm.stopPrank();

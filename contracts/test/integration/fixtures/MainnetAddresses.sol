@@ -11,11 +11,12 @@ library MainnetAddresses {
         0x79412660E95F94a4D2d02a050CEA776200939917;
     address public constant GOVERNOR =
         0xcBB83206698E8788F85EFbEeeCAd17e53366EBDf;
-    address public constant GUARDIAN =
+    address public constant PCV_GUARDIAN =
         0x2c2b362e6ae0F080F39b90Cb5657E5550090D6C3;
     address public constant DEPLOYER =
         0x25dCffa22EEDbF0A69F6277e24C459108c186ecB;
-
+    address public constant VOLT_TIMELOCK =
+        0x860fa85f04f9d35B3471D8F7F7fA3Ad31Ce4D5Ae;
     address public constant VOLT_FEI_PSM =
         0x985f9C331a9E4447C782B98D6693F5c7dF8e560e;
 
@@ -23,6 +24,24 @@ library MainnetAddresses {
         0x0b9A7EA2FCA868C93640Dd77cF44df335095F501;
     address public constant GLOBAL_RATE_LIMITED_MINTER =
         0x87945f59E008aDc9ed6210a8e061f009d6ace718;
+    address public constant TIMELOCK_CONTROLLER =
+        0x75d078248eE49c585b73E73ab08bb3eaF93383Ae;
+
+    /// current active EOA's
+    address public constant OTC_LOAN_REPAYMENT =
+        0x590eb1a809377f786a11fa1968eF8c15eB44A12F;
+    address public constant EOA_1 = 0xB320e376Be6459421695F2b6B1E716AE4bc8129A;
+    address public constant EOA_2 = 0xd90E9181B20D8D1B5034d9f5737804Da182039F6;
+    address public constant EOA_3 = 0xA96D4a5c343d6fE141751399Fc230E9E8Ecb6fb6;
+
+    /// inactive EOA's
+    address public constant REVOKED_EOA_1 =
+        0xf8D0387538E8e03F3B4394dA89f221D7565a28Ee;
+
+    address public constant NC_PSM = 0x18f251FC3CE0Cb690F13f62213aba343657d0E72;
+    address public constant GRLM = 0x87945f59E008aDc9ed6210a8e061f009d6ace718;
+    address public constant PCV_GUARD_ADMIN =
+        0x868F58Ae8F6B2Dc31D9ADc97a8A09B16f05E9cd7;
 
     // ---------- FEI ADDRESSES ----------
 
@@ -32,8 +51,17 @@ library MainnetAddresses {
     address public constant FEI_DAO_TIMELOCK =
         0xd51dbA7a94e1adEa403553A8235C302cEbF41a3c;
 
+    address public constant FEI_TC_TIMELOCK =
+        0xe0C7DE94395B629860Cbb3c42995F300F56e6d7a;
+
     address public constant FEI_GOVERNOR =
         0xd51dbA7a94e1adEa403553A8235C302cEbF41a3c;
+
+    address public constant FEI_PCV_GUARDIAN =
+        0x02435948F84d7465FB71dE45ABa6098Fc6eC2993;
+
+    address public constant VOLT_DEPOSIT =
+        0xBDC01c9743989429df9a4Fe24c908D87e462AbC1;
 
     // ---------- USDC ADDRESSES ----------
 
