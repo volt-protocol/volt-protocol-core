@@ -18,6 +18,15 @@ contract vip2 is DSTest, IVIP, AllRoles {
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
+    /// @notice allow 5 BIPS of deviation between new and old oracle
+    uint8 public constant allowedDeviation = 5;
+
+    /// @notice allow 100 BIPS of deviation between new and old oracle
+    uint8 public constant allowedDeviationArbitrum = 100;
+
+    /// @notice timestamp at which proposal will execute
+    uint256 public constant execTime = 1659466800;
+
     /// --------------- Mainnet ---------------
 
     function getMainnetProposal()
@@ -62,19 +71,17 @@ contract vip2 is DSTest, IVIP, AllRoles {
     }
 
     /// @notice mainnet usdc volt PSM
-    PriceBoundPSM private immutable mainnetusdcPSM =
+    PriceBoundPSM private immutable mainnetUsdcPSM =
         PriceBoundPSM(MainnetAddresses.VOLT_USDC_PSM);
+    PriceBoundPSM private immutable mainnetFeiPSM =
+        PriceBoundPSM(MainnetAddresses.VOLT_FEI_PSM);
 
-    /// @notice price of Volt on Arbitrum in USDC terms prior to the upgrade
+    /// @notice price of Volt on Mainnet in USDC terms prior to the upgrade
     uint256 mainnetStartingPrice;
 
     function mainnetSetup() public override {
-        vm.prank(MainnetAddresses.GOVERNOR);
-        Core(MainnetAddresses.CORE).grantGovernor(
-            MainnetAddresses.TIMELOCK_CONTROLLER
-        );
-
-        mainnetStartingPrice = (usdcPSM.readOracle()).value;
+        vm.warp(execTime - 1 days);
+        mainnetStartingPrice = (mainnetUsdcPSM.readOracle()).value;
     }
 
     /// assert all contracts have their correct number of roles now,
@@ -86,13 +93,15 @@ contract vip2 is DSTest, IVIP, AllRoles {
         _setupMainnet(Core(MainnetAddresses.CORE));
         testRoleAddresses(Core(MainnetAddresses.CORE));
 
-        uint256 arbitrumEndingPrice = (usdcPSM.readOracle()).value;
+        uint256 mainnetEndingPrice = (mainnetUsdcPSM.readOracle()).value;
         /// maximum deviation of new oracle and regular oracle is 10 basis points
         assertApproxEq(
-            arbitrumStartingPrice.toInt256(),
-            arbitrumEndingPrice.toInt256(),
-            10
+            mainnetStartingPrice.toInt256(),
+            mainnetEndingPrice.toInt256(),
+            allowedDeviation
         );
+        assertEq(mainnetFeiPSM.mintFeeBasisPoints(), 0);
+        assertEq(mainnetUsdcPSM.mintFeeBasisPoints(), 0);
     }
 
     /// --------------- Arbitrum ---------------
@@ -105,70 +114,65 @@ contract vip2 is DSTest, IVIP, AllRoles {
     {
         proposal = new TimelockSimulation.action[](4);
 
-        proposal[0].target = ArbitrumAddresses.VOLT_USDC_PSM;
+        proposal[0].target = ArbitrumAddresses.VOLT_DAI_PSM;
         proposal[0].value = 0;
         proposal[0].arguments = abi.encodeWithSignature(
             "setOracle(address)",
             ArbitrumAddresses.ORACLE_PASS_THROUGH
         );
-        proposal[0].description = "Set Oracle Pass Through on USDC PSM";
+        proposal[0].description = "Set Oracle Pass Through on DAI PSM";
 
-        proposal[1].target = ArbitrumAddresses.VOLT_DAI_PSM;
+        proposal[1].target = ArbitrumAddresses.VOLT_USDC_PSM;
         proposal[1].value = 0;
         proposal[1].arguments = abi.encodeWithSignature(
             "setOracle(address)",
             ArbitrumAddresses.ORACLE_PASS_THROUGH
         );
-        proposal[1].description = "Set Oracle Pass Through on DAI PSM";
+        proposal[1].description = "Set Oracle Pass Through on USDC PSM";
 
-        proposal[2].target = ArbitrumAddresses.VOLT_USDC_PSM;
+        proposal[2].target = ArbitrumAddresses.VOLT_DAI_PSM;
         proposal[2].value = 0;
         proposal[2].arguments = abi.encodeWithSignature(
             "setMintFee(uint256)",
-            0
+            5
         );
-        proposal[2].description = "Set mint fee to 5 on USDC PSM";
+        proposal[2].description = "Set mint fee to 5 basis points on DAI PSM";
 
-        proposal[3].target = ArbitrumAddresses.VOLT_DAI_PSM;
+        proposal[3].target = ArbitrumAddresses.VOLT_USDC_PSM;
         proposal[3].value = 0;
         proposal[3].arguments = abi.encodeWithSignature(
             "setMintFee(uint256)",
-            0
+            5
         );
-        proposal[3].description = "Set mint fee to 5 on DAI PSM";
+        proposal[3].description = "Set mint fee to 5 basis points on USDC PSM";
     }
 
     /// @notice arbitrum usdc volt PSM
     PriceBoundPSM private immutable usdcPSM =
         PriceBoundPSM(ArbitrumAddresses.VOLT_USDC_PSM);
+    PriceBoundPSM private immutable daiPSM =
+        PriceBoundPSM(ArbitrumAddresses.VOLT_DAI_PSM);
 
     /// @notice price of Volt on Arbitrum in USDC terms prior to the upgrade
     uint256 arbitrumStartingPrice;
 
     function arbitrumSetup() public override {
-        vm.prank(ArbitrumAddresses.GOVERNOR);
-        Core(ArbitrumAddresses.CORE).grantGovernor(
-            ArbitrumAddresses.TIMELOCK_CONTROLLER
-        );
-
+        vm.warp(execTime - 1 days);
         arbitrumStartingPrice = (usdcPSM.readOracle()).value;
     }
 
     /// assert all contracts have their correct number of roles now,
     /// and that the proper addresses have the correct role after the governance upgrade
     function arbitrumValidate() public override {
-        _setupArbitrum(Core(ArbitrumAddresses.CORE));
-        testRoleArity();
-
-        _setupArbitrum(Core(ArbitrumAddresses.CORE));
-        testRoleAddresses(Core(ArbitrumAddresses.CORE));
-
         uint256 arbitrumEndingPrice = (usdcPSM.readOracle()).value;
         /// maximum deviation of new oracle and regular oracle is 10 basis points
         assertApproxEq(
             arbitrumStartingPrice.toInt256(),
             arbitrumEndingPrice.toInt256(),
-            10
+            allowedDeviationArbitrum
         );
+
+        assertEq(usdcPSM.mintFeeBasisPoints(), 5);
+        assertEq(daiPSM.mintFeeBasisPoints(), 5);
     }
 }

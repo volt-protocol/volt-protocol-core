@@ -8,7 +8,8 @@ dotenv.config();
  * See `proposals/utils/getProposalCalldata.js` on how to construct the proposal calldata
  */
 async function getProposalCalldata() {
-  const proposalName = process.env.DEPLOY_FILE;
+  const isArbitrumVip = process.env.ENABLE_ARBITRUM_FORKING;
+  const proposalName = process.env.DEPLOY_FILE + (isArbitrumVip ? '_arbitrum' : '');
 
   if (!proposalName) {
     throw new Error('DEPLOY_FILE env variable not set');

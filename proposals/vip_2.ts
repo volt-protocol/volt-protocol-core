@@ -8,14 +8,14 @@ const vip_2: ProposalDescription = {
       target: 'usdcPriceBoundPSM',
       values: '0',
       method: 'setOracle(address)',
-      arguments: ['{oraclePassThrough}'],
+      arguments: ['{voltSystemOraclePassThrough}'],
       description: 'Set Oracle Pass Through on USDC PSM'
     },
     {
       target: 'feiPriceBoundPSM',
       values: '0',
       method: 'setOracle(address)',
-      arguments: ['{oraclePassThrough}'],
+      arguments: ['{voltSystemOraclePassThrough}'],
       description: 'Set oracle pass through on FEI PSM'
     },
     /// reduce mint fee to 0
