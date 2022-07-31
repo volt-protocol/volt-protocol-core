@@ -1,10 +1,10 @@
-import { DeployUpgradeFunc } from '@custom-types/types';
 import MainnetAddresses from '../../protocol-configuration/mainnetAddresses';
 import { ethers } from 'hardhat';
 
 // Run the deployment for DEPLOY_FILE
 async function main() {
-  const proposalName = process.env.DEPLOY_FILE;
+  const isArbitrumVip = process.env.ENABLE_ARBITRUM_FORKING;
+  const proposalName = process.env.DEPLOY_FILE + (isArbitrumVip ? '_arbitrum' : '');
 
   if (!proposalName) {
     throw new Error('DEPLOY_FILE env variable not set');
@@ -18,12 +18,7 @@ async function main() {
     return true;
   });
 
-  let deploy: DeployUpgradeFunc;
-  if (process.env.IS_FIP) {
-    ({ deploy } = await import(`@proposals/dao/${proposalName}`));
-  } else {
-    ({ deploy } = await import(`./${proposalName}`));
-  }
+  const { deploy } = await import(`@proposals/dao/${proposalName}`);
 
   await deploy(deployAddress, mainnetAddresses, true);
 }

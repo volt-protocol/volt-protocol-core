@@ -30,7 +30,7 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
 
     /// @notice scaling price oracle on Arbitrum today
     ScalingPriceOracle private scalingPriceOracle =
-        ScalingPriceOracle(ArbitrumAddresses.SCALING_PRICE_ORACLE);
+        ScalingPriceOracle(ArbitrumAddresses.DEPRECATED_SCALING_PRICE_ORACLE);
 
     /// @notice new Volt System Oracle
     VoltSystemOracle private voltSystemOracle;
@@ -40,7 +40,7 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
 
     /// @notice existing Oracle Pass Through deployed on mainnet
     OraclePassThrough private immutable existingOraclePassThrough =
-        OraclePassThrough(ArbitrumAddresses.ORACLE_PASS_THROUGH);
+        OraclePassThrough(ArbitrumAddresses.DEPRECATED_ORACLE_PASS_THROUGH);
 
     /// @notice increase price by x% per month
     uint256 public constant annualChangeRateBasisPoints = 200;
@@ -52,6 +52,9 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
     /// @notice usdc volt PSM
     PriceBoundPSM private immutable usdcPSM =
         PriceBoundPSM(ArbitrumAddresses.VOLT_USDC_PSM);
+
+    /// @notice time that the deployment will go live
+    uint256 public deploymentStartTime = 1659466800;
 
     /// @notice starting price of the current mainnet scaling price oracle
     uint256 public startOraclePrice = scalingPriceOracle.oraclePrice();

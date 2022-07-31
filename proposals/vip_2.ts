@@ -9,7 +9,7 @@ const vip_2: ProposalDescription = {
       values: '0',
       method: 'setOracle(address)',
       arguments: ['{oraclePassThrough}'],
-      description: 'Set oracle pass through on USDC PSM'
+      description: 'Set Oracle Pass Through on USDC PSM'
     },
     {
       target: 'feiPriceBoundPSM',

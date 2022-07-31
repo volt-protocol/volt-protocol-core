@@ -27,7 +27,7 @@ Steps:
 const vipNumber = '2';
 
 const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: NamedAddresses, logging: boolean) => {
-  const { optimisticTimelock } = addresses;
+  const { timelockController } = addresses;
   const VoltSystemOracleFactory = await ethers.getContractFactory('VoltSystemOracle');
   const OraclePassThroughFactory = await ethers.getContractFactory('OraclePassThrough');
 
@@ -45,7 +45,7 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
 
   console.log(`Oracle Pass Through ${oraclePassThrough.address}`);
 
-  await oraclePassThrough.transferOwnership(optimisticTimelock);
+  await oraclePassThrough.transferOwnership(timelockController);
 
   console.log(`Deployed volt system oracle and oracle passthrough VIP-${vipNumber}`);
   return {
@@ -63,14 +63,14 @@ const teardown: TeardownUpgradeFunc = async (addresses, oldContracts, contracts,
 // Run any validations required on the vip using mocha or console logging
 // IE check balances, check state of contracts, etc.
 const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts, logging) => {
-  const { oraclePassThrough, voltSystemOracle, feiPriceBoundPSM, usdcPriceBoundPSM, optimisticTimelock } = contracts;
+  const { oraclePassThrough, voltSystemOracle, feiPriceBoundPSM, usdcPriceBoundPSM, timelockController } = contracts;
 
   expect(await voltSystemOracle.oraclePrice()).to.be.equal(STARTING_ORACLE_PRICE);
   expect(await voltSystemOracle.getCurrentOraclePrice()).to.be.equal(STARTING_ORACLE_PRICE);
   expect(await voltSystemOracle.periodStartTime()).to.be.equal(ORACLE_PERIOD_START_TIME);
   expect(await voltSystemOracle.monthlyChangeRateBasisPoints()).to.be.equal(MONTHLY_CHANGE_RATE_BASIS_POINTS);
   expect(await oraclePassThrough.scalingPriceOracle()).to.be.equal(voltSystemOracle.address);
-  expect(await oraclePassThrough.owner()).to.be.equal(optimisticTimelock.address);
+  expect(await oraclePassThrough.owner()).to.be.equal(timelockController.address);
 
   expect(await feiPriceBoundPSM.oracle()).to.be.equal(oraclePassThrough.address);
   expect(await feiPriceBoundPSM.mintFeeBasisPoints()).to.be.equal(0);

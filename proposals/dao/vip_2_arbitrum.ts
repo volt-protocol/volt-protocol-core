@@ -27,7 +27,7 @@ Steps:
 const vipNumber = '2';
 
 const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: NamedAddresses, logging: boolean) => {
-  const { arbitrumOptimisticTimelock } = addresses;
+  const { arbitrumTimelockController } = addresses;
   const VoltSystemOracleFactory = await ethers.getContractFactory('VoltSystemOracle');
   const OraclePassThroughFactory = await ethers.getContractFactory('OraclePassThrough');
 
@@ -45,7 +45,7 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
 
   console.log(`Arbitrum Oracle Pass Through ${oraclePassThroughArbitrum.address}`);
 
-  await oraclePassThroughArbitrum.transferOwnership(arbitrumOptimisticTimelock);
+  await oraclePassThroughArbitrum.transferOwnership(arbitrumTimelockController);
 
   console.log(`Deployed volt system oracle and oracle passthrough VIP-${vipNumber} on Arbitrum`);
   return {
@@ -68,7 +68,7 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
     voltSystemOracleArbitrum,
     arbitrumDAIPSM,
     arbitrumUSDCPSM,
-    arbitrumOptimisticTimelock
+    arbitrumTimelockController
   } = contracts;
 
   expect(await voltSystemOracleArbitrum.oraclePrice()).to.be.equal(STARTING_ORACLE_PRICE);
@@ -76,7 +76,7 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
   expect(await voltSystemOracleArbitrum.periodStartTime()).to.be.equal(ORACLE_PERIOD_START_TIME);
   expect(await voltSystemOracleArbitrum.monthlyChangeRateBasisPoints()).to.be.equal(MONTHLY_CHANGE_RATE_BASIS_POINTS);
   expect(await oraclePassThroughArbitrum.scalingPriceOracle()).to.be.equal(voltSystemOracleArbitrum.address);
-  expect(await oraclePassThroughArbitrum.owner()).to.be.equal(arbitrumOptimisticTimelock.address);
+  expect(await oraclePassThroughArbitrum.owner()).to.be.equal(arbitrumTimelockController.address);
 
   expect(await arbitrumUSDCPSM.oracle()).to.be.equal(oraclePassThroughArbitrum.address);
   expect(await arbitrumUSDCPSM.mintFeeBasisPoints()).to.be.equal(5);

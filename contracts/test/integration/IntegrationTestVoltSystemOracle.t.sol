@@ -3,7 +3,7 @@ pragma solidity ^0.8.4;
 
 import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
-import {getCore, getAddresses, VoltTestAddresses} from "./../unit/utils/Fixtures.sol";
+import {Core, getCore, getAddresses, VoltTestAddresses} from "./../unit/utils/Fixtures.sol";
 import {Decimal} from "./../../external/Decimal.sol";
 import {PriceBoundPSM} from "./../../peg/PriceBoundPSM.sol";
 import {IScalingPriceOracle, ScalingPriceOracle} from "./../../oracle/ScalingPriceOracle.sol";
@@ -30,7 +30,7 @@ contract IntegrationTestVoltSystemOracle is DSTest {
 
     /// @notice scaling price oracle on mainnet today
     ScalingPriceOracle private scalingPriceOracle =
-        ScalingPriceOracle(MainnetAddresses.SCALING_PRICE_ORACLE);
+        ScalingPriceOracle(MainnetAddresses.DEPRECATED_SCALING_PRICE_ORACLE);
 
     /// @notice new Volt System Oracle
     VoltSystemOracle private voltSystemOracle;
@@ -40,7 +40,7 @@ contract IntegrationTestVoltSystemOracle is DSTest {
 
     /// @notice existing Oracle Pass Through deployed on mainnet
     OraclePassThrough private immutable existingOraclePassThrough =
-        OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
+        OraclePassThrough(MainnetAddresses.DEPRECATED_ORACLE_PASS_THROUGH);
 
     /// @notice increase price by x% per month
     uint256 public constant annualChangeRateBasisPoints = 200;
@@ -246,7 +246,11 @@ contract IntegrationTestVoltSystemOracle is DSTest {
         _warpToStart();
 
         uint256 amountVoltIn = 10_000e18;
-        vm.prank(MainnetAddresses.GLOBAL_RATE_LIMITED_MINTER); /// fund with Fei
+
+        vm.prank(MainnetAddresses.CORE);
+        Core(MainnetAddresses.CORE).grantMinter(MainnetAddresses.CORE);
+
+        vm.prank(MainnetAddresses.CORE); /// fund with VOLT
         volt.mint(address(this), amountVoltIn * 2);
 
         uint256 amountFeiOut = feiPSM.getRedeemAmountOut(amountVoltIn);
@@ -287,7 +291,10 @@ contract IntegrationTestVoltSystemOracle is DSTest {
         }
 
         uint256 amountVoltIn = 10_000e18;
-        vm.prank(MainnetAddresses.GLOBAL_RATE_LIMITED_MINTER); /// fund with Volt
+        vm.prank(MainnetAddresses.CORE);
+        Core(MainnetAddresses.CORE).grantMinter(MainnetAddresses.CORE);
+
+        vm.prank(MainnetAddresses.CORE); /// fund with VOLT
         volt.mint(address(this), amountVoltIn * 2);
 
         uint256 amountUsdcOut = usdcPSM.getRedeemAmountOut(amountVoltIn);

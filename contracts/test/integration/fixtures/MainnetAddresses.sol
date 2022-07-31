@@ -5,10 +5,19 @@ library MainnetAddresses {
     // ---------- VOLT ADDRESSES ----------
     address public constant CORE = 0xEC7AD284f7Ad256b64c6E69b84Eb0F48f42e8196;
     address public constant VOLT = 0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18;
+
+    /// oracles
     address public constant ORACLE_PASS_THROUGH =
+        0xe733985a92Bfd5BC676095561BacE90E04606E4a;
+    address public constant VOLT_SYSTEM_ORACLE =
+        0xD4546B5B7D28aE0E048c073DCD92358721CEA8D4;
+
+    /// deprecated oracles
+    address public constant DEPRECATED_ORACLE_PASS_THROUGH =
         0x84dc71500D504163A87756dB6368CC8bB654592f;
-    address public constant SCALING_PRICE_ORACLE =
+    address public constant DEPRECATED_SCALING_PRICE_ORACLE =
         0x79412660E95F94a4D2d02a050CEA776200939917;
+
     address public constant GOVERNOR =
         0xcBB83206698E8788F85EFbEeeCAd17e53366EBDf;
     address public constant PCV_GUARDIAN =
