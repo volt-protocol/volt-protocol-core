@@ -19,7 +19,7 @@ contract vip2 is DSTest, IVIP {
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
     /// @notice allow 5 BIPS of deviation between new and old oracle
-    uint8 public constant allowedDeviation = 5;
+    uint8 public constant allowedDeviation = 1;
 
     /// @notice allow 100 BIPS of deviation between new and old oracle
     uint8 public constant allowedDeviationArbitrum = 100;
