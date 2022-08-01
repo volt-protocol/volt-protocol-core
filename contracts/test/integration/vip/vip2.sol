@@ -19,7 +19,7 @@ contract vip2 is DSTest, IVIP {
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
     /// @notice allow 5 BIPS of deviation between new and old oracle
-    uint8 public constant allowedDeviation = 1;
+    uint8 public constant allowedDeviation = 5;
 
     /// @notice allow 100 BIPS of deviation between new and old oracle
     uint8 public constant allowedDeviationArbitrum = 100;
@@ -78,6 +78,10 @@ contract vip2 is DSTest, IVIP {
     PriceBoundPSM private immutable mainnetFeiPSM =
         PriceBoundPSM(MainnetAddresses.VOLT_FEI_PSM);
 
+    /// @notice address of the new Oracle Pass Through on mainnet
+    address public oraclePassThroughMainnet =
+        MainnetAddresses.ORACLE_PASS_THROUGH;
+
     /// @notice price of Volt on Mainnet in USDC terms prior to the upgrade
     uint256 mainnetStartingPrice;
 
@@ -98,6 +102,8 @@ contract vip2 is DSTest, IVIP {
         );
         assertEq(mainnetFeiPSM.mintFeeBasisPoints(), 0);
         assertEq(mainnetUsdcPSM.mintFeeBasisPoints(), 0);
+        assertEq(address(mainnetFeiPSM.oracle()), oraclePassThroughMainnet);
+        assertEq(address(mainnetUsdcPSM.oracle()), oraclePassThroughMainnet);
     }
 
     /// --------------- Arbitrum ---------------
@@ -146,8 +152,14 @@ contract vip2 is DSTest, IVIP {
     /// @notice arbitrum usdc volt PSM
     PriceBoundPSM private immutable usdcPSM =
         PriceBoundPSM(ArbitrumAddresses.VOLT_USDC_PSM);
+
+    /// @notice arbitrum dai volt PSM
     PriceBoundPSM private immutable daiPSM =
         PriceBoundPSM(ArbitrumAddresses.VOLT_DAI_PSM);
+
+    /// @notice address of the new Oracle Pass Through on mainnet
+    address public oraclePassThroughArbitrum =
+        ArbitrumAddresses.ORACLE_PASS_THROUGH;
 
     /// @notice price of Volt on Arbitrum in USDC terms prior to the upgrade
     uint256 arbitrumStartingPrice;
@@ -168,5 +180,8 @@ contract vip2 is DSTest, IVIP {
 
         assertEq(usdcPSM.mintFeeBasisPoints(), 5);
         assertEq(daiPSM.mintFeeBasisPoints(), 5);
+
+        assertEq(address(daiPSM.oracle()), oraclePassThroughArbitrum);
+        assertEq(address(usdcPSM.oracle()), oraclePassThroughArbitrum);
     }
 }
