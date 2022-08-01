@@ -101,8 +101,9 @@ contract ArbitrumTestVoltSystemOracle is TimelockSimulation, vip2 {
 
     /// swap out the old oracle for the new one and ensure the read functions
     /// give the same value
-    function testMintSwapOraclePassThroughOnPSMs() public {
-        uint256 mintAmount = 100_000e18;
+    function testMintSwapOraclePassThroughOnPSMs(uint96 mintAmount) public {
+        vm.assume(mintAmount > 1e18);
+
         uint256 startingAmountOutDai = daiPSM.getMintAmountOut(mintAmount);
         uint256 startingAmountOutUSDC = usdcPSM.getMintAmountOut(mintAmount);
 
@@ -136,8 +137,8 @@ contract ArbitrumTestVoltSystemOracle is TimelockSimulation, vip2 {
 
     /// swap out the old oracle for the new one and ensure the read functions
     /// give the same value
-    function testRedeemSwapOraclePassThroughOnPSMs() public {
-        uint256 redeemAmount = 100_000e18;
+    function testRedeemSwapOraclePassThroughOnPSMs(uint96 redeemAmount) public {
+        vm.assume(redeemAmount > 1e18);
         uint256 startingAmountOutDai = daiPSM.getRedeemAmountOut(redeemAmount);
         uint256 startingAmountOutUSDC = usdcPSM.getRedeemAmountOut(
             redeemAmount

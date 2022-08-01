@@ -99,8 +99,9 @@ contract IntegrationTestVoltSystemOracle is TimelockSimulation, vip2 {
 
     /// swap out the old oracle for the new one and ensure the read functions
     /// give the same value
-    function testMintSwapOraclePassThroughOnPSMs() public {
-        uint256 mintAmount = 100_000e18;
+    function testMintSwapOraclePassThroughOnPSMs(uint96 mintAmount) public {
+        vm.assume(mintAmount > 1e18);
+
         uint256 startingAmountOutFei = feiPSM.getMintAmountOut(mintAmount);
         uint256 startingAmountOutUSDC = usdcPSM.getMintAmountOut(mintAmount);
 
@@ -134,8 +135,9 @@ contract IntegrationTestVoltSystemOracle is TimelockSimulation, vip2 {
 
     /// swap out the old oracle for the new one and ensure the read functions
     /// give the same value
-    function testRedeemSwapOraclePassThroughOnPSMs() public {
-        uint256 redeemAmount = 100_000e18;
+    function testRedeemSwapOraclePassThroughOnPSMs(uint96 redeemAmount) public {
+        vm.assume(redeemAmount > 1e18);
+
         uint256 startingAmountOutFei = feiPSM.getRedeemAmountOut(redeemAmount);
         uint256 startingAmountOutUSDC = usdcPSM.getRedeemAmountOut(
             redeemAmount
@@ -215,7 +217,7 @@ contract IntegrationTestVoltSystemOracle is TimelockSimulation, vip2 {
         feiPSM.mint(
             address(this),
             amountStableIn,
-            (amountVoltOut * 9_994) / 10_000
+            (amountVoltOut * (10_000 - allowedDeviation)) / 10_000
         );
 
         uint256 endingUserVoltBalanceAfterUpgrade = volt.balanceOf(
@@ -228,7 +230,7 @@ contract IntegrationTestVoltSystemOracle is TimelockSimulation, vip2 {
         assertApproxEq(
             amountVoltOutAfterUpgrade.toInt256(),
             amountVoltOut.toInt256(),
-            0
+            allowedDeviation
         );
     }
 
@@ -341,7 +343,7 @@ contract IntegrationTestVoltSystemOracle is TimelockSimulation, vip2 {
         assertApproxEq(
             amountFeiOutAfterUpgrade.toInt256(),
             amountFeiOut.toInt256(),
-            1
+            allowedDeviation
         );
     }
 
@@ -403,7 +405,7 @@ contract IntegrationTestVoltSystemOracle is TimelockSimulation, vip2 {
         assertApproxEq(
             amountUsdcOutAfterUpgrade.toInt256(),
             amountUsdcOut.toInt256(),
-            1
+            allowedDeviation
         );
     }
 
