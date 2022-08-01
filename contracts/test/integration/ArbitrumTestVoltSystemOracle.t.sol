@@ -58,17 +58,8 @@ contract ArbitrumTestVoltSystemOracle is TimelockSimulation, vip2 {
     PriceBoundPSM private immutable usdcPSM =
         PriceBoundPSM(ArbitrumAddresses.VOLT_USDC_PSM);
 
-    /// @notice time that the deployment will go live
-    uint256 public deploymentStartTime = 1659466800;
-
-    /// @notice starting price of the current mainnet scaling price oracle
-    uint256 public startOraclePrice = scalingPriceOracle.oraclePrice();
-
     /// @notice new Volt System Oracle start time
     uint256 constant startTime = 1659466800;
-
-    /// @notice new Volt System Oracle start price
-    uint256 constant startPrice = 1054710229549539283;
 
     function setUp() public {
         /// set mint fees to 5 bips

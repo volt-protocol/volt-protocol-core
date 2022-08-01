@@ -55,14 +55,8 @@ contract IntegrationTestVoltSystemOracle is TimelockSimulation, vip2 {
     PriceBoundPSM private immutable usdcPSM =
         PriceBoundPSM(MainnetAddresses.VOLT_USDC_PSM);
 
-    /// @notice starting price of the current mainnet scaling price oracle
-    uint256 public startOraclePrice = scalingPriceOracle.oraclePrice();
-
     /// @notice new Volt System Oracle start time
     uint256 constant startTime = 1659466800;
-
-    /// @notice new Volt System Oracle start price
-    uint256 constant startPrice = 1054710229549539283;
 
     function setUp() public {
         /// set mint fees to 0 so that the only change that is measured is the
