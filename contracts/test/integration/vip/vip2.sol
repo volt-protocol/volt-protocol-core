@@ -13,7 +13,7 @@ import {Core} from "../../../core/Core.sol";
 import {IVIP} from "./IVIP.sol";
 import {Vm} from "./../../unit/utils/Vm.sol";
 
-contract vip2 is DSTest, IVIP, AllRoles {
+contract vip2 is DSTest, IVIP {
     using SafeCast for *;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
@@ -73,6 +73,8 @@ contract vip2 is DSTest, IVIP, AllRoles {
     /// @notice mainnet usdc volt PSM
     PriceBoundPSM private immutable mainnetUsdcPSM =
         PriceBoundPSM(MainnetAddresses.VOLT_USDC_PSM);
+
+    /// @notice mainnet fei volt PSM
     PriceBoundPSM private immutable mainnetFeiPSM =
         PriceBoundPSM(MainnetAddresses.VOLT_FEI_PSM);
 
@@ -87,12 +89,6 @@ contract vip2 is DSTest, IVIP, AllRoles {
     /// assert all contracts have their correct number of roles now,
     /// and that the proper addresses have the correct role after the governance upgrade
     function mainnetValidate() public override {
-        _setupMainnet(Core(MainnetAddresses.CORE));
-        testRoleArity();
-
-        _setupMainnet(Core(MainnetAddresses.CORE));
-        testRoleAddresses(Core(MainnetAddresses.CORE));
-
         uint256 mainnetEndingPrice = (mainnetUsdcPSM.readOracle()).value;
         /// maximum deviation of new oracle and regular oracle is 10 basis points
         assertApproxEq(
@@ -161,8 +157,6 @@ contract vip2 is DSTest, IVIP, AllRoles {
         arbitrumStartingPrice = (usdcPSM.readOracle()).value;
     }
 
-    /// assert all contracts have their correct number of roles now,
-    /// and that the proper addresses have the correct role after the governance upgrade
     function arbitrumValidate() public override {
         uint256 arbitrumEndingPrice = (usdcPSM.readOracle()).value;
         /// maximum deviation of new oracle and regular oracle is 10 basis points

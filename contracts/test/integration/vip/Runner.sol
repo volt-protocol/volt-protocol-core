@@ -17,7 +17,8 @@ contract Runner is TimelockSimulation, vip2 {
             TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),
             MainnetAddresses.GOVERNOR,
             MainnetAddresses.EOA_1,
-            vm
+            vm,
+            true
         );
         mainnetValidate();
     }
@@ -29,7 +30,8 @@ contract Runner is TimelockSimulation, vip2 {
             TimelockController(payable(ArbitrumAddresses.TIMELOCK_CONTROLLER)),
             ArbitrumAddresses.GOVERNOR,
             ArbitrumAddresses.EOA_1,
-            vm
+            vm,
+            true
         );
         arbitrumValidate();
     }

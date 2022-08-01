@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
+import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
 import {getCore, getAddresses, VoltTestAddresses} from "./../unit/utils/Fixtures.sol";
@@ -9,13 +12,13 @@ import {PriceBoundPSM} from "./../../peg/PriceBoundPSM.sol";
 import {IScalingPriceOracle, ScalingPriceOracle} from "./../../oracle/ScalingPriceOracle.sol";
 import {VoltSystemOracle} from "./../../oracle/VoltSystemOracle.sol";
 import {OraclePassThrough} from "./../../oracle/OraclePassThrough.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {ArbitrumAddresses} from "./fixtures/ArbitrumAddresses.sol";
 import {Constants} from "../../Constants.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IVolt} from "../../volt/IVolt.sol";
+import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
+import {vip2} from "./vip/vip2.sol";
 
-contract ArbitrumTestVoltSystemOracle is DSTest {
+contract ArbitrumTestVoltSystemOracle is TimelockSimulation, vip2 {
     using Decimal for Decimal.D256;
     using SafeCast for *;
 
@@ -32,15 +35,17 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
     ScalingPriceOracle private scalingPriceOracle =
         ScalingPriceOracle(ArbitrumAddresses.DEPRECATED_SCALING_PRICE_ORACLE);
 
-    /// @notice new Volt System Oracle
-    VoltSystemOracle private voltSystemOracle;
-
-    /// @notice new Oracle Pass Through
-    OraclePassThrough private oraclePassThrough;
-
     /// @notice existing Oracle Pass Through deployed on mainnet
     OraclePassThrough private immutable existingOraclePassThrough =
         OraclePassThrough(ArbitrumAddresses.DEPRECATED_ORACLE_PASS_THROUGH);
+
+    /// @notice new Volt System Oracle
+    VoltSystemOracle private voltSystemOracle =
+        VoltSystemOracle(ArbitrumAddresses.VOLT_SYSTEM_ORACLE);
+
+    /// @notice new Oracle Pass Through
+    OraclePassThrough private oraclePassThrough =
+        OraclePassThrough(ArbitrumAddresses.ORACLE_PASS_THROUGH);
 
     /// @notice increase price by x% per month
     uint256 public constant annualChangeRateBasisPoints = 200;
@@ -59,36 +64,20 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
     /// @notice starting price of the current mainnet scaling price oracle
     uint256 public startOraclePrice = scalingPriceOracle.oraclePrice();
 
-    Vm public constant vm = Vm(HEVM_ADDRESS);
-    VoltTestAddresses public addresses = getAddresses();
+    /// @notice new Volt System Oracle start time
+    uint256 constant startTime = 1659466800;
+
+    /// @notice new Volt System Oracle start price
+    uint256 constant startPrice = 1054710229549539283;
 
     function setUp() public {
-        uint256 spoStartPrice = scalingPriceOracle.oraclePrice();
-        /// monthly change rate is positive as of 6/29/2022,
-        /// not expecting deflation anytime soon
-        uint256 monthlyChangeRateBasisPoints = scalingPriceOracle
-            .monthlyChangeRateBasisPoints()
-            .toUint256();
-        uint256 spoEndPrice = (spoStartPrice *
-            (monthlyChangeRateBasisPoints +
-                Constants.BASIS_POINTS_GRANULARITY)) /
-            Constants.BASIS_POINTS_GRANULARITY;
+        /// set mint fees to 5 bips
+        vm.startPrank(ArbitrumAddresses.GOVERNOR);
+        daiPSM.setMintFee(5);
+        usdcPSM.setMintFee(5);
+        vm.stopPrank();
 
-        voltSystemOracle = new VoltSystemOracle(
-            annualChangeRateBasisPoints,
-            scalingPriceOracle.startTime() + scalingPriceOracle.TIMEFRAME(),
-            spoEndPrice
-        );
-
-        oraclePassThrough = new OraclePassThrough(
-            IScalingPriceOracle(address(voltSystemOracle))
-        );
-    }
-
-    function _warpToStart() internal {
-        vm.warp(
-            scalingPriceOracle.startTime() + scalingPriceOracle.TIMEFRAME()
-        );
+        vm.warp(startTime);
     }
 
     function testSetup() public {
@@ -96,71 +85,103 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
             address(oraclePassThrough.scalingPriceOracle()),
             address(voltSystemOracle)
         );
+        assertEq(
+            address(existingOraclePassThrough.scalingPriceOracle()),
+            address(scalingPriceOracle)
+        );
     }
 
     function testPriceEquivalenceAtTermEnd() public {
-        _warpToStart();
-        assertEq(
-            scalingPriceOracle.getCurrentOraclePrice(),
-            voltSystemOracle.getCurrentOraclePrice()
+        assertApproxEq(
+            scalingPriceOracle.getCurrentOraclePrice().toInt256(),
+            voltSystemOracle.getCurrentOraclePrice().toInt256(),
+            allowedDeviationArbitrum
         );
         assertEq(
             voltSystemOracle.oraclePrice(),
             voltSystemOracle.getCurrentOraclePrice()
         );
-        assertEq(
-            oraclePassThrough.getCurrentOraclePrice(),
-            existingOraclePassThrough.getCurrentOraclePrice()
+        assertApproxEq(
+            oraclePassThrough.getCurrentOraclePrice().toInt256(),
+            existingOraclePassThrough.getCurrentOraclePrice().toInt256(),
+            allowedDeviationArbitrum
         );
     }
 
     /// swap out the old oracle for the new one and ensure the read functions
     /// give the same value
     function testMintSwapOraclePassThroughOnPSMs() public {
-        _warpToStart();
-
         uint256 mintAmount = 100_000e18;
         uint256 startingAmountOutDai = daiPSM.getMintAmountOut(mintAmount);
         uint256 startingAmountOutUSDC = usdcPSM.getMintAmountOut(mintAmount);
 
-        vm.startPrank(ArbitrumAddresses.GOVERNOR);
-        daiPSM.setOracle(address(oraclePassThrough));
-        usdcPSM.setOracle(address(oraclePassThrough));
-        vm.stopPrank();
+        vm.warp(startTime - 1 days); /// rewind the clock 1 day so that the timelock execution takes us back to start time
+
+        /// simulate proposal execution so that the next set of assertions can be verified
+        /// with new upgrade in place
+        simulate(
+            getArbitrumProposal(),
+            TimelockController(payable(ArbitrumAddresses.TIMELOCK_CONTROLLER)),
+            ArbitrumAddresses.GOVERNOR,
+            ArbitrumAddresses.EOA_1,
+            vm,
+            false
+        );
 
         uint256 endingAmountOutDai = daiPSM.getMintAmountOut(mintAmount);
         uint256 endingAmountOutUSDC = usdcPSM.getMintAmountOut(mintAmount);
 
-        assertEq(endingAmountOutDai, startingAmountOutDai);
-        assertEq(endingAmountOutUSDC, startingAmountOutUSDC);
+        assertApproxEq(
+            endingAmountOutDai.toInt256(),
+            startingAmountOutDai.toInt256(),
+            allowedDeviationArbitrum
+        );
+        assertApproxEq(
+            endingAmountOutUSDC.toInt256(),
+            startingAmountOutUSDC.toInt256(),
+            allowedDeviationArbitrum
+        );
     }
 
     /// swap out the old oracle for the new one and ensure the read functions
     /// give the same value
     function testRedeemSwapOraclePassThroughOnPSMs() public {
-        _warpToStart();
-
         uint256 redeemAmount = 100_000e18;
         uint256 startingAmountOutDai = daiPSM.getRedeemAmountOut(redeemAmount);
         uint256 startingAmountOutUSDC = usdcPSM.getRedeemAmountOut(
             redeemAmount
         );
 
-        vm.startPrank(ArbitrumAddresses.GOVERNOR);
-        daiPSM.setOracle(address(oraclePassThrough));
-        usdcPSM.setOracle(address(oraclePassThrough));
-        vm.stopPrank();
+        vm.warp(startTime - 1 days); /// rewind the clock 1 day so that the timelock execution takes us back to start time
+
+        /// simulate proposal execution so that the next set of assertions can be verified
+        /// with new upgrade in place
+        simulate(
+            getArbitrumProposal(),
+            TimelockController(payable(ArbitrumAddresses.TIMELOCK_CONTROLLER)),
+            ArbitrumAddresses.GOVERNOR,
+            ArbitrumAddresses.EOA_1,
+            vm,
+            false
+        );
 
         uint256 endingAmountOutDai = daiPSM.getRedeemAmountOut(redeemAmount);
         uint256 endingAmountOutUSDC = usdcPSM.getRedeemAmountOut(redeemAmount);
 
-        assertEq(endingAmountOutDai, startingAmountOutDai);
-        assertEq(endingAmountOutUSDC, startingAmountOutUSDC);
+        assertApproxEq(
+            endingAmountOutDai.toInt256(),
+            startingAmountOutDai.toInt256(),
+            allowedDeviationArbitrum
+        );
+        assertApproxEq(
+            endingAmountOutUSDC.toInt256(),
+            startingAmountOutUSDC.toInt256(),
+            allowedDeviationArbitrum
+        );
     }
 
     /// assert swaps function the same after upgrading the scaling price oracle for Dai
     function testMintParityAfterOracleUpgradeDAI() public {
-        _warpToStart();
         uint256 amountStableIn = 101_000;
         uint256 amountVoltOut = daiPSM.getMintAmountOut(amountStableIn);
         uint256 startingUserVoltBalance = volt.balanceOf(address(this));
@@ -179,8 +200,18 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
             startingUserVoltBalance + amountVoltOut
         );
 
-        vm.prank(ArbitrumAddresses.GOVERNOR);
-        daiPSM.setOracle(address(oraclePassThrough));
+        vm.warp(startTime - 1 days); /// rewind the clock 1 day so that the timelock execution takes us back to start time
+
+        /// simulate proposal execution so that the next set of assertions can be verified
+        /// with new upgrade in place
+        simulate(
+            getArbitrumProposal(),
+            TimelockController(payable(ArbitrumAddresses.TIMELOCK_CONTROLLER)),
+            ArbitrumAddresses.GOVERNOR,
+            ArbitrumAddresses.EOA_1,
+            vm,
+            false
+        );
 
         uint256 amountVoltOutAfterUpgrade = daiPSM.getMintAmountOut(
             amountStableIn
@@ -189,7 +220,14 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
             address(this)
         );
 
-        daiPSM.mint(address(this), amountStableIn, amountVoltOut);
+        daiPSM.mint(
+            address(this),
+            amountStableIn,
+            (amountVoltOut *
+                (Constants.BASIS_POINTS_GRANULARITY -
+                    allowedDeviationArbitrum)) /
+                Constants.BASIS_POINTS_GRANULARITY
+        );
 
         uint256 endingUserVoltBalanceAfterUpgrade = volt.balanceOf(
             address(this)
@@ -198,12 +236,15 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
             endingUserVoltBalanceAfterUpgrade,
             startingUserVoltBalanceAfterUpgrade + amountVoltOutAfterUpgrade
         );
-        assertEq(amountVoltOutAfterUpgrade, amountVoltOut);
+        assertApproxEq(
+            amountVoltOutAfterUpgrade.toInt256(),
+            amountVoltOut.toInt256(),
+            allowedDeviationArbitrum
+        );
     }
 
     /// assert swaps function the same after upgrading the scaling price oracle for USDC
     function testMintParityAfterOracleUpgradeUSDC() public {
-        _warpToStart();
         uint256 amountStableIn = 10_100e6;
         uint256 amountVoltOut = usdcPSM.getMintAmountOut(amountStableIn);
         uint256 startingUserVoltBalance = volt.balanceOf(address(this));
@@ -216,8 +257,8 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
         vm.prank(ArbitrumAddresses.USDC_WHALE);
         underlyingToken.transfer(address(this), underlyingTokenBalance);
 
-        uint256 voltBalance = volt.balanceOf(ArbitrumAddresses.VOLT_DAI_PSM);
-        vm.prank(ArbitrumAddresses.VOLT_DAI_PSM);
+        uint256 voltBalance = volt.balanceOf(ArbitrumAddresses.GOVERNOR);
+        vm.prank(ArbitrumAddresses.GOVERNOR);
         volt.transfer(address(usdcPSM), voltBalance);
 
         underlyingToken.approve(address(usdcPSM), amountStableIn * 2);
@@ -229,8 +270,18 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
             startingUserVoltBalance + amountVoltOut
         );
 
-        vm.prank(ArbitrumAddresses.GOVERNOR);
-        usdcPSM.setOracle(address(oraclePassThrough));
+        vm.warp(startTime - 1 days); /// rewind the clock 1 day so that the timelock execution takes us back to start time
+
+        /// simulate proposal execution so that the next set of assertions can be verified
+        /// with new upgrade in place
+        simulate(
+            getArbitrumProposal(),
+            TimelockController(payable(ArbitrumAddresses.TIMELOCK_CONTROLLER)),
+            ArbitrumAddresses.GOVERNOR,
+            ArbitrumAddresses.EOA_1,
+            vm,
+            false
+        );
 
         uint256 amountVoltOutAfterUpgrade = usdcPSM.getMintAmountOut(
             amountStableIn
@@ -239,7 +290,14 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
             address(this)
         );
 
-        usdcPSM.mint(address(this), amountStableIn, amountVoltOut);
+        usdcPSM.mint(
+            address(this),
+            amountStableIn,
+            (amountVoltOut *
+                (Constants.BASIS_POINTS_GRANULARITY -
+                    allowedDeviationArbitrum)) /
+                Constants.BASIS_POINTS_GRANULARITY
+        );
 
         uint256 endingUserVoltBalanceAfterUpgrade = volt.balanceOf(
             address(this)
@@ -248,15 +306,17 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
             endingUserVoltBalanceAfterUpgrade,
             startingUserVoltBalanceAfterUpgrade + amountVoltOutAfterUpgrade
         );
-        assertEq(amountVoltOutAfterUpgrade, amountVoltOut);
+        assertApproxEq(
+            amountVoltOutAfterUpgrade.toInt256(),
+            amountVoltOut.toInt256(),
+            allowedDeviationArbitrum
+        );
     }
 
     /// assert redemptions function the same after upgrading the scaling price oracle for Dai
     function testRedeemParityAfterOracleUpgradeDAI() public {
-        _warpToStart();
-
         uint256 amountVoltIn = 1_000e18;
-        vm.prank(ArbitrumAddresses.VOLT_DAI_PSM); /// fund with Volt
+        vm.prank(ArbitrumAddresses.GOVERNOR); /// fund with Volt
         volt.transfer(address(this), amountVoltIn * 2);
 
         uint256 amountDaiOut = daiPSM.getRedeemAmountOut(amountVoltIn);
@@ -268,8 +328,18 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
         uint256 endingUserDaiBalance = dai.balanceOf(address(this));
         assertEq(endingUserDaiBalance, startingUserDaiBalance + amountDaiOut);
 
-        vm.prank(ArbitrumAddresses.GOVERNOR);
-        daiPSM.setOracle(address(oraclePassThrough));
+        vm.warp(startTime - 1 days); /// rewind the clock 1 day so that the timelock execution takes us back to start time
+
+        /// simulate proposal execution so that the next set of assertions can be verified
+        /// with new upgrade in place
+        simulate(
+            getArbitrumProposal(),
+            TimelockController(payable(ArbitrumAddresses.TIMELOCK_CONTROLLER)),
+            ArbitrumAddresses.GOVERNOR,
+            ArbitrumAddresses.EOA_1,
+            vm,
+            false
+        );
 
         uint256 amountDaiOutAfterUpgrade = daiPSM.getRedeemAmountOut(
             amountVoltIn
@@ -285,19 +355,23 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
             endingUserDaiBalanceAfterUpgrade,
             startingUserDaiBalanceAfterUpgrade + amountDaiOutAfterUpgrade
         );
-        assertEq(amountDaiOutAfterUpgrade, amountDaiOut);
+        assertApproxEq(
+            amountDaiOutAfterUpgrade.toInt256(),
+            amountDaiOut.toInt256(),
+            allowedDeviationArbitrum
+        );
+        assertTrue(amountDaiOutAfterUpgrade > amountDaiOut); /// Oracle Price increased
     }
 
     /// assert redemptions function the same after upgrading the scaling price oracle for Usdc
     function testRedeemParityAfterOracleUpgradeUSDC() public {
-        _warpToStart();
         if (usdcPSM.redeemPaused()) {
             vm.prank(ArbitrumAddresses.PCV_GUARDIAN);
             usdcPSM.unpauseRedeem();
         }
 
         uint256 amountVoltIn = 1_000e18;
-        vm.prank(ArbitrumAddresses.VOLT_DAI_PSM); /// fund with Volt
+        vm.prank(ArbitrumAddresses.GOVERNOR); /// fund with Volt
         volt.transfer(address(this), amountVoltIn * 2);
 
         uint256 amountUsdcOut = usdcPSM.getRedeemAmountOut(amountVoltIn);
@@ -312,8 +386,18 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
             startingUserUsdcBalance + amountUsdcOut
         );
 
-        vm.prank(ArbitrumAddresses.GOVERNOR);
-        usdcPSM.setOracle(address(oraclePassThrough));
+        vm.warp(startTime - 1 days); /// rewind the clock 1 day so that the timelock execution takes us back to start time
+
+        /// simulate proposal execution so that the next set of assertions can be verified
+        /// with new upgrade in place
+        simulate(
+            getArbitrumProposal(),
+            TimelockController(payable(ArbitrumAddresses.TIMELOCK_CONTROLLER)),
+            ArbitrumAddresses.GOVERNOR,
+            ArbitrumAddresses.EOA_1,
+            vm,
+            false
+        );
 
         uint256 amountUsdcOutAfterUpgrade = usdcPSM.getRedeemAmountOut(
             amountVoltIn
@@ -331,28 +415,31 @@ contract ArbitrumTestVoltSystemOracle is DSTest {
             endingUserUsdcBalanceAfterUpgrade,
             startingUserUsdcBalanceAfterUpgrade + amountUsdcOutAfterUpgrade
         );
-        assertEq(amountUsdcOutAfterUpgrade, amountUsdcOut);
+        assertApproxEq(
+            amountUsdcOutAfterUpgrade.toInt256(),
+            amountUsdcOut.toInt256(),
+            allowedDeviationArbitrum
+        );
+        assertTrue(amountUsdcOutAfterUpgrade > amountUsdcOut); /// Oracle Price increased with upgrade
     }
 
     function testSetMintFee() public {
-        uint256 startingFeeDai = daiPSM.mintFeeBasisPoints();
-        uint256 startingFeeUsdc = usdcPSM.mintFeeBasisPoints();
+        vm.warp(startTime - 1 days); /// rewind the clock 1 day so that the timelock execution takes us back to start time
 
-        /// if starting fee is 5 bips, no need to run this test as upgrade has been applied
-        if (startingFeeDai == 5 && startingFeeUsdc == 5) {
-            return;
-        }
-
-        vm.startPrank(ArbitrumAddresses.TIMELOCK_CONTROLLER);
-        usdcPSM.setMintFee(5);
-        daiPSM.setMintFee(5);
-        vm.stopPrank();
+        /// simulate proposal execution so that the next set of assertions can be verified
+        /// with new upgrade in place
+        simulate(
+            getArbitrumProposal(),
+            TimelockController(payable(ArbitrumAddresses.TIMELOCK_CONTROLLER)),
+            ArbitrumAddresses.GOVERNOR,
+            ArbitrumAddresses.EOA_1,
+            vm,
+            false
+        );
 
         uint256 endingFeeDai = daiPSM.mintFeeBasisPoints();
         uint256 endingFeeUsdc = usdcPSM.mintFeeBasisPoints();
 
-        assertEq(startingFeeDai, 50);
-        assertEq(startingFeeUsdc, 50);
         assertEq(endingFeeDai, 5);
         assertEq(endingFeeUsdc, 5);
     }

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
+import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
 import {Core, getCore, getAddresses, VoltTestAddresses} from "./../unit/utils/Fixtures.sol";
@@ -9,13 +12,13 @@ import {PriceBoundPSM} from "./../../peg/PriceBoundPSM.sol";
 import {IScalingPriceOracle, ScalingPriceOracle} from "./../../oracle/ScalingPriceOracle.sol";
 import {VoltSystemOracle} from "./../../oracle/VoltSystemOracle.sol";
 import {OraclePassThrough} from "./../../oracle/OraclePassThrough.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {Constants} from "../../Constants.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IVolt} from "../../volt/IVolt.sol";
+import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
+import {vip2} from "./vip/vip2.sol";
 
-contract IntegrationTestVoltSystemOracle is DSTest {
+contract IntegrationTestVoltSystemOracle is TimelockSimulation, vip2 {
     using Decimal for Decimal.D256;
     using SafeCast for *;
 
@@ -32,18 +35,17 @@ contract IntegrationTestVoltSystemOracle is DSTest {
     ScalingPriceOracle private scalingPriceOracle =
         ScalingPriceOracle(MainnetAddresses.DEPRECATED_SCALING_PRICE_ORACLE);
 
-    /// @notice new Volt System Oracle
-    VoltSystemOracle private voltSystemOracle;
-
-    /// @notice new Oracle Pass Through
-    OraclePassThrough private oraclePassThrough;
-
     /// @notice existing Oracle Pass Through deployed on mainnet
     OraclePassThrough private immutable existingOraclePassThrough =
         OraclePassThrough(MainnetAddresses.DEPRECATED_ORACLE_PASS_THROUGH);
 
-    /// @notice increase price by x% per month
-    uint256 public constant annualChangeRateBasisPoints = 200;
+    /// @notice new Volt System Oracle
+    VoltSystemOracle private voltSystemOracle =
+        VoltSystemOracle(MainnetAddresses.VOLT_SYSTEM_ORACLE);
+
+    /// @notice new Oracle Pass Through
+    OraclePassThrough private oraclePassThrough =
+        OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
     /// @notice fei volt PSM
     PriceBoundPSM private immutable feiPSM =
@@ -56,36 +58,21 @@ contract IntegrationTestVoltSystemOracle is DSTest {
     /// @notice starting price of the current mainnet scaling price oracle
     uint256 public startOraclePrice = scalingPriceOracle.oraclePrice();
 
-    Vm public constant vm = Vm(HEVM_ADDRESS);
-    VoltTestAddresses public addresses = getAddresses();
+    /// @notice new Volt System Oracle start time
+    uint256 constant startTime = 1659466800;
+
+    /// @notice new Volt System Oracle start price
+    uint256 constant startPrice = 1054710229549539283;
 
     function setUp() public {
-        uint256 spoStartPrice = scalingPriceOracle.oraclePrice();
-        /// monthly change rate is positive as of 6/29/2022,
-        /// not expecting deflation anytime soon
-        uint256 monthlyChangeRateBasisPoints = scalingPriceOracle
-            .monthlyChangeRateBasisPoints()
-            .toUint256();
-        uint256 spoEndPrice = (spoStartPrice *
-            (monthlyChangeRateBasisPoints +
-                Constants.BASIS_POINTS_GRANULARITY)) /
-            Constants.BASIS_POINTS_GRANULARITY;
+        /// set mint fees to 0 so that the only change that is measured is the
+        /// difference between oracle prices
+        vm.startPrank(MainnetAddresses.GOVERNOR);
+        feiPSM.setMintFee(0);
+        usdcPSM.setMintFee(0);
+        vm.stopPrank();
 
-        voltSystemOracle = new VoltSystemOracle(
-            annualChangeRateBasisPoints,
-            scalingPriceOracle.startTime() + scalingPriceOracle.TIMEFRAME(),
-            spoEndPrice
-        );
-
-        oraclePassThrough = new OraclePassThrough(
-            IScalingPriceOracle(address(voltSystemOracle))
-        );
-    }
-
-    function _warpToStart() internal {
-        vm.warp(
-            scalingPriceOracle.startTime() + scalingPriceOracle.TIMEFRAME()
-        );
+        vm.warp(startTime);
     }
 
     function testSetup() public {
@@ -93,72 +80,104 @@ contract IntegrationTestVoltSystemOracle is DSTest {
             address(oraclePassThrough.scalingPriceOracle()),
             address(voltSystemOracle)
         );
+        assertEq(
+            address(existingOraclePassThrough.scalingPriceOracle()),
+            address(scalingPriceOracle)
+        );
     }
 
     function testPriceEquivalenceAtTermEnd() public {
-        _warpToStart();
-        assertEq(
-            scalingPriceOracle.getCurrentOraclePrice(),
-            voltSystemOracle.getCurrentOraclePrice()
+        assertApproxEq(
+            scalingPriceOracle.getCurrentOraclePrice().toInt256(),
+            voltSystemOracle.getCurrentOraclePrice().toInt256(),
+            allowedDeviation
         );
         assertEq(
             voltSystemOracle.oraclePrice(),
             voltSystemOracle.getCurrentOraclePrice()
         );
-        assertEq(
-            oraclePassThrough.getCurrentOraclePrice(),
-            existingOraclePassThrough.getCurrentOraclePrice()
+        assertApproxEq(
+            oraclePassThrough.getCurrentOraclePrice().toInt256(),
+            existingOraclePassThrough.getCurrentOraclePrice().toInt256(),
+            allowedDeviation
         );
     }
 
     /// swap out the old oracle for the new one and ensure the read functions
     /// give the same value
     function testMintSwapOraclePassThroughOnPSMs() public {
-        _warpToStart();
-
         uint256 mintAmount = 100_000e18;
         uint256 startingAmountOutFei = feiPSM.getMintAmountOut(mintAmount);
         uint256 startingAmountOutUSDC = usdcPSM.getMintAmountOut(mintAmount);
 
-        vm.startPrank(MainnetAddresses.GOVERNOR);
-        feiPSM.setOracle(address(oraclePassThrough));
-        usdcPSM.setOracle(address(oraclePassThrough));
-        vm.stopPrank();
+        vm.warp(startTime - 1 days); /// rewind the clock 1 day so that the timelock execution takes us back to start time
+
+        /// simulate proposal execution so that the next set of assertions can be verified
+        /// with new upgrade in place
+        simulate(
+            getMainnetProposal(),
+            TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),
+            MainnetAddresses.GOVERNOR,
+            MainnetAddresses.EOA_1,
+            vm,
+            false
+        );
 
         uint256 endingAmountOutFei = feiPSM.getMintAmountOut(mintAmount);
         uint256 endingAmountOutUSDC = usdcPSM.getMintAmountOut(mintAmount);
 
-        assertEq(endingAmountOutFei, startingAmountOutFei);
-        assertEq(endingAmountOutUSDC, startingAmountOutUSDC);
+        assertApproxEq(
+            endingAmountOutFei.toInt256(),
+            startingAmountOutFei.toInt256(),
+            allowedDeviation
+        );
+        assertApproxEq(
+            endingAmountOutUSDC.toInt256(),
+            startingAmountOutUSDC.toInt256(),
+            allowedDeviation
+        );
     }
 
     /// swap out the old oracle for the new one and ensure the read functions
     /// give the same value
     function testRedeemSwapOraclePassThroughOnPSMs() public {
-        _warpToStart();
-
         uint256 redeemAmount = 100_000e18;
         uint256 startingAmountOutFei = feiPSM.getRedeemAmountOut(redeemAmount);
         uint256 startingAmountOutUSDC = usdcPSM.getRedeemAmountOut(
             redeemAmount
         );
 
-        vm.startPrank(MainnetAddresses.GOVERNOR);
-        feiPSM.setOracle(address(oraclePassThrough));
-        usdcPSM.setOracle(address(oraclePassThrough));
-        vm.stopPrank();
+        vm.warp(startTime - 1 days); /// rewind the clock 1 day so that the timelock execution takes us back to start time
+
+        /// simulate proposal execution so that the next set of assertions can be verified
+        /// with new upgrade in place
+        simulate(
+            getMainnetProposal(),
+            TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),
+            MainnetAddresses.GOVERNOR,
+            MainnetAddresses.EOA_1,
+            vm,
+            false
+        );
 
         uint256 endingAmountOutFei = feiPSM.getRedeemAmountOut(redeemAmount);
         uint256 endingAmountOutUSDC = usdcPSM.getRedeemAmountOut(redeemAmount);
 
-        assertEq(endingAmountOutFei, startingAmountOutFei);
-        assertEq(endingAmountOutUSDC, startingAmountOutUSDC);
+        assertApproxEq(
+            endingAmountOutFei.toInt256(),
+            startingAmountOutFei.toInt256(),
+            allowedDeviation
+        );
+        assertApproxEq(
+            endingAmountOutUSDC.toInt256(),
+            startingAmountOutUSDC.toInt256(),
+            allowedDeviation
+        );
     }
 
     /// assert swaps function the same after upgrading the scaling price oracle for Fei
     function testMintParityAfterOracleUpgradeFEI() public {
-        _warpToStart();
-        uint256 amountStableIn = 101_000;
+        uint256 amountStableIn = 101_000e18;
         uint256 amountVoltOut = feiPSM.getMintAmountOut(amountStableIn);
         uint256 startingUserVoltBalance = volt.balanceOf(address(this));
 
@@ -176,8 +195,20 @@ contract IntegrationTestVoltSystemOracle is DSTest {
             startingUserVoltBalance + amountVoltOut
         );
 
-        vm.prank(MainnetAddresses.GOVERNOR);
-        feiPSM.setOracle(address(oraclePassThrough));
+        vm.warp(startTime - 1 days); /// rewind the clock 1 day so that the timelock execution takes us back to start time
+
+        /// simulate proposal execution so that the next set of assertions can be verified
+        /// with new upgrade in place
+        simulate(
+            getMainnetProposal(),
+            TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),
+            MainnetAddresses.GOVERNOR,
+            MainnetAddresses.EOA_1,
+            vm,
+            false
+        );
+
+        assertEq(address(oraclePassThrough), address(feiPSM.oracle()));
 
         uint256 amountVoltOutAfterUpgrade = feiPSM.getMintAmountOut(
             amountStableIn
@@ -186,7 +217,12 @@ contract IntegrationTestVoltSystemOracle is DSTest {
             address(this)
         );
 
-        feiPSM.mint(address(this), amountStableIn, amountVoltOut);
+        /// apply 6 bip haircut to amount volt out as price increased by 5 bips when oracle swap happens
+        feiPSM.mint(
+            address(this),
+            amountStableIn,
+            (amountVoltOut * 9_994) / 10_000
+        );
 
         uint256 endingUserVoltBalanceAfterUpgrade = volt.balanceOf(
             address(this)
@@ -195,12 +231,15 @@ contract IntegrationTestVoltSystemOracle is DSTest {
             endingUserVoltBalanceAfterUpgrade,
             startingUserVoltBalanceAfterUpgrade + amountVoltOutAfterUpgrade
         );
-        assertEq(amountVoltOutAfterUpgrade, amountVoltOut);
+        assertApproxEq(
+            amountVoltOutAfterUpgrade.toInt256(),
+            amountVoltOut.toInt256(),
+            0
+        );
     }
 
     /// assert swaps function the same after upgrading the scaling price oracle for USDC
     function testMintParityAfterOracleUpgradeUSDC() public {
-        _warpToStart();
         uint256 amountStableIn = 101_000;
         uint256 amountVoltOut = usdcPSM.getMintAmountOut(amountStableIn);
         uint256 startingUserVoltBalance = volt.balanceOf(address(this));
@@ -219,8 +258,18 @@ contract IntegrationTestVoltSystemOracle is DSTest {
             startingUserVoltBalance + amountVoltOut
         );
 
-        vm.prank(MainnetAddresses.GOVERNOR);
-        usdcPSM.setOracle(address(oraclePassThrough));
+        vm.warp(startTime - 1 days); /// rewind the clock 1 day so that the timelock execution takes us back to start time
+
+        /// simulate proposal execution so that the next set of assertions can be verified
+        /// with new upgrade in place
+        simulate(
+            getMainnetProposal(),
+            TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),
+            MainnetAddresses.GOVERNOR,
+            MainnetAddresses.EOA_1,
+            vm,
+            false
+        );
 
         uint256 amountVoltOutAfterUpgrade = usdcPSM.getMintAmountOut(
             amountStableIn
@@ -229,7 +278,11 @@ contract IntegrationTestVoltSystemOracle is DSTest {
             address(this)
         );
 
-        usdcPSM.mint(address(this), amountStableIn, amountVoltOut);
+        usdcPSM.mint(
+            address(this),
+            amountStableIn,
+            (amountVoltOut * (10_000 - allowedDeviation)) / 10_000
+        );
 
         uint256 endingUserVoltBalanceAfterUpgrade = volt.balanceOf(
             address(this)
@@ -238,13 +291,15 @@ contract IntegrationTestVoltSystemOracle is DSTest {
             endingUserVoltBalanceAfterUpgrade,
             startingUserVoltBalanceAfterUpgrade + amountVoltOutAfterUpgrade
         );
-        assertEq(amountVoltOutAfterUpgrade, amountVoltOut);
+        assertApproxEq(
+            amountVoltOutAfterUpgrade.toInt256(),
+            amountVoltOut.toInt256(),
+            allowedDeviation
+        );
     }
 
     /// assert redemptions function the same after upgrading the scaling price oracle for Fei
     function testRedeemParityAfterOracleUpgradeFEI() public {
-        _warpToStart();
-
         uint256 amountVoltIn = 10_000e18;
 
         vm.prank(MainnetAddresses.CORE);
@@ -262,8 +317,18 @@ contract IntegrationTestVoltSystemOracle is DSTest {
         uint256 endingUserFeiBalance = fei.balanceOf(address(this));
         assertEq(endingUserFeiBalance, startingUserFeiBalance + amountFeiOut);
 
-        vm.prank(MainnetAddresses.GOVERNOR);
-        feiPSM.setOracle(address(oraclePassThrough));
+        vm.warp(startTime - 1 days); /// rewind the clock 1 day so that the timelock execution takes us back to start time
+
+        /// simulate proposal execution so that the next set of assertions can be verified
+        /// with new upgrade in place
+        simulate(
+            getMainnetProposal(),
+            TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),
+            MainnetAddresses.GOVERNOR,
+            MainnetAddresses.EOA_1,
+            vm,
+            false
+        );
 
         uint256 amountFeiOutAfterUpgrade = feiPSM.getRedeemAmountOut(
             amountVoltIn
@@ -279,12 +344,15 @@ contract IntegrationTestVoltSystemOracle is DSTest {
             endingUserFeiBalanceAfterUpgrade,
             startingUserFeiBalanceAfterUpgrade + amountFeiOutAfterUpgrade
         );
-        assertEq(amountFeiOutAfterUpgrade, amountFeiOut);
+        assertApproxEq(
+            amountFeiOutAfterUpgrade.toInt256(),
+            amountFeiOut.toInt256(),
+            1
+        );
     }
 
     /// assert redemptions function the same after upgrading the scaling price oracle for Usdc
     function testRedeemParityAfterOracleUpgradeUSDC() public {
-        _warpToStart();
         if (usdcPSM.redeemPaused()) {
             vm.prank(MainnetAddresses.PCV_GUARDIAN);
             usdcPSM.unpauseRedeem();
@@ -309,8 +377,18 @@ contract IntegrationTestVoltSystemOracle is DSTest {
             startingUserUsdcBalance + amountUsdcOut
         );
 
-        vm.prank(MainnetAddresses.GOVERNOR);
-        usdcPSM.setOracle(address(oraclePassThrough));
+        vm.warp(startTime - 1 days); /// rewind the clock 1 day so that the timelock execution takes us back to start time
+
+        /// simulate proposal execution so that the next set of assertions can be verified
+        /// with new upgrade in place
+        simulate(
+            getMainnetProposal(),
+            TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),
+            MainnetAddresses.GOVERNOR,
+            MainnetAddresses.EOA_1,
+            vm,
+            false
+        );
 
         uint256 amountUsdcOutAfterUpgrade = usdcPSM.getRedeemAmountOut(
             amountVoltIn
@@ -328,27 +406,30 @@ contract IntegrationTestVoltSystemOracle is DSTest {
             endingUserUsdcBalanceAfterUpgrade,
             startingUserUsdcBalanceAfterUpgrade + amountUsdcOutAfterUpgrade
         );
-        assertEq(amountUsdcOutAfterUpgrade, amountUsdcOut);
+        assertApproxEq(
+            amountUsdcOutAfterUpgrade.toInt256(),
+            amountUsdcOut.toInt256(),
+            1
+        );
     }
 
     function testSetMintFee() public {
-        uint256 startingFeeFei = feiPSM.mintFeeBasisPoints();
-        uint256 startingFeeUsdc = usdcPSM.mintFeeBasisPoints();
+        vm.warp(startTime - 1 days); /// rewind the clock 1 day so that the timelock execution takes us back to start time
 
-        if (startingFeeFei == 0 && startingFeeUsdc == 0) {
-            return;
-        }
-
-        vm.startPrank(MainnetAddresses.GOVERNOR);
-        feiPSM.setMintFee(0);
-        usdcPSM.setMintFee(0);
-        vm.stopPrank();
+        /// simulate proposal execution so that the next set of assertions can be verified
+        /// with new upgrade in place
+        simulate(
+            getMainnetProposal(),
+            TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),
+            MainnetAddresses.GOVERNOR,
+            MainnetAddresses.EOA_1,
+            vm,
+            false
+        );
 
         uint256 endingFeeFei = feiPSM.mintFeeBasisPoints();
         uint256 endingFeeUsdc = usdcPSM.mintFeeBasisPoints();
 
-        assertEq(startingFeeFei, 50);
-        assertEq(startingFeeUsdc, 50);
         assertEq(endingFeeFei, 0);
         assertEq(endingFeeUsdc, 0);
     }

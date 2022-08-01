@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Core, Vcon, Volt, IERC20, IVolt} from "../../../core/Core.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
 import {TribeRoles} from "../../../core/TribeRoles.sol";
@@ -8,7 +9,6 @@ import {DSTest} from "./../../unit/utils/DSTest.sol";
 import {L2Core} from "../../../core/L2Core.sol";
 import {Core} from "../../../core/Core.sol";
 import {Vm} from "./../../unit/utils/Vm.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract RoleTesting is DSTest {
     /// @notice map role to the string name
