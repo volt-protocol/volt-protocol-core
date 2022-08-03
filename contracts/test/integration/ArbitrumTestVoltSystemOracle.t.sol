@@ -355,7 +355,6 @@ contract ArbitrumTestVoltSystemOracle is TimelockSimulation, vip2 {
             amountDaiOut.toInt256(),
             allowedDeviationArbitrum
         );
-        assertTrue(amountDaiOutAfterUpgrade > amountDaiOut); /// Oracle Price increased
     }
 
     /// assert redemptions function the same after upgrading the scaling price oracle for Usdc
@@ -415,7 +414,6 @@ contract ArbitrumTestVoltSystemOracle is TimelockSimulation, vip2 {
             amountUsdcOut.toInt256(),
             allowedDeviationArbitrum
         );
-        assertTrue(amountUsdcOutAfterUpgrade > amountUsdcOut); /// Oracle Price increased with upgrade
     }
 
     function testSetMintFee() public {
