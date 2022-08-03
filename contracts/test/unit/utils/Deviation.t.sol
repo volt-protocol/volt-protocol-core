@@ -43,7 +43,8 @@ contract UnitTestDeviation is DSTest {
         );
     }
 
-    function testWithinDeviationFuzz(int128 x, int128 y) public view {
+    function testWithinDeviationFuzz(int128 x, int128 y) public {
+        vm.assume(x != 0);
         maxDeviationThresholdBasisPoints.isWithinDeviationThreshold(x, y);
     }
 
