@@ -73,7 +73,10 @@ contract TimelockSimulation is DSTest {
             salt
         );
 
-        if (!timelock.isOperationPending(proposalId)) {
+        if (
+            !timelock.isOperationPending(proposalId) &&
+            !timelock.isOperation(proposalId)
+        ) {
             vm.prank(proposer);
             timelock.scheduleBatch(
                 targets,
