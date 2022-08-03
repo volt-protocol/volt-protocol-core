@@ -18,6 +18,7 @@ const kovanAlchemyApiKey = process.env.KOVAN_ALCHEMY_API_KEY;
 const testnetPrivateKey = process.env.TESTNET_PRIVATE_KEY;
 const privateKey = process.env.ETH_PRIVATE_KEY;
 const enableMainnetForking = process.env.ENABLE_MAINNET_FORKING;
+const enableArbitrumForking = process.env.ENABLE_ARBITRUM_FORKING;
 const mainnetAlchemyApiKey = process.env.MAINNET_ALCHEMY_API_KEY;
 const arbitrumAlchemyApiKey = process.env.ARBITRUM_ALCHEMY_API_KEY;
 const useJSONTestReporter = process.env.REPORT_TEST_RESULTS_AS_JSON;
@@ -62,6 +63,10 @@ export default {
         ? {
             url: `https://eth-mainnet.alchemyapi.io/v2/${mainnetAlchemyApiKey}`,
             blockNumber: 15175278
+          }
+        : enableArbitrumForking
+        ? {
+            url: `https://arb-mainnet.g.alchemy.com/v2/${arbitrumAlchemyApiKey}`
           }
         : undefined
     },
