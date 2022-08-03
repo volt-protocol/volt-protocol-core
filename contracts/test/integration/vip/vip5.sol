@@ -49,7 +49,7 @@ contract vip5 is DSTest, IVIP, AllRoles {
         public
         pure
         override
-        returns (TimelockSimulation.action[] memory proposal)
+        returns (TimelockSimulation.action[] memory)
     {
         revert("no arbitrum proposal");
     }
