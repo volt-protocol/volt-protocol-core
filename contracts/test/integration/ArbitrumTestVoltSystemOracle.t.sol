@@ -59,7 +59,7 @@ contract ArbitrumTestVoltSystemOracle is TimelockSimulation, vip2 {
         PriceBoundPSM(ArbitrumAddresses.VOLT_USDC_PSM);
 
     /// @notice new Volt System Oracle start time
-    uint256 constant startTime = 1659466800;
+    uint256 constant startTime = 1659468611;
 
     function setUp() public {
         /// set mint fees to 5 bips
@@ -88,9 +88,12 @@ contract ArbitrumTestVoltSystemOracle is TimelockSimulation, vip2 {
             voltSystemOracle.getCurrentOraclePrice().toInt256(),
             allowedDeviationArbitrum
         );
-        assertEq(
-            voltSystemOracle.oraclePrice(),
-            voltSystemOracle.getCurrentOraclePrice()
+        /// because start time is a little past when the calculated start time would be,
+        /// there is a slight but non zero deviation (835 seconds of unnacrued interest)
+        assertApproxEq(
+            voltSystemOracle.oraclePrice().toInt256(),
+            voltSystemOracle.getCurrentOraclePrice().toInt256(),
+            0
         );
         assertApproxEq(
             oraclePassThrough.getCurrentOraclePrice().toInt256(),
