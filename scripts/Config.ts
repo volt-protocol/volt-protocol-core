@@ -1,6 +1,11 @@
 import { ethers } from 'ethers';
 
 const config = {
+  /// Volt System Oracle Params
+  STARTING_ORACLE_PRICE: '1054710229549539283', /// pay out 92 bips for July 15th through August 2nd
+  ORACLE_PERIOD_START_TIME: '1659466800', /// August 2nd start time
+  MONTHLY_CHANGE_RATE_BASIS_POINTS: 5, /// AAVE Trailing 30 Day Average yield is 60 bips per year
+
   /// Mainnet
   MAINNET_DEPLOYMENT: true,
   CHAINLINK_FEE: ethers.utils.parseEther('10'),

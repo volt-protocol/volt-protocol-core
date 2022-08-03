@@ -3,7 +3,7 @@ pragma solidity ^0.8.4;
 
 import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
-import {getCore, getAddresses} from "./../unit/utils/Fixtures.sol";
+import {getCore, getAddresses, VoltTestAddresses} from "./../unit/utils/Fixtures.sol";
 import {MockScalingPriceOracle} from "../../mock/MockScalingPriceOracle.sol";
 import {MockL2ScalingPriceOracle} from "../../mock/MockL2ScalingPriceOracle.sol";
 import {MockChainlinkToken} from "../../mock/MockChainlinkToken.sol";
@@ -12,8 +12,6 @@ import {ScalingPriceOracle} from "./../../oracle/ScalingPriceOracle.sol";
 import {L2ScalingPriceOracle} from "./../../oracle/L2ScalingPriceOracle.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
-
-import {console} from "hardhat/console.sol";
 
 contract IntegrationTestL2ScalingPriceOracle is DSTest {
     using Decimal for Decimal.D256;
@@ -53,6 +51,8 @@ contract IntegrationTestL2ScalingPriceOracle is DSTest {
     uint256 public startOraclePrice = scalingPriceOracle.oraclePrice();
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
+
+    VoltTestAddresses public addresses = getAddresses();
 
     function setUp() public {
         l2scalingPriceOracle = new L2ScalingPriceOracle(

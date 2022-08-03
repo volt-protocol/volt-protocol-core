@@ -6,9 +6,16 @@ library ArbitrumAddresses {
     address public constant CORE = 0x31A38B79fDcFBC3095E3268CAFac1b9791796736;
     address public constant VOLT = 0x6Ba6f18a290Cd55cf1B00be2bEc5c954cb29fAc5;
     address public constant ORACLE_PASS_THROUGH =
+        0xcd836280e4416e08F54E5584Bcd49Ac2E3a68747;
+    address public constant VOLT_SYSTEM_ORACLE =
+        0x69DBf8dD98Aa40F50E4f2263c6f2d66f26f9cb5b;
+
+    /// deprecated oracles
+    address public constant DEPRECATED_ORACLE_PASS_THROUGH =
         0x7A23eB9bf043471dE7422a9CcdB5Ef809F34CbdE;
-    address public constant SCALING_PRICE_ORACLE =
+    address public constant DEPRECATED_SCALING_PRICE_ORACLE =
         0x138F30D35557FA72478663b601f0f0FD7cc4E39E;
+
     address public constant GOVERNOR =
         0x1A1075cef632624153176CCf19Ae0175953CF010;
     address public constant PCV_GUARDIAN =

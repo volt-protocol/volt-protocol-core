@@ -7,7 +7,7 @@ import {DSTest} from "../unit/utils/DSTest.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {getCore, getAddresses, getVoltAddresses, VoltAddresses} from "../unit/utils/Fixtures.sol";
+import {getCore, getAddresses, getVoltAddresses, VoltTestAddresses, VoltAddresses} from "../unit/utils/Fixtures.sol";
 
 contract IntegrationTestTimelockController is DSTest {
     Vm public constant vm = Vm(HEVM_ADDRESS);

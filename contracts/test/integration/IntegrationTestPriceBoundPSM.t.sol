@@ -60,7 +60,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
 
     /// @notice Oracle Pass Through contract
     OraclePassThrough public oracle =
-        OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
+        OraclePassThrough(MainnetAddresses.DEPRECATED_ORACLE_PASS_THROUGH);
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 

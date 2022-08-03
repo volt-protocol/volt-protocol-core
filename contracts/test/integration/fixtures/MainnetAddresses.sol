@@ -5,8 +5,19 @@ library MainnetAddresses {
     // ---------- VOLT ADDRESSES ----------
     address public constant CORE = 0xEC7AD284f7Ad256b64c6E69b84Eb0F48f42e8196;
     address public constant VOLT = 0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18;
+
+    /// oracles
     address public constant ORACLE_PASS_THROUGH =
+        0xe733985a92Bfd5BC676095561BacE90E04606E4a;
+    address public constant VOLT_SYSTEM_ORACLE =
+        0xD4546B5B7D28aE0E048c073DCD92358721CEA8D4;
+
+    /// deprecated oracles
+    address public constant DEPRECATED_ORACLE_PASS_THROUGH =
         0x84dc71500D504163A87756dB6368CC8bB654592f;
+    address public constant DEPRECATED_SCALING_PRICE_ORACLE =
+        0x79412660E95F94a4D2d02a050CEA776200939917;
+
     address public constant GOVERNOR =
         0xcBB83206698E8788F85EFbEeeCAd17e53366EBDf;
     address public constant PCV_GUARDIAN =
@@ -18,6 +29,10 @@ library MainnetAddresses {
     address public constant VOLT_FEI_PSM =
         0x985f9C331a9E4447C782B98D6693F5c7dF8e560e;
 
+    address public constant VOLT_USDC_PSM =
+        0x0b9A7EA2FCA868C93640Dd77cF44df335095F501;
+    address public constant GLOBAL_RATE_LIMITED_MINTER =
+        0x87945f59E008aDc9ed6210a8e061f009d6ace718;
     address public constant TIMELOCK_CONTROLLER =
         0x75d078248eE49c585b73E73ab08bb3eaF93383Ae;
 
