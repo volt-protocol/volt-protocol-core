@@ -15,17 +15,28 @@ contract TimelockSimulation is DSTest {
         string description;
     }
 
+    /// @notice simulate timelock proposal
+    /// @param proposal an array of actions that compose a proposal
+    /// @param timelock to execute the proposal against
+    /// @param executor account to execute the proposal on the timelock
+    /// @param proposer account to propose the proposal to the timelock
+    /// @param vm reference to a foundry vm instance
+    /// @param doLogging toggle to print out calldata and steps
     function simulate(
         action[] memory proposal,
         TimelockController timelock,
         address executor,
         address proposer,
-        Vm vm
+        Vm vm,
+        bool doLogging
     ) public {
         uint256 delay = timelock.getMinDelay();
         bytes32 salt = keccak256(abi.encode(proposal[0].description));
-        console.log("salt: ");
-        emit log_bytes32(salt);
+
+        if (doLogging) {
+            console.log("salt: ");
+            emit log_bytes32(salt);
+        }
 
         bytes32 predecessor = bytes32(0);
 
@@ -54,43 +65,67 @@ contract TimelockSimulation is DSTest {
             payloads[i] = proposal[i].arguments;
         }
 
-        vm.prank(proposer);
-        timelock.scheduleBatch(
+        bytes32 proposalId = timelock.hashOperationBatch(
             targets,
             values,
             payloads,
             predecessor,
-            salt,
-            delay
+            salt
         );
-        console.log("schedule batch calldata");
-        emit log_bytes(
-            abi.encodeWithSignature(
-                "scheduleBatch(address[],uint256[],bytes[],bytes32,bytes32,uint256)",
+
+        if (
+            !timelock.isOperationPending(proposalId) &&
+            !timelock.isOperation(proposalId)
+        ) {
+            vm.prank(proposer);
+            timelock.scheduleBatch(
                 targets,
                 values,
                 payloads,
                 predecessor,
                 salt,
                 delay
-            )
-        );
+            );
+            if (doLogging) {
+                console.log("schedule batch calldata");
+                emit log_bytes(
+                    abi.encodeWithSignature(
+                        "scheduleBatch(address[],uint256[],bytes[],bytes32,bytes32,uint256)",
+                        targets,
+                        values,
+                        payloads,
+                        predecessor,
+                        salt,
+                        delay
+                    )
+                );
+            }
+        } else if (doLogging) {
+            console.log("proposal already scheduled for id");
+            emit log_bytes32(proposalId);
+        }
 
         vm.warp(block.timestamp + delay);
 
-        vm.prank(executor);
-        timelock.executeBatch(targets, values, payloads, predecessor, salt);
+        if (!timelock.isOperationDone(proposalId)) {
+            vm.prank(executor);
+            timelock.executeBatch(targets, values, payloads, predecessor, salt);
 
-        console.log("execute batch calldata");
-        emit log_bytes(
-            abi.encodeWithSignature(
-                "executeBatch(address[],uint256[],bytes[],bytes32,bytes32)",
-                targets,
-                values,
-                payloads,
-                predecessor,
-                salt
-            )
-        );
+            if (doLogging) {
+                console.log("execute batch calldata");
+                emit log_bytes(
+                    abi.encodeWithSignature(
+                        "executeBatch(address[],uint256[],bytes[],bytes32,bytes32)",
+                        targets,
+                        values,
+                        payloads,
+                        predecessor,
+                        salt
+                    )
+                );
+            }
+        } else if (doLogging) {
+            console.log("proposal already executed");
+        }
     }
 }
