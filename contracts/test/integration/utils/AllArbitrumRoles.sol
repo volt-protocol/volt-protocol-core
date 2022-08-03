@@ -23,15 +23,16 @@ contract ArbitrumTestAllArbitrumRoles is RoleTesting, AllRolesConfig {
 
         allAddresses[0].push(ArbitrumAddresses.CORE);
         allAddresses[0].push(ArbitrumAddresses.GOVERNOR);
+        allAddresses[0].push(ArbitrumAddresses.TIMELOCK_CONTROLLER);
 
         allAddresses[1].push(ArbitrumAddresses.PCV_GUARDIAN);
 
         allAddresses[2].push(ArbitrumAddresses.GOVERNOR);
         allAddresses[2].push(ArbitrumAddresses.PCV_GUARDIAN);
-        allAddresses[2].push(ArbitrumAddresses.DEPRECATED_TIMELOCK);
 
-        allAddresses[4].push(MainnetAddresses.REVOKED_EOA_1);
+        allAddresses[4].push(MainnetAddresses.EOA_1);
         allAddresses[4].push(MainnetAddresses.EOA_2);
+        allAddresses[4].push(MainnetAddresses.EOA_3);
 
         allAddresses[5].push(ArbitrumAddresses.PCV_GUARD_ADMIN);
 
