@@ -3,7 +3,6 @@ pragma solidity ^0.8.4;
 
 import {Vm} from "./../utils/Vm.sol";
 import {DSTest} from "./../utils/DSTest.sol";
-import {getCore, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
 import {MockScalingPriceOracle} from "../../../mock/MockScalingPriceOracle.sol";
 import {MockChainlinkToken} from "../../../mock/MockChainlinkToken.sol";
 import {Decimal} from "./../../../external/Decimal.sol";
@@ -36,7 +35,6 @@ contract UnitTestScalingPriceOracle is DSTest {
     uint256 public immutable fee = 1e19;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
-    VoltTestAddresses public addresses = getAddresses();
 
     function setUp() public {
         /// set this code at address 0 so _rawRequest in ChainlinkClient succeeds

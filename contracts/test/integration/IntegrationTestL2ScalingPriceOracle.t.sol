@@ -3,7 +3,6 @@ pragma solidity ^0.8.4;
 
 import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
-import {getCore, getAddresses, VoltTestAddresses} from "./../unit/utils/Fixtures.sol";
 import {MockScalingPriceOracle} from "../../mock/MockScalingPriceOracle.sol";
 import {MockL2ScalingPriceOracle} from "../../mock/MockL2ScalingPriceOracle.sol";
 import {MockChainlinkToken} from "../../mock/MockChainlinkToken.sol";
@@ -51,8 +50,6 @@ contract IntegrationTestL2ScalingPriceOracle is DSTest {
     uint256 public startOraclePrice = scalingPriceOracle.oraclePrice();
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
-
-    VoltTestAddresses public addresses = getAddresses();
 
     function setUp() public {
         l2scalingPriceOracle = new L2ScalingPriceOracle(
