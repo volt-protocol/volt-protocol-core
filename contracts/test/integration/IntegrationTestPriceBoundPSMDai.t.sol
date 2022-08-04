@@ -187,7 +187,7 @@ contract IntegrationTestPriceBoundPSMDaiTest is DSTest {
             endingPSMUnderlyingBalance.toInt256(),
             (mintAmount + mintAmount * 2).toInt256(),
             0
-        ); /// allow 1 basis point of error
+        );
     }
 
     /// @notice pcv deposit gets depleted on redeem
