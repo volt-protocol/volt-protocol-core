@@ -7,15 +7,14 @@ import {DSTest} from "../unit/utils/DSTest.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {getCore, getAddresses, getVoltAddresses, VoltTestAddresses, VoltAddresses} from "../unit/utils/Fixtures.sol";
+import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 
 contract IntegrationTestTimelockController is DSTest {
     Vm public constant vm = Vm(HEVM_ADDRESS);
     TimelockController public oaTimelock;
-    VoltAddresses public voltAddresses = getVoltAddresses();
-    address public proposer1 = voltAddresses.pcvGuardAddress1;
-    address public proposer2 = voltAddresses.pcvGuardAddress2;
-    address public executorAddress = voltAddresses.executorAddress;
+    address public proposer1 = MainnetAddresses.REVOKED_EOA_1;
+    address public proposer2 = MainnetAddresses.EOA_2;
+    address public executorAddress = MainnetAddresses.GOVERNOR;
 
     function setUp() public {
         address[] memory proposerCancellerAddresses = new address[](3);
@@ -24,7 +23,7 @@ contract IntegrationTestTimelockController is DSTest {
         proposerCancellerAddresses[2] = executorAddress;
 
         address[] memory executorAddresses = new address[](1);
-        executorAddresses[0] = voltAddresses.executorAddress;
+        executorAddresses[0] = MainnetAddresses.GOVERNOR;
 
         oaTimelock = new TimelockController(
             600,

@@ -3,7 +3,6 @@ pragma solidity ^0.8.4;
 
 import {Vm} from "./../utils/Vm.sol";
 import {DSTest} from "./../utils/DSTest.sol";
-import {getCore, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
 import {MockScalingPriceOracle} from "../../../mock/MockScalingPriceOracle.sol";
 import {MockL2ScalingPriceOracle} from "../../../mock/MockL2ScalingPriceOracle.sol";
 import {MockChainlinkToken} from "../../../mock/MockChainlinkToken.sol";
@@ -38,7 +37,6 @@ contract UnitTestL2ScalingPriceOracle is DSTest {
     uint256 public immutable fee = 1e19;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
-    VoltTestAddresses public addresses = getAddresses();
 
     uint256 public constant startTime = 50 days;
 

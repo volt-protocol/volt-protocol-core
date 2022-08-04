@@ -6,7 +6,6 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
-import {Core, getCore, getAddresses, VoltTestAddresses} from "./../unit/utils/Fixtures.sol";
 import {Decimal} from "./../../external/Decimal.sol";
 import {PriceBoundPSM} from "./../../peg/PriceBoundPSM.sol";
 import {IScalingPriceOracle, ScalingPriceOracle} from "./../../oracle/ScalingPriceOracle.sol";
