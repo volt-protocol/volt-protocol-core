@@ -20,12 +20,20 @@ const vip_6: ProposalDescription = {
     {
       target: 'pcvGuardian',
       values: '0',
-      method: 'addWhitelistAddress(address',
+      method: 'addWhitelistAddress(address)',
       arguments: ['{daiPriceBoundPSM}'], // todo add to list of addresses
       description: 'Add DAI PSM to whitelisted addresses on PCV GuardianM'
+    },
+    {
+      target: 'usdcPriceBoundPSM',
+      values: '0',
+      method: 'unpauseRedeem()',
+      arguments: [],
+      description: 'Unpause redemptions for USDC PSM'
     }
   ],
-  description: 'Pauses minting on FEI PSM, remove VOLT liquidity from FEI PSM, adds DAI PSM to PCVGuardian whitelist'
+  description:
+    'Pauses minting on FEI PSM, remove VOLT liquidity from FEI PSM, adds DAI PSM to PCVGuardian whitelist, unpause redemptions on the USDC PSM'
 };
 
 export default vip_6;
