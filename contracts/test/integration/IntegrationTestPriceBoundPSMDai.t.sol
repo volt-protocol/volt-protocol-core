@@ -123,9 +123,8 @@ contract IntegrationTestPriceBoundPSMDaiTest is DSTest {
         uint256 startingBalance = volt.balanceOf(address(psm));
         assertEq(psm.getMaxMintAmountOut(), bufferCap + startingBalance);
 
-        vm.startPrank(MainnetAddresses.GOVERNOR);
+        vm.prank(MainnetAddresses.GOVERNOR);
         volt.mint(address(psm), mintAmount);
-        vm.stopPrank();
 
         assertEq(
             psm.getMaxMintAmountOut(),
