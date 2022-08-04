@@ -61,7 +61,7 @@ contract vip6 is DSTest, IVIP, AllRoles {
         );
         assertTrue(
             PCVGuardian(MainnetAddresses.PCV_GUARDIAN).isWhitelistAddress(
-                VOLT_DAI_PSM
+                MainnetAddresses.VOLT_DAI_PSM
             )
         );
     }
