@@ -3,7 +3,6 @@ pragma solidity ^0.8.4;
 
 import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {MockPCVDepositV2} from "../../mock/MockPCVDepositV2.sol";
 import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
 import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
@@ -27,8 +26,6 @@ contract IntegrationTestPriceBoundPSMDaiTest is DSTest {
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
     IVolt private dai = IVolt(MainnetAddresses.DAI);
     IVolt private underlyingToken = dai;
-
-    MockPCVDepositV2 public pcvDeposit;
 
     /// ------------ Minting and RateLimited System Params ------------
 
@@ -56,13 +53,6 @@ contract IntegrationTestPriceBoundPSMDaiTest is DSTest {
     function setUp() public {
         PegStabilityModule.OracleParams memory oracleParams;
 
-        pcvDeposit = new MockPCVDepositV2(
-            address(core),
-            address(underlyingToken),
-            0,
-            0
-        );
-
         oracleParams = PegStabilityModule.OracleParams({
             coreAddress: address(core),
             oracleAddress: address(oracle),
@@ -82,7 +72,7 @@ contract IntegrationTestPriceBoundPSMDaiTest is DSTest {
             10_000e18,
             10_000_000e18,
             IERC20(address(dai)),
-            pcvDeposit
+            IPCVDeposit(address(0))
         );
 
         vm.startPrank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
