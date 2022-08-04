@@ -28,6 +28,8 @@ library MainnetAddresses {
         0x860fa85f04f9d35B3471D8F7F7fA3Ad31Ce4D5Ae;
     address public constant VOLT_FEI_PSM =
         0x985f9C331a9E4447C782B98D6693F5c7dF8e560e;
+    address public constant VOLT_DAI_PSM =
+        0x985f9C331a9E4447C782B98D6693F5c7dF8e560e; // placeholder until deployment
 
     address public constant VOLT_USDC_PSM =
         0x0b9A7EA2FCA868C93640Dd77cF44df335095F501;
