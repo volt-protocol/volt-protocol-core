@@ -3,6 +3,7 @@ pragma solidity ^0.8.4;
 
 import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {MockPCVDepositV2} from "../../mock/MockPCVDepositV2.sol";
 import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
 import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";

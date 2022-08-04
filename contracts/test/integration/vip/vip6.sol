@@ -21,7 +21,7 @@ contract vip6 is DSTest, IVIP, AllRoles {
         override
         returns (TimelockSimulation.action[] memory proposal)
     {
-        proposal = new TimelockSimulation.action[](3);
+        proposal = new TimelockSimulation.action[](4);
 
         proposal[0].target = MainnetAddresses.VOLT_FEI_PSM;
         proposal[0].value = 0;
