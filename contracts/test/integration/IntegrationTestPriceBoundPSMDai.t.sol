@@ -20,8 +20,6 @@ import {DSTest} from "./../unit/utils/DSTest.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {Constants} from "../../Constants.sol";
 
-import "hardhat/console.sol";
-
 contract IntegrationTestPriceBoundPSMDaiTest is DSTest {
     using SafeCast for *;
     PriceBoundPSM private psm;
@@ -136,13 +134,10 @@ contract IntegrationTestPriceBoundPSMDaiTest is DSTest {
     }
 
     /// @notice PSM is set up correctly and view functions are working
-    function testGetMintAmountOut(uint128 amountDaiIn) public {
-        vm.assume(dai.balanceOf(address(this)) > amountDaiIn);
+    function testGetMintAmountOut() public {
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
 
-        console.log(currentPegPrice);
-
-        uint256 amountOut = (amountDaiIn * 1e18) / currentPegPrice;
+        uint256 amountOut = (mintAmount * 1e18) / currentPegPrice;
 
         assertApproxEq(
             psm.getMintAmountOut(mintAmount).toInt256(),
