@@ -80,6 +80,8 @@ library MainnetAddresses {
         0xAe2D4617c862309A3d75A0fFB358c7a5009c673F;
     address public constant FEI = 0x956F47F50A910163D8BF957Cf5846D573E7f87CA;
 
+    address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+
     // ---------- CHAINLINK ADDRESSES ----------
 
     address public constant CHAINLINK_ORACLE_ADDRESS =
@@ -89,4 +91,9 @@ library MainnetAddresses {
 
     address public constant RARI_VOLT_PCV_DEPOSIT =
         0xFeBDf448C8484834bb399d930d7E1bdC773E23bA;
+
+    // ---------- CURVE ADDRESSES ----------
+
+    address public constant DAI_USDC_USDT_CURVE_POOL =
+        0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7;
 }
