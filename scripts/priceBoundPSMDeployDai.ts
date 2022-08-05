@@ -11,6 +11,7 @@ const voltCeilingPrice = '10000000000000000';
 const daiReservesThreshold = ethers.utils.parseEther('10000000000');
 const mintLimitPerSecond = ethers.utils.parseEther('10000');
 const voltPSMBufferCap = ethers.utils.parseEther('10000000');
+const addressOne = '0x0000000000000000000000000000000000000001';
 
 async function deploy(contractAddresses: NamedAddresses) {
   const priceBoundPSM = await (
@@ -31,7 +32,7 @@ async function deploy(contractAddresses: NamedAddresses) {
     mintLimitPerSecond,
     voltPSMBufferCap,
     contractAddresses.dai,
-    ethers.constants.AddressZero
+    addressOne
   );
 
   await priceBoundPSM.deployed();
@@ -54,7 +55,7 @@ async function validate(priceBoundPSM: PriceBoundPSM, contractAddresses: NamedAd
   expect(await priceBoundPSM.redeemFeeBasisPoints()).to.be.equal(0);
   expect(await priceBoundPSM.mintFeeBasisPoints()).to.be.equal(0);
   expect(await priceBoundPSM.reservesThreshold()).to.be.equal(daiReservesThreshold);
-  expect(await priceBoundPSM.surplusTarget()).to.be.equal(ethers.constants.AddressZero);
+  expect(await priceBoundPSM.surplusTarget()).to.be.equal(addressOne);
   expect(await priceBoundPSM.rateLimitPerSecond()).to.be.equal(mintLimitPerSecond);
   expect(await priceBoundPSM.buffer()).to.be.equal(voltPSMBufferCap);
   expect(await priceBoundPSM.bufferCap()).to.be.equal(voltPSMBufferCap);
@@ -90,7 +91,7 @@ async function verifyEtherscan(priceBoundPSM: string, contractAddresses: NamedAd
       mintLimitPerSecond,
       voltPSMBufferCap,
       contractAddresses.dai,
-      ethers.constants.AddressZero
+      addressOne
     ]
   });
 

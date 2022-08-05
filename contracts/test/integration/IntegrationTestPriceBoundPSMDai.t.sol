@@ -73,7 +73,7 @@ contract IntegrationTestPriceBoundPSMDaiTest is DSTest {
             10_000e18,
             10_000_000e18,
             IERC20(address(dai)),
-            IPCVDeposit(address(0))
+            IPCVDeposit(address(1))
         );
 
         vm.startPrank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);

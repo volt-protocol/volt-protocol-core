@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.8.13;
 
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
@@ -81,11 +82,11 @@ contract vip6 is DSTest, IVIP, AllRoles {
         revert("no arbitrum proposal");
     }
 
-    function arbitrumSetup() public override {
+    function arbitrumSetup() public pure override {
         revert("no arbitrum proposal");
     }
 
-    function arbitrumValidate() public override {
+    function arbitrumValidate() public pure override {
         revert("no arbitrum proposal");
     }
 }
