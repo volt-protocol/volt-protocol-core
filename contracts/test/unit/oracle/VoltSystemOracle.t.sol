@@ -3,7 +3,6 @@ pragma solidity ^0.8.4;
 
 import {Vm} from "./../utils/Vm.sol";
 import {DSTest} from "./../utils/DSTest.sol";
-import {getCore, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
 import {MockScalingPriceOracle} from "../../../mock/MockScalingPriceOracle.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {ScalingPriceOracle} from "../../../oracle/ScalingPriceOracle.sol";
@@ -31,7 +30,6 @@ contract VoltSystemOracleUnitTest is DSTest {
     uint256 public constant startPrice = 1045095352308302897;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
-    VoltTestAddresses public addresses = getAddresses();
 
     function setUp() public {
         voltSystemOracle = new VoltSystemOracle(
