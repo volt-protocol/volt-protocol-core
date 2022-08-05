@@ -19,7 +19,7 @@ contract RoleHierarchy is DSTest {
     mapping(bytes32 => address[]) public roleToAddress;
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
-    constructor() public {
+    constructor() {
         /// roles and their hierarchies are the same on both mainnet and arbitrum
         roleHierarchy.setRole(TribeRoles.GOVERNOR);
         roleHierarchy.insert(TribeRoles.GOVERNOR, TribeRoles.GUARDIAN);
