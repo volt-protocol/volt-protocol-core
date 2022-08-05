@@ -91,9 +91,20 @@ contract IntegrationTestPriceBoundPSMDaiTest is DSTest {
         vm.stopPrank();
     }
 
-    /// @notice PSM inverts price
-    function testDoInvert() public {
+    /// @notice PSM is set up correctly
+    function testSetUpCorrectly() public {
         assertTrue(psm.doInvert());
+        assertTrue(psm.isPriceValid());
+        assertEq(psm.floor(), voltFloorPrice);
+        assertEq(psm.ceiling(), voltCeilingPrice);
+        assertEq(address(psm.oracle()), address(oracle));
+        assertEq(address(psm.backupOracle()), address(0));
+        assertEq(psm.decimalsNormalizer(), 0);
+        assertEq(psm.mintFeeBasisPoints(), 0);
+        assertEq(psm.redeemFeeBasisPoints(), 0);
+        assertEq(address(psm.underlyingToken()), address(dai));
+        assertEq(psm.reservesThreshold(), 10_000_000_000e18);
+        assertEq(address(psm.surplusTarget()), address(1));
     }
 
     /// @notice PSM is set up correctly and view functions are working

@@ -22,7 +22,7 @@ contract vip6 is DSTest, IVIP, AllRoles {
         override
         returns (TimelockSimulation.action[] memory proposal)
     {
-        proposal = new TimelockSimulation.action[](4);
+        proposal = new TimelockSimulation.action[](5);
 
         proposal[0].target = MainnetAddresses.VOLT_FEI_PSM;
         proposal[0].value = 0;
@@ -47,10 +47,18 @@ contract vip6 is DSTest, IVIP, AllRoles {
         proposal[2]
             .description = "Add DAI PSM to whitelisted addresses on PCV Guardian";
 
-        proposal[3].target = MainnetAddresses.VOLT_USDC_PSM;
+        proposal[3].target = MainnetAddresses.CORE;
         proposal[3].value = 0;
-        proposal[3].arguments = abi.encodeWithSignature("unpauseRedeem()");
-        proposal[3].description = "Unpause redemptions for USDC PSM";
+        proposal[3].arguments = abi.encodeWithSignature(
+            "grantPCVController(address)",
+            MainnetAddresses.VOLT_DAI_PSM
+        );
+        proposal[3].description = "Grant PCV Controller to DAI PSM";
+
+        proposal[4].target = MainnetAddresses.VOLT_USDC_PSM;
+        proposal[4].value = 0;
+        proposal[4].arguments = abi.encodeWithSignature("unpauseRedeem()");
+        proposal[4].description = "Unpause redemptions for USDC PSM";
     }
 
     function mainnetSetup() public override {}
@@ -67,6 +75,11 @@ contract vip6 is DSTest, IVIP, AllRoles {
         );
         assertTrue(
             PCVGuardian(MainnetAddresses.PCV_GUARDIAN).isWhitelistAddress(
+                MainnetAddresses.VOLT_DAI_PSM
+            )
+        );
+        assertTrue(
+            Core(MainnetAddresses.CORE).isPCVController(
                 MainnetAddresses.VOLT_DAI_PSM
             )
         );

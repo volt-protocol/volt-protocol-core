@@ -18,6 +18,13 @@ const vip_6: ProposalDescription = {
       description: 'Remove all VOLT from FEI PSM'
     },
     {
+      target: 'core',
+      values: '0',
+      method: 'grantPCVController(address)',
+      arguments: ['{daiPriceBoundPSM}'],
+      description: 'Grant PCV Controller to DAI PSM'
+    },
+    {
       target: 'pcvGuardian',
       values: '0',
       method: 'addWhitelistAddress(address)',

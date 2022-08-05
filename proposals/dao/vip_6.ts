@@ -75,6 +75,7 @@ const setup: SetupUpgradeFunc = async (addresses, oldContracts, contracts, loggi
   contracts.feiPriceBoundPSM.connect(msigSigner).pauseMint();
   contracts.pcvGuardian.connect(msigSigner).withdrawAllERC20ToSafeAddress(addresses.feiPriceBoundPSM, addresses.volt);
   contracts.pcvGuardian.connect(msigSigner).withdrawAllERC20ToSafeAddress(addresses.feiPriceBoundPSM, addresses.volt);
+  contracts.core.connect(msigSigner).grantPCVController(addresses.daiPriceBoundPSM);
   contracts.usdcPriceBoundPSM.connect(msigSigner).unpauseRedeem();
 };
 
@@ -87,10 +88,12 @@ const teardown: TeardownUpgradeFunc = async (addresses, oldContracts, contracts,
 // Run any validations required on the vip using mocha or console logging
 // IE check balances, check state of contracts, etc.
 const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts, logging) => {
-  const { volt, feiPriceBoundPSM, usdcPriceBoundPSM } = contracts;
+  const { volt, feiPriceBoundPSM, usdcPriceBoundPSM, core, pcvGuardian } = contracts;
 
   expect(await volt.balanceOf(feiPriceBoundPSM.address)).to.equal(0);
   expect(await feiPriceBoundPSM.mintPaused()).to.be.true;
+  expect(await core.isPCVController(addresses.daiPriceBoundPSM)).to.be.true;
+  expect(await pcvGuardian.isWhitelistAddress(addresses.daiPriceBoundPSM)).to.be.true;
   expect(await usdcPriceBoundPSM.redeemPaused()).to.be.false;
 };
 
