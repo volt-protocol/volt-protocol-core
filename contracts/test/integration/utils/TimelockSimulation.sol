@@ -3,21 +3,21 @@ pragma solidity =0.8.13;
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {DSTest} from "./../../unit/utils/DSTest.sol";
 import {Vm} from "./../../unit/utils/Vm.sol";
+import {ITimelockSimulation} from "./ITimelockSimulation.sol";
+import {PCVGuardianWhitelist} from "./PCVGuardianWhitelist.sol";
+import {IPCVGuardian} from "../../../pcv/IPCVGuardian.sol";
 
 import "hardhat/console.sol";
 
-contract TimelockSimulation is DSTest {
-    /// an array of actions makes up a proposal
-    struct action {
-        address target;
-        uint256 value;
-        bytes arguments;
-        string description;
-    }
-
+contract TimelockSimulation is
+    DSTest,
+    ITimelockSimulation,
+    PCVGuardianWhitelist
+{
     /// @notice simulate timelock proposal
     /// @param proposal an array of actions that compose a proposal
     /// @param timelock to execute the proposal against
+    /// @param guardian to verify all transfers are authorized to hold PCV
     /// @param executor account to execute the proposal on the timelock
     /// @param proposer account to propose the proposal to the timelock
     /// @param vm reference to a foundry vm instance
@@ -25,11 +25,12 @@ contract TimelockSimulation is DSTest {
     function simulate(
         action[] memory proposal,
         TimelockController timelock,
+        IPCVGuardian guardian,
         address executor,
         address proposer,
         Vm vm,
         bool doLogging
-    ) public {
+    ) public override {
         uint256 delay = timelock.getMinDelay();
         bytes32 salt = keccak256(abi.encode(proposal[0].description));
 
@@ -127,5 +128,7 @@ contract TimelockSimulation is DSTest {
         } else if (doLogging) {
             console.log("proposal already executed");
         }
+
+        verifyAction(proposal, guardian);
     }
 }
