@@ -70,6 +70,9 @@ contract vip6 is DSTest, IVIP, AllRoles {
                 MainnetAddresses.VOLT_DAI_PSM
             )
         );
+        assertTrue(
+            !PegStabilityModule(MainnetAddresses.VOLT_USDC_PSM).redeemPaused()
+        );
     }
 
     /// prevent errors by reverting on arbitrum proposal functions being called on this VIP
