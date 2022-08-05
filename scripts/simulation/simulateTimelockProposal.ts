@@ -39,8 +39,10 @@ export async function simulateTimelockProposal(
 ): Promise<void> {
   const signer = await getImpersonatedSigner(multisigAddress);
   logging && console.log(`Constructing proposal ${proposalInfo.title}`);
+  const abiEncodedString = ethers.utils.defaultAbiCoder.encode(['string'], [proposalInfo.commands[0].description]);
+  const salt = ethers.utils.keccak256(abiEncodedString);
+  console.log(`salt: ${salt}`);
 
-  const salt = ethers.utils.id(proposalInfo.title);
   const predecessor = ethers.constants.HashZero;
   const targets = [];
   const values = [];

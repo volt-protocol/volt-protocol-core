@@ -47,7 +47,7 @@ contract vip6 is DSTest, IVIP {
         override
         returns (TimelockSimulation.action[] memory proposal)
     {
-        proposal = new TimelockSimulation.action[](2);
+        proposal = new TimelockSimulation.action[](4);
 
         proposal[0].target = ArbitrumAddresses.VOLT_DAI_PSM;
         proposal[0].value = 0;
@@ -57,13 +57,31 @@ contract vip6 is DSTest, IVIP {
         );
         proposal[0].description = "Set mint fee to 0 basis points on DAI PSM";
 
-        proposal[1].target = ArbitrumAddresses.VOLT_USDC_PSM;
+        proposal[1].target = ArbitrumAddresses.VOLT_DAI_PSM;
         proposal[1].value = 0;
         proposal[1].arguments = abi.encodeWithSignature(
+            "setRedeemFee(uint256)",
+            0
+        );
+        proposal[1]
+            .description = "Set redeem fee to 0 basis points on USDC PSM";
+
+        proposal[2].target = ArbitrumAddresses.VOLT_USDC_PSM;
+        proposal[2].value = 0;
+        proposal[2].arguments = abi.encodeWithSignature(
             "setMintFee(uint256)",
             0
         );
-        proposal[1].description = "Set mint fee to 0 basis points on USDC PSM";
+        proposal[2].description = "Set mint fee to 0 basis points on USDC PSM";
+
+        proposal[3].target = ArbitrumAddresses.VOLT_USDC_PSM;
+        proposal[3].value = 0;
+        proposal[3].arguments = abi.encodeWithSignature(
+            "setRedeemFee(uint256)",
+            0
+        );
+        proposal[3]
+            .description = "Set redeem fee to 0 basis points on USDC PSM";
     }
 
     /// @notice arbitrum usdc volt PSM
@@ -79,6 +97,9 @@ contract vip6 is DSTest, IVIP {
 
     function arbitrumValidate() public override {
         assertEq(usdcPSM.mintFeeBasisPoints(), 0);
+        assertEq(usdcPSM.redeemFeeBasisPoints(), 0);
+
         assertEq(daiPSM.mintFeeBasisPoints(), 0);
+        assertEq(daiPSM.redeemFeeBasisPoints(), 0);
     }
 }
