@@ -25,7 +25,7 @@ export async function simulateOAProposalArbitrum(
   logging = false
 ): Promise<void> {
   const timelockOA = contracts.arbitrumTimelockController as TimelockController;
-  const multisigAddressOA = contractAddresses.protocolMultisigArbitrum as string;
+  const multisigAddressOA = contractAddresses.arbitrumProtocolMultisig as string;
   await simulateTimelockProposal(timelockOA, multisigAddressOA, proposalInfo, contracts, contractAddresses, logging);
 }
 
