@@ -63,8 +63,7 @@ contract vip6 is DSTest, IVIP {
             "setRedeemFee(uint256)",
             0
         );
-        proposal[1]
-            .description = "Set redeem fee to 0 basis points on USDC PSM";
+        proposal[1].description = "Set redeem fee to 0 basis points on DAI PSM";
 
         proposal[2].target = ArbitrumAddresses.VOLT_USDC_PSM;
         proposal[2].value = 0;
