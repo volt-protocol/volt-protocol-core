@@ -24,8 +24,8 @@ Steps:
 
 const vipNumber = '7';
 
-const voltFloorPrice = '9000000000000000';
-const voltCeilingPrice = '10000000000000000';
+const voltFloorPrice = 9_000;
+const voltCeilingPrice = 10_000;
 
 const daiReservesThreshold = ethers.constants.MaxUint256;
 // these variables are currently unused as the PSM doesn't have the ability to mint
@@ -87,7 +87,34 @@ const teardown: TeardownUpgradeFunc = async (addresses, oldContracts, contracts,
 // Run any validations required on the vip using mocha or console logging
 // IE check balances, check state of contracts, etc.
 const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts, logging) => {
-  const { volt, feiPriceBoundPSM, usdcPriceBoundPSM, pcvGuardian, makerRouter } = contracts;
+  const { volt, feiPriceBoundPSM, usdcPriceBoundPSM, pcvGuardian, makerRouter, daiPriceBoundPSM } = contracts;
+
+  //  oracle
+  expect(await daiPriceBoundPSM.doInvert()).to.be.true;
+  expect(await daiPriceBoundPSM.oracle()).to.be.equal(addresses.voltSystemOraclePassThrough);
+  expect(await daiPriceBoundPSM.backupOracle()).to.be.equal(ethers.constants.AddressZero);
+
+  //  volt
+  expect(await daiPriceBoundPSM.underlyingToken()).to.be.equal(addresses.dai);
+  expect(await daiPriceBoundPSM.volt()).to.be.equal(addresses.volt);
+
+  //  psm params
+  expect(await daiPriceBoundPSM.redeemFeeBasisPoints()).to.be.equal(0);
+  expect(await daiPriceBoundPSM.decimalNormalizer()).to.be.equal(0);
+  expect(await daiPriceBoundPSM.mintFeeBasisPoints()).to.be.equal(0);
+  expect(await daiPriceBoundPSM.reservesThreshold()).to.be.equal(daiReservesThreshold);
+  expect(await daiPriceBoundPSM.surplusTarget()).to.be.equal(addressOne);
+  expect(await daiPriceBoundPSM.rateLimitPerSecond()).to.be.equal(mintLimitPerSecond);
+  expect(await daiPriceBoundPSM.buffer()).to.be.equal(voltPSMBufferCap);
+  expect(await daiPriceBoundPSM.bufferCap()).to.be.equal(voltPSMBufferCap);
+
+  //  price bound params
+  expect(await daiPriceBoundPSM.floor()).to.be.equal(voltFloorPrice);
+  expect(await daiPriceBoundPSM.ceiling()).to.be.equal(voltCeilingPrice);
+
+  //  balance check
+  expect(await daiPriceBoundPSM.balance()).to.be.equal(0);
+  expect(await daiPriceBoundPSM.voltBalance()).to.be.equal(0);
 
   expect(await volt.balanceOf(feiPriceBoundPSM.address)).to.equal(0);
   expect(await feiPriceBoundPSM.mintPaused()).to.be.true;

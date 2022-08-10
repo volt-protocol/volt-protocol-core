@@ -10,7 +10,7 @@ import {Vm} from "./../../unit/utils/Vm.sol";
 import {IVIP} from "./IVIP.sol";
 import {AllRoles} from "./../utils/AllRoles.sol";
 import {Volt} from "../../../volt/Volt.sol";
-import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
+import {PriceBoundPSM} from "../../../peg/PriceBoundPSM.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {MakerRouter} from "../../../pcv/maker/MakerRouter.sol";
 
@@ -63,16 +63,60 @@ contract vip7 is DSTest, IVIP, AllRoles {
             ),
             0
         );
-        assertTrue(
-            PegStabilityModule(MainnetAddresses.VOLT_FEI_PSM).mintPaused()
-        );
+        assertTrue(PriceBoundPSM(MainnetAddresses.VOLT_FEI_PSM).mintPaused());
         assertTrue(
             PCVGuardian(MainnetAddresses.PCV_GUARDIAN).isWhitelistAddress(
                 MainnetAddresses.VOLT_DAI_PSM
             )
         );
         assertTrue(
-            !PegStabilityModule(MainnetAddresses.VOLT_USDC_PSM).redeemPaused()
+            !PriceBoundPSM(MainnetAddresses.VOLT_USDC_PSM).redeemPaused()
+        );
+
+        assertTrue(PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).doInvert());
+        assertTrue(PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).isPriceValid());
+        assertEq(PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).floor(), 9_000);
+        assertEq(
+            PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).ceiling(),
+            10_000
+        );
+        assertEq(
+            address(PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).oracle()),
+            MainnetAddresses.ORACLE_PASS_THROUGH
+        );
+        assertEq(
+            address(
+                PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).backupOracle()
+            ),
+            address(0)
+        );
+        assertEq(
+            PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).decimalsNormalizer(),
+            0
+        );
+        assertEq(
+            PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).mintFeeBasisPoints(),
+            0
+        );
+        assertEq(
+            PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).redeemFeeBasisPoints(),
+            0
+        );
+        assertEq(
+            address(
+                PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).underlyingToken()
+            ),
+            address(MainnetAddresses.DAI)
+        );
+        assertEq(
+            PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).reservesThreshold(),
+            10_000_000_000e18
+        );
+        assertEq(
+            address(
+                PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).surplusTarget()
+            ),
+            address(1)
         );
 
         assertEq(
