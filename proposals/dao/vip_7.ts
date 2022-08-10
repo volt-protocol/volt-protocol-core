@@ -27,7 +27,8 @@ const vipNumber = '7';
 const voltFloorPrice = '9000000000000000';
 const voltCeilingPrice = '10000000000000000';
 
-const daiReservesThreshold = ethers.utils.parseEther('10000000000');
+const daiReservesThreshold = ethers.constants.MaxUint256;
+// these variables are currently unused as the PSM doesn't have the ability to mint
 const mintLimitPerSecond = ethers.utils.parseEther('10000');
 const voltPSMBufferCap = ethers.utils.parseEther('10000000');
 const addressOne = '0x0000000000000000000000000000000000000001';
@@ -86,12 +87,18 @@ const teardown: TeardownUpgradeFunc = async (addresses, oldContracts, contracts,
 // Run any validations required on the vip using mocha or console logging
 // IE check balances, check state of contracts, etc.
 const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts, logging) => {
-  const { volt, feiPriceBoundPSM, usdcPriceBoundPSM, pcvGuardian } = contracts;
+  const { volt, feiPriceBoundPSM, usdcPriceBoundPSM, pcvGuardian, makerRouter } = contracts;
 
   expect(await volt.balanceOf(feiPriceBoundPSM.address)).to.equal(0);
   expect(await feiPriceBoundPSM.mintPaused()).to.be.true;
   expect(await pcvGuardian.isWhitelistAddress(addresses.daiPriceBoundPSM)).to.be.true;
   expect(await usdcPriceBoundPSM.redeemPaused()).to.be.false;
+
+  expect(await makerRouter.fei()).to.equal(addresses.fei);
+  expect(await makerRouter.dai()).to.equal(addresses.dai);
+  expect(await makerRouter.daiPSM()).to.equal(addresses.makerDaiUsdcPSM);
+  expect(await makerRouter.feiPSM()).to.equal(addresses.feiDaiFixedPricePSM);
+  expect(await makerRouter.core()).to.equal(addresses.core);
 };
 
 export { deploy, setup, teardown, validate };

@@ -12,6 +12,7 @@ import {AllRoles} from "./../utils/AllRoles.sol";
 import {Volt} from "../../../volt/Volt.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
+import {MakerRouter} from "../../../pcv/maker/MakerRouter.sol";
 
 contract vip7 is DSTest, IVIP, AllRoles {
     Vm public constant vm = Vm(HEVM_ADDRESS);
@@ -22,7 +23,7 @@ contract vip7 is DSTest, IVIP, AllRoles {
         override
         returns (TimelockSimulation.action[] memory proposal)
     {
-        proposal = new TimelockSimulation.action[](5);
+        proposal = new TimelockSimulation.action[](4);
 
         proposal[0].target = MainnetAddresses.VOLT_FEI_PSM;
         proposal[0].value = 0;
@@ -32,7 +33,7 @@ contract vip7 is DSTest, IVIP, AllRoles {
         proposal[1].target = MainnetAddresses.PCV_GUARDIAN;
         proposal[1].value = 0;
         proposal[1].arguments = abi.encodeWithSignature(
-            "withdrawAllERC20ToSafeAddress(address, address)",
+            "withdrawAllERC20ToSafeAddress(address,address)",
             MainnetAddresses.VOLT_FEI_PSM,
             MainnetAddresses.VOLT
         );
@@ -72,6 +73,27 @@ contract vip7 is DSTest, IVIP, AllRoles {
         );
         assertTrue(
             !PegStabilityModule(MainnetAddresses.VOLT_USDC_PSM).redeemPaused()
+        );
+
+        assertEq(
+            address(MakerRouter(MainnetAddresses.MAKER_ROUTER).dai()),
+            MainnetAddresses.DAI
+        );
+        assertEq(
+            address(MakerRouter(MainnetAddresses.MAKER_ROUTER).fei()),
+            MainnetAddresses.FEI
+        );
+        assertEq(
+            address(MakerRouter(MainnetAddresses.MAKER_ROUTER).daiPSM()),
+            MainnetAddresses.MAKER_DAI_USDC_PSM
+        );
+        assertEq(
+            address(MakerRouter(MainnetAddresses.MAKER_ROUTER).feiPSM()),
+            MainnetAddresses.FEI_DAI_PSM
+        );
+        assertEq(
+            address(MakerRouter(MainnetAddresses.MAKER_ROUTER).core()),
+            MainnetAddresses.CORE
         );
     }
 

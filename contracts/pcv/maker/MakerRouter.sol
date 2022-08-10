@@ -8,9 +8,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {CoreRef} from "../../refs/CoreRef.sol";
 import {TribeRoles} from "../../core/TribeRoles.sol";
-import {Withdrawer} from "../Withdrawer.sol";
 
-contract MakerRouter is IMakerRouter, CoreRef, Withdrawer {
+contract MakerRouter is IMakerRouter, CoreRef {
     using SafeERC20 for IERC20;
 
     IDSSPSM public immutable daiPSM;
@@ -36,45 +35,54 @@ contract MakerRouter is IMakerRouter, CoreRef, Withdrawer {
         dai.approve(address(daiPSM), type(uint256).max);
     }
 
-    function swapFeiForDai(uint256 amountFeiIn, uint256 minDaiAmountOut)
+    function swapFeiForDai(
+        uint256 amountFeiIn,
+        uint256 minDaiAmountOut,
+        address to
+    )
         external
         hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
     {
-        fei.safeTransferFrom(msg.sender, address(this), amountFeiIn);
-        feiPSM.redeem(address(this), amountFeiIn, minDaiAmountOut);
+        _redeemFromFeiPSM(amountFeiIn, minDaiAmountOut, to);
     }
 
-    function swapFeiForUsdc(uint256 amountFeiIn, uint256 minDaiAmountOut)
+    function swapFeiForUsdc(
+        uint256 amountFeiIn,
+        uint256 minDaiAmountOut,
+        address to
+    )
         external
         hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
     {
-        fei.safeTransferFrom(msg.sender, address(this), amountFeiIn);
-        feiPSM.redeem(address(this), amountFeiIn, minDaiAmountOut);
-
-        daiPSM.buyGem(address(this), (minDaiAmountOut) / 1e12);
+        _redeemFromFeiPSM(amountFeiIn, minDaiAmountOut, address(this));
+        daiPSM.buyGem(to, (minDaiAmountOut) / 1e12);
     }
 
     function swapFeiForUsdcAndDai(
         uint256 amountFeiIn,
         uint256 minDaiAmountOut,
-        uint256 ratioUSDC
+        uint256 ratioUSDC, // in basis point terms,
+        address to
     )
         external
         hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
     {
-        require(ratioUSDC < 100, "MakerRouter: USDC Ratio too high");
+        require(ratioUSDC < 10000, "MakerRouter: USDC Ratio too high");
         fei.safeTransferFrom(msg.sender, address(this), amountFeiIn);
         feiPSM.redeem(address(this), amountFeiIn, minDaiAmountOut);
 
-        uint256 usdcAmount = (minDaiAmountOut * ratioUSDC) / 100;
+        uint256 usdcAmount = (minDaiAmountOut * ratioUSDC) / 10000;
 
-        daiPSM.buyGem(address(this), usdcAmount / 1e12);
+        daiPSM.buyGem(to, usdcAmount / 1e12);
+        dai.safeTransfer(to, minDaiAmountOut - usdcAmount);
     }
 
-    function transferAllToken(address to, address token)
-        external
-        hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
-    {
-        super._transferAllToken(to, token);
+    function _redeemFromFeiPSM(
+        uint256 amountFeiIn,
+        uint256 minDaiAmountOut,
+        address to
+    ) private {
+        fei.safeTransferFrom(msg.sender, address(this), amountFeiIn);
+        feiPSM.redeem(to, amountFeiIn, minDaiAmountOut);
     }
 }

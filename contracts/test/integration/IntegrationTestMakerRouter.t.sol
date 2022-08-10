@@ -55,49 +55,30 @@ contract IntegrationTestMakerRouter is DSTest {
         vm.assume(amountFeiIn > 1e18);
 
         uint256 minDaiAmountOut = feiPSM.getRedeemAmountOut(amountFeiIn);
-        makerRouter.swapFeiForDai(amountFeiIn, minDaiAmountOut);
+        makerRouter.swapFeiForDai(amountFeiIn, minDaiAmountOut, address(this));
 
-        assertEq(minDaiAmountOut, dai.balanceOf(address(makerRouter)));
+        assertEq(minDaiAmountOut, dai.balanceOf(address(this)));
     }
 
     function testSwapFeiForUsdc(uint64 amountFeiIn) public {
         vm.assume(amountFeiIn > 1e18);
 
         uint256 minDaiAmountOut = feiPSM.getRedeemAmountOut(amountFeiIn);
-        makerRouter.swapFeiForUsdc(amountFeiIn, minDaiAmountOut);
+        makerRouter.swapFeiForUsdc(amountFeiIn, minDaiAmountOut, address(this));
 
-        assertEq(
-            (minDaiAmountOut / 1e12),
-            usdc.balanceOf(address(makerRouter))
-        );
+        assertEq((minDaiAmountOut / 1e12), usdc.balanceOf(address(this)));
     }
 
     function testSwapFeiForUsdcAndDai() public {
         uint256 minDaiAmountOut = feiPSM.getRedeemAmountOut(mintAmount);
-        makerRouter.swapFeiForUsdcAndDai(mintAmount, minDaiAmountOut, 50);
-
-        assertEq((minDaiAmountOut / 2), dai.balanceOf(address(makerRouter)));
-        assertEq(
-            ((minDaiAmountOut / 2) / 1e12),
-            usdc.balanceOf(address(makerRouter))
+        makerRouter.swapFeiForUsdcAndDai(
+            mintAmount,
+            minDaiAmountOut,
+            5000,
+            address(this)
         );
-    }
 
-    function testTransferAllDai() public {
-        uint256 minDaiAmountOut = feiPSM.getRedeemAmountOut(mintAmount);
-
-        makerRouter.swapFeiForDai(mintAmount, minDaiAmountOut);
-        makerRouter.transferAllToken(address(this), address(dai));
-
-        assertEq(minDaiAmountOut, dai.balanceOf(address(this)));
-    }
-
-    function testTransferAllUsdc() public {
-        uint256 minDaiAmountOut = feiPSM.getRedeemAmountOut(mintAmount);
-
-        makerRouter.swapFeiForUsdc(mintAmount, minDaiAmountOut);
-        makerRouter.transferAllToken(address(this), address(usdc));
-
-        assertEq((minDaiAmountOut / 1e12), usdc.balanceOf(address(this)));
+        assertEq((minDaiAmountOut / 2), dai.balanceOf(address(this)));
+        assertEq(((minDaiAmountOut / 2) / 1e12), usdc.balanceOf(address(this)));
     }
 }

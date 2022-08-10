@@ -13,7 +13,7 @@ const vip_7: ProposalDescription = {
     {
       target: 'pcvGuardian',
       values: '0',
-      method: 'withdrawAllERC20ToSafeAddress(address, address)',
+      method: 'withdrawAllERC20ToSafeAddress(address,address)',
       arguments: ['{feiPriceBoundPSM}', '{volt}'],
       description: 'Remove all VOLT from FEI PSM'
     },

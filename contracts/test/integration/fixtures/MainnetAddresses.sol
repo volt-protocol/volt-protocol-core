@@ -38,6 +38,9 @@ library MainnetAddresses {
     address public constant TIMELOCK_CONTROLLER =
         0x75d078248eE49c585b73E73ab08bb3eaF93383Ae;
 
+    address public constant MAKER_ROUTER =
+        0x985f9C331a9E4447C782B98D6693F5c7dF8e560e; // placeholder until deployment
+
     /// current active EOA's
     address public constant OTC_LOAN_REPAYMENT =
         0x590eb1a809377f786a11fa1968eF8c15eB44A12F;
