@@ -35,13 +35,11 @@ contract IntegrationTestMakerRouter is DSTest {
             daiPSM,
             feiPSM,
             dai,
-            fei,
-            usdc
+            fei
         );
 
         fei.approve(address(makerRouter), type(uint256).max);
         dai.approve(address(makerRouter), type(uint256).max);
-        usdc.approve(address(makerRouter), type(uint256).max);
 
         vm.prank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
         dai.transfer(address(feiPSM), mintAmount);

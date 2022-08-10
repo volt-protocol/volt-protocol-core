@@ -18,28 +18,22 @@ contract MakerRouter is IMakerRouter, CoreRef, Withdrawer {
 
     IERC20 public immutable dai;
     IERC20 public immutable fei;
-    IERC20 public immutable usdc;
 
     constructor(
         address _core,
         IDSSPSM _daiPSM,
         IPegStabilityModule _feiPSM,
         IERC20 _dai,
-        IERC20 _fei,
-        IERC20 _usdc
+        IERC20 _fei
     ) CoreRef(_core) {
         daiPSM = _daiPSM;
         feiPSM = _feiPSM;
 
         dai = _dai;
         fei = _fei;
-        usdc = _usdc;
 
         fei.approve(address(feiPSM), type(uint256).max);
-        dai.approve(address(feiPSM), type(uint256).max);
-
         dai.approve(address(daiPSM), type(uint256).max);
-        usdc.approve(address(daiPSM), type(uint256).max);
     }
 
     function swapFeiForDai(uint256 amountFeiIn, uint256 minDaiAmountOut)
