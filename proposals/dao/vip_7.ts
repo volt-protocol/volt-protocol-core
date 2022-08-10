@@ -60,8 +60,22 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
 
   console.log(`\nDAI PriceBoundPSM deployed to: ${priceBoundPSM.address}`);
 
+  const makerRouter = await (
+    await ethers.getContractFactory('MakerRouter')
+  ).deploy(
+    addresses.core,
+    addresses.makerDaiUsdcPSM,
+    addresses.feiDaiFixedPricePSM,
+    addresses.dai,
+    addresses.fei,
+    addresses.usdc
+  );
+
+  console.log(`\nMaker Router deployed to: ${makerRouter.address}`);
+
   return {
-    priceBoundPSM
+    priceBoundPSM,
+    makerRouter
   };
 };
 

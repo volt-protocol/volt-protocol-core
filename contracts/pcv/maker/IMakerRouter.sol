@@ -13,8 +13,4 @@ interface IMakerRouter {
         uint256 minDaiAmountOut,
         uint256 ratioUSDC
     ) external;
-
-    function transferAllDai(address to) external;
-
-    function transferAllUsdc(address to) external;
 }

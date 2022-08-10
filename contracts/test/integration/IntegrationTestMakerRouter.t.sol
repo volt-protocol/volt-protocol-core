@@ -1,6 +1,5 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.8.13;
-
 import {DSTest} from "../unit/utils/DSTest.sol";
 import {Vm} from "../unit/utils/Vm.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
@@ -11,7 +10,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IVolt} from "../../volt/IVolt.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Core} from "../../core/Core.sol";
-import "hardhat/console.sol";
 
 contract IntegrationTestMakerRouter is DSTest {
     using SafeCast for *;
@@ -91,7 +89,7 @@ contract IntegrationTestMakerRouter is DSTest {
         uint256 minDaiAmountOut = feiPSM.getRedeemAmountOut(mintAmount);
 
         makerRouter.swapFeiForDai(mintAmount, minDaiAmountOut);
-        makerRouter.transferAllDai(address(this));
+        makerRouter.transferAllToken(address(this), address(dai));
 
         assertEq(minDaiAmountOut, dai.balanceOf(address(this)));
     }
@@ -100,7 +98,7 @@ contract IntegrationTestMakerRouter is DSTest {
         uint256 minDaiAmountOut = feiPSM.getRedeemAmountOut(mintAmount);
 
         makerRouter.swapFeiForUsdc(mintAmount, minDaiAmountOut);
-        makerRouter.transferAllUsdc(address(this));
+        makerRouter.transferAllToken(address(this), address(usdc));
 
         assertEq((minDaiAmountOut / 1e12), usdc.balanceOf(address(this)));
     }

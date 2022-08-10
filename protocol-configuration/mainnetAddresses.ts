@@ -137,6 +137,12 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.Deprecated,
     network: Network.Mainnet
   },
+  makerDaiUsdcPSM: {
+    address: '0x89B78CfA322F6C5dE0aBcEecab66Aee45393cC5A',
+    artifactName: 'unknown',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
   feiDaiFixedPricePSM: {
     address: '0x2A188F9EB761F70ECEa083bA6c2A40145078dfc2',
     artifactName: 'unknown', /// Fixed Price PSM

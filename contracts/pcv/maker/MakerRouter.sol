@@ -8,8 +8,9 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {CoreRef} from "../../refs/CoreRef.sol";
 import {TribeRoles} from "../../core/TribeRoles.sol";
+import {Withdrawer} from "../Withdrawer.sol";
 
-contract MakerRouter is IMakerRouter, CoreRef {
+contract MakerRouter is IMakerRouter, CoreRef, Withdrawer {
     using SafeERC20 for IERC20;
 
     IDSSPSM public immutable daiPSM;
@@ -76,17 +77,10 @@ contract MakerRouter is IMakerRouter, CoreRef {
         daiPSM.buyGem(address(this), usdcAmount / 1e12);
     }
 
-    function transferAllDai(address to)
+    function transferAllToken(address to, address token)
         external
         hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
     {
-        dai.safeTransfer(to, dai.balanceOf(address(this)));
-    }
-
-    function transferAllUsdc(address to)
-        external
-        hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
-    {
-        usdc.safeTransfer(to, usdc.balanceOf(address(this)));
+        super._transferAllToken(to, token);
     }
 }
