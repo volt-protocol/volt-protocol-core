@@ -62,14 +62,7 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
 
   const makerRouter = await (
     await ethers.getContractFactory('MakerRouter')
-  ).deploy(
-    addresses.core,
-    addresses.makerDaiUsdcPSM,
-    addresses.feiDaiFixedPricePSM,
-    addresses.dai,
-    addresses.fei,
-    addresses.usdc
-  );
+  ).deploy(addresses.core, addresses.makerDaiUsdcPSM, addresses.feiDaiFixedPricePSM, addresses.dai, addresses.fei);
 
   console.log(`\nMaker Router deployed to: ${makerRouter.address}`);
 
