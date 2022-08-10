@@ -13,7 +13,7 @@ import {Volt} from "../../../volt/Volt.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 
-contract vip6 is DSTest, IVIP, AllRoles {
+contract vip7 is DSTest, IVIP, AllRoles {
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
     function getMainnetProposal()

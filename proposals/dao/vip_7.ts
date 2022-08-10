@@ -22,7 +22,7 @@ Steps:
 
 */
 
-const vipNumber = '6';
+const vipNumber = '7';
 
 const voltFloorPrice = '9000000000000000';
 const voltCeilingPrice = '10000000000000000';

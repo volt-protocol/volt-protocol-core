@@ -1,7 +1,7 @@
 import { ProposalDescription } from '@custom-types/types';
 
-const vip_6: ProposalDescription = {
-  title: 'VIP-6: PSM Restructuring',
+const vip_7: ProposalDescription = {
+  title: 'VIP-7: PSM Restructuring',
   commands: [
     {
       target: 'feiPriceBoundPSM',
@@ -36,4 +36,4 @@ const vip_6: ProposalDescription = {
     'Pauses minting on FEI PSM, remove VOLT liquidity from FEI PSM, adds DAI PSM to PCVGuardian whitelist, unpause redemptions on the USDC PSM'
 };
 
-export default vip_6;
+export default vip_7;
