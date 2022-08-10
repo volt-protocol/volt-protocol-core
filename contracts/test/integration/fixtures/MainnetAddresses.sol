@@ -74,6 +74,9 @@ library MainnetAddresses {
     address public constant VOLT_DEPOSIT =
         0xBDC01c9743989429df9a4Fe24c908D87e462AbC1;
 
+    address public constant FEI_DAI_PSM =
+        0x2A188F9EB761F70ECEa083bA6c2A40145078dfc2;
+
     // ---------- USDC ADDRESSES ----------
 
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -84,6 +87,8 @@ library MainnetAddresses {
 
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
+    address public constant MAKER_DAI_USDC_PSM =
+        0x89B78CfA322F6C5dE0aBcEecab66Aee45393cC5A;
     // ---------- CHAINLINK ADDRESSES ----------
 
     address public constant CHAINLINK_ORACLE_ADDRESS =
