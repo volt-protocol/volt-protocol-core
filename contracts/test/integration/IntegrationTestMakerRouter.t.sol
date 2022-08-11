@@ -42,7 +42,7 @@ contract IntegrationTestMakerRouter is DSTest {
         dai.approve(address(makerRouter), type(uint256).max);
 
         vm.prank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
-        dai.transfer(address(feiPSM), mintAmount);
+        dai.transfer(address(feiPSM), mintAmount + 100_000_000e18);
 
         vm.prank(MainnetAddresses.FEI_GOVERNOR);
         fei.mint(address(this), mintAmount);
@@ -86,5 +86,36 @@ contract IntegrationTestMakerRouter is DSTest {
 
         assertEq((minDaiAmountOut - usdcAmount), dai.balanceOf(address(this)));
         assertEq((usdcAmount / 1e12), usdc.balanceOf(address(this)));
+    }
+
+    function testSwapAllFeiForDai() public {
+        makerRouter.swapAllFeiForDai(address(this));
+
+        assertEq(
+            dai.balanceOf(address(this)),
+            feiPSM.getRedeemAmountOut(mintAmount)
+        );
+    }
+
+    function testSwapAllFeiForUsdc() public {
+        makerRouter.swapAllFeiForUsdc(address(this));
+
+        assertEq(
+            usdc.balanceOf(address(this)),
+            feiPSM.getRedeemAmountOut(mintAmount) / 1e12
+        );
+    }
+
+    function testSwapAllFeiForUsdcAndDai() public {
+        makerRouter.swapAllFeiForUsdcAndDai(address(this), 5000);
+
+        assertEq(
+            usdc.balanceOf(address(this)),
+            (feiPSM.getRedeemAmountOut(mintAmount) / 1e12) / 2
+        );
+        assertEq(
+            dai.balanceOf(address(this)),
+            feiPSM.getRedeemAmountOut(mintAmount) / 2
+        );
     }
 }

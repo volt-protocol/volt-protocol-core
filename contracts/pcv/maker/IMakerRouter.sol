@@ -12,7 +12,11 @@ interface IMakerRouter {
         address to
     ) external;
 
-    /// @notice Function to swap from FEI to DAI
+    /// @notice Function to swap all of FEI balance to DAI
+    /// @param to the address the DAI should be sent to once swapped
+    function swapAllFeiForDai(address to) external;
+
+    /// @notice Function to swap from FEI to USDC
     /// @dev Function will swap from FEI to DAI first then DAI to USDC
     /// @param amountFeiIn the amount of FEI to be deposited
     /// @param minDaiAmountOut the minimum amount of DAI expected to be received
@@ -23,7 +27,11 @@ interface IMakerRouter {
         address to
     ) external;
 
-    /// @notice Function to swap from FEI to DAI
+    /// @notice Function to swap all of FEI balance to USDC
+    /// @param to the address the USDC should be sent to once swapped
+    function swapAllFeiForUsdc(address to) external;
+
+    /// @notice Function to swap for both DAI and USDC
     /// @dev Function will swap from FEI to DAI first then DAI to USDC
     /// @param amountFeiIn the amount of FEI to be deposited
     /// @param minDaiAmountOut the minimum amount of DAI expected to be received
@@ -35,4 +43,9 @@ interface IMakerRouter {
         uint256 ratioUSDC,
         address to
     ) external;
+
+    /// @notice Function to swap all FEI balance for both DAI and USDC
+    /// @param to the address the USDC should be sent to once swapped
+    /// @param ratioUSDC the ratio of the DAI received we would like to swap to USDC - in basis point terms
+    function swapAllFeiForUsdcAndDai(address to, uint256 ratioUSDC) external;
 }

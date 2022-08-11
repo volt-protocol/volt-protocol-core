@@ -8,6 +8,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {CoreRef} from "../../refs/CoreRef.sol";
 import {TribeRoles} from "../../core/TribeRoles.sol";
+import "hardhat/console.sol";
 
 /// @notice This contracts allows for swaps between FEI-DAI and FEI-USDC
 /// by using the FEI FEI-DAI PSM and the Maker DAI-USDC PSM
@@ -61,6 +62,15 @@ contract MakerRouter is IMakerRouter, CoreRef {
         _redeemFromFeiPSM(amountFeiIn, minDaiAmountOut, to);
     }
 
+    /// @notice Function to swap all of FEI balance to DAI
+    /// @param to the address the DAI should be sent to once swapped
+    function swapAllFeiForDai(address to)
+        external
+        hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
+    {
+        _redeemAllBalanceFromFeiPSM(to);
+    }
+
     /// @notice Function to swap from FEI to DAI
     /// @dev Function will swap from FEI to DAI first then DAI to USDC
     /// @param amountFeiIn the amount of FEI to be deposited
@@ -78,7 +88,17 @@ contract MakerRouter is IMakerRouter, CoreRef {
         daiPSM.buyGem(to, (minDaiAmountOut) / 1e12);
     }
 
-    /// @notice Function to swap from FEI to DAI
+    /// @notice Function to swap all of FEI balance to USDC
+    /// @param to the address the USDC should be sent to once swapped
+    function swapAllFeiForUsdc(address to)
+        external
+        hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
+    {
+        uint256 minDaiAmountOut = _redeemAllBalanceFromFeiPSM(address(this));
+        daiPSM.buyGem(to, (minDaiAmountOut) / 1e12);
+    }
+
+    /// @notice Function to swap for both DAI and USDC
     /// @dev Function will swap from FEI to DAI first then DAI to USDC
     /// @param amountFeiIn the amount of FEI to be deposited
     /// @param minDaiAmountOut the minimum amount of DAI expected to be received
@@ -94,16 +114,31 @@ contract MakerRouter is IMakerRouter, CoreRef {
         hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
     {
         require(ratioUSDC < 10000, "MakerRouter: USDC Ratio too high");
-        fei.safeTransferFrom(msg.sender, address(this), amountFeiIn);
-        feiPSM.redeem(address(this), amountFeiIn, minDaiAmountOut);
 
+        _redeemFromFeiPSM(amountFeiIn, minDaiAmountOut, address(this));
         uint256 usdcAmount = (minDaiAmountOut * ratioUSDC) / 10000;
 
         daiPSM.buyGem(to, usdcAmount / 1e12);
         dai.safeTransfer(to, minDaiAmountOut - usdcAmount);
     }
 
-    /// @notice Helper function to redeem DAI from the FEI FEI-DAI
+    /// @notice Function to swap all FEI balance for both DAI and USDC
+    /// @param to the address the USDC should be sent to once swapped
+    /// @param ratioUSDC the ratio of the DAI received we would like to swap to USDC - in basis point terms
+    function swapAllFeiForUsdcAndDai(address to, uint256 ratioUSDC)
+        external
+        hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
+    {
+        uint256 minDaiAmountOut = _redeemAllBalanceFromFeiPSM(address(this));
+        uint256 usdcAmount = (minDaiAmountOut * ratioUSDC) / 10000;
+
+        console.log(dai.balanceOf(address(this)));
+
+        daiPSM.buyGem(to, usdcAmount / 1e12);
+        dai.safeTransfer(to, minDaiAmountOut - usdcAmount);
+    }
+
+    /// @notice Helper function to redeem DAI from the FEI FEI-DAI PSM
     /// @param amountFeiIn the amount of FEI to be deposited
     /// @param minDaiAmountOut the minimum amount of DAI expected to be received
     /// @param to the address the DAI should be sent to once swapped
@@ -114,5 +149,25 @@ contract MakerRouter is IMakerRouter, CoreRef {
     ) private {
         fei.safeTransferFrom(msg.sender, address(this), amountFeiIn);
         feiPSM.redeem(to, amountFeiIn, minDaiAmountOut);
+    }
+
+    function _redeemAllBalanceFromFeiPSM(address to)
+        private
+        returns (uint256 minDaiAmountOut)
+    {
+        uint256 amountFeiIn = fei.balanceOf(msg.sender);
+        fei.safeTransferFrom(msg.sender, address(this), amountFeiIn);
+
+        uint256 userBalanceBefore = dai.balanceOf(to);
+
+        minDaiAmountOut = amountFeiIn - (amountFeiIn * 3) / 10000; // 3 basis point redemption fee
+        feiPSM.redeem(to, amountFeiIn, minDaiAmountOut);
+
+        uint256 userBalanceAfter = dai.balanceOf(to);
+
+        require(
+            userBalanceAfter - userBalanceBefore >= minDaiAmountOut,
+            "MakerRouter: Not enough DAI received"
+        );
     }
 }
