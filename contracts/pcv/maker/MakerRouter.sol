@@ -8,7 +8,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {CoreRef} from "../../refs/CoreRef.sol";
 import {TribeRoles} from "../../core/TribeRoles.sol";
-import "hardhat/console.sol";
 
 /// @notice This contracts allows for swaps between FEI-DAI and FEI-USDC
 /// by using the FEI FEI-DAI PSM and the Maker DAI-USDC PSM
@@ -131,8 +130,6 @@ contract MakerRouter is IMakerRouter, CoreRef {
     {
         uint256 minDaiAmountOut = _redeemAllBalanceFromFeiPSM(address(this));
         uint256 usdcAmount = (minDaiAmountOut * ratioUSDC) / 10000;
-
-        console.log(dai.balanceOf(address(this)));
 
         daiPSM.buyGem(to, usdcAmount / 1e12);
         dai.safeTransfer(to, minDaiAmountOut - usdcAmount);

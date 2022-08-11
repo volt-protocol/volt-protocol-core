@@ -106,16 +106,13 @@ contract IntegrationTestMakerRouter is DSTest {
         );
     }
 
-    function testSwapAllFeiForUsdcAndDai() public {
-        makerRouter.swapAllFeiForUsdcAndDai(address(this), 5000);
+    function testSwapAllFeiForUsdcAndDai(uint8 ratioUSDC) public {
+        uint256 minDaiAmountOut = feiPSM.getRedeemAmountOut(mintAmount);
 
-        assertEq(
-            usdc.balanceOf(address(this)),
-            (feiPSM.getRedeemAmountOut(mintAmount) / 1e12) / 2
-        );
-        assertEq(
-            dai.balanceOf(address(this)),
-            feiPSM.getRedeemAmountOut(mintAmount) / 2
-        );
+        makerRouter.swapAllFeiForUsdcAndDai(address(this), ratioUSDC);
+        uint256 usdcAmount = (minDaiAmountOut * ratioUSDC) / 10000;
+
+        assertEq(usdc.balanceOf(address(this)), usdcAmount / 1e12);
+        assertEq(dai.balanceOf(address(this)), minDaiAmountOut - usdcAmount);
     }
 }
