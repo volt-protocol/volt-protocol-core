@@ -93,6 +93,7 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
   expect(await daiPriceBoundPSM.doInvert()).to.be.true;
   expect(await daiPriceBoundPSM.oracle()).to.be.equal(addresses.voltSystemOraclePassThrough);
   expect(await daiPriceBoundPSM.backupOracle()).to.be.equal(ethers.constants.AddressZero);
+  expect(await daiPriceBoundPSM.isPriceValid()).to.be.true;
 
   //  volt
   expect(await daiPriceBoundPSM.underlyingToken()).to.be.equal(addresses.dai);

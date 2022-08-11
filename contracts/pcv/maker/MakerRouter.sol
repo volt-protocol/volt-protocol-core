@@ -9,13 +9,24 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {CoreRef} from "../../refs/CoreRef.sol";
 import {TribeRoles} from "../../core/TribeRoles.sol";
 
+/// @notice This contracts allows for swaps between FEI-DAI and FEI-USDC
+/// by using the FEI FEI-DAI PSM and the Maker DAI-USDC PSM
+/// @author k-xo
 contract MakerRouter is IMakerRouter, CoreRef {
     using SafeERC20 for IERC20;
 
+    /// @notice reference to the Maker DAI-USDC PSM that this router interacts with
     IDSSPSM public immutable daiPSM;
+
+    /// @notice reference to the FEI FEI-DAI PSM that this router interacts with
     IPegStabilityModule public immutable feiPSM;
 
+    /// @notice reference to the DAI contract used.
+    /// Router can be redeployed if DAI address changes
     IERC20 public immutable dai;
+
+    /// @notice reference to the FEI contract used.
+    /// Router can be redeployed if FEI address changes
     IERC20 public immutable fei;
 
     constructor(
@@ -35,6 +46,10 @@ contract MakerRouter is IMakerRouter, CoreRef {
         dai.approve(address(daiPSM), type(uint256).max);
     }
 
+    /// @notice Function to swap from FEI to DAI
+    /// @param amountFeiIn the amount of FEI to be deposited
+    /// @param minDaiAmountOut the minimum amount of DAI expected to be received
+    /// @param to the address the DAI should be sent to once swapped
     function swapFeiForDai(
         uint256 amountFeiIn,
         uint256 minDaiAmountOut,
@@ -46,6 +61,11 @@ contract MakerRouter is IMakerRouter, CoreRef {
         _redeemFromFeiPSM(amountFeiIn, minDaiAmountOut, to);
     }
 
+    /// @notice Function to swap from FEI to DAI
+    /// @dev Function will swap from FEI to DAI first then DAI to USDC
+    /// @param amountFeiIn the amount of FEI to be deposited
+    /// @param minDaiAmountOut the minimum amount of DAI expected to be received
+    /// @param to the address the DAI should be sent to once swapped
     function swapFeiForUsdc(
         uint256 amountFeiIn,
         uint256 minDaiAmountOut,
@@ -58,10 +78,16 @@ contract MakerRouter is IMakerRouter, CoreRef {
         daiPSM.buyGem(to, (minDaiAmountOut) / 1e12);
     }
 
+    /// @notice Function to swap from FEI to DAI
+    /// @dev Function will swap from FEI to DAI first then DAI to USDC
+    /// @param amountFeiIn the amount of FEI to be deposited
+    /// @param minDaiAmountOut the minimum amount of DAI expected to be received
+    /// @param ratioUSDC the ratio of the DAI received we would like to swap to USDC - in basis point terms
+    /// @param to the address the DAI should be sent to once swapped
     function swapFeiForUsdcAndDai(
         uint256 amountFeiIn,
         uint256 minDaiAmountOut,
-        uint256 ratioUSDC, // in basis point terms,
+        uint256 ratioUSDC,
         address to
     )
         external
@@ -77,6 +103,10 @@ contract MakerRouter is IMakerRouter, CoreRef {
         dai.safeTransfer(to, minDaiAmountOut - usdcAmount);
     }
 
+    /// @notice Helper function to redeem DAI from the FEI FEI-DAI
+    /// @param amountFeiIn the amount of FEI to be deposited
+    /// @param minDaiAmountOut the minimum amount of DAI expected to be received
+    /// @param to the address the DAI should be sent to once swapped
     function _redeemFromFeiPSM(
         uint256 amountFeiIn,
         uint256 minDaiAmountOut,

@@ -2,18 +2,33 @@
 pragma solidity =0.8.13;
 
 interface IMakerRouter {
+    /// @notice Function to swap from FEI to DAI
+    /// @param amountFeiIn the amount of FEI to be deposited
+    /// @param minDaiAmountOut the minimum amount of DAI expected to be received
+    /// @param to the address the DAI should be sent to once swapped
     function swapFeiForDai(
         uint256 amountFeiIn,
         uint256 minDaiAmountOut,
         address to
     ) external;
 
+    /// @notice Function to swap from FEI to DAI
+    /// @dev Function will swap from FEI to DAI first then DAI to USDC
+    /// @param amountFeiIn the amount of FEI to be deposited
+    /// @param minDaiAmountOut the minimum amount of DAI expected to be received
+    /// @param to the address the DAI should be sent to once swapped
     function swapFeiForUsdc(
         uint256 amountFeiIn,
         uint256 minDaiAmountOut,
         address to
     ) external;
 
+    /// @notice Function to swap from FEI to DAI
+    /// @dev Function will swap from FEI to DAI first then DAI to USDC
+    /// @param amountFeiIn the amount of FEI to be deposited
+    /// @param minDaiAmountOut the minimum amount of DAI expected to be received
+    /// @param ratioUSDC the ratio of the DAI received we would like to swap to USDC - in basis point terms
+    /// @param to the address the DAI should be sent to once swapped
     function swapFeiForUsdcAndDai(
         uint256 amountFeiIn,
         uint256 minDaiAmountOut,
