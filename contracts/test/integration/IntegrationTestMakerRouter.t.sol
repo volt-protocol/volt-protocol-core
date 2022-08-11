@@ -69,16 +69,22 @@ contract IntegrationTestMakerRouter is DSTest {
         assertEq((minDaiAmountOut / 1e12), usdc.balanceOf(address(this)));
     }
 
-    function testSwapFeiForUsdcAndDai() public {
-        uint256 minDaiAmountOut = feiPSM.getRedeemAmountOut(mintAmount);
+    function testSwapFeiForUsdcAndDai(uint64 amountFeiIn, uint8 ratioUSDC)
+        public
+    {
+        vm.assume(amountFeiIn > 1e18);
+
+        uint256 minDaiAmountOut = feiPSM.getRedeemAmountOut(amountFeiIn);
         makerRouter.swapFeiForUsdcAndDai(
-            mintAmount,
+            amountFeiIn,
             minDaiAmountOut,
-            5000,
+            ratioUSDC,
             address(this)
         );
 
-        assertEq((minDaiAmountOut / 2), dai.balanceOf(address(this)));
-        assertEq(((minDaiAmountOut / 2) / 1e12), usdc.balanceOf(address(this)));
+        uint256 usdcAmount = (minDaiAmountOut * ratioUSDC) / 10000;
+
+        assertEq((minDaiAmountOut - usdcAmount), dai.balanceOf(address(this)));
+        assertEq((usdcAmount / 1e12), usdc.balanceOf(address(this)));
     }
 }
