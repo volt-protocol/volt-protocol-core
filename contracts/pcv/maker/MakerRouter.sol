@@ -22,11 +22,11 @@ contract MakerRouter is IMakerRouter, CoreRef {
     IPegStabilityModule public immutable feiPSM;
 
     /// @notice reference to the DAI contract used.
-    /// Router can be redeployed if DAI address changes
+    /// @dev Router can be redeployed if DAI address changes
     IERC20 public immutable dai;
 
     /// @notice reference to the FEI contract used.
-    /// Router can be redeployed if FEI address changes
+    /// @dev Router can be redeployed if FEI address changes
     IERC20 public immutable fei;
 
     constructor(
