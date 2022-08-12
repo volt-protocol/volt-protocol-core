@@ -19,6 +19,7 @@ library ArbitrumAddresses {
     /// @notice multisig governor
     address public constant GOVERNOR =
         0x1A1075cef632624153176CCf19Ae0175953CF010;
+    /// @notice PCV Guardian smart contract
     address public constant PCV_GUARDIAN =
         0x14eCB5Ff2A78364E0FF443B7F0F6e0e393531484;
     address public constant DEPLOYER =
