@@ -35,7 +35,7 @@ contract vip8 is DSTest, IVIP {
         );
         proposal[0].description = "Timelock approves router to spend FEI";
 
-        proposal[1].target = MainnetAddresses.FEI;
+        proposal[1].target = MainnetAddresses.MAKER_ROUTER;
         proposal[1].value = 0;
         proposal[1].arguments = abi.encodeWithSignature(
             "swapAllFeiForDai(address)",

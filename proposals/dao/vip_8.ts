@@ -1,4 +1,3 @@
-import hre, { ethers, artifacts } from 'hardhat';
 import { expect } from 'chai';
 import {
   DeployUpgradeFunc,
@@ -7,12 +6,13 @@ import {
   TeardownUpgradeFunc,
   ValidateUpgradeFunc
 } from '@custom-types/types';
+import { getImpersonatedSigner } from '@test/helpers';
 
 /*
 
 Timelock Proposal #8
 
-Description:
+Description: Enables the DAI PSM on Mainnet
 
 Steps:
   1 - Pull all FEI from the FEI PSM to the multisg
@@ -22,7 +22,7 @@ Steps:
   5 - Timelock calls router to swap FEI for DAI, DAI proceeds are sent to the DAI PSM
 */
 
-const vipNumber = '8'; // Change me!
+const vipNumber = '8';
 
 // Do any deployments
 // This should exclusively include new contract deployments
@@ -37,7 +37,14 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
 // This could include setting up Hardhat to impersonate accounts,
 // ensuring contracts have a specific state, etc.
 const setup: SetupUpgradeFunc = async (addresses, oldContracts, contracts, logging) => {
-  console.log(`No actions to complete in setup for vip${vipNumber}`);
+  const { fei, feiPriceBoundPSM, pcvGuardian } = contracts;
+  const msigSigner = await getImpersonatedSigner(addresses.protocolMultisig);
+
+  await pcvGuardian.connect(msigSigner).withdrawAllERC20ToSafeAddress(addresses.feiPriceBoundPSM, addresses.fei);
+  await feiPriceBoundPSM.connect(msigSigner).pauseRedeem();
+
+  const feiBalance = await fei.balanceOf(msigSigner.address);
+  await fei.connect(msigSigner).transfer(addresses.daiPriceBoundPSM, feiBalance);
 };
 
 // Tears down any changes made in setup() that need to be
