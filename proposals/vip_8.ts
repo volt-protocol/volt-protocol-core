@@ -2,7 +2,7 @@ import { ProposalDescription } from '@custom-types/types';
 import { ethers } from 'hardhat';
 
 const vip_8: ProposalDescription = {
-  title: 'VIP-X: Enable DAI PSM',
+  title: 'VIP-8: Enable DAI PSM',
   commands: [
     {
       target: 'fei',
