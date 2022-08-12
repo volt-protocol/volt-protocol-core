@@ -23,6 +23,7 @@ library ArbitrumAddresses {
     address public constant DEPLOYER =
         0x25dCffa22EEDbF0A69F6277e24C459108c186ecB;
 
+    /// @notice timelock under active use
     address public constant TIMELOCK_CONTROLLER =
         0x2c01C9166FA3e16c24c118053E346B1DD8e72dE8;
 
