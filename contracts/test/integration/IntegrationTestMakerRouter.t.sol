@@ -204,7 +204,9 @@ contract IntegrationTestMakerRouter is DSTest {
         );
     }
 
-    function testSwapAllFeiForUsdcAndDai(uint8 ratioUSDC) public {
+    function testSwapAllFeiForUsdcAndDai(uint16 ratioUSDC) public {
+        vm.assume(ratioUSDC < 10_000);
+
         vm.prank(MainnetAddresses.GOVERNOR);
         core.grantGovernor(address(this));
 
@@ -221,7 +223,9 @@ contract IntegrationTestMakerRouter is DSTest {
         assertEq(dai.balanceOf(address(this)), minDaiAmountOut - usdcAmount);
     }
 
-    function testSwapAllFeiForUsdcAndDaiPCVController(uint8 ratioUSDC) public {
+    function testSwapAllFeiForUsdcAndDaiPCVController(uint16 ratioUSDC) public {
+        vm.assume(ratioUSDC < 10_000);
+
         vm.prank(MainnetAddresses.GOVERNOR);
         core.grantPCVController(address(this));
 
