@@ -110,7 +110,7 @@ contract vip7 is DSTest, IVIP, AllRoles {
         );
         assertEq(
             PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).reservesThreshold(),
-            10_000_000_000e18
+            type(uint256).max
         );
         assertEq(
             address(
