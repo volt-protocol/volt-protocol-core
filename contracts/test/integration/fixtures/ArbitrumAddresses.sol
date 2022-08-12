@@ -16,6 +16,7 @@ library ArbitrumAddresses {
     address public constant DEPRECATED_SCALING_PRICE_ORACLE =
         0x138F30D35557FA72478663b601f0f0FD7cc4E39E;
 
+    /// @notice multisig governor
     address public constant GOVERNOR =
         0x1A1075cef632624153176CCf19Ae0175953CF010;
     address public constant PCV_GUARDIAN =
