@@ -142,7 +142,7 @@ contract IntegrationTestPriceBoundPSMDaiTest is DSTest {
         uint256 amountOut = (amountDaiIn * 1e18) / currentPegPrice;
 
         assertApproxEq(
-            psm.getMintAmountOut(mintAmount).toInt256(),
+            psm.getMintAmountOut(amountDaiIn).toInt256(),
             amountOut.toInt256(),
             0
         );
