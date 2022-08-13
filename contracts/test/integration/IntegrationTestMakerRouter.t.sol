@@ -295,4 +295,63 @@ contract IntegrationTestMakerRouter is DSTest {
         vm.expectRevert("UNAUTHORIZED");
         makerRouter.swapAllFeiForUsdcAndDai(address(this), address(this), 5000);
     }
+
+    function testInvalidAboveUSDCRatio() public {
+        uint256 minDaiAmountOut = feiPSM.getRedeemAmountOut(mintAmount);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        core.grantGovernor(address(this));
+
+        vm.expectRevert("MakerRouter: Invalid USDC Ratio");
+        makerRouter.swapFeiForUsdcAndDai(
+            mintAmount,
+            minDaiAmountOut,
+            address(this),
+            address(this),
+            10000
+        );
+    }
+
+    function testInvalidBelowUSDCRatio() public {
+        uint256 minDaiAmountOut = feiPSM.getRedeemAmountOut(mintAmount);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        core.grantGovernor(address(this));
+
+        vm.expectRevert("MakerRouter: Invalid USDC Ratio");
+        makerRouter.swapFeiForUsdcAndDai(
+            mintAmount,
+            minDaiAmountOut,
+            address(this),
+            address(this),
+            0
+        );
+    }
+
+    function testRevertWhenMinimumFeiAmountNotDeposited() public {
+        uint256 amountFeiIn = 1e17;
+        vm.prank(MainnetAddresses.GOVERNOR);
+        core.grantPCVController(address(this));
+
+        uint256 minDaiAmountOut = feiPSM.getRedeemAmountOut(amountFeiIn);
+
+        vm.expectRevert("MakerRouter: Must deposit at least 1 FEI");
+        makerRouter.swapFeiForDai(amountFeiIn, minDaiAmountOut, address(this));
+    }
+
+    function testWithdrawERC20(uint64 amountDai) public {
+        vm.prank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
+        dai.transfer(address(makerRouter), amountDai);
+
+        uint256 routerDaiBalance = dai.balanceOf(address(makerRouter));
+        uint256 userInitialDaiBalance = dai.balanceOf(address(this));
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        core.grantPCVController(address(this));
+
+        makerRouter.withdrawERC20(address(dai), amountDai, address(this));
+        uint256 userFinalBalance = dai.balanceOf(address(this));
+
+        assertEq(userFinalBalance, routerDaiBalance + userInitialDaiBalance);
+    }
 }

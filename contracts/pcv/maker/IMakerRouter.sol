@@ -55,4 +55,14 @@ interface IMakerRouter {
         address daiTo,
         uint256 ratioUSDC
     ) external;
+
+    /// @notice Function to withdraw tokens to an address
+    /// @param token the token to withdraw
+    /// @param amount the amount to send
+    /// @param to the address the token should be sent to
+    function withdrawERC20(
+        address token,
+        uint256 amount,
+        address to
+    ) external;
 }

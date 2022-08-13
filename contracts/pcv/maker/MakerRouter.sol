@@ -145,6 +145,21 @@ contract MakerRouter is IMakerRouter, CoreRef {
         _swapForUsdcAndDai(minDaiAmountOut, usdcTo, daiTo, ratioUSDC);
     }
 
+    /// @notice Function to withdraw tokens to an address
+    /// @param token the token to withdraw
+    /// @param amount the amount to send
+    /// @param to the address the token should be sent to
+    function withdrawERC20(
+        address token,
+        uint256 amount,
+        address to
+    )
+        external
+        hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
+    {
+        IERC20(token).safeTransfer(to, amount);
+    }
+
     /// @notice Helper function to redeem DAI from the FEI FEI-DAI PSM
     /// @param amountFeiIn the amount of FEI to be deposited
     /// @param minDaiAmountOut the minimum amount of DAI expected to be received
@@ -202,6 +217,11 @@ contract MakerRouter is IMakerRouter, CoreRef {
     ) private {
         uint256 usdcAmount = (minDaiAmountOut * ratioUSDC) /
             Constants.BASIS_POINTS_GRANULARITY;
+
+        require(
+            usdcAmount / USDC_SCALING_FACTOR != 0,
+            "MakerRouter: Not enough USDC out"
+        );
 
         daiPSM.buyGem(usdcTo, usdcAmount / USDC_SCALING_FACTOR);
         dai.safeTransfer(daiTo, minDaiAmountOut - usdcAmount);
