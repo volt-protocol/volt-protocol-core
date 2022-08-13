@@ -105,10 +105,11 @@ contract IntegrationTestMakerRouter is DSTest {
         );
     }
 
-    function testSwapFeiForUsdcAndDai(uint64 amountFeiIn, uint8 ratioUSDC)
+    function testSwapFeiForUsdcAndDai(uint64 amountFeiIn, uint16 ratioUSDC)
         public
     {
         vm.assume(amountFeiIn > 1e18);
+        vm.assume(ratioUSDC < 10_000 && ratioUSDC > 0);
 
         vm.prank(MainnetAddresses.GOVERNOR);
         core.grantGovernor(address(this));
@@ -117,8 +118,9 @@ contract IntegrationTestMakerRouter is DSTest {
         makerRouter.swapFeiForUsdcAndDai(
             amountFeiIn,
             minDaiAmountOut,
-            ratioUSDC,
-            address(this)
+            address(this),
+            address(this),
+            ratioUSDC
         );
 
         uint256 usdcAmount = (minDaiAmountOut * ratioUSDC) /
@@ -133,9 +135,10 @@ contract IntegrationTestMakerRouter is DSTest {
 
     function testSwapFeiForUsdcAndDaiPCVController(
         uint64 amountFeiIn,
-        uint8 ratioUSDC
+        uint16 ratioUSDC
     ) public {
         vm.assume(amountFeiIn > 1e18);
+        vm.assume(ratioUSDC < 10_000 && ratioUSDC > 0);
 
         vm.prank(MainnetAddresses.GOVERNOR);
         core.grantPCVController(address(this));
@@ -144,8 +147,9 @@ contract IntegrationTestMakerRouter is DSTest {
         makerRouter.swapFeiForUsdcAndDai(
             amountFeiIn,
             minDaiAmountOut,
-            ratioUSDC,
-            address(this)
+            address(this),
+            address(this),
+            ratioUSDC
         );
 
         uint256 usdcAmount = (minDaiAmountOut * ratioUSDC) /
@@ -205,14 +209,18 @@ contract IntegrationTestMakerRouter is DSTest {
     }
 
     function testSwapAllFeiForUsdcAndDai(uint16 ratioUSDC) public {
-        vm.assume(ratioUSDC < 10_000);
+        vm.assume(ratioUSDC < 10_000 && ratioUSDC > 0);
 
         vm.prank(MainnetAddresses.GOVERNOR);
         core.grantGovernor(address(this));
 
         uint256 minDaiAmountOut = feiPSM.getRedeemAmountOut(mintAmount);
 
-        makerRouter.swapAllFeiForUsdcAndDai(address(this), ratioUSDC);
+        makerRouter.swapAllFeiForUsdcAndDai(
+            address(this),
+            address(this),
+            ratioUSDC
+        );
         uint256 usdcAmount = (minDaiAmountOut * ratioUSDC) /
             Constants.BASIS_POINTS_GRANULARITY;
 
@@ -224,14 +232,18 @@ contract IntegrationTestMakerRouter is DSTest {
     }
 
     function testSwapAllFeiForUsdcAndDaiPCVController(uint16 ratioUSDC) public {
-        vm.assume(ratioUSDC < 10_000);
+        vm.assume(ratioUSDC < 10_000 && ratioUSDC > 0);
 
         vm.prank(MainnetAddresses.GOVERNOR);
         core.grantPCVController(address(this));
 
         uint256 minDaiAmountOut = feiPSM.getRedeemAmountOut(mintAmount);
 
-        makerRouter.swapAllFeiForUsdcAndDai(address(this), ratioUSDC);
+        makerRouter.swapAllFeiForUsdcAndDai(
+            address(this),
+            address(this),
+            ratioUSDC
+        );
         uint256 usdcAmount = (minDaiAmountOut * ratioUSDC) /
             Constants.BASIS_POINTS_GRANULARITY;
 
@@ -273,13 +285,14 @@ contract IntegrationTestMakerRouter is DSTest {
         makerRouter.swapFeiForUsdcAndDai(
             mintAmount,
             minDaiAmountOut,
-            5000,
-            address(this)
+            address(this),
+            address(this),
+            5000
         );
     }
 
     function testSwapAllForUsdcAndDaiRevertWithoutPermissions() public {
         vm.expectRevert("UNAUTHORIZED");
-        makerRouter.swapAllFeiForUsdcAndDai(address(this), 500);
+        makerRouter.swapAllFeiForUsdcAndDai(address(this), address(this), 5000);
     }
 }

@@ -18,6 +18,7 @@ contract MakerRouter is IMakerRouter, CoreRef {
     using SafeERC20 for IERC20;
 
     /// @notice reference to the Maker DAI-USDC PSM that this router interacts with
+    /// @dev points to Makers DssPsm contract
     IDSSPSM public immutable daiPSM;
 
     /// @notice reference to the FEI FEI-DAI PSM that this router interacts with
@@ -107,34 +108,41 @@ contract MakerRouter is IMakerRouter, CoreRef {
     /// @param amountFeiIn the amount of FEI to be deposited
     /// @param minDaiAmountOut the minimum amount of DAI expected to be received
     /// @param ratioUSDC the ratio of the DAI received we would like to swap to USDC - in basis point terms
-    /// @param to the address the DAI and USDC should be sent to once swapped
+    /// @param usdcTo the address the USDC should be sent to once swapped
+    /// @param daiTo the address the DAI should be sent to once swapped
     function swapFeiForUsdcAndDai(
         uint256 amountFeiIn,
         uint256 minDaiAmountOut,
-        uint256 ratioUSDC,
-        address to
+        address usdcTo,
+        address daiTo,
+        uint256 ratioUSDC
     )
         external
         hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
     {
         require(
-            ratioUSDC < Constants.BASIS_POINTS_GRANULARITY,
-            "MakerRouter: USDC Ratio too high"
+            ratioUSDC < Constants.BASIS_POINTS_GRANULARITY && ratioUSDC > 0,
+            "MakerRouter: Invalid USDC Ratio"
         );
 
         _redeemFromFeiPSM(amountFeiIn, minDaiAmountOut, address(this));
-        _swapForUsdcAndDai(minDaiAmountOut, ratioUSDC, to);
+        _swapForUsdcAndDai(minDaiAmountOut, usdcTo, daiTo, ratioUSDC);
     }
 
     /// @notice Function to swap all FEI balance for both DAI and USDC
-    /// @param to the address the DAI and USDC should be sent to once swapped
+    /// @param usdcTo the address the USDC should be sent to once swapped
+    /// @param daiTo the address the DAI  should be sent to once swapped
     /// @param ratioUSDC the ratio of the DAI received we would like to swap to USDC - in basis point terms
-    function swapAllFeiForUsdcAndDai(address to, uint256 ratioUSDC)
+    function swapAllFeiForUsdcAndDai(
+        address usdcTo,
+        address daiTo,
+        uint256 ratioUSDC
+    )
         external
         hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
     {
         uint256 minDaiAmountOut = _redeemAllBalanceFromFeiPSM(address(this));
-        _swapForUsdcAndDai(minDaiAmountOut, ratioUSDC, to);
+        _swapForUsdcAndDai(minDaiAmountOut, usdcTo, daiTo, ratioUSDC);
     }
 
     /// @notice Helper function to redeem DAI from the FEI FEI-DAI PSM
@@ -146,6 +154,7 @@ contract MakerRouter is IMakerRouter, CoreRef {
         uint256 minDaiAmountOut,
         address to
     ) private {
+        require(amountFeiIn > 1e18, "MakerRouter: Must deposit at least 1 FEI");
         fei.safeTransferFrom(msg.sender, address(this), amountFeiIn);
         feiPSM.redeem(to, amountFeiIn, minDaiAmountOut);
     }
@@ -158,6 +167,8 @@ contract MakerRouter is IMakerRouter, CoreRef {
     {
         uint256 allowance = fei.allowance(msg.sender, address(this));
         uint256 amountFeiIn = Math.min(fei.balanceOf(msg.sender), allowance);
+
+        require(amountFeiIn > 1e18, "MakerRouter: Must deposit at least 1 FEI");
 
         fei.safeTransferFrom(msg.sender, address(this), amountFeiIn);
         uint256 userBalanceBefore = dai.balanceOf(to);
@@ -179,18 +190,20 @@ contract MakerRouter is IMakerRouter, CoreRef {
 
     /// @notice Helper function to swap for both DAI and USDC
     /// @param minDaiAmountOut the minimum amount of DAI expected to be received
-    /// @param to the address the DAI should be sent to once swapped
+    /// @param usdcTo the address the USDC should be sent to once swapped
+    /// @param daiTo the address the DAI should be sent to once swapped
     /// @param ratioUSDC the ratio of the DAI received we would like to swap to USDC - in basis point terms
 
     function _swapForUsdcAndDai(
         uint256 minDaiAmountOut,
-        uint256 ratioUSDC,
-        address to
+        address usdcTo,
+        address daiTo,
+        uint256 ratioUSDC
     ) private {
         uint256 usdcAmount = (minDaiAmountOut * ratioUSDC) /
             Constants.BASIS_POINTS_GRANULARITY;
 
-        daiPSM.buyGem(to, usdcAmount / USDC_SCALING_FACTOR);
-        dai.safeTransfer(to, minDaiAmountOut - usdcAmount);
+        daiPSM.buyGem(usdcTo, usdcAmount / USDC_SCALING_FACTOR);
+        dai.safeTransfer(daiTo, minDaiAmountOut - usdcAmount);
     }
 }

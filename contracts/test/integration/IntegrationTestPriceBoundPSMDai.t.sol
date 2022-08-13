@@ -135,10 +135,11 @@ contract IntegrationTestPriceBoundPSMDaiTest is DSTest {
     }
 
     /// @notice PSM is set up correctly and view functions are working
-    function testGetMintAmountOut() public {
+    function testGetMintAmountOut(uint256 amountDaiIn) public {
+        vm.assume(dai.balanceOf(address(this)) > amountDaiIn);
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
 
-        uint256 amountOut = (mintAmount * 1e18) / currentPegPrice;
+        uint256 amountOut = (amountDaiIn * 1e18) / currentPegPrice;
 
         assertApproxEq(
             psm.getMintAmountOut(mintAmount).toInt256(),
