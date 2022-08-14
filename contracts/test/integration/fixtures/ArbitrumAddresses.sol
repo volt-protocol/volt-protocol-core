@@ -60,6 +60,9 @@ library ArbitrumAddresses {
     address public constant USDC_WHALE =
         0x489ee077994B6658eAfA855C308275EAd8097C4A;
 
+    /// @notice address of WETH on Arbitrum
+    address public constant WETH = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+
     // ---------- CHAINLINK ADDRESSES ----------
 
     address public constant CHAINLINK_ORACLE_ADDRESS =

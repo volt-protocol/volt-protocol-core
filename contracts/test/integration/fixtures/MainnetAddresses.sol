@@ -72,6 +72,10 @@ library MainnetAddresses {
     address public constant VOLT_DEPOSIT =
         0xBDC01c9743989429df9a4Fe24c908D87e462AbC1;
 
+    // ---------- WETH ADDRESS ----------
+
+    address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+
     // ---------- USDC ADDRESSES ----------
 
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
