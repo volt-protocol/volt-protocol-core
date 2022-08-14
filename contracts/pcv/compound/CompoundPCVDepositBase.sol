@@ -1,26 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.0;
 
-import "../PCVDeposit.sol";
-import "../../refs/CoreRef.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
-interface CToken {
-    function redeemUnderlying(uint256 redeemAmount) external returns (uint256);
-
-    function exchangeRateStored() external view returns (uint256);
-
-    function balanceOf(address account) external view returns (uint256);
-
-    function isCToken() external view returns (bool);
-
-    function isCEther() external view returns (bool);
-}
+import {PCVDepositV2} from "../PCVDepositV2.sol";
+import {CToken} from "./CToken.sol";
+import {CoreRef} from "../../refs/CoreRef.sol";
+import {TribeRoles} from "../../core/TribeRoles.sol";
 
 /// @title base class for a Compound PCV Deposit
 /// @author Fei Protocol
-abstract contract CompoundPCVDepositBase is PCVDeposit {
-    CToken public cToken;
+abstract contract CompoundPCVDepositBase is PCVDepositV2 {
+    CToken public immutable cToken;
 
     uint256 private constant EXCHANGE_RATE_SCALE = 1e18;
 
@@ -38,15 +27,21 @@ abstract contract CompoundPCVDepositBase is PCVDeposit {
     function withdraw(address to, uint256 amountUnderlying)
         external
         override
-        onlyPCVController
+        hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
         whenNotPaused
     {
-        require(
-            cToken.redeemUnderlying(amountUnderlying) == 0,
-            "CompoundPCVDeposit: redeem error"
-        );
-        _transferUnderlying(to, amountUnderlying);
-        emit Withdrawal(msg.sender, to, amountUnderlying);
+        _withdraw(to, amountUnderlying);
+    }
+
+    /// @notice withdraw all tokens from the PCV allocation
+    /// @param to the address to send PCV to
+    function withdrawAll(address to)
+        external
+        hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
+        whenNotPaused
+    {
+        uint256 amountUnderlying = balance();
+        _withdraw(to, amountUnderlying);
     }
 
     /// @notice returns total balance of PCV in the Deposit excluding the FEI
@@ -56,6 +51,16 @@ abstract contract CompoundPCVDepositBase is PCVDeposit {
         return
             (cToken.balanceOf(address(this)) * exchangeRate) /
             EXCHANGE_RATE_SCALE;
+    }
+
+    function _withdraw(address to, uint256 amountUnderlying) internal {
+        require(
+            cToken.redeemUnderlying(amountUnderlying) == 0,
+            "CompoundPCVDeposit: redeem error"
+        );
+        _transferUnderlying(to, amountUnderlying);
+
+        emit Withdrawal(msg.sender, to, amountUnderlying);
     }
 
     function _transferUnderlying(address to, uint256 amount) internal virtual;
