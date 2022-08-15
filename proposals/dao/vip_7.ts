@@ -7,6 +7,7 @@ import {
   TeardownUpgradeFunc,
   ValidateUpgradeFunc
 } from '@custom-types/types';
+import { getImpersonatedSigner } from '@test/helpers';
 
 /*
 
@@ -76,7 +77,14 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
 // Do any setup necessary for running the test.
 // This could include setting up Hardhat to impersonate accounts,
 // ensuring contracts have a specific state, etc.
-const setup: SetupUpgradeFunc = async (addresses, oldContracts, contracts, logging) => {};
+const setup: SetupUpgradeFunc = async (addresses, oldContracts, contracts, logging) => {
+  const { pcvGuardian, volt } = contracts;
+
+  const msgSigner = await getImpersonatedSigner(addresses.protocolMultisig);
+  await pcvGuardian.connect(msgSigner).withdrawAllERC20ToSafeAddress(addresses.feiPriceBoundPSM, addresses.volt);
+  const balance = await volt.balanceOf(msgSigner.address);
+  await volt.connnect(msgSigner).transfer(addresses.daiPriceBoundPSM, balance);
+};
 
 // Tears down any changes made in setup() that need to be
 // cleaned up before doing any validation checks.

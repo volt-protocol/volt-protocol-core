@@ -13,8 +13,13 @@ import {Volt} from "../../../volt/Volt.sol";
 import {PriceBoundPSM} from "../../../peg/PriceBoundPSM.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {MakerRouter} from "../../../pcv/maker/MakerRouter.sol";
+import {IPCVGuardian} from "../../../pcv/IPCVGuardian.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract vip7 is DSTest, IVIP, AllRoles {
+    using SafeERC20 for IERC20;
+
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
     function getMainnetProposal()
@@ -54,7 +59,24 @@ contract vip7 is DSTest, IVIP, AllRoles {
         proposal[3].description = "Unpause redemptions for USDC PSM";
     }
 
-    function mainnetSetup() public override {}
+    function mainnetSetup() public override {
+        vm.startPrank(MainnetAddresses.GOVERNOR);
+        IPCVGuardian(MainnetAddresses.PCV_GUARDIAN)
+            .withdrawAllERC20ToSafeAddress(
+                MainnetAddresses.VOLT_FEI_PSM,
+                MainnetAddresses.VOLT
+            );
+
+        uint256 balance = IERC20(MainnetAddresses.VOLT).balanceOf(
+            MainnetAddresses.GOVERNOR
+        );
+
+        IERC20(MainnetAddresses.VOLT).safeTransfer(
+            MainnetAddresses.VOLT_DAI_PSM,
+            balance
+        );
+        vm.stopPrank();
+    }
 
     function mainnetValidate() public override {
         assertEq(
