@@ -26,11 +26,13 @@ contract MakerRouter is IMakerRouter, CoreRef {
 
     /// @notice reference to the DAI contract used.
     /// @dev Router can be redeployed if DAI address changes
-    IERC20 public immutable dai;
+    IERC20 public constant DAI =
+        IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
 
     /// @notice reference to the FEI contract used.
     /// @dev Router can be redeployed if FEI address changes
-    IERC20 public immutable fei;
+    IERC20 public constant FEI =
+        IERC20(0x956F47F50A910163D8BF957Cf5846D573E7f87CA);
 
     /// @notice scaling factor for USDC
     uint256 public constant USDC_SCALING_FACTOR = 1e12;
@@ -38,18 +40,13 @@ contract MakerRouter is IMakerRouter, CoreRef {
     constructor(
         address _core,
         IDSSPSM _daiPSM,
-        IPegStabilityModule _feiPSM,
-        IERC20 _dai,
-        IERC20 _fei
+        IPegStabilityModule _feiPSM
     ) CoreRef(_core) {
         daiPSM = _daiPSM;
         feiPSM = _feiPSM;
 
-        dai = _dai;
-        fei = _fei;
-
-        fei.approve(address(feiPSM), type(uint256).max);
-        dai.approve(address(daiPSM), type(uint256).max);
+        FEI.approve(address(feiPSM), type(uint256).max);
+        DAI.approve(address(daiPSM), type(uint256).max);
     }
 
     /// @notice Function to swap from FEI to DAI
@@ -170,7 +167,7 @@ contract MakerRouter is IMakerRouter, CoreRef {
         address to
     ) private {
         require(amountFeiIn > 1e18, "MakerRouter: Must deposit at least 1 FEI");
-        fei.safeTransferFrom(msg.sender, address(this), amountFeiIn);
+        FEI.safeTransferFrom(msg.sender, address(this), amountFeiIn);
         feiPSM.redeem(to, amountFeiIn, minDaiAmountOut);
     }
 
@@ -180,13 +177,13 @@ contract MakerRouter is IMakerRouter, CoreRef {
         private
         returns (uint256 minDaiAmountOut)
     {
-        uint256 allowance = fei.allowance(msg.sender, address(this));
-        uint256 amountFeiIn = Math.min(fei.balanceOf(msg.sender), allowance);
+        uint256 allowance = FEI.allowance(msg.sender, address(this));
+        uint256 amountFeiIn = Math.min(FEI.balanceOf(msg.sender), allowance);
 
         require(amountFeiIn > 1e18, "MakerRouter: Must deposit at least 1 FEI");
 
-        fei.safeTransferFrom(msg.sender, address(this), amountFeiIn);
-        uint256 userBalanceBefore = dai.balanceOf(to);
+        FEI.safeTransferFrom(msg.sender, address(this), amountFeiIn);
+        uint256 userBalanceBefore = DAI.balanceOf(to);
 
         // 3 is used as there is a 3 basis points redemption fee
         minDaiAmountOut =
@@ -195,7 +192,7 @@ contract MakerRouter is IMakerRouter, CoreRef {
 
         feiPSM.redeem(to, amountFeiIn, minDaiAmountOut);
 
-        uint256 userBalanceAfter = dai.balanceOf(to);
+        uint256 userBalanceAfter = DAI.balanceOf(to);
 
         require(
             userBalanceAfter - userBalanceBefore >= minDaiAmountOut,
@@ -224,6 +221,6 @@ contract MakerRouter is IMakerRouter, CoreRef {
         );
 
         daiPSM.buyGem(usdcTo, usdcAmount / USDC_SCALING_FACTOR);
-        dai.safeTransfer(daiTo, minDaiAmountOut - usdcAmount);
+        DAI.safeTransfer(daiTo, minDaiAmountOut - usdcAmount);
     }
 }

@@ -33,13 +33,7 @@ contract IntegrationTestMakerRouter is DSTest {
     uint256 public constant mintAmount = 200_000_000e18;
 
     function setUp() public {
-        makerRouter = new MakerRouter(
-            MainnetAddresses.CORE,
-            daiPSM,
-            feiPSM,
-            dai,
-            fei
-        );
+        makerRouter = new MakerRouter(MainnetAddresses.CORE, daiPSM, feiPSM);
 
         fei.approve(address(makerRouter), type(uint256).max);
         dai.approve(address(makerRouter), type(uint256).max);

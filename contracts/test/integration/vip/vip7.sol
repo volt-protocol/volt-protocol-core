@@ -142,11 +142,11 @@ contract vip7 is DSTest, IVIP, AllRoles {
         );
 
         assertEq(
-            address(MakerRouter(MainnetAddresses.MAKER_ROUTER).dai()),
+            address(MakerRouter(MainnetAddresses.MAKER_ROUTER).DAI()),
             MainnetAddresses.DAI
         );
         assertEq(
-            address(MakerRouter(MainnetAddresses.MAKER_ROUTER).fei()),
+            address(MakerRouter(MainnetAddresses.MAKER_ROUTER).FEI()),
             MainnetAddresses.FEI
         );
         assertEq(

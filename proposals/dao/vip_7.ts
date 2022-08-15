@@ -37,7 +37,7 @@ const addressOne = '0x0000000000000000000000000000000000000001';
 // Do any deployments
 // This should exclusively include new contract deployments
 const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: NamedAddresses, logging: boolean) => {
-  const priceBoundPSM = await (
+  const daiPriceBoundPSM = await (
     await ethers.getContractFactory('PriceBoundPSM')
   ).deploy(
     voltFloorPrice,
@@ -58,18 +58,18 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
     addressOne
   );
 
-  await priceBoundPSM.deployed();
+  await daiPriceBoundPSM.deployed();
 
-  console.log(`\nDAI PriceBoundPSM deployed to: ${priceBoundPSM.address}`);
+  console.log(`\nDAI PriceBoundPSM deployed to: ${daiPriceBoundPSM.address}`);
 
   const makerRouter = await (
     await ethers.getContractFactory('MakerRouter')
-  ).deploy(addresses.core, addresses.makerDaiUsdcPSM, addresses.feiDaiFixedPricePSM, addresses.dai, addresses.fei);
+  ).deploy(addresses.core, addresses.makerDaiUsdcPSM, addresses.feiDaiFixedPricePSM);
 
   console.log(`\nMaker Router deployed to: ${makerRouter.address}`);
 
   return {
-    priceBoundPSM,
+    daiPriceBoundPSM,
     makerRouter
   };
 };
@@ -130,8 +130,8 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
   expect(await pcvGuardian.isWhitelistAddress(addresses.daiPriceBoundPSM)).to.be.true;
   expect(await usdcPriceBoundPSM.redeemPaused()).to.be.false;
 
-  expect(await makerRouter.fei()).to.equal(addresses.fei);
-  expect(await makerRouter.dai()).to.equal(addresses.dai);
+  expect(await makerRouter.FEI()).to.equal(addresses.fei);
+  expect(await makerRouter.DAI()).to.equal(addresses.dai);
   expect(await makerRouter.daiPSM()).to.equal(addresses.makerDaiUsdcPSM);
   expect(await makerRouter.feiPSM()).to.equal(addresses.feiDaiFixedPricePSM);
   expect(await makerRouter.core()).to.equal(addresses.core);
