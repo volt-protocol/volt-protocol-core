@@ -20,6 +20,7 @@ Steps:
   3 - Transfer all FEI from multisig to the timelock
   4 - Timelock approves router to spend FEI
   5 - Timelock calls router to swap FEI for DAI, DAI proceeds are sent to the DAI PSM
+  6 - Timelock revokes router approval to spend FEI
 */
 
 const vipNumber = '8';
@@ -60,6 +61,7 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
 
   expect(await feiPriceBoundPSM.redeemPaused()).to.be.true;
   expect(await fei.balanceOf(addresses.feiPriceBoundPSM)).to.equal(0);
+  expect(await fei.allowance(addresses.timelockController, addresses.makerRouter)).to.equal(0);
 };
 
 export { deploy, setup, teardown, validate };

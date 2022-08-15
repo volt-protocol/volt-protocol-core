@@ -24,7 +24,7 @@ contract vip8 is DSTest, IVIP {
         override
         returns (TimelockSimulation.action[] memory proposal)
     {
-        proposal = new TimelockSimulation.action[](2);
+        proposal = new TimelockSimulation.action[](3);
 
         proposal[0].target = MainnetAddresses.FEI;
         proposal[0].value = 0;
@@ -42,6 +42,16 @@ contract vip8 is DSTest, IVIP {
             MainnetAddresses.VOLT_DAI_PSM
         );
         proposal[1].description = "Swaps FEI for DAI proceeds sent to DAI PSM";
+
+        proposal[2].target = MainnetAddresses.FEI;
+        proposal[2].value = 0;
+        proposal[2].arguments = abi.encodeWithSignature(
+            "approve(address,uint)",
+            MainnetAddresses.MAKER_ROUTER,
+            0
+        );
+        proposal[2]
+            .description = "Timelock revokes router approval to spend FEI";
     }
 
     function mainnetSetup() public override {
@@ -73,6 +83,14 @@ contract vip8 is DSTest, IVIP {
         assertEq(
             IERC20(MainnetAddresses.FEI).balanceOf(
                 MainnetAddresses.VOLT_FEI_PSM
+            ),
+            0
+        );
+
+        assertEq(
+            IERC20(MainnetAddresses.FEI).allowance(
+                MainnetAddresses.TIMELOCK_CONTROLLER,
+                MainnetAddresses.MAKER_ROUTER
             ),
             0
         );

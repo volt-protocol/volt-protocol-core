@@ -17,6 +17,13 @@ const vip_8: ProposalDescription = {
       method: 'swapAllFeiForDai(address)',
       arguments: ['{daiPriceBoundPSM}'],
       description: 'Swaps FEI for DAI proceeds sent to DAI PSM'
+    },
+    {
+      target: 'fei',
+      values: '0',
+      method: 'approve(address,uint)',
+      arguments: ['{makerRouter}', 0],
+      description: 'Timelock revokes router approval to spend FEI'
     }
   ],
   description: 'Enables the DAI PSM on Mainnet'
