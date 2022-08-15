@@ -190,9 +190,9 @@ contract MakerRouter is IMakerRouter, CoreRef {
 
         // 3 is used as there is a 3 basis points redemption fee
         minDaiAmountOut =
-            amountFeiIn -
-            (amountFeiIn * 3) /
+            (amountFeiIn * (Constants.BASIS_POINTS_GRANULARITY - 3)) /
             Constants.BASIS_POINTS_GRANULARITY;
+
         feiPSM.redeem(to, amountFeiIn, minDaiAmountOut);
 
         uint256 userBalanceAfter = dai.balanceOf(to);

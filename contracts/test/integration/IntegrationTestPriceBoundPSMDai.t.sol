@@ -69,7 +69,7 @@ contract IntegrationTestPriceBoundPSMDaiTest is DSTest {
             oracleParams,
             0,
             0,
-            10_000_000_000e18,
+            type(uint256).max,
             10_000e18,
             10_000_000e18,
             IERC20(address(dai)),
@@ -103,7 +103,7 @@ contract IntegrationTestPriceBoundPSMDaiTest is DSTest {
         assertEq(psm.mintFeeBasisPoints(), 0);
         assertEq(psm.redeemFeeBasisPoints(), 0);
         assertEq(address(psm.underlyingToken()), address(dai));
-        assertEq(psm.reservesThreshold(), 10_000_000_000e18);
+        assertEq(psm.reservesThreshold(), type(uint256).max);
         assertEq(address(psm.surplusTarget()), address(1));
     }
 
