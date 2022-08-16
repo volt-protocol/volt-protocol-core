@@ -22,7 +22,7 @@ contract PCVGuardianWhitelist {
     function verifyAction(
         ITimelockSimulation.action[] memory proposal,
         IPCVGuardian guardian
-    ) public {
+    ) public view {
         uint256 proposalLength = proposal.length;
         for (uint256 i = 0; i < proposalLength; i++) {
             bytes4 functionSig = bytesToBytes4(proposal[i].arguments);

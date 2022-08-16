@@ -76,7 +76,7 @@ contract AllRoles is RoleTesting, AllRolesConfig {
     }
 
     /// load up number of roles from Core and ensure that they match up with numbers here
-    function testRoleArity() public {
+    function testRoleArity() public view {
         _testRoleArity(getAllRoles(), roleCounts, numEachRole);
     }
 
