@@ -38,25 +38,16 @@ contract vip7 is DSTest, IVIP, AllRoles {
         proposal[1].target = MainnetAddresses.PCV_GUARDIAN;
         proposal[1].value = 0;
         proposal[1].arguments = abi.encodeWithSignature(
-            "withdrawAllERC20ToSafeAddress(address,address)",
-            MainnetAddresses.VOLT_FEI_PSM,
-            MainnetAddresses.VOLT
-        );
-        proposal[1].description = "Remove all VOLT from FEI PSM";
-
-        proposal[2].target = MainnetAddresses.PCV_GUARDIAN;
-        proposal[2].value = 0;
-        proposal[2].arguments = abi.encodeWithSignature(
             "addWhitelistAddress(address)",
             MainnetAddresses.VOLT_DAI_PSM
         );
-        proposal[2]
+        proposal[1]
             .description = "Add DAI PSM to whitelisted addresses on PCV Guardian";
 
-        proposal[3].target = MainnetAddresses.VOLT_USDC_PSM;
-        proposal[3].value = 0;
-        proposal[3].arguments = abi.encodeWithSignature("unpauseRedeem()");
-        proposal[3].description = "Unpause redemptions for USDC PSM";
+        proposal[2].target = MainnetAddresses.VOLT_USDC_PSM;
+        proposal[2].value = 0;
+        proposal[2].arguments = abi.encodeWithSignature("unpauseRedeem()");
+        proposal[2].description = "Unpause redemptions for USDC PSM";
     }
 
     function mainnetSetup() public override {

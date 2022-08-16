@@ -13,13 +13,6 @@ const vip_7: ProposalDescription = {
     {
       target: 'pcvGuardian',
       values: '0',
-      method: 'withdrawAllERC20ToSafeAddress(address,address)',
-      arguments: ['{feiPriceBoundPSM}', '{volt}'],
-      description: 'Remove all VOLT from FEI PSM'
-    },
-    {
-      target: 'pcvGuardian',
-      values: '0',
       method: 'addWhitelistAddress(address)',
       arguments: ['{daiPriceBoundPSM}'], // todo add to list of addresses
       description: 'Add DAI PSM to whitelisted addresses on PCV Guardian'

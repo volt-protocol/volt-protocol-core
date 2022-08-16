@@ -83,7 +83,7 @@ const setup: SetupUpgradeFunc = async (addresses, oldContracts, contracts, loggi
   const msgSigner = await getImpersonatedSigner(addresses.protocolMultisig);
   await pcvGuardian.connect(msgSigner).withdrawAllERC20ToSafeAddress(addresses.feiPriceBoundPSM, addresses.volt);
   const balance = await volt.balanceOf(msgSigner.address);
-  await volt.connnect(msgSigner).transfer(addresses.daiPriceBoundPSM, balance);
+  await volt.connnect(msgSigner).safeTransfer(addresses.daiPriceBoundPSM, balance);
 };
 
 // Tears down any changes made in setup() that need to be
