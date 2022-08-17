@@ -29,7 +29,7 @@ library MainnetAddresses {
     address public constant VOLT_FEI_PSM =
         0x985f9C331a9E4447C782B98D6693F5c7dF8e560e;
     address public constant VOLT_DAI_PSM =
-        0x985f9C331a9E4447C782B98D6693F5c7dF8e560e; // placeholder until deployment
+        0x42ea9cC945fca2dfFd0beBb7e9B3022f134d9Bdd;
 
     address public constant VOLT_USDC_PSM =
         0x0b9A7EA2FCA868C93640Dd77cF44df335095F501;
@@ -39,7 +39,7 @@ library MainnetAddresses {
         0x75d078248eE49c585b73E73ab08bb3eaF93383Ae;
 
     address public constant MAKER_ROUTER =
-        0x985f9C331a9E4447C782B98D6693F5c7dF8e560e; // placeholder until deployment
+        0xC403da9AaC46d3AdcD1a1bBe774601C0ddc542F7;
 
     /// current active EOA's
     address public constant OTC_LOAN_REPAYMENT =

@@ -106,6 +106,18 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.Peg,
     network: Network.Mainnet
   },
+  daiPriceBoundPSM: {
+    address: '0x42ea9cC945fca2dfFd0beBb7e9B3022f134d9Bdd',
+    artifactName: 'PriceBoundPSM',
+    category: AddressCategory.Peg,
+    network: Network.Mainnet
+  },
+  makerRouter: {
+    address: '0xC403da9AaC46d3AdcD1a1bBe774601C0ddc542F7',
+    artifactName: 'MakerRouter',
+    category: AddressCategory.PCV,
+    network: Network.Mainnet
+  },
   multisig: {
     address: '0x016177eDbB6809338Fda77b493cA01EA6D7Fc0D4',
     artifactName: 'unknown',
