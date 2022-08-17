@@ -48,6 +48,14 @@ contract vip7 is DSTest, IVIP, AllRoles {
         proposal[2].value = 0;
         proposal[2].arguments = abi.encodeWithSignature("unpauseRedeem()");
         proposal[2].description = "Unpause redemptions for USDC PSM";
+
+        proposal[3].target = MainnetAddresses.VOLT_DAI_PSM;
+        proposal[3].value = 0;
+        proposal[3].arguments = abi.encodeWithSignature(
+            "setOracle(address)",
+            MainnetAddresses.ORACLE_PASS_THROUGH
+        );
+        proposal[3].description = "Set Oracle Pass Through on DAI PSM";
     }
 
     function mainnetSetup() public override {

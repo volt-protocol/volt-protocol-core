@@ -23,6 +23,13 @@ const vip_7: ProposalDescription = {
       method: 'unpauseRedeem()',
       arguments: [],
       description: 'Unpause redemptions for USDC PSM'
+    },
+    {
+      target: 'daiPriceBoundPSM',
+      values: '0',
+      method: 'setOracle(address)',
+      arguments: ['{voltSystemOraclePassThrough}'],
+      description: 'Set Oracle Pass Through on DAI PSM'
     }
   ],
   description:
