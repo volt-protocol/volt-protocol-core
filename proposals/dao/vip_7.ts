@@ -44,7 +44,7 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
     voltCeilingPrice,
     {
       coreAddress: addresses.core,
-      oracleAddress: addresses.voltSystemOracle, // OPT
+      oracleAddress: addresses.voltSystemOraclePassThrough, // OPT
       backupOracle: ethers.constants.AddressZero,
       decimalsNormalizer: 0,
       doInvert: true /// invert the price so that the Oracle and PSM works correctly
