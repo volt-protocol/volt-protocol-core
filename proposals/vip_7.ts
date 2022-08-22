@@ -14,7 +14,7 @@ const vip_7: ProposalDescription = {
       target: 'pcvGuardian',
       values: '0',
       method: 'addWhitelistAddress(address)',
-      arguments: ['{daiPriceBoundPSM}'], // todo add to list of addresses
+      arguments: ['{daiPriceBoundPSM}'],
       description: 'Add DAI PSM to whitelisted addresses on PCV Guardian'
     },
     {

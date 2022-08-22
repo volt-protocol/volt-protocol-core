@@ -19,8 +19,8 @@ interface IMakerRouter {
     /// @notice Function to swap from FEI to USDC
     /// @dev Function will swap from FEI to DAI first then DAI to USDC
     /// @param amountFeiIn the amount of FEI to be deposited
-    /// @param minDaiAmountOut the minimum amount of DAI expected to be received
-    /// @param to the address the DAI should be sent to once swapped
+    /// @param minDaiAmountOut the minimum amount of DAI expected to be received from FEI PSM
+    /// @param to the address the USDC should be sent to once swapped
     function swapFeiForUsdc(
         uint256 amountFeiIn,
         uint256 minDaiAmountOut,
