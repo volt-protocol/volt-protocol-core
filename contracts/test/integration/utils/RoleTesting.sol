@@ -9,7 +9,6 @@ import {DSTest} from "./../../unit/utils/DSTest.sol";
 import {L2Core} from "../../../core/L2Core.sol";
 import {Core} from "../../../core/Core.sol";
 import {Vm} from "./../../unit/utils/Vm.sol";
-import "hardhat/console.sol";
 
 contract RoleTesting is DSTest {
     /// @notice map role to the string name
@@ -31,10 +30,6 @@ contract RoleTesting is DSTest {
         uint256[7] memory roleCounts,
         uint256[] memory numEachRole
     ) internal view {
-        console.log(allRoles.length);
-        console.log(roleCounts.length);
-        console.log(numEachRole.length);
-
         for (uint256 i = 0; i < allRoles.length; i++) {
             if (numEachRole[i] != roleCounts[i]) {
                 revert(
