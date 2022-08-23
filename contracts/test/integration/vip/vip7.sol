@@ -2,6 +2,8 @@
 pragma solidity =0.8.13;
 
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {TimelockSimulation} from "../utils/TimelockSimulation.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
 import {DSTest} from "./../../unit/utils/DSTest.sol";
@@ -14,8 +16,6 @@ import {PriceBoundPSM} from "../../../peg/PriceBoundPSM.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {MakerRouter} from "../../../pcv/maker/MakerRouter.sol";
 import {IPCVGuardian} from "../../../pcv/IPCVGuardian.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract vip7 is DSTest, IVIP, AllRoles {
     using SafeERC20 for IERC20;
