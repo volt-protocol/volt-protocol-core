@@ -2,7 +2,6 @@
 pragma solidity =0.8.13;
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 import {DSTest} from "../unit/utils/DSTest.sol";
 import {Vm} from "../unit/utils/Vm.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
@@ -12,6 +11,8 @@ import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {IVolt} from "../../volt/IVolt.sol";
 import {Core} from "../../core/Core.sol";
 import {Constants} from "../../Constants.sol";
+
+import "hardhat/console.sol";
 
 contract IntegrationTestMakerRouter is DSTest {
     using SafeCast for *;
@@ -34,7 +35,7 @@ contract IntegrationTestMakerRouter is DSTest {
     uint256 public constant mintAmount = 200_000_000e18;
 
     function setUp() public {
-        makerRouter = new MakerRouter(MainnetAddresses.CORE, daiPSM, feiPSM);
+        makerRouter = MakerRouter(MainnetAddresses.MAKER_ROUTER);
 
         fei.approve(address(makerRouter), type(uint256).max);
         dai.approve(address(makerRouter), type(uint256).max);
@@ -247,6 +248,70 @@ contract IntegrationTestMakerRouter is DSTest {
             usdcAmount / USDC_SCALING_FACTOR
         );
         assertEq(dai.balanceOf(address(this)), minDaiAmountOut - usdcAmount);
+    }
+
+    function testSwapFeiForUsdcAndDaiExternalAddress(
+        uint64 amountFeiIn,
+        uint16 ratioUSDC
+    ) public {
+        vm.assume(amountFeiIn > 1e18);
+        vm.assume(ratioUSDC < 10_000 && ratioUSDC > 0);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        core.grantGovernor(address(this));
+
+        uint256 minDaiAmountOut = feiPSM.getRedeemAmountOut(amountFeiIn);
+        makerRouter.swapFeiForUsdcAndDai(
+            amountFeiIn,
+            minDaiAmountOut,
+            address(0x12345),
+            address(0x23456),
+            ratioUSDC
+        );
+
+        uint256 usdcAmount = (minDaiAmountOut * ratioUSDC) /
+            Constants.BASIS_POINTS_GRANULARITY;
+
+        assertEq(
+            (usdcAmount / USDC_SCALING_FACTOR),
+            usdc.balanceOf(address(0x12345))
+        );
+        assertEq(
+            (minDaiAmountOut - usdcAmount),
+            dai.balanceOf(address(0x23456))
+        );
+    }
+
+    function testSwapFeiForUsdcAndDaiPCVControllerExternalAddress(
+        uint64 amountFeiIn,
+        uint16 ratioUSDC
+    ) public {
+        vm.assume(amountFeiIn > 1e18);
+        vm.assume(ratioUSDC < 10_000 && ratioUSDC > 0);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        core.grantPCVController(address(this));
+
+        uint256 minDaiAmountOut = feiPSM.getRedeemAmountOut(amountFeiIn);
+        makerRouter.swapFeiForUsdcAndDai(
+            amountFeiIn,
+            minDaiAmountOut,
+            address(0x12345),
+            address(0x23456),
+            ratioUSDC
+        );
+
+        uint256 usdcAmount = (minDaiAmountOut * ratioUSDC) /
+            Constants.BASIS_POINTS_GRANULARITY;
+
+        assertEq(
+            (usdcAmount / USDC_SCALING_FACTOR),
+            usdc.balanceOf(address(0x12345))
+        );
+        assertEq(
+            (minDaiAmountOut - usdcAmount),
+            dai.balanceOf(address(0x23456))
+        );
     }
 
     function testSwapForDaiRevertWithoutPermissions() public {

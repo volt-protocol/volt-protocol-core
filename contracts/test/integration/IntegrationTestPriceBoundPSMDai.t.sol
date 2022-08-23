@@ -3,6 +3,7 @@ pragma solidity ^0.8.4;
 
 import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {MockPCVDepositV2} from "../../mock/MockPCVDepositV2.sol";
 import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
@@ -17,8 +18,11 @@ import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {Constants} from "../../Constants.sol";
+import {vip7} from "./vip/vip7.sol";
+import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
+import {IPCVGuardian} from "../../pcv/IPCVGuardian.sol";
 
-contract IntegrationTestPriceBoundPSMDaiTest is DSTest {
+contract IntegrationTestPriceBoundPSMDaiTest is TimelockSimulation, vip7 {
     using SafeCast for *;
     PriceBoundPSM private psm;
     ICore private core = ICore(MainnetAddresses.CORE);
@@ -44,35 +48,11 @@ contract IntegrationTestPriceBoundPSMDaiTest is DSTest {
     OraclePassThrough public oracle =
         OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
-    Vm public constant vm = Vm(HEVM_ADDRESS);
-
     uint256 voltFloorPrice = 9_000; /// 1 volt for .9 dai is the max allowable price
     uint256 voltCeilingPrice = 10_000; /// 1 volt for 1 dai is the minimum price
 
     function setUp() public {
-        PegStabilityModule.OracleParams memory oracleParams;
-
-        oracleParams = PegStabilityModule.OracleParams({
-            coreAddress: address(core),
-            oracleAddress: address(oracle),
-            backupOracle: address(0),
-            decimalsNormalizer: 0,
-            doInvert: true
-        });
-
-        /// create PSM
-        psm = new PriceBoundPSM(
-            voltFloorPrice,
-            voltCeilingPrice,
-            oracleParams,
-            0,
-            0,
-            type(uint256).max,
-            10_000e18,
-            10_000_000e18,
-            IERC20(address(dai)),
-            IPCVDeposit(address(1))
-        );
+        psm = PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM);
 
         vm.startPrank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
         dai.transfer(address(this), mintAmount);
@@ -80,13 +60,22 @@ contract IntegrationTestPriceBoundPSMDaiTest is DSTest {
         vm.stopPrank();
 
         vm.startPrank(MainnetAddresses.GOVERNOR);
-
-        /// grant the PSM the PCV Controller role
         core.grantMinter(MainnetAddresses.GOVERNOR);
         /// mint VOLT to the user
         volt.mint(address(psm), mintAmount);
         volt.mint(address(this), mintAmount);
+        core.revokeMinter(MainnetAddresses.GOVERNOR);
         vm.stopPrank();
+
+        simulate(
+            getMainnetProposal(),
+            TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),
+            IPCVGuardian(MainnetAddresses.PCV_GUARDIAN),
+            MainnetAddresses.GOVERNOR,
+            MainnetAddresses.EOA_1,
+            vm,
+            false
+        );
     }
 
     /// @notice PSM is set up correctly
@@ -123,8 +112,10 @@ contract IntegrationTestPriceBoundPSMDaiTest is DSTest {
         uint256 startingBalance = volt.balanceOf(address(psm));
         assertEq(psm.getMaxMintAmountOut(), bufferCap + startingBalance);
 
-        vm.prank(MainnetAddresses.GOVERNOR);
+        vm.startPrank(MainnetAddresses.GOVERNOR);
+        core.grantMinter(MainnetAddresses.GOVERNOR);
         volt.mint(address(psm), mintAmount);
+        vm.stopPrank();
 
         assertEq(
             psm.getMaxMintAmountOut(),
