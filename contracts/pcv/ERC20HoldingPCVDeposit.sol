@@ -10,8 +10,6 @@ import {TribeRoles} from "../core/TribeRoles.sol";
 import {Constants} from "../Constants.sol";
 import {IERC20HoldingPCVDeposit} from "./IERC20HoldingPCVDeposit.sol";
 
-import "hardhat/console.sol";
-
 /// @title ERC20HoldingPCVDeposit
 /// @notice PCVDeposit that is used to hold ERC20 tokens as a safe harbour. Deposit is a no-op
 contract ERC20HoldingPCVDeposit is PCVDepositV2, IERC20HoldingPCVDeposit {
