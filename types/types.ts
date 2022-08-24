@@ -9,7 +9,6 @@ import {
   PCVGuardian,
   OraclePassThrough,
   PriceBoundPSM,
-  L2ScalingPriceOracle,
   TimelockController
 } from './contracts';
 
@@ -188,7 +187,6 @@ export interface MainnetContracts {
   optimisticTimelockArbitrum: TimelockController;
   curve3Metapool: IERC20;
   arbitrumOptimisticTimelock: TimelockController;
-  arbitrumScalingPriceOracle: L2ScalingPriceOracle;
   arbitrumCore: L2Core;
   arbitrumPCVGuardAdmin: PCVGuardAdmin;
   arbitrumPCVGuardian: PCVGuardian;
