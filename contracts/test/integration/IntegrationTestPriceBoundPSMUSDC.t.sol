@@ -14,7 +14,7 @@ import {Core} from "../../core/Core.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {PriceBoundPSM, PegStabilityModule} from "../../peg/PriceBoundPSM.sol";
 import {getCore, getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
-import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
+import {CompoundPCVDepositV2} from "../../pcv/compound/CompoundPCVDepositV2.sol";
 import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
@@ -40,8 +40,8 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     uint256 public constant rps = 10_000e18;
 
     /// @notice live FEI PCV Deposit
-    ERC20CompoundPCVDeposit public immutable rariVoltPCVDeposit =
-        ERC20CompoundPCVDeposit(MainnetAddresses.RARI_VOLT_PCV_DEPOSIT);
+    CompoundPCVDepositV2 public immutable rariVoltPCVDeposit =
+        CompoundPCVDepositV2(MainnetAddresses.RARI_VOLT_PCV_DEPOSIT);
 
     /// @notice Oracle Pass Through contract
     OraclePassThrough public oracle =
@@ -76,7 +76,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
             10_000e18,
             10_000_000e18,
             IERC20(address(usdc)),
-            rariVoltPCVDeposit
+            IPCVDeposit(rariVoltPCVDeposit)
         );
 
         uint256 balance = usdc.balanceOf(makerUSDCPSM);

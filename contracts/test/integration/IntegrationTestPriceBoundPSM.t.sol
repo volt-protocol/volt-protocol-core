@@ -15,7 +15,7 @@ import {Core} from "../../core/Core.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {PriceBoundPSM, PegStabilityModule} from "../../peg/PriceBoundPSM.sol";
 import {getCore, getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
-import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
+import {CompoundPCVDepositV2} from "../../pcv/compound/CompoundPCVDepositV2.sol";
 import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
@@ -52,8 +52,8 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
         MainnetAddresses.CHAINLINK_ORACLE_ADDRESS;
 
     /// @notice live FEI PCV Deposit
-    ERC20CompoundPCVDeposit public immutable rariVoltPCVDeposit =
-        ERC20CompoundPCVDeposit(MainnetAddresses.RARI_VOLT_PCV_DEPOSIT);
+    CompoundPCVDepositV2 public immutable rariVoltPCVDeposit =
+        CompoundPCVDepositV2(MainnetAddresses.RARI_VOLT_PCV_DEPOSIT);
 
     /// @notice fei DAO timelock address
     address public immutable feiDAOTimelock = MainnetAddresses.FEI_DAO_TIMELOCK;
@@ -89,7 +89,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
             10_000e18,
             10_000_000e18,
             IERC20(address(fei)),
-            rariVoltPCVDeposit
+            IPCVDeposit(rariVoltPCVDeposit)
         );
 
         vm.prank(feiDAOTimelock);
