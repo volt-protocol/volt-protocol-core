@@ -258,14 +258,6 @@ const MainnetAddresses: MainnetAddresses = {
     network: Network.Arbitrum
   },
 
-  /// Deprecated Arbitrum L2 Scaling Price Oracle
-  // arbitrumScalingPriceOracle: {
-  //   address: '0x138F30D35557FA72478663b601f0f0FD7cc4E39E',
-  //   artifactName: 'L2ScalingPriceOracle',
-  //   category: AddressCategory.Deprecated,
-  //   network: Network.Arbitrum
-  // },
-
   arbitrumVoltSystemOracle: {
     address: '0x69DBf8dD98Aa40F50E4f2263c6f2d66f26f9cb5b',
     artifactName: 'VoltSystemOracle',
