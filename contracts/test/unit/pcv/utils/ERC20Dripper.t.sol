@@ -63,6 +63,8 @@ contract UnitTestERC20Dripper is DSTest {
             PCVDepositV2(address(erc20HoldingDepositPull))
         );
 
+        /// dripper needs PCV Controller role to be able to pull funds
+        /// from PCV deposits
         vm.prank(addresses.governorAddress);
         core.grantPCVController(address(dripper));
     }
@@ -100,11 +102,13 @@ contract UnitTestERC20Dripper is DSTest {
 
     function testPullSucceedsWhenOverThresholdWithPCVController() public {
         uint256 depositBalance = 10_000_000e18;
+        uint256 startingTime = dripper.startTime();
 
         token.mint(address(erc20HoldingDepositPull), depositBalance);
-        vm.warp(block.timestamp + dripper.duration());
+        vm.warp(block.timestamp + frequency);
         dripper.drip();
 
+        assertEq(startingTime + frequency, dripper.startTime()); /// ensure start time updates correctly
         assertEq(
             token.balanceOf(address(erc20HoldingDepositPull)),
             depositBalance - amountToDrip
@@ -122,8 +126,10 @@ contract UnitTestERC20Dripper is DSTest {
         vm.warp(block.timestamp + dripper.duration());
 
         if (depositBalance >= amountToDrip) {
+            uint256 startingTime = dripper.startTime();
             dripper.drip();
 
+            assertEq(startingTime + frequency, dripper.startTime()); /// ensure start time updates correctly
             assertEq(
                 token.balanceOf(address(erc20HoldingDepositPull)),
                 depositBalance - amountToDrip
