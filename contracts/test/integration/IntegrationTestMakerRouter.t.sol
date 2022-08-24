@@ -30,7 +30,7 @@ contract IntegrationTestMakerRouter is DSTest {
 
     uint256 public constant USDC_SCALING_FACTOR = 1e12;
 
-    uint256 public constant mintAmount = 200_000_000e18;
+    uint256 public constant mintAmount = 400_000_000e18;
 
     function setUp() public {
         makerRouter = MakerRouter(MainnetAddresses.MAKER_ROUTER);
@@ -38,14 +38,14 @@ contract IntegrationTestMakerRouter is DSTest {
         fei.approve(address(makerRouter), type(uint256).max);
         dai.approve(address(makerRouter), type(uint256).max);
 
-        vm.prank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
+        vm.prank(0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643); //cDai contract
         dai.transfer(address(feiPSM), mintAmount + 50_000_000e18);
 
         vm.prank(MainnetAddresses.FEI_GOVERNOR);
         fei.mint(address(this), mintAmount);
     }
 
-    function testSwapFeiForDai(uint64 amountFeiIn) public {
+    function testSwapFeiForDai(uint88 amountFeiIn) public {
         vm.assume(amountFeiIn > 1e18);
 
         vm.prank(MainnetAddresses.GOVERNOR);
@@ -57,7 +57,7 @@ contract IntegrationTestMakerRouter is DSTest {
         assertEq(minDaiAmountOut, dai.balanceOf(address(this)));
     }
 
-    function testSwapFeiForDaiPCVController(uint64 amountFeiIn) public {
+    function testSwapFeiForDaiPCVController(uint88 amountFeiIn) public {
         vm.assume(amountFeiIn > 1e18);
 
         vm.prank(MainnetAddresses.GOVERNOR);
@@ -69,7 +69,7 @@ contract IntegrationTestMakerRouter is DSTest {
         assertEq(minDaiAmountOut, dai.balanceOf(address(this)));
     }
 
-    function testSwapFeiForUsdc(uint64 amountFeiIn) public {
+    function testSwapFeiForUsdc(uint88 amountFeiIn) public {
         vm.assume(amountFeiIn > 1e18);
 
         vm.prank(MainnetAddresses.GOVERNOR);
@@ -84,7 +84,7 @@ contract IntegrationTestMakerRouter is DSTest {
         );
     }
 
-    function testSwapFeiForUsdcPCVController(uint64 amountFeiIn) public {
+    function testSwapFeiForUsdcPCVController(uint88 amountFeiIn) public {
         vm.assume(amountFeiIn > 1e18);
 
         vm.prank(MainnetAddresses.GOVERNOR);
@@ -99,7 +99,7 @@ contract IntegrationTestMakerRouter is DSTest {
         );
     }
 
-    function testSwapFeiForUsdcAndDai(uint64 amountFeiIn, uint16 ratioUSDC)
+    function testSwapFeiForUsdcAndDai(uint88 amountFeiIn, uint16 ratioUSDC)
         public
     {
         vm.assume(amountFeiIn > 1e18);
@@ -128,7 +128,7 @@ contract IntegrationTestMakerRouter is DSTest {
     }
 
     function testSwapFeiForUsdcAndDaiPCVController(
-        uint64 amountFeiIn,
+        uint88 amountFeiIn,
         uint16 ratioUSDC
     ) public {
         vm.assume(amountFeiIn > 1e18);
@@ -249,7 +249,7 @@ contract IntegrationTestMakerRouter is DSTest {
     }
 
     function testSwapFeiForUsdcAndDaiExternalAddress(
-        uint64 amountFeiIn,
+        uint88 amountFeiIn,
         uint16 ratioUSDC
     ) public {
         vm.assume(amountFeiIn > 1e18);
@@ -281,7 +281,7 @@ contract IntegrationTestMakerRouter is DSTest {
     }
 
     function testSwapFeiForUsdcAndDaiPCVControllerExternalAddress(
-        uint64 amountFeiIn,
+        uint88 amountFeiIn,
         uint16 ratioUSDC
     ) public {
         vm.assume(amountFeiIn > 1e18);

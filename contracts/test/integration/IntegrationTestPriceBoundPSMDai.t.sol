@@ -30,21 +30,7 @@ contract IntegrationTestPriceBoundPSMDaiTest is TimelockSimulation, vip7 {
     IVolt private dai = IVolt(MainnetAddresses.DAI);
     IVolt private underlyingToken = dai;
 
-    /// ------------ Minting and RateLimited System Params ------------
-
     uint256 public constant mintAmount = 10_000_000e18;
-    uint256 public constant mintAmountPSM = 10_000_000e18;
-    uint256 public constant bufferCap = 10_000_000e18;
-    uint256 public constant individualMaxBufferCap = 5_000_000e18;
-    uint256 public constant rps = 10_000e18;
-
-    /// ------------ Oracle System Params ------------
-
-    /// @notice prices during test will increase 1% monthly
-    int256 public constant monthlyChangeRateBasisPoints = 100;
-    uint256 public constant maxDeviationThresholdBasisPoints = 1_000;
-
-    /// @notice Oracle Pass Through contract
     OraclePassThrough public oracle =
         OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
@@ -159,11 +145,7 @@ contract IntegrationTestPriceBoundPSMDaiTest is TimelockSimulation, vip7 {
             endingUserVOLTBalance,
             amountVoltOut + userStartingVoltBalance
         );
-        assertApproxEq(
-            endingPSMUnderlyingBalance.toInt256(),
-            (mintAmount + mintAmount * 2).toInt256(),
-            0
-        );
+        assertEq(endingPSMUnderlyingBalance, (mintAmount + mintAmount * 2));
     }
 
     /// @notice pcv deposit gets depleted on redeem
