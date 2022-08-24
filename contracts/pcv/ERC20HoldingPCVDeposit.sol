@@ -9,6 +9,8 @@ import {CoreRef} from "../refs/CoreRef.sol";
 import {TribeRoles} from "../core/TribeRoles.sol";
 import {Constants} from "../Constants.sol";
 import {IERC20HoldingPCVDeposit} from "./IERC20HoldingPCVDeposit.sol";
+import {MainnetAddresses} from "../test/integration/fixtures/MainnetAddresses.sol";
+import {ArbitrumAddresses} from "../test/integration/fixtures/ArbitrumAddresses.sol";
 
 /// @title ERC20HoldingPCVDeposit
 /// @notice PCVDeposit that is used to hold ERC20 tokens as a safe harbour. Deposit is a no-op
@@ -18,17 +20,10 @@ contract ERC20HoldingPCVDeposit is PCVDepositV2, IERC20HoldingPCVDeposit {
     /// @notice Token which the balance is reported in
     IERC20 public immutable override token;
 
-    /// @notice address of VOLT on mainnet
-    address private constant MAINNET_VOLT =
-        0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18;
-
-    /// @notice address of VOLT on arbitrum
-    address private constant ARBITRUM_VOLT =
-        0x6Ba6f18a290Cd55cf1B00be2bEc5c954cb29fAc5;
-
     constructor(address _core, IERC20 _token) CoreRef(_core) {
         require(
-            address(_token) != MAINNET_VOLT && address(_token) != ARBITRUM_VOLT,
+            address(_token) != MainnetAddresses.VOLT &&
+                address(_token) != ArbitrumAddresses.VOLT,
             "VOLT not supported"
         );
         token = _token;
