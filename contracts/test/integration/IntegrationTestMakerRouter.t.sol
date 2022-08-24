@@ -12,8 +12,6 @@ import {IVolt} from "../../volt/IVolt.sol";
 import {Core} from "../../core/Core.sol";
 import {Constants} from "../../Constants.sol";
 
-import "hardhat/console.sol";
-
 contract IntegrationTestMakerRouter is DSTest {
     using SafeCast for *;
 
