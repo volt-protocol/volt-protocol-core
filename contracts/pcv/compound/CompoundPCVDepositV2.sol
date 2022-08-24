@@ -23,7 +23,7 @@ contract CompoundPCVDepositV2 is PCVDepositV2 {
     CToken public immutable cToken;
 
     /// @notice scalar value used in Compound
-    uint256 private constant EXCHANGE_RATE_SCALE = 1e18;
+    uint256 public constant EXCHANGE_RATE_SCALE = 1e18;
 
     /// @notice Compound PCV Deposit constructor
     /// @param _core Fei Core for reference
@@ -117,7 +117,7 @@ contract CompoundPCVDepositV2 is PCVDepositV2 {
             EXCHANGE_RATE_SCALE;
     }
 
-    /// @notice display the related token of the balance reported
+    /// @notice token that the balance is reported in
     function balanceReportedIn() public view override returns (address) {
         return address(token);
     }
