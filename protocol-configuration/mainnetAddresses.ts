@@ -78,13 +78,13 @@ const MainnetAddresses: MainnetAddresses = {
   },
   voltFusePCVDeposit: {
     address: '0xFeBDf448C8484834bb399d930d7E1bdC773E23bA',
-    artifactName: 'ERC20CompoundPCVDeposit',
+    artifactName: 'CompoundPCVDepositV2',
     category: AddressCategory.Deprecated,
     network: Network.Mainnet
   },
   feiFusePCVDeposit: {
     address: '0x4188fbD7aDC72853E3275F1c3503E170994888D7',
-    artifactName: 'ERC20CompoundPCVDeposit',
+    artifactName: 'CompoundPCVDepositV2',
     category: AddressCategory.Deprecated,
     network: Network.Mainnet
   },
