@@ -9,7 +9,6 @@ import {CToken} from "./CToken.sol";
 import {CErc20} from "./CErc20.sol";
 import {CoreRef} from "../../refs/CoreRef.sol";
 import {TribeRoles} from "../../core/TribeRoles.sol";
-import {PCVDepositV2} from "../PCVDepositV2.sol";
 
 /// @title Compound PCV Deposit
 /// @author Elliot Friedman

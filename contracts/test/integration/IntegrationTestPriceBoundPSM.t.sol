@@ -8,8 +8,6 @@ import {MockPCVDepositV2} from "../../mock/MockPCVDepositV2.sol";
 import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
 import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
-import {ScalingPriceOracle} from "../../oracle/ScalingPriceOracle.sol";
-import {MockScalingPriceOracle} from "../../mock/MockScalingPriceOracle.sol";
 import {ICore} from "../../core/ICore.sol";
 import {Core} from "../../core/Core.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
