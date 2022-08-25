@@ -13,6 +13,9 @@ import {getCore, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.s
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract UnitTestERC20Dripper is DSTest {
+    /// @notice event emitted when tokens are dripped
+    event Dripped(uint256 amount);
+
     ICore private core;
     Vm public constant vm = Vm(HEVM_ADDRESS);
     VoltTestAddresses public addresses = getAddresses();
@@ -31,9 +34,6 @@ contract UnitTestERC20Dripper is DSTest {
 
     /// @notice threshold over which to pull tokens from PCV deposit to target
     uint256 private constant dripThreshold = 100_000e18;
-
-    /// @notice amount sent in each drip
-    uint256 private constant amountToDrip = 200_000e18;
 
     /// @notice frequency of allowed drip
     uint256 private constant frequency = 1 days;
@@ -58,7 +58,6 @@ contract UnitTestERC20Dripper is DSTest {
             address(core),
             address(erc20HoldingDepositPush),
             frequency,
-            amountToDrip,
             dripThreshold,
             PCVDepositV2(address(erc20HoldingDepositPull))
         );
@@ -69,9 +68,10 @@ contract UnitTestERC20Dripper is DSTest {
         core.grantPCVController(address(dripper));
     }
 
-    function testDripperFailsWhenUnderFunded() public {
+    function testDripperFailsSilentlyWhenUnderFunded() public {
         vm.warp(block.timestamp + dripper.duration());
-        vm.expectRevert("ERC20: transfer amount exceeds balance");
+        vm.expectEmit(true, false, false, true, address(dripper));
+        emit Dripped(0);
         dripper.drip();
     }
 
@@ -94,8 +94,6 @@ contract UnitTestERC20Dripper is DSTest {
     }
 
     function testPullFailsWhenTimeNotPassed() public {
-        token.mint(address(erc20HoldingDepositPull), amountToDrip);
-
         vm.expectRevert("Timed: time not ended");
         dripper.drip();
     }
@@ -111,11 +109,11 @@ contract UnitTestERC20Dripper is DSTest {
         assertEq(startingTime + frequency, dripper.startTime()); /// ensure start time updates correctly
         assertEq(
             token.balanceOf(address(erc20HoldingDepositPull)),
-            depositBalance - amountToDrip
+            depositBalance - dripThreshold
         );
         assertEq(
             token.balanceOf(address(erc20HoldingDepositPush)),
-            amountToDrip
+            dripThreshold
         );
     }
 
@@ -125,21 +123,24 @@ contract UnitTestERC20Dripper is DSTest {
         token.mint(address(erc20HoldingDepositPull), depositBalance);
         vm.warp(block.timestamp + dripper.duration());
 
-        if (depositBalance >= amountToDrip) {
+        if (depositBalance >= dripThreshold) {
             uint256 startingTime = dripper.startTime();
+            vm.expectEmit(true, false, false, true, address(dripper));
+            emit Dripped(dripThreshold);
             dripper.drip();
 
             assertEq(startingTime + frequency, dripper.startTime()); /// ensure start time updates correctly
             assertEq(
                 token.balanceOf(address(erc20HoldingDepositPull)),
-                depositBalance - amountToDrip
+                depositBalance - dripThreshold
             );
             assertEq(
                 token.balanceOf(address(erc20HoldingDepositPush)),
-                amountToDrip
+                dripThreshold
             );
         } else {
-            vm.expectRevert("ERC20: transfer amount exceeds balance");
+            vm.expectEmit(true, false, false, true, address(dripper));
+            emit Dripped(0);
             dripper.drip();
         }
     }

@@ -52,6 +52,13 @@ library MainnetAddresses {
     address public constant PCV_GUARD_ADMIN =
         0x868F58Ae8F6B2Dc31D9ADc97a8A09B16f05E9cd7;
 
+    // ---------- COMPOUND ADDRESSES ----------
+
+    address public constant CDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
+    address public constant CUSDC = 0x39AA39c021dfbaE8faC545936693aC917d5E7563;
+    address public constant COMPTROLLER =
+        0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
+
     // ---------- FEI ADDRESSES ----------
 
     address public constant FEI_CORE =

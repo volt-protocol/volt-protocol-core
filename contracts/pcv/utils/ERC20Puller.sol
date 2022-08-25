@@ -1,21 +1,19 @@
 pragma solidity =0.8.13;
 
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {PCVDepositV2} from "./../PCVDepositV2.sol";
 import {Timed} from "./../../utils/Timed.sol";
 import {CoreRef} from "./../../refs/CoreRef.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Puller} from "./IERC20Puller.sol";
 
 /// @notice Contract to remove all excess funds past a certain threshold from a smart contract
 /// used to allocate funds from a PSM to a yield venue so that liquid reserves are minimized
 /// This contract should never hold PCV, however it is a PCV Deposit, so if tokens get sent to it,
 /// they can still be recovered.
 /// @author Volt Protocol
-contract ERC20Puller is CoreRef, PCVDepositV2 {
+contract ERC20Puller is IERC20Puller, CoreRef, PCVDepositV2 {
     using Address for address payable;
-
-    /// @notice event emitted when tokens are dripped
-    event Pulled(uint256 amount);
 
     /// @notice target address to send excess tokens
     address public immutable pushTarget;
@@ -27,7 +25,7 @@ contract ERC20Puller is CoreRef, PCVDepositV2 {
     address public immutable token;
 
     /// @notice only pull if and only if balance of target is greater than pullThreshold
-    uint256 public immutable pullThreshold;
+    uint256 public pullThreshold;
 
     /// @notice ERC20 PCV Puller constructor
     /// @param _core Volt Core for reference
@@ -55,7 +53,7 @@ contract ERC20Puller is CoreRef, PCVDepositV2 {
         /// note this check is redundant, as calculating amountToPull will revert
         /// if pullThreshold is greater than the current balance of pullTarget
         /// however, we like to err on the side of verbosity
-        require(checkCondition(), "ERC20Puller: condition not met");
+        require(_checkCondition(), "ERC20Puller: condition not met");
 
         uint256 amountToPull = IERC20(token).balanceOf(pullTarget) -
             pullThreshold;
@@ -71,7 +69,11 @@ contract ERC20Puller is CoreRef, PCVDepositV2 {
 
     /// @notice function that returns whether the amount of tokens held
     /// are above the threshold
-    function checkCondition() public view returns (bool) {
+    function checkCondition() external view override returns (bool) {
+        return _checkCondition();
+    }
+
+    function _checkCondition() internal view returns (bool) {
         return IERC20(token).balanceOf(pullTarget) > pullThreshold;
     }
 
@@ -83,7 +85,21 @@ contract ERC20Puller is CoreRef, PCVDepositV2 {
         override
         onlyPCVController
     {
-        _withdrawERC20(address(token), to, amountUnderlying);
+        _withdrawERC20(token, to, amountUnderlying);
+    }
+
+    /// @notice set the pull threshold
+    /// @param newPullThreshold the new amount over which any excess funds will be sent
+    function setPullThreshold(uint256 newPullThreshold)
+        external
+        override
+        onlyGovernor
+    {
+        uint256 oldPullThreshold = pullThreshold;
+
+        pullThreshold = newPullThreshold;
+
+        emit PullThresholdUpdate(oldPullThreshold, newPullThreshold);
     }
 
     /// @notice no-op

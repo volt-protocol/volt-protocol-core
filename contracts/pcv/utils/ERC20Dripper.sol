@@ -1,10 +1,12 @@
 pragma solidity ^0.8.4;
 
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+
 import {PCVDepositV2} from "./../PCVDepositV2.sol";
 import {Timed} from "./../../utils/Timed.sol";
 import {CoreRef} from "./../../refs/CoreRef.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @notice smart contract
 contract ERC20Dripper is PCVDepositV2, Timed {
@@ -22,28 +24,23 @@ contract ERC20Dripper is PCVDepositV2, Timed {
     /// @notice target token address to send
     address public immutable token;
 
-    /// @notice amount to drip after each window
-    uint256 public immutable amountToDrip;
-
     /// @notice only drip if and only if balance of target is less than dripThreshold
-    uint256 public immutable dripThreshold;
+    uint256 public dripThreshold;
 
     /// @notice ERC20 PCV Dripper constructor
     /// @param _core Fei Core for reference
     /// @param _target address to drip to
     /// @param _frequency frequency of dripping
-    /// @param _amountToDrip amount to drip on each drip, if and only if balance of target is less than amountToDrip
+    /// @param _dripThreshold balance targeted in target
     /// @param _pcvDeposit pcv deposit to pull funds from
     constructor(
         address _core,
         address _target,
         uint256 _frequency,
-        uint256 _amountToDrip,
         uint256 _dripThreshold,
         PCVDepositV2 _pcvDeposit
     ) CoreRef(_core) Timed(_frequency) {
         target = _target;
-        amountToDrip = _amountToDrip;
         dripThreshold = _dripThreshold;
         pcvDeposit = _pcvDeposit;
         token = _pcvDeposit.balanceReportedIn();
@@ -52,14 +49,22 @@ contract ERC20Dripper is PCVDepositV2, Timed {
         _initTimed();
     }
 
-    /// @notice drip ERC20 tokens to target
+    /// @notice drip ERC20 tokens to target by pulling from a PCV deposit
     function drip() external afterTime whenNotPaused {
         // reset timer
         _initTimed();
 
         require(checkCondition(), "ERC20Dripper: condition not met");
 
-        // drip
+        uint256 targetBalance = IERC20(token).balanceOf(target);
+        /// drip min between target drip amount and pcv deposit being pulled from
+        /// to prevent edge cases when a venue runs out of liquidity
+        uint256 amountToDrip = Math.min(
+            dripThreshold - targetBalance,
+            pcvDeposit.balance()
+        );
+
+        // drip amount to target so that it has dripThreshold amount of tokens
         pcvDeposit.withdraw(target, amountToDrip);
         emit Dripped(amountToDrip);
     }

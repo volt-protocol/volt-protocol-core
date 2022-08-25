@@ -12,6 +12,8 @@ import {getCore, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.s
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract UnitTestERC20Puller is DSTest {
+    event PullThresholdUpdate(uint256 oldThreshold, uint256 newThreshold);
+
     ICore private core;
     Vm public constant vm = Vm(HEVM_ADDRESS);
     VoltTestAddresses public addresses = getAddresses();
@@ -59,6 +61,11 @@ contract UnitTestERC20Puller is DSTest {
         erc20Puller.pull();
     }
 
+    function testSetPullThresholdNonGovFails() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        erc20Puller.setPullThreshold(0);
+    }
+
     function testPullFailsWhenPaused() public {
         vm.prank(addresses.governorAddress);
         erc20Puller.pause();
@@ -74,6 +81,18 @@ contract UnitTestERC20Puller is DSTest {
 
         vm.expectRevert("UNAUTHORIZED");
         erc20Puller.pull();
+    }
+
+    function testSetPullThresholdGovSucceeds() public {
+        uint256 newThreshold = 10_000_000e18;
+
+        vm.startPrank(addresses.governorAddress);
+        vm.expectEmit(true, false, false, true, address(erc20Puller));
+        emit PullThresholdUpdate(pullThreshold, newThreshold);
+        erc20Puller.setPullThreshold(newThreshold);
+        vm.stopPrank();
+
+        assertEq(newThreshold, erc20Puller.pullThreshold());
     }
 
     function testPullSucceedsWhenOverThresholdWithPCVController() public {
