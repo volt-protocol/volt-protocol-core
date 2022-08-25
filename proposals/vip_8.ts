@@ -7,7 +7,7 @@ const vip_8: ProposalDescription = {
     {
       target: 'fei',
       values: '0',
-      method: 'approve(address,uint)',
+      method: 'approve(address,uint256)',
       arguments: ['{makerRouter}', ethers.constants.MaxUint256],
       description: 'Timelock approves router to spend FEI'
     },
@@ -21,7 +21,7 @@ const vip_8: ProposalDescription = {
     {
       target: 'fei',
       values: '0',
-      method: 'approve(address,uint)',
+      method: 'approve(address,uint256)',
       arguments: ['{makerRouter}', 0],
       description: 'Timelock revokes router approval to spend FEI'
     }

@@ -2,6 +2,8 @@
 pragma solidity =0.8.13;
 
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {TimelockSimulation} from "../utils/TimelockSimulation.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
 import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
@@ -9,8 +11,6 @@ import {DSTest} from "./../../unit/utils/DSTest.sol";
 import {Core} from "../../../core/Core.sol";
 import {Vm} from "./../../unit/utils/Vm.sol";
 import {IVIP} from "./IVIP.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 
@@ -29,7 +29,7 @@ contract vip8 is DSTest, IVIP {
         proposal[0].target = MainnetAddresses.FEI;
         proposal[0].value = 0;
         proposal[0].arguments = abi.encodeWithSignature(
-            "approve(address,uint)",
+            "approve(address,uint256)",
             MainnetAddresses.MAKER_ROUTER,
             type(uint256).max
         );
@@ -46,7 +46,7 @@ contract vip8 is DSTest, IVIP {
         proposal[2].target = MainnetAddresses.FEI;
         proposal[2].value = 0;
         proposal[2].arguments = abi.encodeWithSignature(
-            "approve(address,uint)",
+            "approve(address,uint256)",
             MainnetAddresses.MAKER_ROUTER,
             0
         );
