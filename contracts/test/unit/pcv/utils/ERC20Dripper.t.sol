@@ -98,7 +98,7 @@ contract UnitTestERC20Dripper is DSTest {
         dripper.drip();
     }
 
-    function testPullSucceedsWhenOverThresholdWithPCVController() public {
+    function testPullSucceedsWhenOverThreshold() public {
         uint256 depositBalance = 10_000_000e18;
         uint256 startingTime = dripper.startTime();
 
@@ -114,6 +114,25 @@ contract UnitTestERC20Dripper is DSTest {
         assertEq(
             token.balanceOf(address(erc20HoldingDepositPush)),
             dripThreshold
+        );
+    }
+
+    function testPullSucceedsWhenUnderFullDripThreshold(uint8 denominator)
+        public
+    {
+        vm.assume(denominator != 0);
+        uint256 depositBalance = dripThreshold / denominator;
+        uint256 startingTime = dripper.startTime();
+
+        token.mint(address(erc20HoldingDepositPull), depositBalance);
+        vm.warp(block.timestamp + frequency);
+        dripper.drip();
+
+        assertEq(startingTime + frequency, dripper.startTime()); /// ensure start time updates correctly
+        assertEq(token.balanceOf(address(erc20HoldingDepositPull)), 0);
+        assertEq(
+            token.balanceOf(address(erc20HoldingDepositPush)),
+            depositBalance
         );
     }
 
@@ -140,7 +159,7 @@ contract UnitTestERC20Dripper is DSTest {
             );
         } else {
             vm.expectEmit(true, false, false, true, address(dripper));
-            emit Dripped(0);
+            emit Dripped(depositBalance);
             dripper.drip();
         }
     }
