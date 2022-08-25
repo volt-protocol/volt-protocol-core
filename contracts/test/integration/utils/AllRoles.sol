@@ -77,6 +77,11 @@ contract AllRoles is RoleTesting, AllRolesConfig {
 
     /// load up number of roles from Core and ensure that they match up with numbers here
     function testRoleArity() public {
+        if (block.chainid == 42161) {
+            _setupArbitrum(Core(ArbitrumAddresses.CORE));
+        } else if (block.chainid == 1) {
+            _setupMainnet(Core(MainnetAddresses.CORE));
+        }
         _testRoleArity(getAllRoles(), roleCounts, numEachRole);
     }
 

@@ -1,6 +1,5 @@
 pragma solidity =0.8.13;
-
-import {vip6} from "./vip6.sol";
+import {vip7} from "./vip7.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {TimelockSimulation} from "../utils/TimelockSimulation.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
@@ -9,7 +8,7 @@ import {PCVGuardian} from "./../../../pcv/PCVGuardian.sol";
 
 /// @dev test harness for running and simulating VOLT Improvement Proposals
 /// inherit the proposal to simulate
-contract Runner is TimelockSimulation, vip6 {
+contract Runner is TimelockSimulation, vip7 {
     /// @notice mainnet PCV Guardian
     PCVGuardian private immutable mainnetPCVGuardian =
         PCVGuardian(MainnetAddresses.PCV_GUARDIAN);
@@ -21,30 +20,30 @@ contract Runner is TimelockSimulation, vip6 {
     /// remove all function calls inside testProposal and don't inherit the VIP
     /// once the proposal is live and passed
     function testProposalMainnet() public {
-        // mainnetSetup();
-        // simulate(
-        //     getMainnetProposal(),
-        //     TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),
-        //     mainnetPCVGuardian,
-        //     MainnetAddresses.GOVERNOR,
-        //     MainnetAddresses.EOA_1,
-        //     vm,
-        //     true
-        // );
-        // mainnetValidate();
-    }
-
-    function testProposalArbitrum() public {
-        arbitrumSetup();
+        mainnetSetup();
         simulate(
-            getArbitrumProposal(),
-            TimelockController(payable(ArbitrumAddresses.TIMELOCK_CONTROLLER)),
-            arbitrumPCVGuardian,
-            ArbitrumAddresses.GOVERNOR,
-            ArbitrumAddresses.EOA_1,
+            getMainnetProposal(),
+            TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),
+            mainnetPCVGuardian,
+            MainnetAddresses.GOVERNOR,
+            MainnetAddresses.EOA_1,
             vm,
             true
         );
-        arbitrumValidate();
+        mainnetValidate();
+    }
+
+    function testProposalArbitrum() public {
+        // arbitrumSetup();
+        // simulate(
+        //     getArbitrumProposal(),
+        //     TimelockController(payable(ArbitrumAddresses.TIMELOCK_CONTROLLER)),
+        //     arbitrumPCVGuardian,
+        //     ArbitrumAddresses.GOVERNOR,
+        //     ArbitrumAddresses.EOA_1,
+        //     vm,
+        //     true
+        // );
+        // arbitrumValidate();
     }
 }

@@ -106,6 +106,18 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.Peg,
     network: Network.Mainnet
   },
+  daiPriceBoundPSM: {
+    address: '0x42ea9cC945fca2dfFd0beBb7e9B3022f134d9Bdd',
+    artifactName: 'PriceBoundPSM',
+    category: AddressCategory.Peg,
+    network: Network.Mainnet
+  },
+  makerRouter: {
+    address: '0xC403da9AaC46d3AdcD1a1bBe774601C0ddc542F7',
+    artifactName: 'MakerRouter',
+    category: AddressCategory.PCV,
+    network: Network.Mainnet
+  },
   multisig: {
     address: '0x016177eDbB6809338Fda77b493cA01EA6D7Fc0D4',
     artifactName: 'unknown',
@@ -135,6 +147,12 @@ const MainnetAddresses: MainnetAddresses = {
     address: '0x860fa85f04f9d35B3471D8F7F7fA3Ad31Ce4D5Ae',
     artifactName: 'TimelockController',
     category: AddressCategory.Deprecated,
+    network: Network.Mainnet
+  },
+  makerDaiUsdcPSM: {
+    address: '0x89B78CfA322F6C5dE0aBcEecab66Aee45393cC5A',
+    artifactName: 'unknown',
+    category: AddressCategory.External,
     network: Network.Mainnet
   },
   feiDaiFixedPricePSM: {
@@ -237,14 +255,6 @@ const MainnetAddresses: MainnetAddresses = {
     address: '0x2c01C9166FA3e16c24c118053E346B1DD8e72dE8',
     artifactName: 'TimelockController',
     category: AddressCategory.Governance,
-    network: Network.Arbitrum
-  },
-
-  /// Deprecated Arbitrum L2 Scaling Price Oracle
-  arbitrumScalingPriceOracle: {
-    address: '0x138F30D35557FA72478663b601f0f0FD7cc4E39E',
-    artifactName: 'L2ScalingPriceOracle',
-    category: AddressCategory.Deprecated,
     network: Network.Arbitrum
   },
 

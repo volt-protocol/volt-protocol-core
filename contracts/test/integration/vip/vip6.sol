@@ -18,6 +18,8 @@ contract vip6 is DSTest, IVIP {
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
+    bool public ignore;
+
     /// --------------- Mainnet ---------------
 
     function getMainnetProposal()
@@ -30,12 +32,18 @@ contract vip6 is DSTest, IVIP {
     }
 
     function mainnetSetup() public override {
+        if (false) {
+            ignore = false;
+        }
         revert("no mainnet proposal");
     }
 
     /// assert all contracts have their correct number of roles now,
     /// and that the proper addresses have the correct role after the governance upgrade
     function mainnetValidate() public override {
+        if (false) {
+            ignore = false;
+        }
         revert("no mainnet proposal");
     }
 

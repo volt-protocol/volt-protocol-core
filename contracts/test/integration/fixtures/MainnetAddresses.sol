@@ -28,6 +28,8 @@ library MainnetAddresses {
         0x860fa85f04f9d35B3471D8F7F7fA3Ad31Ce4D5Ae;
     address public constant VOLT_FEI_PSM =
         0x985f9C331a9E4447C782B98D6693F5c7dF8e560e;
+    address public constant VOLT_DAI_PSM =
+        0x42ea9cC945fca2dfFd0beBb7e9B3022f134d9Bdd;
 
     address public constant VOLT_USDC_PSM =
         0x0b9A7EA2FCA868C93640Dd77cF44df335095F501;
@@ -35,6 +37,9 @@ library MainnetAddresses {
         0x87945f59E008aDc9ed6210a8e061f009d6ace718;
     address public constant TIMELOCK_CONTROLLER =
         0x75d078248eE49c585b73E73ab08bb3eaF93383Ae;
+
+    address public constant MAKER_ROUTER =
+        0xC403da9AaC46d3AdcD1a1bBe774601C0ddc542F7;
 
     /// current active EOA's
     address public constant OTC_LOAN_REPAYMENT =
@@ -72,6 +77,9 @@ library MainnetAddresses {
     address public constant VOLT_DEPOSIT =
         0xBDC01c9743989429df9a4Fe24c908D87e462AbC1;
 
+    address public constant FEI_DAI_PSM =
+        0x2A188F9EB761F70ECEa083bA6c2A40145078dfc2;
+
     // ---------- USDC ADDRESSES ----------
 
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -80,6 +88,10 @@ library MainnetAddresses {
         0xAe2D4617c862309A3d75A0fFB358c7a5009c673F;
     address public constant FEI = 0x956F47F50A910163D8BF957Cf5846D573E7f87CA;
 
+    address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+
+    address public constant MAKER_DAI_USDC_PSM =
+        0x89B78CfA322F6C5dE0aBcEecab66Aee45393cC5A;
     // ---------- CHAINLINK ADDRESSES ----------
 
     address public constant CHAINLINK_ORACLE_ADDRESS =
@@ -89,4 +101,9 @@ library MainnetAddresses {
 
     address public constant RARI_VOLT_PCV_DEPOSIT =
         0xFeBDf448C8484834bb399d930d7E1bdC773E23bA;
+
+    // ---------- CURVE ADDRESSES ----------
+
+    address public constant DAI_USDC_USDT_CURVE_POOL =
+        0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7;
 }

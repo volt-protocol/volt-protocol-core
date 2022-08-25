@@ -55,10 +55,16 @@ contract vip5 is DSTest, IVIP, AllRoles {
     }
 
     function arbitrumSetup() public override {
+        if (false) {
+            roleToName[bytes32(0)] = "";
+        }
         revert("no arbitrum proposal");
     }
 
     function arbitrumValidate() public override {
+        if (false) {
+            roleToName[bytes32(0)] = "";
+        }
         revert("no arbitrum proposal");
     }
 }
