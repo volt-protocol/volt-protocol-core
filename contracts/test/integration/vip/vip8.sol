@@ -57,6 +57,10 @@ contract vip8 is DSTest, IVIP {
     function mainnetSetup() public override {
         vm.startPrank(MainnetAddresses.GOVERNOR);
 
+        PCVGuardian(MainnetAddresses.PCV_GUARDIAN).addWhitelistAddress(
+            MainnetAddresses.MAKER_ROUTER
+        );
+
         PCVGuardian(MainnetAddresses.PCV_GUARDIAN)
             .withdrawAllERC20ToSafeAddress(
                 MainnetAddresses.VOLT_FEI_PSM,
@@ -73,6 +77,16 @@ contract vip8 is DSTest, IVIP {
             MainnetAddresses.TIMELOCK_CONTROLLER,
             feiBalance
         );
+
+        uint256 voltBalance = IERC20(MainnetAddresses.VOLT).balanceOf(
+            MainnetAddresses.GOVERNOR
+        );
+
+        IERC20(MainnetAddresses.VOLT).safeTransfer(
+            MainnetAddresses.TIMELOCK_CONTROLLER,
+            voltBalance
+        );
+        vm.stopPrank();
     }
 
     function mainnetValidate() public override {
