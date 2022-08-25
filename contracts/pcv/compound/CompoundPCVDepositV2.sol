@@ -9,11 +9,13 @@ import {CToken} from "./CToken.sol";
 import {CErc20} from "./CErc20.sol";
 import {CoreRef} from "../../refs/CoreRef.sol";
 import {TribeRoles} from "../../core/TribeRoles.sol";
+import {Comptroller} from "./Comptroller.sol";
+import {ICompoundPCVDepositV2} from "./ICompoundPCVDepositV2.sol";
 import {PCVDepositV2} from "../PCVDepositV2.sol";
 
 /// @title Compound PCV Deposit
 /// @author Volt Protocol
-contract CompoundPCVDepositV2 is PCVDepositV2 {
+contract CompoundPCVDepositV2 is ICompoundPCVDepositV2, PCVDepositV2 {
     using SafeERC20 for IERC20;
 
     /// @notice the token underlying the cToken
@@ -21,6 +23,9 @@ contract CompoundPCVDepositV2 is PCVDepositV2 {
 
     /// @notice reference to the CToken this contract holds
     CToken public immutable cToken;
+
+    /// @notice reference to the comptroller smart contract
+    Comptroller public immutable comptroller;
 
     /// @notice scalar value used in Compound
     uint256 public constant EXCHANGE_RATE_SCALE = 1e18;
@@ -31,7 +36,22 @@ contract CompoundPCVDepositV2 is PCVDepositV2 {
     constructor(address _core, address _cToken) CoreRef(_core) {
         cToken = CToken(_cToken);
         token = IERC20(CErc20(_cToken).underlying());
+        comptroller = CToken(_cToken).comptroller();
         require(cToken.isCToken(), "CompoundPCVDepositV2: Not a cToken");
+    }
+
+    /// @notice permisionless function to claim all accrued comp for this
+    /// smart contract. Withdraw happens through withdraw ERC20.
+    /// Gas golfed to only claim rewards for the market this contract is in
+    function claimComp() external {
+        CToken[] memory cTokens = new CToken[](1);
+        address[] memory holder = new address[](1);
+
+        holder[0] = address(this);
+        cTokens[0] = cToken;
+
+        /// this smart contract is supply only, so do not claim borrow rewards
+        comptroller.claimComp(holder, cTokens, false, true);
     }
 
     /// @notice deposit ERC-20 tokens to Compound
