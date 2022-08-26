@@ -31,7 +31,7 @@ contract vip8 is DSTest, IVIP {
         proposal[0].arguments = abi.encodeWithSignature(
             "approve(address,uint256)",
             MainnetAddresses.MAKER_ROUTER,
-            type(uint256).max
+            2_400_000e18
         );
         proposal[0].description = "Timelock approves router to spend FEI";
 

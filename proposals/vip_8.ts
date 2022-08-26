@@ -1,5 +1,4 @@
 import { ProposalDescription } from '@custom-types/types';
-import { ethers } from 'hardhat';
 
 const vip_8: ProposalDescription = {
   title: 'VIP-8: Enable DAI PSM',
@@ -8,7 +7,7 @@ const vip_8: ProposalDescription = {
       target: 'fei',
       values: '0',
       method: 'approve(address,uint256)',
-      arguments: ['{makerRouter}', ethers.constants.MaxUint256],
+      arguments: ['{makerRouter}', '2400000000000000000000000'],
       description: 'Timelock approves router to spend FEI'
     },
     {
