@@ -46,6 +46,7 @@ contract IntegrationTestVIP8 is TimelockSimulation, vip8 {
             vm,
             false
         );
+        mainnetValidate();
     }
 
     function testRedeem(uint80 amountVoltIn) public {

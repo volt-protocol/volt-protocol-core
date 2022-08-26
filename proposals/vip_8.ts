@@ -4,6 +4,13 @@ const vip_8: ProposalDescription = {
   title: 'VIP-8: Enable DAI PSM',
   commands: [
     {
+      target: 'feiPriceBoundPSM',
+      values: '0',
+      method: 'pauseRedeem()',
+      arguments: [],
+      description: 'Pause redemptions on the FEI PSM'
+    },
+    {
       target: 'fei',
       values: '0',
       method: 'approve(address,uint256)',

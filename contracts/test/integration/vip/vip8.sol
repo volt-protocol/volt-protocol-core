@@ -24,33 +24,38 @@ contract vip8 is DSTest, IVIP {
         override
         returns (TimelockSimulation.action[] memory proposal)
     {
-        proposal = new TimelockSimulation.action[](3);
+        proposal = new TimelockSimulation.action[](4);
 
-        proposal[0].target = MainnetAddresses.FEI;
+        proposal[0].target = MainnetAddresses.VOLT_FEI_PSM;
         proposal[0].value = 0;
-        proposal[0].arguments = abi.encodeWithSignature(
+        proposal[0].arguments = abi.encodeWithSignature("pauseRedeem()");
+        proposal[0].description = "Pause redemptions on the FEI PSM";
+
+        proposal[1].target = MainnetAddresses.FEI;
+        proposal[1].value = 0;
+        proposal[1].arguments = abi.encodeWithSignature(
             "approve(address,uint256)",
             MainnetAddresses.MAKER_ROUTER,
             2_400_000e18
         );
-        proposal[0].description = "Timelock approves router to spend FEI";
+        proposal[1].description = "Timelock approves router to spend FEI";
 
-        proposal[1].target = MainnetAddresses.MAKER_ROUTER;
-        proposal[1].value = 0;
-        proposal[1].arguments = abi.encodeWithSignature(
+        proposal[2].target = MainnetAddresses.MAKER_ROUTER;
+        proposal[2].value = 0;
+        proposal[2].arguments = abi.encodeWithSignature(
             "swapAllFeiForDai(address)",
             MainnetAddresses.VOLT_DAI_PSM
         );
-        proposal[1].description = "Swaps FEI for DAI proceeds sent to DAI PSM";
+        proposal[2].description = "Swaps FEI for DAI proceeds sent to DAI PSM";
 
-        proposal[2].target = MainnetAddresses.FEI;
-        proposal[2].value = 0;
-        proposal[2].arguments = abi.encodeWithSignature(
+        proposal[3].target = MainnetAddresses.FEI;
+        proposal[3].value = 0;
+        proposal[3].arguments = abi.encodeWithSignature(
             "approve(address,uint256)",
             MainnetAddresses.MAKER_ROUTER,
             0
         );
-        proposal[2]
+        proposal[3]
             .description = "Timelock revokes router approval to spend FEI";
     }
 
@@ -66,8 +71,6 @@ contract vip8 is DSTest, IVIP {
                 MainnetAddresses.VOLT_FEI_PSM,
                 MainnetAddresses.FEI
             );
-
-        PegStabilityModule(MainnetAddresses.VOLT_FEI_PSM).pauseRedeem();
 
         uint256 feiBalance = IERC20(MainnetAddresses.FEI).balanceOf(
             MainnetAddresses.GOVERNOR
