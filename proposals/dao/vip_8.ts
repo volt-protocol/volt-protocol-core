@@ -41,6 +41,7 @@ const setup: SetupUpgradeFunc = async (addresses, oldContracts, contracts, loggi
   const { fei, feiPriceBoundPSM, pcvGuardian } = contracts;
   const msigSigner = await getImpersonatedSigner(addresses.protocolMultisig);
 
+  await pcvGuardian.connect(msigSigner).addWhitelistAddress(addresses.makerRouter);
   await pcvGuardian.connect(msigSigner).withdrawAllERC20ToSafeAddress(addresses.feiPriceBoundPSM, addresses.fei);
   await feiPriceBoundPSM.connect(msigSigner).pauseRedeem();
 
