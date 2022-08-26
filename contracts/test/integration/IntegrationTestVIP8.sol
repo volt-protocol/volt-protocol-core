@@ -46,22 +46,13 @@ contract IntegrationTestVIP8 is TimelockSimulation, vip8 {
             vm,
             false
         );
-
-        simulate(
-            getVip7(),
-            TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),
-            IPCVGuardian(MainnetAddresses.PCV_GUARDIAN),
-            MainnetAddresses.GOVERNOR,
-            MainnetAddresses.EOA_1,
-            vm,
-            false
-        );
     }
 
     function testRedeem(uint80 amountVoltIn) public {
         uint256 startingUserDaiBalance = dai.balanceOf(address(this));
         uint256 startingPSMDaiBalance = dai.balanceOf(address(psm));
         uint256 startingUserVoltBalance = volt.balanceOf(address(this));
+        uint256 startingPSMVoltBalace = volt.balanceOf(address(psm));
 
         volt.approve(address(psm), amountVoltIn);
 
@@ -75,16 +66,19 @@ contract IntegrationTestVIP8 is TimelockSimulation, vip8 {
         uint256 endingUserVOLTBalance = volt.balanceOf(address(this));
         uint256 endingUserDaiBalance = dai.balanceOf(address(this));
         uint256 endingPSMDaiBalance = dai.balanceOf(address(psm));
+        uint256 endingPSMVoltBalance = volt.balanceOf(address(psm));
 
         assertEq(endingPSMDaiBalance, startingPSMDaiBalance - amountOut);
         assertEq(endingUserVOLTBalance, startingUserVoltBalance - amountVoltIn);
         assertEq(endingUserDaiBalance, startingUserDaiBalance + amountOut);
+        assertEq(endingPSMVoltBalance, startingPSMVoltBalace + amountVoltIn);
     }
 
     function testMint(uint80 amountDaiIn) public {
         uint256 startingUserVoltBalance = volt.balanceOf(address(this));
         uint256 startingUserDaiBalance = dai.balanceOf(address(this));
         uint256 startingPSMVoltBalance = volt.balanceOf(address(psm));
+        uint256 startingPSMDaiBalance = dai.balanceOf(address(psm));
 
         dai.approve(address(psm), amountDaiIn);
         uint256 amountOut = psm.getMintAmountOut(amountDaiIn);
@@ -93,44 +87,11 @@ contract IntegrationTestVIP8 is TimelockSimulation, vip8 {
         uint256 endingUserVoltBalance = volt.balanceOf(address(this));
         uint256 endingUserDaiBalance = dai.balanceOf(address(this));
         uint256 endingPSMVoltBalance = volt.balanceOf(address(psm));
+        uint256 endingPSMDaiBalance = dai.balanceOf(address(psm));
 
         assertEq(endingPSMVoltBalance, startingPSMVoltBalance - amountOut);
         assertEq(endingUserVoltBalance, startingUserVoltBalance + amountOut);
         assertEq(endingUserDaiBalance, startingUserDaiBalance - amountDaiIn);
-    }
-
-    function getVip7()
-        private
-        pure
-        returns (TimelockSimulation.action[] memory proposal)
-    {
-        proposal = new TimelockSimulation.action[](4);
-
-        proposal[0].target = MainnetAddresses.VOLT_FEI_PSM;
-        proposal[0].value = 0;
-        proposal[0].arguments = abi.encodeWithSignature("pauseMint()");
-        proposal[0].description = "Pause Minting on the FEI PSM";
-
-        proposal[1].target = MainnetAddresses.PCV_GUARDIAN;
-        proposal[1].value = 0;
-        proposal[1].arguments = abi.encodeWithSignature(
-            "addWhitelistAddress(address)",
-            MainnetAddresses.VOLT_DAI_PSM
-        );
-        proposal[1]
-            .description = "Add DAI PSM to whitelisted addresses on PCV Guardian";
-
-        proposal[2].target = MainnetAddresses.VOLT_USDC_PSM;
-        proposal[2].value = 0;
-        proposal[2].arguments = abi.encodeWithSignature("unpauseRedeem()");
-        proposal[2].description = "Unpause redemptions for USDC PSM";
-
-        proposal[3].target = MainnetAddresses.VOLT_DAI_PSM;
-        proposal[3].value = 0;
-        proposal[3].arguments = abi.encodeWithSignature(
-            "setOracle(address)",
-            MainnetAddresses.ORACLE_PASS_THROUGH
-        );
-        proposal[3].description = "Set Oracle Pass Through on DAI PSM";
+        assertEq(endingPSMDaiBalance, startingPSMDaiBalance + amountDaiIn);
     }
 }
