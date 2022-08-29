@@ -24,6 +24,7 @@ Steps:
 */
 
 const vipNumber = '8';
+let startingFeiBalance = 0;
 
 // Do any deployments
 // This should exclusively include new contract deployments
@@ -44,8 +45,8 @@ const setup: SetupUpgradeFunc = async (addresses, oldContracts, contracts, loggi
   await pcvGuardian.connect(msigSigner).addWhitelistAddress(addresses.makerRouter);
   await pcvGuardian.connect(msigSigner).withdrawAllERC20ToSafeAddress(addresses.feiPriceBoundPSM, addresses.fei);
 
-  const feiBalance = await fei.balanceOf(msigSigner.address);
-  await fei.connect(msigSigner).transfer(addresses.daiPriceBoundPSM, feiBalance);
+  startingFeiBalance = await fei.balanceOf(msigSigner.address);
+  await fei.connect(msigSigner).transfer(addresses.daiPriceBoundPSM, startingFeiBalance);
 };
 
 // Tears down any changes made in setup() that need to be
@@ -57,10 +58,13 @@ const teardown: TeardownUpgradeFunc = async (addresses, oldContracts, contracts,
 // Run any validations required on the vip using mocha or console logging
 // IE check balances, check state of contracts, etc.
 const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts, logging) => {
-  const { fei, feiPriceBoundPSM } = contracts;
+  const { fei, feiPriceBoundPSM, dai } = contracts;
+
+  const daiBalance = await feiPriceBoundPSM.getRedeemAmountOut(startingFeiBalance);
 
   expect(await feiPriceBoundPSM.redeemPaused()).to.be.true;
   expect(await fei.balanceOf(addresses.feiPriceBoundPSM)).to.equal(0);
+  expect(await dai.balanceOf(addresses.daiPriceBoundPSM)).to.equal(daiBalance);
   expect(await fei.allowance(addresses.timelockController, addresses.makerRouter)).to.equal(0);
 };
 

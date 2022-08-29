@@ -18,6 +18,8 @@ contract vip8 is DSTest, IVIP {
     using SafeERC20 for IERC20;
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
+    uint256 public startingFeiBalance;
+
     function getMainnetProposal()
         public
         pure
@@ -72,13 +74,13 @@ contract vip8 is DSTest, IVIP {
                 MainnetAddresses.FEI
             );
 
-        uint256 feiBalance = IERC20(MainnetAddresses.FEI).balanceOf(
+        startingFeiBalance = IERC20(MainnetAddresses.FEI).balanceOf(
             MainnetAddresses.GOVERNOR
         );
 
         IERC20(MainnetAddresses.FEI).safeTransfer(
             MainnetAddresses.TIMELOCK_CONTROLLER,
-            feiBalance
+            startingFeiBalance
         );
 
         uint256 voltBalance = IERC20(MainnetAddresses.VOLT).balanceOf(
@@ -93,8 +95,18 @@ contract vip8 is DSTest, IVIP {
     }
 
     function mainnetValidate() public override {
+        uint256 daiBalance = PegStabilityModule(MainnetAddresses.FEI_DAI_PSM)
+            .getRedeemAmountOut(startingFeiBalance);
+
         assertTrue(
             PegStabilityModule(MainnetAddresses.VOLT_FEI_PSM).redeemPaused()
+        );
+
+        assertEq(
+            IERC20(MainnetAddresses.DAI).balanceOf(
+                MainnetAddresses.VOLT_DAI_PSM
+            ),
+            daiBalance
         );
 
         assertEq(
