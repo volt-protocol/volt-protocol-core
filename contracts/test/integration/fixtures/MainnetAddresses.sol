@@ -97,6 +97,10 @@ library MainnetAddresses {
 
     address public constant MAKER_USDC_PSM =
         0xAe2D4617c862309A3d75A0fFB358c7a5009c673F;
+
+    address public constant MAKER_GEM_JOIN =
+        0x0A59649758aa4d66E25f08Dd01271e891fe52199;
+
     address public constant FEI = 0x956F47F50A910163D8BF957Cf5846D573E7f87CA;
 
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;

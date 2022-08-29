@@ -13,7 +13,7 @@ import {PCVDepositV2} from "../PCVDepositV2.sol";
 
 /// @notice This contracts allows for swaps between DAI and USDC
 /// by using the Maker DAI-USDC PSM
-/// @author Elliot Friedman, k-xo
+/// @author Elliot Friedman, Kassim
 contract CompoundPCVRouter is CoreRef {
     using SafeERC20 for IERC20;
 
@@ -36,6 +36,10 @@ contract CompoundPCVRouter is CoreRef {
     IERC20 public constant USDC =
         IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
 
+    /// @notice reference to the contract used to sell USDC for DAI
+    address public constant GEM_JOIN =
+        0x0A59649758aa4d66E25f08Dd01271e891fe52199;
+
     /// @notice scaling factor for USDC
     uint256 public constant USDC_SCALING_FACTOR = 1e12;
 
@@ -45,11 +49,11 @@ contract CompoundPCVRouter is CoreRef {
     /// @param _usdcPcvDeposit USDC PCV Deposit in compound
     constructor(
         address _core,
-        IDSSPSM _daiPSM,
+        address _daiPSM,
         PCVDepositV2 _daiPcvDeposit,
         PCVDepositV2 _usdcPcvDeposit
     ) CoreRef(_core) {
-        daiPSM = _daiPSM;
+        daiPSM = IDSSPSM(_daiPSM);
         daiPcvDeposit = _daiPcvDeposit;
         usdcPcvDeposit = _usdcPcvDeposit;
     }
@@ -65,11 +69,8 @@ contract CompoundPCVRouter is CoreRef {
         )
     {
         usdcPcvDeposit.withdraw(address(this), amountUsdcIn); /// pull USDC to router
-        USDC.safeApprove(address(daiPSM), amountUsdcIn); /// approve DAI PSM to spend USDC
-        daiPSM.buyGem(
-            address(daiPcvDeposit),
-            amountUsdcIn * USDC_SCALING_FACTOR
-        ); /// sell USDC for DAI
+        USDC.safeApprove(GEM_JOIN, amountUsdcIn); /// approve DAI PSM to spend USDC
+        daiPSM.sellGem(address(daiPcvDeposit), amountUsdcIn); /// sell USDC for DAI
         daiPcvDeposit.deposit(); /// deposit into compound
     }
 
@@ -85,7 +86,7 @@ contract CompoundPCVRouter is CoreRef {
     {
         daiPcvDeposit.withdraw(address(this), amountDaiIn); /// pull DAI to router
         DAI.safeApprove(address(daiPSM), amountDaiIn); /// approve DAI PSM to spend DAI
-        daiPSM.sellGem(
+        daiPSM.buyGem(
             address(usdcPcvDeposit),
             amountDaiIn / USDC_SCALING_FACTOR
         ); /// sell DAI for USDC
