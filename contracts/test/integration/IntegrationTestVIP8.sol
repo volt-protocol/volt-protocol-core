@@ -27,8 +27,6 @@ contract IntegrationTestVIP8 is TimelockSimulation, vip8 {
 
         vm.startPrank(MainnetAddresses.GOVERNOR);
         core.grantMinter(MainnetAddresses.GOVERNOR);
-        /// mint VOLT to the user
-        volt.mint(address(psm), mintAmount);
         volt.mint(address(this), mintAmount);
         core.revokeMinter(MainnetAddresses.GOVERNOR);
         vm.stopPrank();
@@ -53,7 +51,7 @@ contract IntegrationTestVIP8 is TimelockSimulation, vip8 {
         uint256 startingUserDaiBalance = dai.balanceOf(address(this));
         uint256 startingPSMDaiBalance = dai.balanceOf(address(psm));
         uint256 startingUserVoltBalance = volt.balanceOf(address(this));
-        uint256 startingPSMVoltBalace = volt.balanceOf(address(psm));
+        uint256 startingPSMVoltBalance = volt.balanceOf(address(psm));
 
         volt.approve(address(psm), amountVoltIn);
 
@@ -72,7 +70,7 @@ contract IntegrationTestVIP8 is TimelockSimulation, vip8 {
         assertEq(endingPSMDaiBalance, startingPSMDaiBalance - amountOut);
         assertEq(endingUserVOLTBalance, startingUserVoltBalance - amountVoltIn);
         assertEq(endingUserDaiBalance, startingUserDaiBalance + amountOut);
-        assertEq(endingPSMVoltBalance, startingPSMVoltBalace + amountVoltIn);
+        assertEq(endingPSMVoltBalance, startingPSMVoltBalance + amountVoltIn);
     }
 
     function testMint(uint80 amountDaiIn) public {
