@@ -83,13 +83,9 @@ contract vip8 is DSTest, IVIP {
             startingFeiBalance
         );
 
-        uint256 voltBalance = IERC20(MainnetAddresses.VOLT).balanceOf(
-            MainnetAddresses.GOVERNOR
-        );
-
         IERC20(MainnetAddresses.VOLT).safeTransfer(
-            MainnetAddresses.TIMELOCK_CONTROLLER,
-            voltBalance
+            MainnetAddresses.VOLT_DAI_PSM,
+            2_700_000e18
         );
         vm.stopPrank();
     }
@@ -122,6 +118,13 @@ contract vip8 is DSTest, IVIP {
                 MainnetAddresses.MAKER_ROUTER
             ),
             0
+        );
+
+        assertEq(
+            IERC20(MainnetAddresses.VOLT).balanceOf(
+                MainnetAddresses.VOLT_DAI_PSM
+            ),
+            2_700_000e18
         );
     }
 

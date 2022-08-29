@@ -7,6 +7,7 @@ import {
   ValidateUpgradeFunc
 } from '@custom-types/types';
 import { getImpersonatedSigner } from '@test/helpers';
+import { ethers } from 'ethers';
 
 /*
 
@@ -39,14 +40,15 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
 // This could include setting up Hardhat to impersonate accounts,
 // ensuring contracts have a specific state, etc.
 const setup: SetupUpgradeFunc = async (addresses, oldContracts, contracts, logging) => {
-  const { fei, pcvGuardian } = contracts;
+  const { fei, pcvGuardian, volt } = contracts;
   const msigSigner = await getImpersonatedSigner(addresses.protocolMultisig);
 
   await pcvGuardian.connect(msigSigner).addWhitelistAddress(addresses.makerRouter);
   await pcvGuardian.connect(msigSigner).withdrawAllERC20ToSafeAddress(addresses.feiPriceBoundPSM, addresses.fei);
 
   startingFeiBalance = await fei.balanceOf(msigSigner.address);
-  await fei.connect(msigSigner).transfer(addresses.daiPriceBoundPSM, startingFeiBalance);
+  await fei.connect(msigSigner).safeTransfer(addresses.daiPriceBoundPSM, startingFeiBalance);
+  await volt.connect(msigSigner).safeTransfer(addresses.daiPriceBoundPSM, ethers.utils.parseEther('2700000'));
 };
 
 // Tears down any changes made in setup() that need to be
