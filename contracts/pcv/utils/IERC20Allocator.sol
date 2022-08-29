@@ -11,35 +11,42 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// This contract should never hold PCV, however it is a PCV Deposit, so if tokens get sent to it,
 /// they can still be recovered.
 /// @author Volt Protocol
-interface IERC20Puller {
-    /// @notice event emitted when tokens are dripped
-    event Pulled(uint256 amount);
+interface IERC20Allocator {
+    /// @notice event emitted when tokens are sent to the pushTarget from the pullTarget
+    event Skimmed(uint256 amount);
+
+    /// @notice event emitted when tokens are sent to the pullTarget from the pushTarget
+    event Dripped(uint256 amount);
 
     /// @notice event emitted when new pull threshold is set
-    event PullThresholdUpdate(uint256 oldThreshold, uint256 newThreshold);
+    event TargetBalanceUpdate(uint256 oldThreshold, uint256 newThreshold);
 
     /// @notice target address to send excess tokens
-    function pushTarget() external view returns (address);
+    function pcvDeposit() external view returns (address);
 
     /// @notice target address to pull excess tokens from
-    function pullTarget() external view returns (address);
+    function psm() external view returns (address);
 
     /// @notice target token address to send
     function token() external view returns (address);
 
     /// @notice only pull if and only if balance of target is greater than pullThreshold
-    function pullThreshold() external view returns (uint256);
+    function targetBalance() external view returns (uint256);
 
     /// @notice pull ERC20 tokens from pull target and send to push target
     /// if and only if the amount of tokens held in the contract is above
     /// the threshold.
-    function pull() external;
+    function skim() external;
 
     /// @notice function that returns whether the amount of tokens held
-    /// are above the threshold
-    function checkCondition() external view returns (bool);
+    /// are above the target and funds should flow from PSM -> PCV Deposit
+    function checkSkimCondition() external view returns (bool);
+
+    /// @notice function that returns whether the amount of tokens held
+    /// are below the target and funds should flow from PCV Deposit -> PSM
+    function checkDripCondition() external view returns (bool);
 
     /// @notice set the pull threshold
     /// @param newPullThreshold the new amount over which any excess funds will be sent
-    function setPullThreshold(uint256 newPullThreshold) external;
+    function setTargetBalance(uint256 newPullThreshold) external;
 }

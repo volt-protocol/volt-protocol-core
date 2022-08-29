@@ -23,6 +23,10 @@ library TribeRoles {
     /// @notice the role which can arbitrarily move PCV in any size from any contract
     bytes32 internal constant PCV_CONTROLLER = keccak256("PCV_CONTROLLER_ROLE");
 
+    /// @notice the role which can switch between cUSDC and cDAI in compound
+    bytes32 internal constant COMPOUND_PCV_MOVER =
+        keccak256("COMPOUND_PCV_MOVER");
+
     /// @notice can mint FEI arbitrarily
     bytes32 internal constant MINTER = keccak256("MINTER_ROLE");
 
