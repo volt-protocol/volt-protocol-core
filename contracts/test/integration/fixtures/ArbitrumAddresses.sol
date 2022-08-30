@@ -16,13 +16,17 @@ library ArbitrumAddresses {
     address public constant DEPRECATED_SCALING_PRICE_ORACLE =
         0x138F30D35557FA72478663b601f0f0FD7cc4E39E;
 
+    /// @notice multisig governor
     address public constant GOVERNOR =
         0x1A1075cef632624153176CCf19Ae0175953CF010;
+    /// @notice PCV Guardian smart contract
     address public constant PCV_GUARDIAN =
         0x14eCB5Ff2A78364E0FF443B7F0F6e0e393531484;
+    /// @notice deployer
     address public constant DEPLOYER =
         0x25dCffa22EEDbF0A69F6277e24C459108c186ecB;
 
+    /// @notice timelock under active use
     address public constant TIMELOCK_CONTROLLER =
         0x2c01C9166FA3e16c24c118053E346B1DD8e72dE8;
 

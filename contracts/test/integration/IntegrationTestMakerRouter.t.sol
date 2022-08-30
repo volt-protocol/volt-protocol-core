@@ -39,7 +39,7 @@ contract IntegrationTestMakerRouter is DSTest {
         dai.approve(address(makerRouter), type(uint256).max);
 
         vm.prank(0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643); //cDai contract
-        dai.transfer(address(feiPSM), mintAmount + 50_000_000e18);
+        dai.transfer(address(feiPSM), mintAmount + 30_000_000e18);
 
         vm.prank(MainnetAddresses.FEI_GOVERNOR);
         fei.mint(address(this), mintAmount);
