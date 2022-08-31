@@ -35,13 +35,9 @@ contract IntegrationTestCompoundPCVDeposits is DSTest {
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
-    uint256 public constant USDC_SCALING_FACTOR = 1e12;
-
-    uint256 public constant mintAmount = 400_000_000e18;
-
-    uint256 daiBalance;
-    uint256 feiBalance;
-    uint256 usdcBalance;
+    uint256 public daiBalance;
+    uint256 public feiBalance;
+    uint256 public usdcBalance;
 
     function setUp() public {
         /// TODO remove and replace with deployed smart contracts once they are live
