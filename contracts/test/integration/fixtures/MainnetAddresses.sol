@@ -83,15 +83,20 @@ library MainnetAddresses {
     // ---------- USDC ADDRESSES ----------
 
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address public constant CUSDC = 0x39AA39c021dfbaE8faC545936693aC917d5E7563;
+
+    address public constant FEI = 0x956F47F50A910163D8BF957Cf5846D573E7f87CA;
+    address public constant CFEI = 0x7713DD9Ca933848F6819F38B8352D9A15EA73F67;
+
+    address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address public constant CDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
 
     address public constant MAKER_USDC_PSM =
         0xAe2D4617c862309A3d75A0fFB358c7a5009c673F;
-    address public constant FEI = 0x956F47F50A910163D8BF957Cf5846D573E7f87CA;
-
-    address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
     address public constant MAKER_DAI_USDC_PSM =
         0x89B78CfA322F6C5dE0aBcEecab66Aee45393cC5A;
+
     // ---------- CHAINLINK ADDRESSES ----------
 
     address public constant CHAINLINK_ORACLE_ADDRESS =

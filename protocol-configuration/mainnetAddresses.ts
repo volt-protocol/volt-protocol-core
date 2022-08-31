@@ -197,6 +197,24 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.External,
     network: Network.Mainnet
   },
+  cDai: {
+    address: '0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643',
+    artifactName: 'unknown', /// CErc20Delegator
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  cFei: {
+    address: '0x7713DD9Ca933848F6819F38B8352D9A15EA73F67',
+    artifactName: 'unknown', /// CErc20Delegator
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  cUsdc: {
+    address: '0x39AA39c021dfbaE8faC545936693aC917d5E7563',
+    artifactName: 'unknown', /// CErc20Delegator
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
   pool8Fei: {
     address: '0xd8553552f8868C1Ef160eEdf031cF0BCf9686945',
     artifactName: 'unknown', /// CErc20Delegator
