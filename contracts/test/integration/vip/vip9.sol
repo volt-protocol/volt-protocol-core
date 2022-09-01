@@ -62,6 +62,7 @@ contract vip9 is DSTest, IVIP {
         // assertEq(address(daiDeposit.token()), address(MainnetAddresses.DAI));
         // assertEq(address(feiDeposit.token()), address(MainnetAddresses.FEI));
         // assertEq(address(usdcDeposit.token()), address(MainnetAddresses.USDC));
+        //// additional steps:
         /// send fei to fei pcv deposit, and deposit, then test that we can pull that
         /// deposit back out using pcv guard
     }
