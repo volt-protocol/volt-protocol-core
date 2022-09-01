@@ -26,17 +26,11 @@ const vipNumber = '9';
 // Do any deployments
 // This should exclusively include new contract deployments
 const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: NamedAddresses, logging: boolean) => {
-  const daiCompoundPCVDeposit = await (
-    await ethers.getContractFactory('ERC20CompoundPCVDeposit')
-  ).deploy(addresses.core, addresses.cDai);
+  const erc20CompoundPCVDepositFactory = await ethers.getContractFactory('ERC20CompoundPCVDeposit');
 
-  const feiCompoundPCVDeposit = await (
-    await ethers.getContractFactory('ERC20CompoundPCVDeposit')
-  ).deploy(addresses.core, addresses.cFei);
-
-  const usdcCompoundPCVDeposit = await (
-    await ethers.getContractFactory('ERC20CompoundPCVDeposit')
-  ).deploy(addresses.core, addresses.cUsdc);
+  const daiCompoundPCVDeposit = await erc20CompoundPCVDepositFactory.deploy(addresses.core, addresses.cDai);
+  const feiCompoundPCVDeposit = await erc20CompoundPCVDepositFactory.deploy(addresses.core, addresses.cFei);
+  const usdcCompoundPCVDeposit = await erc20CompoundPCVDepositFactory.deploy(addresses.core, addresses.cUsdc);
 
   await daiCompoundPCVDeposit.deployed();
   await feiCompoundPCVDeposit.deployed();

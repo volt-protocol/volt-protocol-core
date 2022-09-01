@@ -39,7 +39,8 @@ contract vip9 is DSTest, IVIP {
             "addWhitelistAddresses(address[])",
             toWhitelist
         );
-        proposal[0].description = "Pause redemptions on the FEI PSM";
+        proposal[0]
+            .description = "Add DAI, FEI, and USDC Compound PCV Deposit to PCV Guardian";
     }
 
     function mainnetSetup() public override {}
