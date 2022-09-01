@@ -29,11 +29,12 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
   const erc20CompoundPCVDepositFactory = await ethers.getContractFactory('ERC20CompoundPCVDeposit');
 
   const daiCompoundPCVDeposit = await erc20CompoundPCVDepositFactory.deploy(addresses.core, addresses.cDai);
-  const feiCompoundPCVDeposit = await erc20CompoundPCVDepositFactory.deploy(addresses.core, addresses.cFei);
-  const usdcCompoundPCVDeposit = await erc20CompoundPCVDepositFactory.deploy(addresses.core, addresses.cUsdc);
-
   await daiCompoundPCVDeposit.deployed();
+
+  const feiCompoundPCVDeposit = await erc20CompoundPCVDepositFactory.deploy(addresses.core, addresses.cFei);
   await feiCompoundPCVDeposit.deployed();
+
+  const usdcCompoundPCVDeposit = await erc20CompoundPCVDepositFactory.deploy(addresses.core, addresses.cUsdc);
   await usdcCompoundPCVDeposit.deployed();
 
   console.log(`\nDAI Compound PCV Deposit deployed to: ${daiCompoundPCVDeposit.address}`);

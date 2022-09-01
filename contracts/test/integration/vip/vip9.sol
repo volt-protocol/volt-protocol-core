@@ -18,8 +18,6 @@ contract vip9 is DSTest, IVIP {
     using SafeERC20 for IERC20;
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
-    uint256 public startingFeiBalance;
-
     function getMainnetProposal()
         public
         pure
@@ -64,6 +62,8 @@ contract vip9 is DSTest, IVIP {
         // assertEq(address(daiDeposit.token()), address(MainnetAddresses.DAI));
         // assertEq(address(feiDeposit.token()), address(MainnetAddresses.FEI));
         // assertEq(address(usdcDeposit.token()), address(MainnetAddresses.USDC));
+        /// send fei to fei pcv deposit, and deposit, then test that we can pull that
+        /// deposit back out using pcv guard
     }
 
     /// prevent errors by reverting on arbitrum proposal functions being called on this VIP
