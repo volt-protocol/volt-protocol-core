@@ -76,21 +76,21 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.Core,
     network: Network.Mainnet
   },
-  voltFusePCVDeposit: {
-    address: '0xFeBDf448C8484834bb399d930d7E1bdC773E23bA',
+  daiCompoundPCVDeposit: {
+    address: '0xE3cbfd618463B7198fa0743AbFA56170557cc880',
     artifactName: 'ERC20CompoundPCVDeposit',
     category: AddressCategory.Deprecated,
     network: Network.Mainnet
   },
-  feiFusePCVDeposit: {
-    address: '0x4188fbD7aDC72853E3275F1c3503E170994888D7',
+  feiCompoundPCVDeposit: {
+    address: '0x604556Bbc4aB70B3c73d7bb6c4867B6239511301',
     artifactName: 'ERC20CompoundPCVDeposit',
     category: AddressCategory.Deprecated,
     network: Network.Mainnet
   },
-  nonCustodialFusePSM: {
-    address: '0x18f251FC3CE0Cb690F13f62213aba343657d0E72',
-    artifactName: 'INonCustodialPSM',
+  usdcCompoundPCVDeposit: {
+    address: '0x3B69e3073cf86099a9bbB650e8682D6FdCfb29db',
+    artifactName: 'ERC20CompoundPCVDeposit',
     category: AddressCategory.Deprecated,
     network: Network.Mainnet
   },

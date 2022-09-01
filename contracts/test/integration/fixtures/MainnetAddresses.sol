@@ -104,6 +104,13 @@ library MainnetAddresses {
 
     // ---------- PCV DEPOSIT ADDRESSES ----------
 
+    address public constant COMPOUND_DAI_PCV_DEPOSIT =
+        0xE3cbfd618463B7198fa0743AbFA56170557cc880;
+    address public constant COMPOUND_FEI_PCV_DEPOSIT =
+        0x604556Bbc4aB70B3c73d7bb6c4867B6239511301;
+    address public constant COMPOUND_USDC_PCV_DEPOSIT =
+        0x3B69e3073cf86099a9bbB650e8682D6FdCfb29db;
+
     address public constant RARI_VOLT_PCV_DEPOSIT =
         0xFeBDf448C8484834bb399d930d7E1bdC773E23bA;
 
