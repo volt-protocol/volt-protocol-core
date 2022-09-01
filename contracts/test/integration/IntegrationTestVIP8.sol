@@ -12,6 +12,8 @@ import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
 import {PriceBoundPSM} from "../../peg/PriceBoundPSM.sol";
 import {IPCVGuardian} from "../../pcv/IPCVGuardian.sol";
 
+import "hardhat/console.sol";
+
 contract IntegrationTestVIP8 is TimelockSimulation, vip8 {
     using SafeCast for *;
     PriceBoundPSM private psm;
@@ -33,18 +35,6 @@ contract IntegrationTestVIP8 is TimelockSimulation, vip8 {
 
         vm.prank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
         dai.transfer(address(this), mintAmount);
-
-        mainnetSetup();
-        simulate(
-            getMainnetProposal(),
-            TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),
-            IPCVGuardian(MainnetAddresses.PCV_GUARDIAN),
-            MainnetAddresses.GOVERNOR,
-            MainnetAddresses.EOA_1,
-            vm,
-            false
-        );
-        mainnetValidate();
     }
 
     function testRedeem(uint80 amountVoltIn) public {
@@ -88,9 +78,9 @@ contract IntegrationTestVIP8 is TimelockSimulation, vip8 {
         uint256 endingPSMVoltBalance = volt.balanceOf(address(psm));
         uint256 endingPSMDaiBalance = dai.balanceOf(address(psm));
 
-        assertEq(endingPSMVoltBalance, startingPSMVoltBalance - amountOut);
+        assertEq(startingPSMVoltBalance - endingPSMVoltBalance, amountOut);
         assertEq(endingUserVoltBalance, startingUserVoltBalance + amountOut);
         assertEq(endingUserDaiBalance, startingUserDaiBalance - amountDaiIn);
-        assertEq(endingPSMDaiBalance, startingPSMDaiBalance + amountDaiIn);
+        assertEq(endingPSMDaiBalance - startingPSMDaiBalance, amountDaiIn);
     }
 }
