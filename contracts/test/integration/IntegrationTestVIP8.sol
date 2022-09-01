@@ -12,8 +12,6 @@ import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
 import {PriceBoundPSM} from "../../peg/PriceBoundPSM.sol";
 import {IPCVGuardian} from "../../pcv/IPCVGuardian.sol";
 
-import "hardhat/console.sol";
-
 contract IntegrationTestVIP8 is TimelockSimulation, vip8 {
     using SafeCast for *;
     PriceBoundPSM private psm;
