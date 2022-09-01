@@ -9,7 +9,7 @@ import {PCVGuardian} from "./../../../pcv/PCVGuardian.sol";
 
 /// @dev test harness for running and simulating VOLT Improvement Proposals
 /// inherit the proposal to simulate
-contract Runner is TimelockSimulation {
+contract Runner is TimelockSimulation, vip8 {
     /// @notice mainnet PCV Guardian
     PCVGuardian private immutable mainnetPCVGuardian =
         PCVGuardian(MainnetAddresses.PCV_GUARDIAN);
@@ -21,17 +21,17 @@ contract Runner is TimelockSimulation {
     /// remove all function calls inside testProposal and don't inherit the VIP
     /// once the proposal is live and passed
     function testProposalMainnet() public {
-        // mainnetSetup();
-        // simulate(
-        //     getMainnetProposal(),
-        //     TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),
-        //     mainnetPCVGuardian,
-        //     MainnetAddresses.GOVERNOR,
-        //     MainnetAddresses.EOA_1,
-        //     vm,
-        //     true
-        // );
-        // mainnetValidate();
+        mainnetSetup();
+        simulate(
+            getMainnetProposal(),
+            TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),
+            mainnetPCVGuardian,
+            MainnetAddresses.GOVERNOR,
+            MainnetAddresses.EOA_1,
+            vm,
+            true
+        );
+        mainnetValidate();
     }
 
     function testProposalArbitrum() public {
