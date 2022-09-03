@@ -4,7 +4,7 @@ jobs:
     working_directory: ~/repo
     docker:
       - image: circleci/node:14
-    resource_class: xlarge
+    resource_class: 2xlarge
     steps:
       - checkout
       - run:
