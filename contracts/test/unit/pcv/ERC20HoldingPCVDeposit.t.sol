@@ -76,7 +76,7 @@ contract UnitTestERC20HoldingsPCVDeposit is DSTest {
         assertEq(token.balanceOf(address(erc20HoldingDeposit)), tokenAmount);
         assertEq(token.balanceOf(address(this)), 0);
 
-        vm.prank(addresses.governorAddress);
+        vm.prank(addresses.pcvControllerAddress);
         erc20HoldingDeposit.withdrawERC20(
             address(token),
             address(this),
@@ -96,7 +96,7 @@ contract UnitTestERC20HoldingsPCVDeposit is DSTest {
         assertEq(address(erc20HoldingDeposit).balance, tokenAmount);
         assertEq(recipient.balance, 0);
 
-        vm.prank(addresses.governorAddress);
+        vm.prank(addresses.pcvControllerAddress);
         erc20HoldingDeposit.withdrawETH(recipient, tokenAmount);
 
         assertEq(address(erc20HoldingDeposit).balance, 0);
@@ -109,12 +109,12 @@ contract UnitTestERC20HoldingsPCVDeposit is DSTest {
     }
 
     function testWithdrawAllFailsNonPCVController() public {
-        vm.expectRevert("CoreRef: Caller is not a PCV controller");
+        vm.expectRevert("UNAUTHORIZED");
         erc20HoldingDeposit.withdrawAll(address(this));
     }
 
     function testWithdrawFailsNonPCVController() public {
-        vm.expectRevert("CoreRef: Caller is not a PCV controller");
+        vm.expectRevert("UNAUTHORIZED");
         erc20HoldingDeposit.withdraw(address(this), 10);
     }
 
