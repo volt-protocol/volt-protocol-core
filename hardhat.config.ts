@@ -21,12 +21,6 @@ const mainnetAlchemyApiKey = process.env.MAINNET_ALCHEMY_API_KEY;
 const arbitrumAlchemyApiKey = process.env.ARBITRUM_ALCHEMY_API_KEY;
 const useJSONTestReporter = process.env.REPORT_TEST_RESULTS_AS_JSON;
 
-if (!(process.env.NODE_OPTIONS && process.env.NODE_OPTIONS.includes('max-old-space-size'))) {
-  throw new Error(
-    `Please export node env var max-old-space-size before running hardhat. "export NODE_OPTIONS=--max-old-space-size=4096"`
-  );
-}
-
 if (enableMainnetForking) {
   if (!mainnetAlchemyApiKey) {
     throw new Error('Cannot fork mainnet without mainnet alchemy api key.');
