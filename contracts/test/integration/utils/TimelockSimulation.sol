@@ -1,15 +1,23 @@
 pragma solidity =0.8.13;
 
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
-import {DSTest} from "./../../unit/utils/DSTest.sol";
 import {Vm} from "./../../unit/utils/Vm.sol";
 import {ITimelockSimulation} from "./ITimelockSimulation.sol";
 import {PCVGuardianWhitelist} from "./PCVGuardianWhitelist.sol";
+import {OracleVerification} from "./OracleVerification.sol";
+import {MintRedeemVerification} from "./MintRedeemVerification.sol";
+import {PCVGuardVerification} from "./PCVGuardVerification.sol";
 import {IPCVGuardian} from "../../../pcv/IPCVGuardian.sol";
 
 import "hardhat/console.sol";
 
-contract TimelockSimulation is DSTest, PCVGuardianWhitelist {
+contract TimelockSimulation is
+    ITimelockSimulation,
+    PCVGuardianWhitelist,
+    OracleVerification,
+    PCVGuardVerification,
+    MintRedeemVerification
+{
     /// @notice simulate timelock proposal
     /// @param proposal an array of actions that compose a proposal
     /// @param timelock to execute the proposal against
@@ -105,8 +113,22 @@ contract TimelockSimulation is DSTest, PCVGuardianWhitelist {
         vm.warp(block.timestamp + delay);
 
         if (!timelock.isOperationDone(proposalId)) {
+            /// record oracle values in PSM's before executing
+            preActionVerifyOracle();
+
+            preActionVerifyPCV(); /// cache PCV amount before executing
+
             vm.prank(executor);
             timelock.executeBatch(targets, values, payloads, predecessor, salt);
+
+            postActionVerifyPCV(vm); /// verify PCV amounts are the same before and after governance action
+
+            /// verify all oracle prices in PSM's are the same after execution
+            postActionVerifyOracle();
+
+            /// verify mints and redeems work across all PSM's
+            postActionVerifyRedeem(vm);
+            postActionVerifyMint(vm);
 
             if (doLogging) {
                 console.log("execute batch calldata");
@@ -125,6 +147,7 @@ contract TimelockSimulation is DSTest, PCVGuardianWhitelist {
             console.log("proposal already executed");
         }
 
+        /// verify that all funds are being sent to an address whitelisted in the PCV Guardian
         verifyAction(proposal, guardian);
     }
 }
