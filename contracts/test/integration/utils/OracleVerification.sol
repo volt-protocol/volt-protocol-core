@@ -25,12 +25,23 @@ contract OracleVerification {
     /// @notice all oracle prices gathered during verification
     uint256[] private oraclePrices;
 
+    /// @notice address all psm oracles should point to
+    address private cachedOracle;
+
     /// @notice call before governance action
     function preActionVerifyOracle() internal {
         address[] storage psms = block.chainid == 1
             ? allMainnetPSMs
             : allArbitrumPSMs;
         for (uint256 i = 0; i < psms.length; i++) {
+            if (cachedOracle == address(0)) {
+                cachedOracle = address(IOracleRef(psms[i]).oracle());
+            } else {
+                require(
+                    cachedOracle == address(IOracleRef(psms[i]).oracle()),
+                    "OracleVerification: Invalid oracle"
+                );
+            }
             oraclePrices.push(IOracleRef(psms[i]).readOracle().value);
         }
     }
@@ -44,6 +55,10 @@ contract OracleVerification {
             require(
                 oraclePrices[i] == IOracleRef(psms[i]).readOracle().value,
                 "OracleVerification: Price not the same after proposal"
+            );
+            require(
+                cachedOracle == address(IOracleRef(psms[i]).oracle()),
+                "OracleVerification: oracle not the same after proposal"
             );
         }
     }
