@@ -39,13 +39,10 @@ contract IntegrationTestCompoundPCVDeposits is DSTest {
     IERC20 private usdc = IERC20(MainnetAddresses.USDC);
 
     uint256 public daiBalance;
-    uint256 public feiBalance;
     uint256 public usdcBalance;
 
     function setUp() public {
         daiBalance = daiDeposit.balance();
-
-        feiBalance = feiDeposit.balance();
 
         usdcBalance = usdcDeposit.balance();
 
@@ -104,7 +101,7 @@ contract IntegrationTestCompoundPCVDeposits is DSTest {
             0
         );
 
-        assertTrue(daiDeposit.balance().toInt256() <= 1e18); /// only dust remains
-        assertTrue(usdcDeposit.balance().toInt256() <= 1e3); /// only dust remains
+        assertTrue(daiDeposit.balance().toInt256() <= 1e20); /// only dust remains, lte 100 dai
+        assertTrue(usdcDeposit.balance().toInt256() <= 1e3); /// only dust remains, lte .001 usdc
     }
 }
