@@ -4,8 +4,6 @@ import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
 import '@typechain/hardhat';
 import '@idle-finance/hardhat-proposals-plugin';
-import 'hardhat-gas-reporter';
-import 'hardhat-contract-sizer';
 import 'solidity-coverage';
 import 'tsconfig-paths/register';
 
