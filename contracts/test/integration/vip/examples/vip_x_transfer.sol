@@ -3,7 +3,7 @@ pragma solidity =0.8.13;
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
-import {TimelockSimulation} from "../../utils/TimelockSimulation.sol";
+import {ITimelockSimulation} from "../../utils/ITimelockSimulation.sol";
 import {ArbitrumAddresses} from "../../fixtures/ArbitrumAddresses.sol";
 import {MainnetAddresses} from "../../fixtures/MainnetAddresses.sol";
 import {PriceBoundPSM} from "../../../../peg/PriceBoundPSM.sol";
@@ -27,9 +27,9 @@ contract vip_x_transfer is DSTest, IVIP {
         public
         pure
         override
-        returns (TimelockSimulation.action[] memory proposal)
+        returns (ITimelockSimulation.action[] memory proposal)
     {
-        proposal = new TimelockSimulation.action[](1);
+        proposal = new ITimelockSimulation.action[](1);
 
         proposal[0].target = MainnetAddresses.VOLT;
         proposal[0].value = 0;
@@ -60,7 +60,7 @@ contract vip_x_transfer is DSTest, IVIP {
         public
         pure
         override
-        returns (TimelockSimulation.action[] memory proposal)
+        returns (ITimelockSimulation.action[] memory proposal)
     {}
 
     function arbitrumSetup() public override {}

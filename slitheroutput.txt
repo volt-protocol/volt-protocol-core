@@ -1,0 +1,289 @@
+OtcEscrow.swap() (contracts/utils/OtcEscrow.sol#48-58) uses arbitrary from in transferFrom: IERC20(receivedToken).safeTransferFrom(beneficiary,recipient,receivedAmount) (contracts/utils/OtcEscrow.sol#50-54)
+Reference: https://github.com/trailofbits/slither/wiki/Detector-Documentation#arbitrary-send-erc20
+
+BokkyPooBahsDateTimeLibrary._daysFromDate(uint256,uint256,uint256) (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#59-80) performs a multiplication on the result of a division:
+	-__days = _day - 32075 + (1461 * (_year + 4800 + (_month - 14) / 12)) / 4 + (367 * (_month - 2 - ((_month - 14) / 12) * 12)) / 12 - (3 * ((_year + 4900 + (_month - 14) / 12) / 100)) / 4 - OFFSET19700101 (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#69-77)
+BokkyPooBahsDateTimeLibrary._daysToDate(uint256) (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#99-124) performs a multiplication on the result of a division:
+	-N = (4 * L) / 146097 (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#111)
+	-L = L - (146097 * N + 3) / 4 (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#112)
+BokkyPooBahsDateTimeLibrary._daysToDate(uint256) (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#99-124) performs a multiplication on the result of a division:
+	-_year = (4000 * (L + 1)) / 1461001 (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#113)
+	-L = L - (1461 * _year) / 4 + 31 (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#114)
+BokkyPooBahsDateTimeLibrary._daysToDate(uint256) (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#99-124) performs a multiplication on the result of a division:
+	-_month = (80 * L) / 2447 (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#115)
+	-_day = L - (2447 * _month) / 80 (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#116)
+BokkyPooBahsDateTimeLibrary._daysToDate(uint256) (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#99-124) performs a multiplication on the result of a division:
+	-L = _month / 11 (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#117)
+	-_month = _month + 2 - 12 * L (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#118)
+VoltSystemOracle.getCurrentOraclePrice() (contracts/oracle/VoltSystemOracle.sol#55-67) performs a multiplication on the result of a division:
+	-pricePercentageChange = cachedOraclePrice * monthlyChangeRateBasisPoints / Constants.BASIS_POINTS_GRANULARITY (contracts/oracle/VoltSystemOracle.sol#63)
+	-priceDelta = pricePercentageChange * timeDelta / TIMEFRAME (contracts/oracle/VoltSystemOracle.sol#64)
+OracleRef.readOracle() (contracts/refs/OracleRef.sol#101-124) performs a multiplication on the result of a division:
+	-_peg = _peg.div(scalingFactor) (contracts/refs/OracleRef.sol#117)
+	-_peg = _peg.mul(scalingFactor) (contracts/refs/OracleRef.sol#120)
+Deviation.calculateDeviationThresholdBasisPoints(int256,int256) (contracts/utils/Deviation.sol#17-26) performs a multiplication on the result of a division:
+	-basisPoints = (delta * Constants.BP_INT) / a (contracts/utils/Deviation.sol#23)
+	-(basisPoints * - 1).toUint256() (contracts/utils/Deviation.sol#25)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#divide-before-multiply
+
+ERC20CompoundPCVDeposit.deposit() (contracts/pcv/compound/ERC20CompoundPCVDeposit.sol#25-37) uses a dangerous strict equality:
+	- require(bool,string)(CErc20(address(cToken)).mint(amount) == 0,ERC20CompoundPCVDeposit: deposit error) (contracts/pcv/compound/ERC20CompoundPCVDeposit.sol#31-34)
+RateLimited._replenishBuffer(uint256) (contracts/utils/RateLimited.sol#117-131) uses a dangerous strict equality:
+	- newBuffer == _bufferCap (contracts/utils/RateLimited.sol#123)
+Timed.isTimeEnded() (contracts/utils/Timed.sol#39-41) uses a dangerous strict equality:
+	- remainingTime() == 0 (contracts/utils/Timed.sol#40)
+Vcon._writeCheckpoint(address,uint32,uint96,uint96) (contracts/vcon/Vcon.sol#472-497) uses a dangerous strict equality:
+	- nCheckpoints > 0 && checkpoints[delegatee][nCheckpoints - 1].fromBlock == blockNumber (contracts/vcon/Vcon.sol#484-485)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#dangerous-strict-equalities
+
+ERC20CompoundPCVDeposit.deposit() (contracts/pcv/compound/ERC20CompoundPCVDeposit.sol#25-37) ignores return value by token.approve(address(cToken),amount) (contracts/pcv/compound/ERC20CompoundPCVDeposit.sol#28)
+MakerRouter.constructor(address,IDSSPSM,IPegStabilityModule) (contracts/pcv/maker/MakerRouter.sol#40-50) ignores return value by FEI.approve(address(feiPSM),type()(uint256).max) (contracts/pcv/maker/MakerRouter.sol#48)
+MakerRouter.constructor(address,IDSSPSM,IPegStabilityModule) (contracts/pcv/maker/MakerRouter.sol#40-50) ignores return value by DAI.approve(address(daiPSM),type()(uint256).max) (contracts/pcv/maker/MakerRouter.sol#49)
+MakerRouter._redeemFromFeiPSM(uint256,uint256,address) (contracts/pcv/maker/MakerRouter.sol#164-172) ignores return value by feiPSM.redeem(to,amountFeiIn,minDaiAmountOut) (contracts/pcv/maker/MakerRouter.sol#171)
+MakerRouter._redeemAllBalanceFromFeiPSM(address) (contracts/pcv/maker/MakerRouter.sol#176-201) ignores return value by feiPSM.redeem(to,amountFeiIn,minDaiAmountOut) (contracts/pcv/maker/MakerRouter.sol#193)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unused-return
+
+BokkyPooBahsDateTimeLibrary._daysToDate(uint256).L (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#110) is written in both
+	L = L - (1461 * _year) / 4 + 31 (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#114)
+	L = _month / 11 (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#117)
+BokkyPooBahsDateTimeLibrary.subMonths(uint256,uint256).year (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#426) is written in both
+	(year,month,day) = _daysToDate(timestamp / SECONDS_PER_DAY) (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#429)
+	year = yearMonth / 12 (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#431)
+BokkyPooBahsDateTimeLibrary.subMonths(uint256,uint256).month (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#427) is written in both
+	(year,month,day) = _daysToDate(timestamp / SECONDS_PER_DAY) (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#429)
+	month = (yearMonth % 12) + 1 (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#432)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#write-after-write
+
+PCVGuardAdmin.constructor(address)._core (contracts/pcv/PCVGuardAdmin.sol#15) shadows:
+	- CoreRef._core (contracts/refs/CoreRef.sol#11) (state variable)
+PCVGuardian.constructor(address,address,address[])._core (contracts/pcv/PCVGuardian.sol#25) shadows:
+	- CoreRef._core (contracts/refs/CoreRef.sol#11) (state variable)
+CompoundPCVDepositBase.constructor(address,address)._core (contracts/pcv/compound/CompoundPCVDepositBase.sol#18) shadows:
+	- CoreRef._core (contracts/refs/CoreRef.sol#11) (state variable)
+ERC20CompoundPCVDeposit.constructor(address,address)._core (contracts/pcv/compound/ERC20CompoundPCVDeposit.sol#18) shadows:
+	- CoreRef._core (contracts/refs/CoreRef.sol#11) (state variable)
+MakerRouter.constructor(address,IDSSPSM,IPegStabilityModule)._core (contracts/pcv/maker/MakerRouter.sol#41) shadows:
+	- CoreRef._core (contracts/refs/CoreRef.sol#11) (state variable)
+OracleRef.constructor(address,address,address,int256,bool)._core (contracts/refs/OracleRef.sol#34) shadows:
+	- CoreRef._core (contracts/refs/CoreRef.sol#11) (state variable)
+Volt.constructor(address).core (contracts/volt/Volt.sol#19) shadows:
+	- CoreRef.core() (contracts/refs/CoreRef.sol#187-189) (function)
+	- ICoreRef.core() (contracts/refs/ICoreRef.sol#30) (function)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#local-variable-shadowing
+
+PCVGuardian.constructor(address,address,address[])._safeAddress (contracts/pcv/PCVGuardian.sol#26) lacks a zero-check on :
+		- safeAddress = _safeAddress (contracts/pcv/PCVGuardian.sol#29)
+OtcEscrow.constructor(address,address,address,address,uint256,uint256).beneficiary_ (contracts/utils/OtcEscrow.sol#24) lacks a zero-check on :
+		- beneficiary = beneficiary_ (contracts/utils/OtcEscrow.sol#31)
+OtcEscrow.constructor(address,address,address,address,uint256,uint256).recipient_ (contracts/utils/OtcEscrow.sol#25) lacks a zero-check on :
+		- recipient = recipient_ (contracts/utils/OtcEscrow.sol#32)
+OtcEscrow.constructor(address,address,address,address,uint256,uint256).receivedToken_ (contracts/utils/OtcEscrow.sol#26) lacks a zero-check on :
+		- receivedToken = receivedToken_ (contracts/utils/OtcEscrow.sol#34)
+OtcEscrow.constructor(address,address,address,address,uint256,uint256).sentToken_ (contracts/utils/OtcEscrow.sol#27) lacks a zero-check on :
+		- sentToken = sentToken_ (contracts/utils/OtcEscrow.sol#35)
+Vcon.constructor(address,address).minter_ (contracts/vcon/Vcon.sol#99) lacks a zero-check on :
+		- minter = minter_ (contracts/vcon/Vcon.sol#102)
+Vcon.setMinter(address).minter_ (contracts/vcon/Vcon.sol#110) lacks a zero-check on :
+		- minter = minter_ (contracts/vcon/Vcon.sol#116)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-zero-address-validation
+
+Modifier CoreRef.ifMinterSelf() (contracts/refs/CoreRef.sol#29-33) does not always execute _; or revertReference: https://github.com/crytic/slither/wiki/Detector-Documentation#incorrect-modifier
+
+Reentrancy in PCVDeposit._withdrawERC20(address,address,uint256) (contracts/pcv/PCVDeposit.sol#25-32):
+	External calls:
+	- IERC20(token).safeTransfer(to,amount) (contracts/pcv/PCVDeposit.sol#30)
+	Event emitted after the call(s):
+	- WithdrawERC20(msg.sender,token,to,amount) (contracts/pcv/PCVDeposit.sol#31)
+Reentrancy in PCVGuardian._withdrawERC20ToSafeAddress(address,address,uint256) (contracts/pcv/PCVGuardian.sol#213-220):
+	External calls:
+	- IPCVDeposit(pcvDeposit).withdrawERC20(token,safeAddress,amount) (contracts/pcv/PCVGuardian.sol#218)
+	Event emitted after the call(s):
+	- PCVGuardianERC20Withdrawal(pcvDeposit,token,amount) (contracts/pcv/PCVGuardian.sol#219)
+Reentrancy in PCVGuardian._withdrawToSafeAddress(address,uint256) (contracts/pcv/PCVGuardian.sol#199-211):
+	External calls:
+	- pcvDeposit._unpause() (contracts/pcv/PCVGuardian.sol#203)
+	- IPCVDeposit(pcvDeposit).withdraw(safeAddress,amount) (contracts/pcv/PCVGuardian.sol#204)
+	- pcvDeposit._pause() (contracts/pcv/PCVGuardian.sol#205)
+	- IPCVDeposit(pcvDeposit).withdraw(safeAddress,amount) (contracts/pcv/PCVGuardian.sol#207)
+	Event emitted after the call(s):
+	- PCVGuardianWithdrawal(pcvDeposit,amount) (contracts/pcv/PCVGuardian.sol#210)
+Reentrancy in ERC20CompoundPCVDeposit.deposit() (contracts/pcv/compound/ERC20CompoundPCVDeposit.sol#25-37):
+	External calls:
+	- token.approve(address(cToken),amount) (contracts/pcv/compound/ERC20CompoundPCVDeposit.sol#28)
+	- require(bool,string)(CErc20(address(cToken)).mint(amount) == 0,ERC20CompoundPCVDeposit: deposit error) (contracts/pcv/compound/ERC20CompoundPCVDeposit.sol#31-34)
+	Event emitted after the call(s):
+	- Deposit(msg.sender,amount) (contracts/pcv/compound/ERC20CompoundPCVDeposit.sol#36)
+Reentrancy in CompoundPCVDepositBase.withdraw(address,uint256) (contracts/pcv/compound/CompoundPCVDepositBase.sol#26-38):
+	External calls:
+	- require(bool,string)(cToken.redeemUnderlying(amountUnderlying) == 0,CompoundPCVDeposit: redeem error) (contracts/pcv/compound/CompoundPCVDepositBase.sol#32-35)
+	Event emitted after the call(s):
+	- Withdrawal(msg.sender,to,amountUnderlying) (contracts/pcv/compound/CompoundPCVDepositBase.sol#37)
+Reentrancy in PCVDeposit.withdrawETH(address,uint256) (contracts/pcv/PCVDeposit.sol#37-45):
+	External calls:
+	- Address.sendValue(to,amountOut) (contracts/pcv/PCVDeposit.sol#43)
+	Event emitted after the call(s):
+	- WithdrawETH(msg.sender,to,amountOut) (contracts/pcv/PCVDeposit.sol#44)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-3
+
+VoltSystemOracle.getCurrentOraclePrice() (contracts/oracle/VoltSystemOracle.sol#55-67) uses timestamp for comparisons
+	Dangerous comparisons:
+	- cachedStartTime >= block.timestamp (contracts/oracle/VoltSystemOracle.sol#57)
+VoltSystemOracle.compoundInterest() (contracts/oracle/VoltSystemOracle.sol#73-89) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(block.timestamp >= periodEndTime,VoltSystemOracle: not past end time) (contracts/oracle/VoltSystemOracle.sol#75-78)
+RateLimited._depleteBuffer(uint256) (contracts/utils/RateLimited.sol#95-113) uses timestamp for comparisons
+	Dangerous comparisons:
+	- doPartialAction && usedAmount > newBuffer (contracts/utils/RateLimited.sol#99)
+	- require(bool,string)(newBuffer != 0,RateLimited: no rate limit buffer) (contracts/utils/RateLimited.sol#103)
+	- require(bool,string)(usedAmount <= newBuffer,RateLimited: rate limit hit) (contracts/utils/RateLimited.sol#104)
+RateLimited._replenishBuffer(uint256) (contracts/utils/RateLimited.sol#117-131) uses timestamp for comparisons
+	Dangerous comparisons:
+	- newBuffer == _bufferCap (contracts/utils/RateLimited.sol#123)
+Timed.isTimeEnded() (contracts/utils/Timed.sol#39-41) uses timestamp for comparisons
+	Dangerous comparisons:
+	- remainingTime() == 0 (contracts/utils/Timed.sol#40)
+Timed.timeSinceStart() (contracts/utils/Timed.sol#52-59) uses timestamp for comparisons
+	Dangerous comparisons:
+	- timePassed > _duration (contracts/utils/Timed.sol#58)
+Timed.isTimeStarted() (contracts/utils/Timed.sol#61-63) uses timestamp for comparisons
+	Dangerous comparisons:
+	- startTime != 0 (contracts/utils/Timed.sol#62)
+Vcon.permit(address,address,uint256,uint256,uint8,bytes32,bytes32) (contracts/vcon/Vcon.sol#201-246) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(block.timestamp <= deadline,Vcon: signature expired) (contracts/vcon/Vcon.sol#241)
+Vcon.delegateBySig(address,uint256,uint256,uint8,bytes32,bytes32) (contracts/vcon/Vcon.sol#317-344) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(block.timestamp <= expiry,Vcon: signature expired) (contracts/vcon/Vcon.sol#342)
+Volt.permit(address,address,uint256,uint256,uint8,bytes32,bytes32) (contracts/volt/Volt.sol#63-95) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(deadline >= block.timestamp,Fei: EXPIRED) (contracts/volt/Volt.sol#72)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+
+Vcon.getChainId() (contracts/vcon/Vcon.sol#536-543) uses assembly
+	- INLINE ASM (contracts/vcon/Vcon.sol#539-541)
+Volt.constructor(address) (contracts/volt/Volt.sol#19-36) uses assembly
+	- INLINE ASM (contracts/volt/Volt.sol#22-24)
+console._sendLogPayload(bytes) (node_modules/hardhat/console.sol#7-14) uses assembly
+	- INLINE ASM (node_modules/hardhat/console.sol#10-13)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#assembly-usage
+
+CoreRef._burnVoltHeld() (contracts/refs/CoreRef.sol#215-217) is never used and should be removed
+CoreRef._initialize() (contracts/refs/CoreRef.sol#27) is never used and should be removed
+Decimal.add(Decimal.D256,Decimal.D256) (contracts/external/Decimal.sol#115-121) is never used and should be removed
+Decimal.add(Decimal.D256,uint256) (contracts/external/Decimal.sol#58-64) is never used and should be removed
+Decimal.equals(Decimal.D256,Decimal.D256) (contracts/external/Decimal.sol#155-161) is never used and should be removed
+Decimal.greaterThanOrEqualTo(Decimal.D256,Decimal.D256) (contracts/external/Decimal.sol#179-185) is never used and should be removed
+Decimal.isZero(Decimal.D256) (contracts/external/Decimal.sol#195-197) is never used and should be removed
+Decimal.lessThanOrEqualTo(Decimal.D256,Decimal.D256) (contracts/external/Decimal.sol#187-193) is never used and should be removed
+Decimal.mul(Decimal.D256,Decimal.D256) (contracts/external/Decimal.sol#139-145) is never used and should be removed
+Decimal.pow(Decimal.D256,uint256) (contracts/external/Decimal.sol#98-113) is never used and should be removed
+Decimal.sub(Decimal.D256,Decimal.D256) (contracts/external/Decimal.sol#123-129) is never used and should be removed
+Decimal.sub(Decimal.D256,Decimal.D256,string) (contracts/external/Decimal.sol#131-137) is never used and should be removed
+Decimal.sub(Decimal.D256,uint256) (contracts/external/Decimal.sol#66-72) is never used and should be removed
+Decimal.sub(Decimal.D256,uint256,string) (contracts/external/Decimal.sol#74-80) is never used and should be removed
+Decimal.zero() (contracts/external/Decimal.sol#40-42) is never used and should be removed
+OracleRef._setDecimalsNormalizerFromToken(address) (contracts/refs/OracleRef.sol#160-170) is never used and should be removed
+PegStabilityModule._allocate(uint256) (contracts/peg/PegStabilityModule.sol#454-460) is never used and should be removed
+PegStabilityModule._validatePriceRange(Decimal.D256) (contracts/peg/PegStabilityModule.sol#487-491) is never used and should be removed
+RateLimited._replenishBuffer(uint256) (contracts/utils/RateLimited.sol#117-131) is never used and should be removed
+RateLimited._resetBuffer() (contracts/utils/RateLimited.sol#152-154) is never used and should be removed
+Timed._initTimed() (contracts/utils/Timed.sol#65-69) is never used and should be removed
+Timed._setDuration(uint256) (contracts/utils/Timed.sol#71-77) is never used and should be removed
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#dead-code
+
+Pragma version^0.4.18 (contracts/external/WETH9.sol#20) allows old versions
+solc-0.4.18 is not recommended for deployment
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#incorrect-versions-of-solidity
+
+Pragma version^0.8.0 (node_modules/@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol#2) allows old versions
+Pragma version>=0.5.0 (node_modules/@uniswap/v2-periphery/contracts/interfaces/IWETH.sol#1) allows old versions
+Pragma version^0.8.0 (contracts/Constants.sol#2) allows old versions
+Pragma version=0.8.13 (contracts/pcv/compound/CErc20.sol#1) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+Pragma version=0.8.13 (contracts/pcv/compound/CToken.sol#1) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+Pragma version=0.8.13 (contracts/pcv/compound/CompoundPCVDepositBase.sol#2) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+Pragma version^0.8.0 (contracts/pcv/compound/ERC20CompoundPCVDeposit.sol#2) allows old versions
+Pragma version=0.8.13 (contracts/pcv/maker/IDSSPSM.sol#2) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+Pragma version=0.8.13 (contracts/pcv/maker/IMakerRouter.sol#2) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+Pragma version=0.8.13 (contracts/pcv/maker/MakerRouter.sol#2) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+Pragma version^0.8.0 (contracts/volt/minter/IVoltTimedMinter.sol#3) allows old versions
+Pragma version>=0.4.22<0.9.0 (node_modules/hardhat/console.sol#2) is too complex
+solc-0.8.13 is not recommended for deployment
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#incorrect-versions-of-solidity
+
+Parameter Core.setVcon(IERC20)._vcon (contracts/core/Core.sol#27) is not in mixedCase
+Function IPermissions.GUARDIAN_ROLE() (contracts/core/IPermissions.sol#40) is not in mixedCase
+Function IPermissions.GOVERN_ROLE() (contracts/core/IPermissions.sol#42) is not in mixedCase
+Function IPermissions.BURNER_ROLE() (contracts/core/IPermissions.sol#44) is not in mixedCase
+Function IPermissions.MINTER_ROLE() (contracts/core/IPermissions.sol#46) is not in mixedCase
+Function IPermissions.PCV_CONTROLLER_ROLE() (contracts/core/IPermissions.sol#48) is not in mixedCase
+Parameter L2Core.setVcon(IERC20)._vcon (contracts/core/L2Core.sol#26) is not in mixedCase
+Parameter Permissions.isMinter(address)._address (contracts/core/Permissions.sol#145) is not in mixedCase
+Parameter Permissions.isBurner(address)._address (contracts/core/Permissions.sol#159) is not in mixedCase
+Parameter Permissions.isPCVController(address)._address (contracts/core/Permissions.sol#173) is not in mixedCase
+Parameter Permissions.isGovernor(address)._address (contracts/core/Permissions.sol#187) is not in mixedCase
+Parameter Permissions.isGuardian(address)._address (contracts/core/Permissions.sol#201) is not in mixedCase
+Function BokkyPooBahsDateTimeContract._now() (contracts/external/calendar/BokkyPooBahsDateTimeContract.sol#48-50) is not in mixedCase
+Function BokkyPooBahsDateTimeContract._nowDateTime() (contracts/external/calendar/BokkyPooBahsDateTimeContract.sol#52-66) is not in mixedCase
+Function BokkyPooBahsDateTimeContract._daysFromDate(uint256,uint256,uint256) (contracts/external/calendar/BokkyPooBahsDateTimeContract.sol#68-74) is not in mixedCase
+Function BokkyPooBahsDateTimeContract._daysToDate(uint256) (contracts/external/calendar/BokkyPooBahsDateTimeContract.sol#76-86) is not in mixedCase
+Parameter BokkyPooBahsDateTimeContract._daysToDate(uint256)._days (contracts/external/calendar/BokkyPooBahsDateTimeContract.sol#76) is not in mixedCase
+Function BokkyPooBahsDateTimeContract._isLeapYear(uint256) (contracts/external/calendar/BokkyPooBahsDateTimeContract.sol#175-177) is not in mixedCase
+Function BokkyPooBahsDateTimeContract._getDaysInMonth(uint256,uint256) (contracts/external/calendar/BokkyPooBahsDateTimeContract.sol#195-201) is not in mixedCase
+Parameter BokkyPooBahsDateTimeContract.addYears(uint256,uint256)._years (contracts/external/calendar/BokkyPooBahsDateTimeContract.sol#235) is not in mixedCase
+Parameter BokkyPooBahsDateTimeContract.addMonths(uint256,uint256)._months (contracts/external/calendar/BokkyPooBahsDateTimeContract.sol#243) is not in mixedCase
+Parameter BokkyPooBahsDateTimeContract.addDays(uint256,uint256)._days (contracts/external/calendar/BokkyPooBahsDateTimeContract.sol#254) is not in mixedCase
+Parameter BokkyPooBahsDateTimeContract.addHours(uint256,uint256)._hours (contracts/external/calendar/BokkyPooBahsDateTimeContract.sol#262) is not in mixedCase
+Parameter BokkyPooBahsDateTimeContract.addMinutes(uint256,uint256)._minutes (contracts/external/calendar/BokkyPooBahsDateTimeContract.sol#270) is not in mixedCase
+Parameter BokkyPooBahsDateTimeContract.addSeconds(uint256,uint256)._seconds (contracts/external/calendar/BokkyPooBahsDateTimeContract.sol#281) is not in mixedCase
+Parameter BokkyPooBahsDateTimeContract.subYears(uint256,uint256)._years (contracts/external/calendar/BokkyPooBahsDateTimeContract.sol#292) is not in mixedCase
+Parameter BokkyPooBahsDateTimeContract.subMonths(uint256,uint256)._months (contracts/external/calendar/BokkyPooBahsDateTimeContract.sol#300) is not in mixedCase
+Parameter BokkyPooBahsDateTimeContract.subDays(uint256,uint256)._days (contracts/external/calendar/BokkyPooBahsDateTimeContract.sol#311) is not in mixedCase
+Parameter BokkyPooBahsDateTimeContract.subHours(uint256,uint256)._hours (contracts/external/calendar/BokkyPooBahsDateTimeContract.sol#319) is not in mixedCase
+Parameter BokkyPooBahsDateTimeContract.subMinutes(uint256,uint256)._minutes (contracts/external/calendar/BokkyPooBahsDateTimeContract.sol#327) is not in mixedCase
+Parameter BokkyPooBahsDateTimeContract.subSeconds(uint256,uint256)._seconds (contracts/external/calendar/BokkyPooBahsDateTimeContract.sol#338) is not in mixedCase
+Parameter BokkyPooBahsDateTimeLibrary.addYears(uint256,uint256)._years (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#320) is not in mixedCase
+Parameter BokkyPooBahsDateTimeLibrary.addMonths(uint256,uint256)._months (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#341) is not in mixedCase
+Parameter BokkyPooBahsDateTimeLibrary.addDays(uint256,uint256)._days (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#364) is not in mixedCase
+Parameter BokkyPooBahsDateTimeLibrary.addHours(uint256,uint256)._hours (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#373) is not in mixedCase
+Parameter BokkyPooBahsDateTimeLibrary.addMinutes(uint256,uint256)._minutes (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#382) is not in mixedCase
+Parameter BokkyPooBahsDateTimeLibrary.addSeconds(uint256,uint256)._seconds (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#391) is not in mixedCase
+Parameter BokkyPooBahsDateTimeLibrary.subYears(uint256,uint256)._years (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#400) is not in mixedCase
+Parameter BokkyPooBahsDateTimeLibrary.subMonths(uint256,uint256)._months (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#421) is not in mixedCase
+Parameter BokkyPooBahsDateTimeLibrary.subDays(uint256,uint256)._days (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#444) is not in mixedCase
+Parameter BokkyPooBahsDateTimeLibrary.subHours(uint256,uint256)._hours (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#453) is not in mixedCase
+Parameter BokkyPooBahsDateTimeLibrary.subMinutes(uint256,uint256)._minutes (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#462) is not in mixedCase
+Parameter BokkyPooBahsDateTimeLibrary.subSeconds(uint256,uint256)._seconds (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#471) is not in mixedCase
+Function IScalingPriceOracle.TIMEFRAME() (contracts/oracle/IScalingPriceOracle.sol#12) is not in mixedCase
+Function IScalingPriceOracle.MAXORACLEDEVIATION() (contracts/oracle/IScalingPriceOracle.sol#17) is not in mixedCase
+Function IVoltSystemOracle.TIMEFRAME() (contracts/oracle/IVoltSystemOracle.sol#27) is not in mixedCase
+Parameter PCVGuardian.addWhitelistAddresses(address[])._whitelistAddresses (contracts/pcv/PCVGuardian.sol#85) is not in mixedCase
+Parameter PCVGuardian.removeWhitelistAddresses(address[])._whitelistAddresses (contracts/pcv/PCVGuardian.sol#112) is not in mixedCase
+Function INonCustodialPSM.MAX_FEE() (contracts/peg/INonCustodialPSM.sol#99) is not in mixedCase
+Function IPegStabilityModule.MAX_FEE() (contracts/peg/IPegStabilityModule.sol#98) is not in mixedCase
+Variable PegStabilityModule.MAX_FEE (contracts/peg/PegStabilityModule.sol#41) is not in mixedCase
+Parameter CoreRef.isContractAdmin(address)._admin (contracts/refs/CoreRef.sol#166) is not in mixedCase
+Variable CoreRef.CONTRACT_ADMIN_ROLE (contracts/refs/CoreRef.sol#16) is not in mixedCase
+Function ICoreRef.CONTRACT_ADMIN_ROLE() (contracts/refs/ICoreRef.sol#40) is not in mixedCase
+Variable RateLimited.MAX_RATE_LIMIT_PER_SECOND (contracts/utils/RateLimited.sol#11) is not in mixedCase
+Variable Volt.DOMAIN_SEPARATOR (contracts/volt/Volt.sol#11) is not in mixedCase
+Function IVoltTimedMinter.MIN_MINT_FREQUENCY() (contracts/volt/minter/IVoltTimedMinter.sol#34) is not in mixedCase
+Function IVoltTimedMinter.MAX_MINT_FREQUENCY() (contracts/volt/minter/IVoltTimedMinter.sol#36) is not in mixedCase
+Contract console (node_modules/hardhat/console.sol#4-1532) is not in CapWords
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#conformance-to-solidity-naming-conventions
+
+Reentrancy in WETH9.withdraw(uint256) (contracts/external/WETH9.sol#50-55):
+	External calls:
+	- msg.sender.transfer(wad) (contracts/external/WETH9.sol#53)
+	Event emitted after the call(s):
+	- Withdrawal(msg.sender,wad) (contracts/external/WETH9.sol#54)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-4
+
+BokkyPooBahsDateTimeLibrary.DOW_MON (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#38) is never used in BokkyPooBahsDateTimeLibrary (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#32-553)
+BokkyPooBahsDateTimeLibrary.DOW_TUE (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#39) is never used in BokkyPooBahsDateTimeLibrary (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#32-553)
+BokkyPooBahsDateTimeLibrary.DOW_WED (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#40) is never used in BokkyPooBahsDateTimeLibrary (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#32-553)
+BokkyPooBahsDateTimeLibrary.DOW_THU (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#41) is never used in BokkyPooBahsDateTimeLibrary (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#32-553)
+BokkyPooBahsDateTimeLibrary.DOW_SUN (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#44) is never used in BokkyPooBahsDateTimeLibrary (contracts/external/calendar/BokkyPooBahsDateTimeLibrary.sol#32-553)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unused-state-variable
+
+PegStabilityModule.MAX_FEE (contracts/peg/PegStabilityModule.sol#41) should be constant
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#state-variables-that-could-be-declared-constant

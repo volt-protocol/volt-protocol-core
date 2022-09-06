@@ -13,7 +13,7 @@ import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
 import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
-import {TimelockSimulation} from "../utils/TimelockSimulation.sol";
+import {ITimelockSimulation} from "../utils/ITimelockSimulation.sol";
 import {ERC20CompoundPCVDeposit} from "../../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 
 contract vip9 is DSTest, IVIP {
@@ -34,9 +34,9 @@ contract vip9 is DSTest, IVIP {
         public
         pure
         override
-        returns (TimelockSimulation.action[] memory proposal)
+        returns (ITimelockSimulation.action[] memory proposal)
     {
-        proposal = new TimelockSimulation.action[](1);
+        proposal = new ITimelockSimulation.action[](1);
 
         address[] memory toWhitelist = new address[](3);
         toWhitelist[0] = MainnetAddresses.COMPOUND_DAI_PCV_DEPOSIT;
@@ -102,7 +102,7 @@ contract vip9 is DSTest, IVIP {
         public
         pure
         override
-        returns (TimelockSimulation.action[] memory)
+        returns (ITimelockSimulation.action[] memory)
     {
         revert("no arbitrum proposal");
     }
