@@ -39,7 +39,6 @@
   },
   "authors": "elliotfriedman,kassim,joeysantoro",
   "dependencies": {
-    "@balancer-labs/v2-pool-weighted": "^2.0.1",
     "@chainlink/contracts": "^0.3.1",
     "@ethersproject/providers": "^5.5.3",
     "@openzeppelin/contracts": "^4.7.3",
