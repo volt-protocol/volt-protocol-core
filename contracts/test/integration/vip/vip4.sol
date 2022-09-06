@@ -1,7 +1,7 @@
 pragma solidity =0.8.13;
 
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
-import {TimelockSimulation} from "../utils/TimelockSimulation.sol";
+import {ITimelockSimulation} from "../utils/ITimelockSimulation.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
 import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
 import {DSTest} from "./../../unit/utils/DSTest.sol";
@@ -17,9 +17,9 @@ contract vip4 is DSTest, IVIP, AllRoles {
         public
         pure
         override
-        returns (TimelockSimulation.action[] memory proposal)
+        returns (ITimelockSimulation.action[] memory proposal)
     {
-        proposal = new TimelockSimulation.action[](8);
+        proposal = new ITimelockSimulation.action[](8);
 
         proposal[0].target = MainnetAddresses.PCV_GUARD_ADMIN;
         proposal[0].value = 0;
@@ -110,9 +110,9 @@ contract vip4 is DSTest, IVIP, AllRoles {
         public
         pure
         override
-        returns (TimelockSimulation.action[] memory proposal)
+        returns (ITimelockSimulation.action[] memory proposal)
     {
-        proposal = new TimelockSimulation.action[](6);
+        proposal = new ITimelockSimulation.action[](6);
 
         /// Role revocations
         proposal[0].target = ArbitrumAddresses.PCV_GUARD_ADMIN;

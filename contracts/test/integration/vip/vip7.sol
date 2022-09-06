@@ -4,7 +4,7 @@ pragma solidity =0.8.13;
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {TimelockSimulation} from "../utils/TimelockSimulation.sol";
+import {ITimelockSimulation} from "../utils/ITimelockSimulation.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
 import {DSTest} from "./../../unit/utils/DSTest.sol";
 import {Core} from "../../../core/Core.sol";
@@ -26,9 +26,9 @@ contract vip7 is DSTest, IVIP, AllRoles {
         public
         pure
         override
-        returns (TimelockSimulation.action[] memory proposal)
+        returns (ITimelockSimulation.action[] memory proposal)
     {
-        proposal = new TimelockSimulation.action[](4);
+        proposal = new ITimelockSimulation.action[](4);
 
         proposal[0].target = MainnetAddresses.VOLT_FEI_PSM;
         proposal[0].value = 0;
@@ -167,7 +167,7 @@ contract vip7 is DSTest, IVIP, AllRoles {
         public
         pure
         override
-        returns (TimelockSimulation.action[] memory)
+        returns (ITimelockSimulation.action[] memory)
     {
         revert("no arbitrum proposal");
     }

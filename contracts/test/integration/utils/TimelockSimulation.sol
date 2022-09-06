@@ -9,11 +9,7 @@ import {IPCVGuardian} from "../../../pcv/IPCVGuardian.sol";
 
 import "hardhat/console.sol";
 
-contract TimelockSimulation is
-    DSTest,
-    ITimelockSimulation,
-    PCVGuardianWhitelist
-{
+contract TimelockSimulation is DSTest, PCVGuardianWhitelist {
     /// @notice simulate timelock proposal
     /// @param proposal an array of actions that compose a proposal
     /// @param timelock to execute the proposal against
@@ -23,14 +19,14 @@ contract TimelockSimulation is
     /// @param vm reference to a foundry vm instance
     /// @param doLogging toggle to print out calldata and steps
     function simulate(
-        action[] memory proposal,
+        ITimelockSimulation.action[] memory proposal,
         TimelockController timelock,
         IPCVGuardian guardian,
         address executor,
         address proposer,
         Vm vm,
         bool doLogging
-    ) public override {
+    ) public {
         uint256 delay = timelock.getMinDelay();
         bytes32 salt = keccak256(abi.encode(proposal[0].description));
 
