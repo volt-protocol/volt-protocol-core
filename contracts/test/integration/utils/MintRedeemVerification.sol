@@ -132,6 +132,7 @@ contract MintRedeemVerification {
 
             _redeem(PriceBoundPSM(allMainnetPSMs[i]), tokensIn[i]);
         }
+
         revert("successfully redeemed on all PSMs");
     }
 

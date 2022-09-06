@@ -3,6 +3,7 @@ pragma solidity =0.8.13;
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
+import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
 import {IOracleRef} from "../../../refs/IOracleRef.sol";
 import {Deviation} from "../../../utils/Deviation.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
@@ -24,7 +25,16 @@ contract PCVGuardVerification is DSTest {
     address[] private allMainnetPCVDeposits = [
         MainnetAddresses.VOLT_DAI_PSM,
         MainnetAddresses.VOLT_FEI_PSM,
-        MainnetAddresses.VOLT_USDC_PSM
+        MainnetAddresses.VOLT_USDC_PSM,
+        MainnetAddresses.COMPOUND_DAI_PCV_DEPOSIT,
+        MainnetAddresses.COMPOUND_FEI_PCV_DEPOSIT,
+        MainnetAddresses.COMPOUND_USDC_PCV_DEPOSIT
+    ];
+
+    /// @notice all PSM's on arbitrum
+    address[] private allArbitrumPCVDeposits = [
+        ArbitrumAddresses.VOLT_DAI_PSM,
+        ArbitrumAddresses.VOLT_USDC_PSM
     ];
 
     /// @notice all places pcv could be, but aren't pcv deposits on mainnet
@@ -33,12 +43,25 @@ contract PCVGuardVerification is DSTest {
         MainnetAddresses.TIMELOCK_CONTROLLER
     ];
 
-    /// @notice all tokens currently in VOLT Protocol's PCV
+    /// @notice all places pcv could be, but aren't pcv deposits on mainnet
+    address[] private allArbitrumDeposits = [
+        ArbitrumAddresses.GOVERNOR,
+        ArbitrumAddresses.TIMELOCK_CONTROLLER
+    ];
+
+    /// @notice all tokens currently in VOLT Protocol's PCV on mainnet
     IERC20[] private allMainnetTokens = [
         IERC20(MainnetAddresses.USDC),
         IERC20(MainnetAddresses.FEI),
         IERC20(MainnetAddresses.DAI),
         IERC20(MainnetAddresses.VOLT)
+    ];
+
+    /// @notice all tokens currently in VOLT Protocol's PCV on arbitrum
+    IERC20[] private allArbitrumTokens = [
+        IERC20(ArbitrumAddresses.USDC),
+        IERC20(ArbitrumAddresses.DAI),
+        IERC20(ArbitrumAddresses.VOLT)
     ];
 
     /// @notice balance of each token before timelock action
@@ -53,28 +76,46 @@ contract PCVGuardVerification is DSTest {
 
     /// @notice call before governance action
     function preActionVerifyPCV() internal {
-        for (uint256 i = 0; i < allMainnetPCVDeposits.length; i++) {
-            IPCVDeposit deposit = IPCVDeposit(allMainnetPCVDeposits[i]);
+        address[] storage allDeposits = block.chainid == 1
+            ? allMainnetPCVDeposits
+            : allArbitrumPCVDeposits;
+
+        /// get balance of all pcv deposits
+        for (uint256 i = 0; i < allDeposits.length; i++) {
+            IPCVDeposit deposit = IPCVDeposit(allDeposits[i]);
             balancePerTokenPre[deposit.balanceReportedIn()] += deposit
                 .balance();
 
-            if (deposit.balanceReportedIn() == MainnetAddresses.USDC) {
+            if (
+                deposit.balanceReportedIn() == MainnetAddresses.USDC ||
+                deposit.balanceReportedIn() == ArbitrumAddresses.USDC
+            ) {
                 totalPCVPre += deposit.balance() * 1e12;
             } else {
                 totalPCVPre += deposit.balance();
             }
         }
 
-        for (uint256 i = 0; i < allMainnetTokens.length; i++) {
-            for (uint256 j = 0; j < allMainnetDeposits.length; j++) {
-                if (address(allMainnetTokens[i]) == MainnetAddresses.USDC) {
+        IERC20[] storage allTokens = block.chainid == 1
+            ? allMainnetTokens
+            : allArbitrumTokens;
+
+        address[] storage allNonPCVDeposits = block.chainid == 1
+            ? allMainnetDeposits
+            : allArbitrumDeposits;
+
+        /// get balance of all non pcv deposits
+        for (uint256 i = 0; i < allTokens.length; i++) {
+            for (uint256 j = 0; j < allNonPCVDeposits.length; j++) {
+                if (
+                    address(allTokens[i]) == MainnetAddresses.USDC ||
+                    address(allTokens[i]) == ArbitrumAddresses.USDC
+                ) {
                     totalPCVPre +=
-                        allMainnetTokens[i].balanceOf(allMainnetDeposits[j]) *
+                        allTokens[i].balanceOf(allNonPCVDeposits[j]) *
                         1e12;
                 } else {
-                    totalPCVPre += allMainnetTokens[i].balanceOf(
-                        allMainnetDeposits[j]
-                    );
+                    totalPCVPre += allTokens[i].balanceOf(allNonPCVDeposits[j]);
                 }
             }
         }
@@ -82,27 +123,47 @@ contract PCVGuardVerification is DSTest {
 
     /// @notice call after governance action to verify oracle values
     function postActionVerifyPCV(Vm vm) internal {
-        for (uint256 i = 0; i < allMainnetPCVDeposits.length; i++) {
-            IPCVDeposit deposit = IPCVDeposit(allMainnetPCVDeposits[i]);
+        address[] storage allDeposits = block.chainid == 1
+            ? allMainnetPCVDeposits
+            : allArbitrumPCVDeposits;
+
+        /// get balance of all pcv deposits
+        for (uint256 i = 0; i < allDeposits.length; i++) {
+            IPCVDeposit deposit = IPCVDeposit(allDeposits[i]);
             balancePerTokenPost[deposit.balanceReportedIn()] += deposit
                 .balance();
 
-            if (deposit.balanceReportedIn() == MainnetAddresses.USDC) {
-                totalPCVPost += deposit.balance() * 1e12;
+            if (
+                deposit.balanceReportedIn() == MainnetAddresses.USDC ||
+                deposit.balanceReportedIn() == ArbitrumAddresses.USDC
+            ) {
+                totalPCVPre += deposit.balance() * 1e12;
             } else {
-                totalPCVPost += deposit.balance();
+                totalPCVPre += deposit.balance();
             }
         }
 
-        for (uint256 i = 0; i < allMainnetTokens.length; i++) {
-            for (uint256 j = 0; j < allMainnetDeposits.length; j++) {
-                if (address(allMainnetTokens[i]) == MainnetAddresses.USDC) {
+        IERC20[] storage allTokens = block.chainid == 1
+            ? allMainnetTokens
+            : allArbitrumTokens;
+
+        address[] storage allNonPCVDeposits = block.chainid == 1
+            ? allMainnetDeposits
+            : allArbitrumDeposits;
+
+        /// get balance of all non pcv deposits
+        for (uint256 i = 0; i < allTokens.length; i++) {
+            for (uint256 j = 0; j < allNonPCVDeposits.length; j++) {
+                if (
+                    address(allTokens[i]) == MainnetAddresses.USDC ||
+                    address(allTokens[i]) == ArbitrumAddresses.USDC
+                ) {
                     totalPCVPost +=
-                        allMainnetTokens[i].balanceOf(allMainnetDeposits[j]) *
+                        allTokens[i].balanceOf(allNonPCVDeposits[j]) *
                         1e12;
                 } else {
-                    totalPCVPost += allMainnetTokens[i].balanceOf(
-                        allMainnetDeposits[j]
+                    totalPCVPost += allTokens[i].balanceOf(
+                        allNonPCVDeposits[j]
                     );
                 }
             }
