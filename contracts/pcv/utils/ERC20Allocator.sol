@@ -213,26 +213,16 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
             _checkDripCondition(psm),
             "ERC20Allocator: drip condition not met"
         );
-        depositInfo memory toDrip = allDeposits[psm];
 
-        /// direct balanceOf call is cheaper than calling balance on psm
-        uint256 targetBalanceDelta = toDrip.targetBalance -
-            IERC20(toDrip.token).balanceOf(psm);
+        (
+            uint256 amountToDrip,
+            uint256 adjustedAmountToDrip,
+            PCVDeposit target
+        ) = getDripDetails(psm);
 
-        PCVDeposit target = PCVDeposit(toDrip.pcvDeposit); /// withdraw from push Target
-
-        /// drip min between target drip amount and pcv deposit being pulled from
-        /// to prevent edge cases when a venue runs out of liquidity
-        uint256 amountToDrip = Math.min(targetBalanceDelta, target.balance());
-
-        /// adjust amount to drip based on the decimals normalizer to deplete buffer
-        uint256 adjustedAmountToDrip = getAdjustedAmount(
-            amountToDrip,
-            toDrip.decimalsNormalizer
-        );
-
-        _depleteBuffer(adjustedAmountToDrip); /// deplete buffer with adjusted amount
-        /// so that it gets depleted uniformly across all assets and deposits
+        /// deplete buffer with adjusted amount so that it gets
+        /// depleted uniformly across all assets and deposits
+        _depleteBuffer(adjustedAmountToDrip);
 
         /// drip amount to target so that it has dripThreshold amount of tokens
         target.withdraw(psm, amountToDrip);
@@ -247,6 +237,13 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         } else if (_checkSkimCondition(psm)) {
             _skim(psm);
         }
+    }
+
+    /// ----------- PURE & VIEW Only APIs -----------
+
+    /// @notice returns the target balance for a given PSM
+    function targetBalance(address psm) public view returns (uint256) {
+        return allDeposits[psm].targetBalance;
     }
 
     /// @notice function to get the adjusted amount out
@@ -268,36 +265,78 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         }
     }
 
+    /// @notice return the amount that can be dripped to a given PSM
+    /// @param psm peg stability module to check drip amount on
+    /// returns amount that can be dripped, adjusted amount to drip and target
+    function getDripDetails(address psm)
+        public
+        view
+        returns (
+            uint256 amountToDrip,
+            uint256 adjustedAmountToDrip,
+            PCVDeposit target
+        )
+    {
+        depositInfo memory toDrip = allDeposits[psm];
+
+        /// direct balanceOf call is cheaper than calling balance on psm
+        uint256 targetBalanceDelta = toDrip.targetBalance -
+            IERC20(toDrip.token).balanceOf(psm);
+
+        target = PCVDeposit(toDrip.pcvDeposit); /// withdraw from push Target
+
+        /// drip min between target drip amount and pcv deposit being pulled from
+        /// to prevent edge cases when a venue runs out of liquidity
+        /// only drip the lowest between amount and the buffer,
+        /// as dripping more than the buffer will result in
+        amountToDrip = Math.min(
+            Math.min(targetBalanceDelta, target.balance()),
+            buffer()
+        );
+
+        /// adjust amount to drip based on the decimals normalizer to deplete buffer
+        adjustedAmountToDrip = getAdjustedAmount(
+            amountToDrip,
+            toDrip.decimalsNormalizer
+        );
+    }
+
     /// @notice function that returns whether the amount of tokens held
     /// are below the target and funds should flow from PCV Deposit -> PSM
+    /// returns false when paused
+    /// @param psm peg stability module to check drip condition
     function checkDripCondition(address psm)
         external
         view
         override
         returns (bool)
     {
-        return _checkDripCondition(psm);
+        return _checkDripCondition(psm) && paused() == false && buffer() > 0;
     }
 
     /// @notice function that returns whether the amount of tokens held
     /// are above the target and funds should flow from PSM -> PCV Deposit
+    /// returns false when paused
     function checkSkimCondition(address psm)
         external
         view
         override
         returns (bool)
     {
-        return _checkSkimCondition(psm);
+        return _checkSkimCondition(psm) && paused() == false;
     }
 
     /// @notice returns whether an action is allowed
+    /// returns false when paused
     function checkActionAllowed(address psm)
         external
         view
         override
         returns (bool)
     {
-        return _checkDripCondition(psm) || _checkSkimCondition(psm);
+        return
+            (_checkDripCondition(psm) || _checkSkimCondition(psm)) &&
+            paused() == false;
     }
 
     function _checkDripCondition(address psm) internal view returns (bool) {

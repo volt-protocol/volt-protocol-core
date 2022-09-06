@@ -95,14 +95,6 @@ contract vip9 is DSTest, IVIP {
         vm.prank(MainnetAddresses.FEI_DAI_PSM);
         IERC20(fei).transfer(address(feiDeposit), tokenBalance);
         feiDeposit.deposit();
-
-        vm.prank(MainnetAddresses.EOA_1);
-        PCVGuardian(MainnetAddresses.PCV_GUARDIAN).withdrawAllToSafeAddress(
-            address(feiDeposit)
-        );
-        assertTrue(
-            IERC20(fei).balanceOf(MainnetAddresses.GOVERNOR) > tokenBalance
-        );
     }
 
     /// prevent errors by reverting on arbitrum proposal functions being called on this VIP

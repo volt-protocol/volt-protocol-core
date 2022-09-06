@@ -12,7 +12,14 @@ import {getCore, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.s
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract UnitTestERC20Allocator is DSTest {
-    event TargetBalanceUpdate(uint256 oldThreshold, uint256 newThreshold);
+    /// @notice emitted when an existing deposit is updated
+    event DepositUpdated(
+        address psm,
+        address pcvDeposit,
+        address token,
+        uint248 targetBalance,
+        int8 decimalsNormalizer
+    );
     /// @notice event emitted when tokens are dripped
     event Dripped(uint256 amount);
 
@@ -71,6 +78,8 @@ contract UnitTestERC20Allocator is DSTest {
         );
     }
 
+    /// TODO add tests for drip, skim and doAction with a non whitelisted PSM to assert failure
+
     function testSkimFailsWhenUnderFunded() public {
         vm.expectRevert("ERC20Allocator: skim condition not met");
         allocator.skim(address(psm));
@@ -80,6 +89,8 @@ contract UnitTestERC20Allocator is DSTest {
         vm.prank(addresses.governorAddress);
         core.grantPCVController(address(allocator));
         token.mint(address(psm), targetBalance * 2);
+
+        assertTrue(!allocator.checkDripCondition(address(psm)));
 
         vm.expectRevert("ERC20Allocator: drip condition not met");
         allocator.drip(address(psm));
@@ -124,19 +135,38 @@ contract UnitTestERC20Allocator is DSTest {
         allocator.drip(address(psm));
     }
 
-    function testSetPullThresholdGovSucceeds() public {
-        // uint256 newThreshold = 10_000_000e18;
-        // vm.startPrank(addresses.governorAddress);
-        // vm.expectEmit(true, false, false, true, address(allocator));
-        // emit TargetBalanceUpdate(targetBalance, newThreshold);
-        // allocator.setTargetBalance(newThreshold);
-        // vm.stopPrank();
-        // assertEq(newThreshold, allocator.targetBalance());
+    function testTargetBalanceGovSucceeds() public {
+        uint248 newThreshold = 10_000_000e18;
+        vm.expectEmit(false, false, false, true, address(allocator));
+        emit DepositUpdated(
+            address(psm),
+            address(pcvDeposit),
+            address(token),
+            newThreshold,
+            0
+        );
+        vm.prank(addresses.governorAddress);
+        allocator.editDeposit(
+            address(psm),
+            address(pcvDeposit),
+            newThreshold,
+            0
+        );
+        assertEq(uint256(newThreshold), allocator.targetBalance(address(psm)));
     }
 
-    function testSweepGovSucceeds() public {}
+    function testSweepGovSucceeds() public {
+        uint256 mintAmount = 100_000_000e18;
+        token.mint(address(allocator), mintAmount);
+        vm.prank(addresses.governorAddress);
+        allocator.sweep(address(token), address(this), mintAmount);
+        assertEq(token.balanceOf(address(this)), mintAmount);
+    }
 
-    function testSweepNonGovFails() public {}
+    function testSweepNonGovFails() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        allocator.sweep(address(token), address(this), 0);
+    }
 
     function testPullSucceedsWhenOverThresholdWithPCVController() public {
         uint256 depositBalance = 10_000_000e18;
@@ -145,7 +175,10 @@ contract UnitTestERC20Allocator is DSTest {
         core.grantPCVController(address(allocator));
 
         token.mint(address(psm), depositBalance);
+
+        assertTrue(allocator.checkSkimCondition(address(psm)));
         allocator.skim(address(psm));
+        assertTrue(!allocator.checkSkimCondition(address(psm)));
 
         assertEq(token.balanceOf(address(psm)), targetBalance);
         assertEq(
@@ -179,7 +212,20 @@ contract UnitTestERC20Allocator is DSTest {
 
         vm.prank(addresses.governorAddress);
         core.grantPCVController(address(allocator));
+
+        assertTrue(allocator.checkDripCondition(address(psm)));
+
+        vm.prank(addresses.governorAddress);
+        allocator.pause();
+
+        /// drip condition turns false when contract is paused
+        assertTrue(!allocator.checkDripCondition(address(psm)));
+
+        vm.prank(addresses.governorAddress);
+        allocator.unpause();
+
         allocator.drip(address(psm));
+        assertTrue(!allocator.checkDripCondition(address(psm)));
 
         uint256 bufferEnd = allocator.buffer();
 
