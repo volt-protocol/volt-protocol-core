@@ -9,7 +9,8 @@ import {IPermissions} from "./../../../core/IPermissions.sol";
 /// and only allow granting PCV controllers if they are subsequently added to
 /// the PCV Guardian
 contract PCVGuardianWhitelist {
-    mapping(bytes4 => bool) public functionDetectors;
+    /// private so that contracts that inherit cannot write to functionDetectors
+    mapping(bytes4 => bool) private functionDetectors;
 
     constructor() {
         functionDetectors[IERC20.transfer.selector] = true;
