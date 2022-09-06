@@ -1,6 +1,5 @@
 import { HardhatUserConfig } from 'hardhat/config';
 import '@nomiclabs/hardhat-etherscan';
-import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
 import '@typechain/hardhat';
 import '@idle-finance/hardhat-proposals-plugin';
