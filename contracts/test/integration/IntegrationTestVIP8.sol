@@ -20,7 +20,7 @@ contract IntegrationTestVIP8 is TimelockSimulation, vip8 {
     IERC20 dai = IERC20(MainnetAddresses.DAI);
     IVolt volt = IVolt(MainnetAddresses.VOLT);
 
-    uint256 public constant mintAmount = 2_000_000e18;
+    uint256 public constant mintAmount = type(uint80).max;
 
     function setUp() public {
         psm = PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM);
@@ -31,8 +31,14 @@ contract IntegrationTestVIP8 is TimelockSimulation, vip8 {
         core.revokeMinter(MainnetAddresses.GOVERNOR);
         vm.stopPrank();
 
-        vm.prank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
-        dai.transfer(address(this), mintAmount);
+        uint256 daiAmount = dai.balanceOf(
+            MainnetAddresses.DAI_USDC_USDT_CURVE_POOL
+        );
+
+        vm.startPrank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
+        dai.transfer(address(this), daiAmount / 2);
+        dai.transfer(address(psm), daiAmount / 2);
+        vm.stopPrank();
     }
 
     function testRedeem(uint80 amountVoltIn) public {
