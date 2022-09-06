@@ -123,7 +123,7 @@ contract MintRedeemVerification {
     }
 
     /// @notice call after governance action to verify redeem values
-    function postActionVerifyRedeem(Vm vm) internal {
+    function doRedeem(Vm vm) external {
         for (uint256 i = 0; i < allMainnetPSMs.length; i++) {
             vm.startPrank(MainnetAddresses.GOVERNOR);
             core.grantMinter(MainnetAddresses.GOVERNOR);
@@ -132,10 +132,16 @@ contract MintRedeemVerification {
 
             _redeem(PriceBoundPSM(allMainnetPSMs[i]), tokensIn[i]);
         }
+        revert("successfully redeemed on all PSMs");
     }
 
     /// @notice call after governance action to verify mint values
-    function postActionVerifyMint(Vm vm) internal {
+    function postActionVerifyRedeem(Vm vm) internal {
+        vm.expectRevert("successfully redeemed on all PSMs");
+        this.doRedeem(vm);
+    }
+
+    function doMint(Vm vm) external {
         for (uint256 i = 0; i < allMainnetPSMs.length; i++) {
             /// pull all tokens from psm into this address and use them to purchase VOLT
             uint256 amountIn = tokensIn[i].balanceOf(allMainnetPSMs[i]);
@@ -153,5 +159,13 @@ contract MintRedeemVerification {
                 Math.min(maxAmountIn, amountIn)
             );
         }
+
+        revert("successfully minted on all PSMs");
+    }
+
+    /// @notice call after governance action to verify mint values
+    function postActionVerifyMint(Vm vm) internal {
+        vm.expectRevert("successfully minted on all PSMs");
+        this.doMint(vm);
     }
 }

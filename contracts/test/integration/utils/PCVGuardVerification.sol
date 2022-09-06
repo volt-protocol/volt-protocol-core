@@ -37,7 +37,8 @@ contract PCVGuardVerification is DSTest {
     IERC20[] private allMainnetTokens = [
         IERC20(MainnetAddresses.USDC),
         IERC20(MainnetAddresses.FEI),
-        IERC20(MainnetAddresses.DAI)
+        IERC20(MainnetAddresses.DAI),
+        IERC20(MainnetAddresses.VOLT)
     ];
 
     /// @notice balance of each token before timelock action
@@ -119,10 +120,10 @@ contract PCVGuardVerification is DSTest {
         );
         console.log("");
 
-        /// allow 50 bips slippage per proposal
+        /// allow 3 bips slippage per proposal
         require(
             Deviation.isWithinDeviationThreshold(
-                50,
+                3,
                 totalPCVPost.toInt256(),
                 totalPCVPre.toInt256()
             ),
