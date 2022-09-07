@@ -488,6 +488,8 @@ contract UnitTestERC20Allocator is DSTest {
                 PCVDeposit newPsmTarget
             ) = allocator.getDripDetails(address(newPsm));
 
+            /// drips are 0 because pcv deposits are not funded
+
             assertEq(psmAmountToDrip, 0);
             assertEq(newPsmAmountToDrip, 0);
 
@@ -572,9 +574,31 @@ contract UnitTestERC20Allocator is DSTest {
         token.mint(address(psm), skimAmount);
         newToken.mint(address(newPsm), skimAmount / scalingFactor); /// divide by scaling factor as new token only has 6 decimals
 
-        /// scalingFactor
-        allocator.skim(address(psm));
-        allocator.skim(address(newPsm));
+        {
+            (
+                uint256 psmAmountToSkim,
+                uint256 adjustedAmountToSkim,
+                ,
+
+            ) = allocator.getSkimDetails(address(psm));
+
+            assertEq(psmAmountToSkim, skimAmount);
+            assertEq(adjustedAmountToSkim, skimAmount);
+            allocator.skim(address(psm));
+        }
+
+        {
+            (
+                uint256 psmAmountToSkim,
+                uint256 adjustedAmountToSkim,
+                ,
+
+            ) = allocator.getSkimDetails(address(newPsm));
+
+            assertEq(psmAmountToSkim, skimAmount / scalingFactor); /// actual amount is scaled up by 1e6
+            assertEq(adjustedAmountToSkim, psmAmountToSkim * scalingFactor); /// adjusted amount is scaled up by 1e18 after scaling factor is applied
+            allocator.skim(address(newPsm));
+        }
 
         assertEq(token.balanceOf(address(psm)), targetBalance);
         assertEq(newToken.balanceOf(address(newPsm)), newTargetBalance);
