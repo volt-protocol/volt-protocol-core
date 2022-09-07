@@ -161,13 +161,41 @@ contract UnitTestRateLimitedV2 is DSTest {
         assertEq(expectedBuffer, rlm.buffer());
     }
 
+    function testDepleteThenReplenishBuffer(
+        uint128 amountToDeplete,
+        uint128 amountToReplenish,
+        uint16 warpAmount
+    ) public {
+        uint256 actualAmountToDeplete = Math.min(amountToDeplete, bufferCap);
+        rlm.depleteBuffer(actualAmountToDeplete); /// deplete buffer
+        assertEq(rlm.buffer(), bufferCap - actualAmountToDeplete);
+
+        uint256 actualAmountToReplenish = Math.min(
+            amountToReplenish,
+            bufferCap
+        );
+
+        rlm.replenishBuffer(amountToReplenish);
+        uint256 finalState = bufferCap -
+            actualAmountToDeplete +
+            actualAmountToReplenish;
+        uint256 endingBuffer = Math.min(finalState, bufferCap);
+        assertEq(rlm.buffer(), endingBuffer);
+        assertEq(block.timestamp, rlm.lastBufferUsedTime());
+
+        vm.warp(block.timestamp + warpAmount);
+
+        uint256 accruedBuffer = warpAmount * rateLimitPerSecond;
+        uint256 expectedBuffer = Math.min(
+            finalState + accruedBuffer,
+            bufferCap
+        );
+        assertEq(expectedBuffer, rlm.buffer());
+    }
+
     function testReplenishWhenAtBufferCapHasNoEffect(uint128 amountToReplenish)
         public
     {
-        uint256 actualAmountToReplenish = 0;
-        vm.expectEmit(true, false, false, true, address(rlm));
-        emit BufferReplenished(amountToReplenish, actualAmountToReplenish);
-
         rlm.replenishBuffer(amountToReplenish);
         assertEq(rlm.buffer(), bufferCap);
         assertEq(block.timestamp, rlm.lastBufferUsedTime());
