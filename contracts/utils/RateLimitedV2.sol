@@ -126,6 +126,9 @@ abstract contract RateLimitedV2 is CoreRef {
 
         /// cannot replenish any further if already at buffer cap
         if (newBuffer == _bufferCap) {
+            /// save an SSTORE + some stack operations if buffer cannot be increased.
+            /// last buffer used time doesn't need to be updated as buffer cannot
+            /// increase past the buffer cap
             return;
         }
 
