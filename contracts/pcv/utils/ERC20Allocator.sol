@@ -17,7 +17,7 @@ import {IERC20Allocator} from "./IERC20Allocator.sol";
 /// First application is allocating funds from a PSM to a yield venue so that liquid reserves are minimized.
 /// This contract should never hold PCV, however it has a sweep function, so if tokens get sent to it accidentally,
 /// they can still be recovered.
-/// @author Elliot Friedman, Volt Protocol
+/// @author Elliot Friedman
 contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
     using Address for address payable;
     using SafeERC20 for IERC20;
@@ -169,6 +169,8 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
     }
 
     function _skim(address psm) internal {
+        /// Check
+
         /// note this check is redundant, as calculating amountToPull will revert
         /// if pullThreshold is greater than the current balance of psm
         /// however, we like to err on the side of verbosity
@@ -190,7 +192,11 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
             toSkim.decimalsNormalizer
         );
 
+        /// Effects
+
         _replenishBuffer(adjustedAmountToSkim);
+
+        /// Interactions
 
         // pull funds from pull target and send to push target
         PCVDeposit(psm).withdrawERC20(token, pcvDeposit, amountToPull);
@@ -209,6 +215,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
 
     /// helper function that does the dripping
     function _drip(address psm) internal {
+        /// Check
         require(
             _checkDripCondition(psm),
             "ERC20Allocator: drip condition not met"
@@ -220,9 +227,13 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
             PCVDeposit target
         ) = getDripDetails(psm);
 
+        /// Effects
+
         /// deplete buffer with adjusted amount so that it gets
         /// depleted uniformly across all assets and deposits
         _depleteBuffer(adjustedAmountToDrip);
+
+        /// Interaction
 
         /// drip amount to target so that it has dripThreshold amount of tokens
         target.withdraw(psm, amountToDrip);

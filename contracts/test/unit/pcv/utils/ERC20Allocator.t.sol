@@ -7,6 +7,7 @@ import {MockERC20} from "../../../../mock/MockERC20.sol";
 import {TribeRoles} from "../../../../core/TribeRoles.sol";
 import {ERC20Allocator} from "../../../../pcv/utils/ERC20Allocator.sol";
 import {PCVGuardAdmin} from "../../../../pcv/PCVGuardAdmin.sol";
+import {PCVDeposit} from "../../../../pcv/PCVDeposit.sol";
 import {ERC20HoldingPCVDeposit} from "../../../../pcv/ERC20HoldingPCVDeposit.sol";
 import {getCore, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -20,8 +21,15 @@ contract UnitTestERC20Allocator is DSTest {
         uint248 targetBalance,
         int8 decimalsNormalizer
     );
+
     /// @notice event emitted when tokens are dripped
     event Dripped(uint256 amount);
+
+    /// @notice event emitted in do action when neither skim nor drip could be triggered
+    event NoOp();
+
+    /// @notice emitted when an existing deposit is deleted
+    event DepositDeleted(address psm);
 
     ICore private core;
     Vm public constant vm = Vm(HEVM_ADDRESS);
@@ -78,8 +86,6 @@ contract UnitTestERC20Allocator is DSTest {
         );
     }
 
-    /// TODO add tests for drip, skim and doAction with a non whitelisted PSM to assert failure
-
     function testSkimFailsWhenUnderFunded() public {
         vm.expectRevert("ERC20Allocator: skim condition not met");
         allocator.skim(address(psm));
@@ -99,6 +105,35 @@ contract UnitTestERC20Allocator is DSTest {
     function testCreateDepositNonGovFails() public {
         vm.expectRevert("CoreRef: Caller is not a governor");
         allocator.createDeposit(address(0), address(0), 0, 0);
+    }
+
+    function testEditDepositNonGovFails() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        allocator.editDeposit(address(0), address(0), 0, 0);
+    }
+
+    function testDeleteDepositNonGovFails() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        allocator.deleteDeposit(address(0));
+    }
+
+    function testDeleteDepositGovSucceeds() public {
+        vm.prank(addresses.governorAddress);
+        vm.expectEmit(true, false, false, true, address(allocator));
+        emit DepositDeleted(address(psm));
+        allocator.deleteDeposit(address(psm));
+
+        (
+            address pcvDeposit,
+            address token,
+            uint248 targetBalance,
+            int8 decimalsNormalizer
+        ) = allocator.allDeposits(address(psm));
+
+        assertEq(targetBalance, 0);
+        assertEq(decimalsNormalizer, 0);
+        assertEq(token, address(0));
+        assertEq(pcvDeposit, address(0));
     }
 
     function testDripAndSkimFailsWhenPaused() public {
@@ -133,6 +168,11 @@ contract UnitTestERC20Allocator is DSTest {
     function testDripFailsWhenUnderTargetWithoutPCVControllerRole() public {
         vm.expectRevert("UNAUTHORIZED");
         allocator.drip(address(psm));
+    }
+
+    function testDoActionFailsWhenUnderTargetWithoutPCVControllerRole() public {
+        vm.expectRevert("UNAUTHORIZED");
+        allocator.doAction(address(psm));
     }
 
     function testTargetBalanceGovSucceeds() public {
@@ -213,13 +253,8 @@ contract UnitTestERC20Allocator is DSTest {
         vm.prank(addresses.governorAddress);
         core.grantPCVController(address(allocator));
 
-        assertTrue(allocator.checkDripCondition(address(psm)));
-
         vm.prank(addresses.governorAddress);
         allocator.pause();
-
-        /// drip condition turns false when contract is paused
-        assertTrue(!allocator.checkDripCondition(address(psm)));
 
         vm.prank(addresses.governorAddress);
         allocator.unpause();
@@ -236,6 +271,22 @@ contract UnitTestERC20Allocator is DSTest {
             depositBalance - targetBalance / 2
         );
         assertEq(token.balanceOf(address(psm)), targetBalance);
+    }
+
+    function testDripConditionFalseWhenPaused() public {
+        uint256 depositBalance = 10_000_000e18;
+
+        token.mint(address(pcvDeposit), depositBalance);
+        token.mint(address(psm), targetBalance / 2);
+
+        /// drip condition becomes false when contract is paused
+        assertTrue(allocator.checkDripCondition(address(psm)));
+
+        vm.prank(addresses.governorAddress);
+        allocator.pause();
+
+        /// drip condition returns false when contract is paused
+        assertTrue(!allocator.checkDripCondition(address(psm)));
     }
 
     function testBufferUpdatesCorrectly() public {
@@ -282,8 +333,11 @@ contract UnitTestERC20Allocator is DSTest {
         token.mint(address(psm), depositBalance);
 
         if (depositBalance > targetBalance) {
+            assertTrue(allocator.checkSkimCondition(address(psm)));
+
             allocator.skim(address(psm));
 
+            assertTrue(!allocator.checkSkimCondition(address(psm)));
             assertEq(token.balanceOf(address(psm)), targetBalance);
             assertEq(
                 token.balanceOf(address(pcvDeposit)),
@@ -293,5 +347,127 @@ contract UnitTestERC20Allocator is DSTest {
             vm.expectRevert("ERC20Allocator: skim condition not met");
             allocator.skim(address(psm));
         }
+    }
+
+    function testDoActionDripSucceedsWhenUnderFullTargetBalance(
+        uint8 denominator
+    ) public {
+        vm.assume(denominator > 1);
+        uint256 depositBalance = targetBalance / denominator;
+
+        token.mint(address(pcvDeposit), depositBalance);
+
+        vm.prank(addresses.governorAddress);
+        core.grantPCVController(address(allocator));
+
+        uint256 bufferStart = allocator.buffer();
+        (
+            uint256 amountToDrip,
+            uint256 adjustedAmountToDrip,
+            PCVDeposit target
+        ) = allocator.getDripDetails(address(psm));
+
+        /// this has to be true
+        assertTrue(allocator.checkDripCondition(address(psm)));
+
+        allocator.doAction(address(psm));
+
+        if (token.balanceOf(address(psm)) >= targetBalance) {
+            assertTrue(!allocator.checkDripCondition(address(psm)));
+        }
+
+        assertEq(bufferStart, allocator.buffer() + adjustedAmountToDrip);
+        assertEq(amountToDrip, adjustedAmountToDrip);
+        assertEq(address(target), address(pcvDeposit));
+        assertEq(token.balanceOf(address(pcvDeposit)), 0);
+        assertEq(token.balanceOf(address(psm)), depositBalance);
+    }
+
+    function testDoActionSkimSucceedsWhenOverThresholdWithPCVControllerFuzz(
+        uint128 depositBalance
+    ) public {
+        vm.prank(addresses.governorAddress);
+        core.grantPCVController(address(allocator));
+        token.mint(address(psm), depositBalance);
+
+        if (depositBalance > targetBalance) {
+            uint256 bufferStart = allocator.buffer();
+            allocator.doAction(address(psm));
+
+            assertEq(bufferStart, allocator.buffer());
+            assertEq(token.balanceOf(address(psm)), targetBalance);
+            assertEq(
+                token.balanceOf(address(pcvDeposit)),
+                depositBalance - targetBalance
+            );
+        }
+    }
+
+    /// tests where non whitelisted psm actions drip, skim and doAction fail
+
+    function testDripFailsOnNonWhitelistedPSM() public {
+        address nonWhitelistedPSM = address(1);
+        vm.prank(addresses.governorAddress);
+        core.grantPCVController(address(allocator));
+
+        (
+            address pcvDeposit,
+            address token,
+            uint248 targetBalance,
+            int8 decimalsNormalizer
+        ) = allocator.allDeposits(nonWhitelistedPSM);
+
+        assertEq(targetBalance, 0);
+        assertEq(decimalsNormalizer, 0);
+        assertEq(token, address(0));
+        assertEq(pcvDeposit, address(0));
+
+        /// points to token address 0, thus reverting in check drip condition
+        vm.expectRevert();
+        allocator.drip(address(nonWhitelistedPSM));
+    }
+
+    function testSkimFailsOnNonWhitelistedPSM() public {
+        address nonWhitelistedPSM = address(1);
+        vm.prank(addresses.governorAddress);
+        core.grantPCVController(address(allocator));
+
+        (
+            address pcvDeposit,
+            address token,
+            uint248 targetBalance,
+            int8 decimalsNormalizer
+        ) = allocator.allDeposits(nonWhitelistedPSM);
+
+        assertEq(targetBalance, 0);
+        assertEq(decimalsNormalizer, 0);
+        assertEq(token, address(0));
+        assertEq(pcvDeposit, address(0));
+
+        /// points to token address 0, thus reverting in check skim condition
+        vm.expectRevert();
+        allocator.skim(address(nonWhitelistedPSM));
+    }
+
+    function testDoActionNoOpOnNonWhitelistedPSM() public {
+        address nonWhitelistedPSM = address(1);
+        vm.prank(addresses.governorAddress);
+        core.grantPCVController(address(allocator));
+
+        (
+            address pcvDeposit,
+            address token,
+            uint248 targetBalance,
+            int8 decimalsNormalizer
+        ) = allocator.allDeposits(nonWhitelistedPSM);
+
+        assertEq(targetBalance, 0);
+        assertEq(decimalsNormalizer, 0);
+        assertEq(token, address(0));
+        assertEq(pcvDeposit, address(0));
+
+        /// points to token address 0, thus reverting in check drip condition
+        vm.expectRevert();
+        allocator.doAction(address(nonWhitelistedPSM));
     }
 }
