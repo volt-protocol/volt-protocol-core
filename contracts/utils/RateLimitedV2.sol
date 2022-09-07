@@ -63,7 +63,7 @@ abstract contract RateLimitedV2 is CoreRef {
     function setRateLimitPerSecond(uint128 newRateLimitPerSecond)
         external
         virtual
-        onlyGovernorOrAdmin
+        onlyGovernor
     {
         require(
             newRateLimitPerSecond <= MAX_RATE_LIMIT_PER_SECOND,
@@ -75,11 +75,7 @@ abstract contract RateLimitedV2 is CoreRef {
     }
 
     /// @notice set the buffer cap
-    function setBufferCap(uint128 newBufferCap)
-        external
-        virtual
-        onlyGovernorOrAdmin
-    {
+    function setBufferCap(uint128 newBufferCap) external virtual onlyGovernor {
         _setBufferCap(newBufferCap);
     }
 

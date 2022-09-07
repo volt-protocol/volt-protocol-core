@@ -12,6 +12,8 @@ import {ERC20HoldingPCVDeposit} from "../../../../pcv/ERC20HoldingPCVDeposit.sol
 import {getCore, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+import "hardhat/console.sol";
+
 contract UnitTestERC20Allocator is DSTest {
     /// @notice emitted when an existing deposit is updated
     event DepositUpdated(
@@ -87,6 +89,10 @@ contract UnitTestERC20Allocator is DSTest {
     }
 
     function testSkimFailsWhenUnderFunded() public {
+        assertTrue(!allocator.checkSkimCondition(address(psm)));
+        assertTrue(allocator.checkDripCondition(address(psm)));
+        assertTrue(allocator.checkActionAllowed(address(psm)));
+
         vm.expectRevert("ERC20Allocator: skim condition not met");
         allocator.skim(address(psm));
     }
@@ -97,10 +103,30 @@ contract UnitTestERC20Allocator is DSTest {
         token.mint(address(psm), targetBalance * 2);
 
         assertTrue(!allocator.checkDripCondition(address(psm)));
-        assertTrue(allocator.checkActionAllowed(address(psm))); /// skim should be allowed
+        assertTrue(allocator.checkSkimCondition(address(psm)));
+        assertTrue(allocator.checkActionAllowed(address(psm)));
 
         vm.expectRevert("ERC20Allocator: drip condition not met");
         allocator.drip(address(psm));
+    }
+
+    function testDripFailsWhenBufferExhausted() public {
+        vm.startPrank(addresses.governorAddress);
+        core.grantPCVController(address(allocator));
+        allocator.setBufferCap(uint128(targetBalance)); /// only allow 1 complete drip to exhaust buffer
+
+        token.mint(address(pcvDeposit), targetBalance * 2);
+
+        assertTrue(allocator.checkDripCondition(address(psm)));
+        assertTrue(!allocator.checkSkimCondition(address(psm))); /// cannot skim
+        assertTrue(allocator.checkActionAllowed(address(psm)));
+
+        allocator.drip(address(psm));
+
+        assertTrue(!allocator.checkDripCondition(address(psm)));
+        assertTrue(!allocator.checkSkimCondition(address(psm))); /// cannot skim
+        assertTrue(!allocator.checkActionAllowed(address(psm)));
+        assertEq(allocator.buffer(), 0);
     }
 
     function testCreateDepositNonGovFails() public {

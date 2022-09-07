@@ -345,9 +345,11 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         override
         returns (bool)
     {
+        /// if drip condition is true, buffer must be greater than 0,
+        /// otherwise drip action isn't allowed
         return
-            (_checkDripCondition(psm) || _checkSkimCondition(psm)) &&
-            paused() == false;
+            ((_checkDripCondition(psm) && buffer() > 0) ||
+                _checkSkimCondition(psm)) && paused() == false;
     }
 
     function _checkDripCondition(address psm) internal view returns (bool) {
