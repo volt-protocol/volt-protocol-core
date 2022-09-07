@@ -39,7 +39,7 @@ contract ERC20HoldingPCVDeposit is PCVDeposit, IERC20HoldingPCVDeposit {
         return token.balanceOf(address(this));
     }
 
-    /// @notice returns the resistant balance and FEI in the deposit
+    /// @notice returns the resistant balance and VOLT in the deposit
     function resistantBalanceAndVolt()
         public
         view
@@ -59,9 +59,7 @@ contract ERC20HoldingPCVDeposit is PCVDeposit, IERC20HoldingPCVDeposit {
         external
         override(IERC20HoldingPCVDeposit, IPCVDeposit)
         whenNotPaused
-    {
-        emit Deposit(msg.sender, balance());
-    }
+    {}
 
     /// @notice Withdraw underlying
     /// @param amountUnderlying of tokens withdrawn
