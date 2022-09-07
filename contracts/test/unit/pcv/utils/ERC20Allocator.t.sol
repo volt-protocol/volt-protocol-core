@@ -365,7 +365,7 @@ contract UnitTestERC20Allocator is DSTest {
         assertEq(token.balanceOf(address(psm)), targetBalance);
     }
 
-    function testDripConditionFalseWhenPaused() public {
+    function testAllConditionsFalseWhenPaused() public {
         uint256 depositBalance = 10_000_000e18;
 
         token.mint(address(pcvDeposit), depositBalance);
@@ -377,11 +377,10 @@ contract UnitTestERC20Allocator is DSTest {
         vm.prank(addresses.governorAddress);
         allocator.pause();
 
-        /// drip condition returns false when contract is paused
-        assertTrue(!allocator.checkDripCondition(address(psm)));
-
         /// actions not allowed while paused
+        assertTrue(!allocator.checkDripCondition(address(psm)));
         assertTrue(!allocator.checkActionAllowed(address(psm)));
+        assertTrue(!allocator.checkSkimCondition(address(psm)));
     }
 
     function testBufferUpdatesCorrectly() public {
@@ -392,6 +391,7 @@ contract UnitTestERC20Allocator is DSTest {
         token.mint(address(psm), targetBalance / 2);
         assertTrue(allocator.checkActionAllowed(address(psm)));
         assertTrue(allocator.checkDripCondition(address(psm)));
+        assertTrue(!allocator.checkSkimCondition(address(psm))); /// psm balance empty, cannot skim
 
         allocator.drip(address(psm));
 
