@@ -29,8 +29,16 @@ abstract contract RateLimitedV2 is CoreRef {
     /// @notice the buffer at the timestamp of lastBufferUsedTime
     uint224 public bufferStored;
 
+    /// @notice event emitted when buffer gets eaten into
     event BufferUsed(uint256 amountUsed, uint256 bufferRemaining);
+
+    /// @notice event emitted when buffer gets replenished
+    event BufferReplenished(uint256 amountReplenished, uint256 bufferRemaining);
+
+    /// @notice event emitted when buffer cap is updated
     event BufferCapUpdate(uint256 oldBufferCap, uint256 newBufferCap);
+
+    /// @notice event emitted when rate limit per second is updated
     event RateLimitPerSecondUpdate(
         uint256 oldRateLimitPerSecond,
         uint256 newRateLimitPerSecond
@@ -125,6 +133,8 @@ abstract contract RateLimitedV2 is CoreRef {
 
         /// ensure that bufferStored cannot be gt buffer cap
         bufferStored = Math.min(newBuffer + amount, _bufferCap).toUint224();
+
+        emit BufferReplenished(amount, bufferStored);
     }
 
     function _setRateLimitPerSecond(uint128 newRateLimitPerSecond) internal {
