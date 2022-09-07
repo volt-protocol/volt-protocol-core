@@ -129,6 +129,19 @@ contract UnitTestERC20Allocator is DSTest {
         assertEq(allocator.buffer(), 0);
     }
 
+    function testDripFailsWhenBufferZero() public {
+        vm.startPrank(addresses.governorAddress);
+        core.grantPCVController(address(allocator));
+        allocator.setBufferCap(uint128(0)); /// fully exhaust buffer
+
+        token.mint(address(pcvDeposit), targetBalance * 2);
+
+        assertTrue(!allocator.checkDripCondition(address(psm)));
+        assertTrue(!allocator.checkSkimCondition(address(psm))); /// cannot skim
+        assertTrue(!allocator.checkActionAllowed(address(psm)));
+        assertEq(allocator.buffer(), 0);
+    }
+
     function testCreateDepositNonGovFails() public {
         vm.expectRevert("CoreRef: Caller is not a governor");
         allocator.createDeposit(address(0), address(0), 0, 0);
