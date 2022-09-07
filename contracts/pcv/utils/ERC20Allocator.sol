@@ -354,9 +354,11 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
 
     function _checkDripCondition(address psm) internal view returns (bool) {
         /// direct balanceOf call is cheaper than calling balance on psm
+        /// also cannot drip if balance in underlying venue is 0
         return
             IERC20(allDeposits[psm].token).balanceOf(psm) <
-            allDeposits[psm].targetBalance;
+            allDeposits[psm].targetBalance &&
+            PCVDeposit(allDeposits[psm].pcvDeposit).balance() != 0;
     }
 
     function _checkSkimCondition(address psm) internal view returns (bool) {
