@@ -97,6 +97,7 @@ contract UnitTestERC20Allocator is DSTest {
         token.mint(address(psm), targetBalance * 2);
 
         assertTrue(!allocator.checkDripCondition(address(psm)));
+        assertTrue(allocator.checkActionAllowed(address(psm))); /// skim should be allowed
 
         vm.expectRevert("ERC20Allocator: drip condition not met");
         allocator.drip(address(psm));
@@ -124,16 +125,16 @@ contract UnitTestERC20Allocator is DSTest {
         allocator.deleteDeposit(address(psm));
 
         (
-            address pcvDeposit,
-            address token,
-            uint248 targetBalance,
+            address psmPcvDeposit,
+            address psmToken,
+            uint248 psmTargetBalance,
             int8 decimalsNormalizer
         ) = allocator.allDeposits(address(psm));
 
-        assertEq(targetBalance, 0);
+        assertEq(psmTargetBalance, 0);
         assertEq(decimalsNormalizer, 0);
-        assertEq(token, address(0));
-        assertEq(pcvDeposit, address(0));
+        assertEq(psmToken, address(0));
+        assertEq(psmPcvDeposit, address(0));
     }
 
     function testDripAndSkimFailsWhenPaused() public {
@@ -256,11 +257,17 @@ contract UnitTestERC20Allocator is DSTest {
         vm.prank(addresses.governorAddress);
         allocator.pause();
 
+        /// actions not allowed while paused
+        assertTrue(!allocator.checkActionAllowed(address(psm)));
+
         vm.prank(addresses.governorAddress);
         allocator.unpause();
 
+        assertTrue(allocator.checkActionAllowed(address(psm)));
+
         allocator.drip(address(psm));
         assertTrue(!allocator.checkDripCondition(address(psm)));
+        assertTrue(!allocator.checkActionAllowed(address(psm)));
 
         uint256 bufferEnd = allocator.buffer();
 
@@ -287,6 +294,9 @@ contract UnitTestERC20Allocator is DSTest {
 
         /// drip condition returns false when contract is paused
         assertTrue(!allocator.checkDripCondition(address(psm)));
+
+        /// actions not allowed while paused
+        assertTrue(!allocator.checkActionAllowed(address(psm)));
     }
 
     function testBufferUpdatesCorrectly() public {
@@ -407,20 +417,17 @@ contract UnitTestERC20Allocator is DSTest {
 
     function testDripFailsOnNonWhitelistedPSM() public {
         address nonWhitelistedPSM = address(1);
-        vm.prank(addresses.governorAddress);
-        core.grantPCVController(address(allocator));
-
         (
-            address pcvDeposit,
-            address token,
-            uint248 targetBalance,
+            address psmPcvDeposit,
+            address psmToken,
+            uint248 psmTargetBalance,
             int8 decimalsNormalizer
         ) = allocator.allDeposits(nonWhitelistedPSM);
 
-        assertEq(targetBalance, 0);
+        assertEq(psmTargetBalance, 0);
         assertEq(decimalsNormalizer, 0);
-        assertEq(token, address(0));
-        assertEq(pcvDeposit, address(0));
+        assertEq(psmToken, address(0));
+        assertEq(psmPcvDeposit, address(0));
 
         /// points to token address 0, thus reverting in check drip condition
         vm.expectRevert();
@@ -429,20 +436,17 @@ contract UnitTestERC20Allocator is DSTest {
 
     function testSkimFailsOnNonWhitelistedPSM() public {
         address nonWhitelistedPSM = address(1);
-        vm.prank(addresses.governorAddress);
-        core.grantPCVController(address(allocator));
-
         (
-            address pcvDeposit,
-            address token,
-            uint248 targetBalance,
+            address psmPcvDeposit,
+            address psmToken,
+            uint248 psmTargetBalance,
             int8 decimalsNormalizer
         ) = allocator.allDeposits(nonWhitelistedPSM);
 
-        assertEq(targetBalance, 0);
+        assertEq(psmTargetBalance, 0);
         assertEq(decimalsNormalizer, 0);
-        assertEq(token, address(0));
-        assertEq(pcvDeposit, address(0));
+        assertEq(psmToken, address(0));
+        assertEq(psmPcvDeposit, address(0));
 
         /// points to token address 0, thus reverting in check skim condition
         vm.expectRevert();
@@ -451,23 +455,41 @@ contract UnitTestERC20Allocator is DSTest {
 
     function testDoActionNoOpOnNonWhitelistedPSM() public {
         address nonWhitelistedPSM = address(1);
-        vm.prank(addresses.governorAddress);
-        core.grantPCVController(address(allocator));
-
         (
-            address pcvDeposit,
-            address token,
-            uint248 targetBalance,
+            address psmPcvDeposit,
+            address psmToken,
+            uint248 psmTargetBalance,
             int8 decimalsNormalizer
         ) = allocator.allDeposits(nonWhitelistedPSM);
 
-        assertEq(targetBalance, 0);
+        assertEq(psmTargetBalance, 0);
         assertEq(decimalsNormalizer, 0);
-        assertEq(token, address(0));
-        assertEq(pcvDeposit, address(0));
+        assertEq(psmToken, address(0));
+        assertEq(psmPcvDeposit, address(0));
 
         /// points to token address 0, thus reverting in check drip condition
         vm.expectRevert();
         allocator.doAction(address(nonWhitelistedPSM));
+    }
+
+    /// pure view only functions
+
+    function testGetAdjustedAmountUp(uint128 amount) public {
+        int8 decimalsNormalizer = 18; /// add on 18 decimals
+        uint256 adjustedAmount = allocator.getAdjustedAmount(
+            amount,
+            decimalsNormalizer
+        );
+        uint256 actualAmount = amount; /// cast up to avoid overflow
+        assertEq(adjustedAmount, actualAmount * 1e18);
+    }
+
+    function testGetAdjustedAmountDown(uint128 amount) public {
+        int8 decimalsNormalizer = -18; /// add on 18 decimals
+        uint256 adjustedAmount = allocator.getAdjustedAmount(
+            amount,
+            decimalsNormalizer
+        );
+        assertEq(adjustedAmount, amount / 1e18);
     }
 }
