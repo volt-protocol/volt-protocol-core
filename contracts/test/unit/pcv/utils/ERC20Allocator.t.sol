@@ -530,8 +530,36 @@ contract UnitTestERC20Allocator is DSTest {
         assertTrue(allocator.checkDripCondition(address(newPsm))); /// drip action allowed, and balance to do it
         assertTrue(!allocator.checkSkimCondition(address(newPsm))); /// nothing to skim, balance is empty
 
-        allocator.drip(address(psm));
-        allocator.drip(address(newPsm));
+        {
+            uint256 startingBalancePcvDeposit = token.balanceOf(
+                address(pcvDeposit)
+            );
+            uint256 startingBalanceNewPcvDeposit = newToken.balanceOf(
+                address(newPcvDeposit)
+            );
+
+            allocator.drip(address(psm));
+            allocator.drip(address(newPsm));
+
+            uint256 endingBalancePsm = token.balanceOf(address(psm));
+            uint256 endingBalanceNewPsm = newToken.balanceOf(address(newPsm));
+            uint256 endingBalancePcvDeposit = token.balanceOf(
+                address(pcvDeposit)
+            );
+            uint256 endingBalanceNewPcvDeposit = newToken.balanceOf(
+                address(newPcvDeposit)
+            );
+
+            assertEq(startingBalancePcvDeposit, targetBalance);
+            assertEq(startingBalanceNewPcvDeposit, newTargetBalance);
+
+            assertEq(endingBalancePsm, targetBalance);
+            assertEq(endingBalanceNewPsm, newTargetBalance);
+
+            /// both of these should be zero'd out
+            assertEq(endingBalancePcvDeposit, 0);
+            assertEq(endingBalanceNewPcvDeposit, 0);
+        }
 
         assertEq(token.balanceOf(address(psm)), targetBalance);
         assertEq(newToken.balanceOf(address(newPsm)), newTargetBalance);
