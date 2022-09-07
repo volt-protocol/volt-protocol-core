@@ -88,10 +88,30 @@ contract UnitTestERC20Allocator is DSTest {
         );
     }
 
+    function testSetup() public {
+        assertEq(address(allocator.core()), address(core));
+        (
+            address psmPcvDeposit,
+            address psmToken,
+            uint248 psmTargetBalance,
+            int8 decimalsNormalizer
+        ) = allocator.allDeposits(address(psm));
+
+        assertEq(psmTargetBalance, targetBalance);
+        assertEq(decimalsNormalizer, 0);
+        assertEq(psmToken, address(token));
+        assertEq(psmPcvDeposit, address(pcvDeposit));
+        assertEq(allocator.buffer(), bufferCap);
+
+        assertTrue(!allocator.checkDripCondition(address(psm))); /// drip action not allowed, due to 0 balance
+        assertTrue(!allocator.checkSkimCondition(address(psm))); /// skim action not allowed, not over threshold
+        assertTrue(!allocator.checkActionAllowed(address(psm))); /// neither drip nor skim action allowed
+    }
+
     function testSkimFailsWhenUnderFunded() public {
         assertTrue(!allocator.checkSkimCondition(address(psm)));
-        assertTrue(allocator.checkDripCondition(address(psm)));
-        assertTrue(allocator.checkActionAllowed(address(psm)));
+        assertTrue(!allocator.checkDripCondition(address(psm))); /// drip action not allowed, due to 0 balance
+        assertTrue(!allocator.checkActionAllowed(address(psm)));
 
         vm.expectRevert("ERC20Allocator: skim condition not met");
         allocator.skim(address(psm));
@@ -196,21 +216,47 @@ contract UnitTestERC20Allocator is DSTest {
         allocator.skim(address(psm));
     }
 
-    function testDripperFailsSilentlyWhenUnderFunded() public {
+    function testDripperFailsWhenUnderFunded() public {
+        assertTrue(!allocator.checkActionAllowed(address(psm)));
+        assertTrue(!allocator.checkDripCondition(address(psm)));
+        assertTrue(!allocator.checkSkimCondition(address(psm)));
+
         vm.prank(addresses.governorAddress);
         core.grantPCVController(address(allocator));
 
-        vm.expectEmit(true, false, false, true, address(allocator));
-        emit Dripped(0);
+        vm.expectRevert("ERC20Allocator: drip condition not met");
+        allocator.drip(address(psm));
+    }
+
+    function testDripNoOpWhenUnderTargetWithoutPCVControllerRole() public {
+        assertTrue(!allocator.checkActionAllowed(address(psm)));
+        assertTrue(!allocator.checkDripCondition(address(psm)));
+        assertTrue(!allocator.checkSkimCondition(address(psm)));
+
+        vm.expectRevert("ERC20Allocator: drip condition not met");
         allocator.drip(address(psm));
     }
 
     function testDripFailsWhenUnderTargetWithoutPCVControllerRole() public {
+        token.mint(address(pcvDeposit), 1); /// with a balance of 1, the drip action is valid
+
+        assertTrue(allocator.checkActionAllowed(address(psm)));
+        assertTrue(allocator.checkDripCondition(address(psm)));
+        assertTrue(!allocator.checkSkimCondition(address(psm)));
+
         vm.expectRevert("UNAUTHORIZED");
         allocator.drip(address(psm));
     }
 
+    function testDoActionNoOpWhenUnderTargetWithoutPCVControllerRole() public {
+        /// if this action was valid, it would fail because it doesn't have the pcv controller role
+        allocator.doAction(address(psm));
+    }
+
     function testDoActionFailsWhenUnderTargetWithoutPCVControllerRole() public {
+        token.mint(address(pcvDeposit), 1); /// with a balance of 1, the drip action is valid
+        assertTrue(allocator.checkActionAllowed(address(psm)));
+        assertTrue(allocator.checkDripCondition(address(psm)));
         vm.expectRevert("UNAUTHORIZED");
         allocator.doAction(address(psm));
     }
@@ -344,6 +390,8 @@ contract UnitTestERC20Allocator is DSTest {
 
         token.mint(address(pcvDeposit), targetBalance);
         token.mint(address(psm), targetBalance / 2);
+        assertTrue(allocator.checkActionAllowed(address(psm)));
+        assertTrue(allocator.checkDripCondition(address(psm)));
 
         allocator.drip(address(psm));
 
@@ -355,6 +403,111 @@ contract UnitTestERC20Allocator is DSTest {
         uint256 bufferEndAfterSkim = allocator.buffer();
         assertEq(bufferEndAfterSkim, bufferCap);
         assertEq(bufferEnd, bufferCap - targetBalance / 2);
+    }
+
+    function testBufferDepletesAndReplenishesCorrectly() public {
+        vm.prank(addresses.governorAddress);
+        core.grantPCVController(address(allocator));
+
+        token.mint(address(pcvDeposit), targetBalance);
+        token.mint(address(psm), targetBalance / 2);
+        assertTrue(allocator.checkActionAllowed(address(psm)));
+        assertTrue(allocator.checkDripCondition(address(psm)));
+
+        allocator.drip(address(psm));
+
+        uint256 bufferEnd = allocator.buffer();
+        assertEq(bufferEnd, bufferCap - targetBalance / 2);
+        /// multiply by 2 to get over buffer cap and fully replenish buffer
+        uint256 skimAmount = (bufferCap - bufferEnd) * 2;
+        token.mint(address(psm), (targetBalance * 3) / 2);
+
+        allocator.skim(address(psm));
+
+        uint256 bufferEndAfterSkim = allocator.buffer();
+        assertEq(bufferEndAfterSkim, bufferCap);
+    }
+
+    /// test a new deposit with decimal normalization
+    function testBufferDepletesAndReplenishesCorrectlyMultipleDecimalNormalizedDeposits()
+        public
+    {
+        vm.prank(addresses.governorAddress);
+        core.grantPCVController(address(allocator));
+
+        int8 decimalsNormalizer = 12; /// scale up new token by 12 decimals
+        uint256 scalingFactor = 1e12; /// scaling factor of 1e12 upwards
+        uint248 newTargetBalance = 100_000e6; /// target balance 100k
+
+        MockERC20 newToken = new MockERC20();
+        ERC20HoldingPCVDeposit newPsm = new ERC20HoldingPCVDeposit(
+            address(core),
+            IERC20(address(newToken))
+        );
+        ERC20HoldingPCVDeposit newPcvDeposit = new ERC20HoldingPCVDeposit(
+            address(core),
+            IERC20(address(newToken))
+        );
+
+        vm.prank(addresses.governorAddress);
+        allocator.createDeposit(
+            address(newPsm),
+            address(newPcvDeposit),
+            newTargetBalance,
+            decimalsNormalizer
+        );
+
+        (
+            address psmPcvDeposit,
+            address psmToken,
+            uint248 psmTargetBalance,
+            int8 _decimalsNormalizer
+        ) = allocator.allDeposits(address(newPsm));
+
+        /// assert new PSM has been properly wired into the allocator
+        assertEq(psmTargetBalance, newTargetBalance);
+        assertEq(decimalsNormalizer, _decimalsNormalizer);
+        assertEq(psmToken, address(newToken));
+        assertEq(psmPcvDeposit, address(newPcvDeposit));
+
+        assertTrue(!allocator.checkDripCondition(address(newPsm))); /// drip action not allowed, due to 0 balance
+        assertTrue(!allocator.checkDripCondition(address(psm))); /// drip action not allowed, due to 0 balance
+
+        token.mint(address(pcvDeposit), targetBalance);
+        newToken.mint(address(newPcvDeposit), targetBalance);
+
+        assertTrue(allocator.checkActionAllowed(address(psm)));
+        assertTrue(allocator.checkDripCondition(address(psm))); /// drip action allowed, and balance to do it
+        assertTrue(!allocator.checkSkimCondition(address(psm))); /// nothing to skim, balance is empty
+
+        /// new PSM
+        assertTrue(allocator.checkActionAllowed(address(newPsm)));
+        assertTrue(allocator.checkDripCondition(address(newPsm))); /// drip action allowed, and balance to do it
+        assertTrue(!allocator.checkSkimCondition(address(newPsm))); /// nothing to skim, balance is empty
+
+        allocator.drip(address(psm));
+        allocator.drip(address(newPsm));
+
+        assertEq(token.balanceOf(address(psm)), targetBalance);
+        assertEq(newToken.balanceOf(address(newPsm)), newTargetBalance);
+
+        uint256 bufferEnd = allocator.buffer();
+        assertEq(bufferEnd, bufferCap - targetBalance * 2); /// should have effectively dripped target balance 2x, meaning normalization worked properly
+
+        /// multiply by 2 to get over buffer cap and fully replenish buffer
+        uint256 skimAmount = bufferCap - bufferEnd;
+        token.mint(address(psm), skimAmount);
+        newToken.mint(address(newPsm), skimAmount / scalingFactor); /// divide by scaling factor as new token only has 6 decimals
+
+        /// scalingFactor
+        allocator.skim(address(psm));
+        allocator.skim(address(newPsm));
+
+        assertEq(token.balanceOf(address(psm)), targetBalance);
+        assertEq(newToken.balanceOf(address(newPsm)), newTargetBalance);
+
+        uint256 bufferEndAfterSkim = allocator.buffer();
+        assertEq(bufferEndAfterSkim, bufferCap); /// fully replenish buffer, meaning normalization worked properly
     }
 
     function testDripSucceedsWhenUnderFullTargetBalance(uint8 denominator)
