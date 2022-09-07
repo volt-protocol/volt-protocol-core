@@ -102,6 +102,8 @@ contract UnitTestERC20Allocator is DSTest {
         assertEq(psmToken, address(token));
         assertEq(psmPcvDeposit, address(pcvDeposit));
         assertEq(allocator.buffer(), bufferCap);
+        assertEq(allocator.buffer(), bufferCap);
+        assertEq(targetBalance, allocator.targetBalance(address(psm)));
 
         assertTrue(!allocator.checkDripCondition(address(psm))); /// drip action not allowed, due to 0 balance
         assertTrue(!allocator.checkSkimCondition(address(psm))); /// skim action not allowed, not over threshold
@@ -473,8 +475,51 @@ contract UnitTestERC20Allocator is DSTest {
         assertTrue(!allocator.checkDripCondition(address(newPsm))); /// drip action not allowed, due to 0 balance
         assertTrue(!allocator.checkDripCondition(address(psm))); /// drip action not allowed, due to 0 balance
 
+        {
+            (
+                uint256 psmAmountToDrip,
+                uint256 psmAdjustedAmountToDrip,
+                PCVDeposit psmTarget
+            ) = allocator.getDripDetails(address(psm));
+
+            (
+                uint256 newPsmAmountToDrip,
+                uint256 newPsmAdjustedAmountToDrip,
+                PCVDeposit newPsmTarget
+            ) = allocator.getDripDetails(address(newPsm));
+
+            assertEq(psmAmountToDrip, 0);
+            assertEq(newPsmAmountToDrip, 0);
+
+            assertEq(psmAdjustedAmountToDrip, 0);
+            assertEq(newPsmAdjustedAmountToDrip, 0);
+
+            assertEq(address(newPsmTarget), address(newPcvDeposit));
+            assertEq(address(psmTarget), address(pcvDeposit));
+        }
+
         token.mint(address(pcvDeposit), targetBalance);
-        newToken.mint(address(newPcvDeposit), targetBalance);
+        newToken.mint(address(newPcvDeposit), newTargetBalance);
+
+        {
+            (
+                uint256 psmAmountToDrip,
+                uint256 psmAdjustedAmountToDrip,
+
+            ) = allocator.getDripDetails(address(psm));
+
+            (
+                uint256 newPsmAmountToDrip,
+                uint256 newPsmAdjustedAmountToDrip,
+
+            ) = allocator.getDripDetails(address(newPsm));
+
+            assertEq(psmAmountToDrip, targetBalance);
+            assertEq(newPsmAmountToDrip, newTargetBalance);
+
+            assertEq(psmAdjustedAmountToDrip, targetBalance);
+            assertEq(newPsmAdjustedAmountToDrip, targetBalance); /// adjusted amount equals target balance
+        }
 
         assertTrue(allocator.checkActionAllowed(address(psm)));
         assertTrue(allocator.checkDripCondition(address(psm))); /// drip action allowed, and balance to do it

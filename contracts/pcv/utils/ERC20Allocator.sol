@@ -179,18 +179,12 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
             "ERC20Allocator: skim condition not met"
         );
 
-        depositInfo memory toSkim = allDeposits[psm];
-        address token = toSkim.token;
-        address pcvDeposit = toSkim.pcvDeposit;
-
-        uint256 amountToPull = IERC20(token).balanceOf(psm) -
-            toSkim.targetBalance;
-
-        /// adjust amount to skim based on the decimals normalizer to replenish buffer
-        uint256 adjustedAmountToSkim = getAdjustedAmount(
-            amountToPull,
-            toSkim.decimalsNormalizer
-        );
+        (
+            uint256 amountToSkim,
+            uint256 adjustedAmountToSkim,
+            address token,
+            PCVDeposit target
+        ) = getSkimDetails(psm);
 
         /// Effects
 
@@ -199,12 +193,12 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         /// Interactions
 
         // pull funds from pull target and send to push target
-        PCVDeposit(psm).withdrawERC20(token, pcvDeposit, amountToPull);
+        PCVDeposit(psm).withdrawERC20(token, address(target), amountToSkim);
 
         /// deposit pulled funds into the selected yield venue
-        PCVDeposit(pcvDeposit).deposit();
+        target.deposit();
 
-        emit Skimmed(amountToPull);
+        emit Skimmed(amountToSkim);
     }
 
     /// @notice push ERC20 tokens to PSM by pulling from a PCV deposit
@@ -274,6 +268,32 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
             uint256 scalingFactor = 10**decimalsNormalizer.toUint256();
             adjustedAmountToDrip = amountToDrip * scalingFactor;
         }
+    }
+
+    /// @notice return the amount that can be skimmed off a given PSM
+    /// @param psm peg stability module to check skim amount on
+    /// returns amount that can be skimmed, adjusted amount to skim and target to send proceeds
+    function getSkimDetails(address psm)
+        public
+        view
+        returns (
+            uint256 amountToSkim,
+            uint256 adjustedAmountToSkim,
+            address token,
+            PCVDeposit target
+        )
+    {
+        depositInfo memory toSkim = allDeposits[psm];
+
+        token = toSkim.token;
+        target = PCVDeposit(toSkim.pcvDeposit);
+        amountToSkim = IERC20(token).balanceOf(psm) - toSkim.targetBalance;
+
+        /// adjust amount to skim based on the decimals normalizer to replenish buffer
+        adjustedAmountToSkim = getAdjustedAmount(
+            amountToSkim,
+            toSkim.decimalsNormalizer
+        );
     }
 
     /// @notice return the amount that can be dripped to a given PSM
