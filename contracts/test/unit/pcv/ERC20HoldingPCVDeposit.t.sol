@@ -124,8 +124,6 @@ contract UnitTestERC20HoldingsPCVDeposit is DSTest {
     }
 
     function testDepositNoOp() public {
-        vm.expectEmit(true, true, false, true, address(erc20HoldingDeposit));
-        emit Deposit(address(this), 0);
         erc20HoldingDeposit.deposit();
     }
 
