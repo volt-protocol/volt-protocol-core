@@ -17,6 +17,8 @@ import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 
+import "hardhat/console.sol";
+
 contract IntegrationTestERC20Allocator is DSTest {
     using SafeCast for *;
 
@@ -133,9 +135,11 @@ contract IntegrationTestERC20Allocator is DSTest {
         ) = allocator.getDripDetails(address(daiPSM));
 
         assertTrue(allocator.checkDripCondition(address(daiPSM)));
+        assertTrue(!allocator.checkSkimCondition(address(daiPSM)));
         assertTrue(allocator.checkActionAllowed(address(daiPSM)));
         allocator.drip(address(daiPSM));
         assertTrue(!allocator.checkDripCondition(address(daiPSM)));
+        assertTrue(!allocator.checkSkimCondition(address(daiPSM)));
         assertTrue(!allocator.checkActionAllowed(address(daiPSM)));
 
         daiBalance = dai.balanceOf(address(daiPSM));
@@ -174,5 +178,77 @@ contract IntegrationTestERC20Allocator is DSTest {
             allocator.buffer(),
             bufferCap - targetUsdcBalance * scalingFactorUsdc
         );
+    }
+
+    /// ------ SKIM ------
+
+    function testSkimDai() public {
+        uint256 daiBalance = daiDeposit.balance();
+        uint256 daiPSMBalance = daiPSM.balance();
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        daiDeposit.withdraw(address(daiPSM), daiBalance); /// send all dai to psm
+
+        (uint256 amountToSkim, uint256 adjustedAmountToSkim, , ) = allocator
+            .getSkimDetails(address(daiPSM));
+
+        uint256 skimAmount = daiPSM.balance() - targetDaiBalance;
+        assertEq(amountToSkim, skimAmount);
+        assertEq(adjustedAmountToSkim, skimAmount);
+
+        assertTrue(!allocator.checkDripCondition(address(daiPSM))); /// all assets are in dai psm, not eligble for skim
+        assertTrue(allocator.checkSkimCondition(address(daiPSM)));
+        assertTrue(allocator.checkActionAllowed(address(daiPSM)));
+
+        allocator.skim(address(daiPSM));
+
+        assertTrue(!allocator.checkDripCondition(address(daiPSM)));
+        assertTrue(!allocator.checkSkimCondition(address(daiPSM)));
+        assertTrue(!allocator.checkActionAllowed(address(daiPSM)));
+
+        assertEq(dai.balanceOf(address(daiPSM)), targetDaiBalance);
+        assertApproxEq(
+            daiDeposit.balance().toInt256(),
+            (daiBalance + daiPSMBalance - targetDaiBalance).toInt256(),
+            0
+        );
+
+        /// buffer should be full as no depletion happened prior and skimming is regenerative
+        assertEq(allocator.buffer(), bufferCap);
+    }
+
+    function testSkimUsdc() public {
+        uint256 usdcBalance = usdcDeposit.balance();
+        uint256 usdcPSMBalance = usdcPSM.balance();
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.withdraw(address(usdcPSM), usdcBalance); /// send all usdc to psm
+
+        (uint256 amountToSkim, uint256 adjustedAmountToSkim, , ) = allocator
+            .getSkimDetails(address(usdcPSM));
+
+        uint256 skimAmount = usdcPSM.balance() - targetUsdcBalance;
+        assertEq(amountToSkim, skimAmount);
+        assertEq(adjustedAmountToSkim, skimAmount * scalingFactorUsdc);
+
+        assertTrue(!allocator.checkDripCondition(address(usdcPSM))); /// all assets are in usdc psm, not eligble for skim
+        assertTrue(allocator.checkSkimCondition(address(usdcPSM)));
+        assertTrue(allocator.checkActionAllowed(address(usdcPSM)));
+
+        allocator.skim(address(usdcPSM));
+
+        assertTrue(!allocator.checkDripCondition(address(usdcPSM)));
+        assertTrue(!allocator.checkSkimCondition(address(usdcPSM)));
+        assertTrue(!allocator.checkActionAllowed(address(usdcPSM)));
+
+        assertEq(usdc.balanceOf(address(usdcPSM)), targetUsdcBalance);
+        assertApproxEq(
+            usdcDeposit.balance().toInt256(),
+            (usdcBalance + usdcPSMBalance - targetUsdcBalance).toInt256(),
+            0
+        );
+
+        /// buffer should be full as no depletion happened prior and skimming is regenerative
+        assertEq(allocator.buffer(), bufferCap);
     }
 }
