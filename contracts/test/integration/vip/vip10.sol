@@ -48,7 +48,7 @@ contract vip10 is DSTest, IVIP {
         override
         returns (ITimelockSimulation.action[] memory proposal)
     {
-        proposal = new ITimelockSimulation.action[](4);
+        proposal = new ITimelockSimulation.action[](3);
 
         // proposal[0].target = MainnetAddresses.ERC20_ALLOCATOR; commented while contract is not deployed
         proposal[0].value = 0;
@@ -72,13 +72,13 @@ contract vip10 is DSTest, IVIP {
         );
         proposal[1].description = "Add DAI deposit to the ERC20 Allocator";
 
-        proposal[3].target = MainnetAddresses.CORE;
-        proposal[3].value = 0;
-        proposal[3].arguments = abi.encodeWithSignature(
+        proposal[2].target = MainnetAddresses.CORE;
+        proposal[2].value = 0;
+        proposal[2].arguments = abi.encodeWithSignature(
             "grantPCVController(address)"
             // MainnetAddresses.ERC20_ALLOCATOR  commented while contract is not deployed
         );
-        proposal[3]
+        proposal[2]
             .description = "Grant ERC20 Allocator pcv controller role to allow pulling from PCV deposits";
     }
 
