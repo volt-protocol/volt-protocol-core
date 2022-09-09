@@ -96,7 +96,7 @@ contract IntegrationTestERC20Allocator is DSTest {
                 address psmToken,
                 uint248 psmTargetBalance,
                 int8 decimalsNormalizer
-            ) = allocator.allDeposits(address(daiPSM));
+            ) = allocator.allPSMs(address(daiPSM));
 
             assertEq(psmTargetBalance, targetDaiBalance);
             assertEq(decimalsNormalizer, decimalsNormalizerDai);
@@ -110,7 +110,7 @@ contract IntegrationTestERC20Allocator is DSTest {
                 address psmToken,
                 uint248 psmTargetBalance,
                 int8 decimalsNormalizer
-            ) = allocator.allDeposits(address(usdcPSM));
+            ) = allocator.allPSMs(address(usdcPSM));
 
             assertEq(psmTargetBalance, targetUsdcBalance);
             assertEq(decimalsNormalizer, decimalsNormalizerUsdc);
@@ -128,11 +128,8 @@ contract IntegrationTestERC20Allocator is DSTest {
         daiPSM.withdraw(address(daiDeposit), daiBalance); /// send all dai to pcv deposit
         daiDeposit.deposit();
 
-        (
-            uint256 amountToDrip,
-            uint256 adjustedAmountToDrip,
-            PCVDeposit target
-        ) = allocator.getDripDetails(address(daiPSM));
+        (uint256 amountToDrip, uint256 adjustedAmountToDrip) = allocator
+            .getDripDetails(address(daiPSM), daiDeposit);
 
         assertTrue(allocator.checkDripCondition(address(daiPSM)));
         assertTrue(!allocator.checkSkimCondition(address(daiPSM)));
@@ -144,7 +141,6 @@ contract IntegrationTestERC20Allocator is DSTest {
 
         daiBalance = dai.balanceOf(address(daiPSM));
         assertEq(amountToDrip, adjustedAmountToDrip);
-        assertEq(address(target), address(daiDeposit));
         assertEq(amountToDrip, targetDaiBalance);
         assertEq(daiBalance, targetDaiBalance);
         assertEq(allocator.buffer(), bufferCap - targetDaiBalance);
@@ -157,11 +153,8 @@ contract IntegrationTestERC20Allocator is DSTest {
         usdcPSM.withdraw(address(usdcDeposit), usdcBalance); /// send all dai to pcv deposit
         usdcDeposit.deposit(); /// deposit so it will be counted in balance
 
-        (
-            uint256 amountToDrip,
-            uint256 adjustedAmountToDrip,
-            PCVDeposit target
-        ) = allocator.getDripDetails(address(usdcPSM));
+        (uint256 amountToDrip, uint256 adjustedAmountToDrip) = allocator
+            .getDripDetails(address(usdcPSM), daiDeposit);
 
         assertTrue(allocator.checkDripCondition(address(usdcPSM)));
         assertTrue(allocator.checkActionAllowed(address(usdcPSM)));
@@ -171,7 +164,6 @@ contract IntegrationTestERC20Allocator is DSTest {
 
         usdcBalance = usdc.balanceOf(address(usdcPSM));
         assertEq(amountToDrip * scalingFactorUsdc, adjustedAmountToDrip);
-        assertEq(address(target), address(usdcDeposit));
         assertEq(amountToDrip, targetUsdcBalance);
         assertEq(usdcBalance, targetUsdcBalance);
         assertEq(

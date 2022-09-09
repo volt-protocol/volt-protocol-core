@@ -37,8 +37,14 @@ interface IERC20Allocator {
         int8 decimalsNormalizer
     );
 
+    /// @notice emitted when a psm is connected to a PCV Deposit
+    event DepositConnected(address psm, address pcvDeposit);
+
     /// @notice emitted when an existing deposit is deleted
-    event DepositDeleted(address psm);
+    event DepositDeleted(address deposit);
+
+    /// @notice emitted when a PSM is deleted
+    event PSMDeleted(address psm);
 
     /// ----------- Governor Only API -----------
 
@@ -68,19 +74,13 @@ interface IERC20Allocator {
 
     /// @notice delete an existing deposit
     /// @param psm Peg Stability Module to remove from allocation
-    function deleteDeposit(address psm) external;
+    function deletePSM(address psm) external;
 
-    /// @notice target address to send excess tokens
-    // function pcvDeposit() external view returns (address);
+    /// @notice establish connection between PSM and a PCV Deposit
+    function connectDeposit(address psm, address pcvDeposit) external;
 
-    // /// @notice target address to pull excess tokens from
-    // function psm() external view returns (address);
-
-    // /// @notice target token address to send
-    // function token() external view returns (address);
-
-    // /// @notice only pull if and only if balance of target is greater than pullThreshold
-    // function targetBalance() external view returns (uint256);
+    /// @notice delete connection between PSM and a PCV Deposit
+    function deleteDeposit(address pcvDeposit) external;
 
     /// @notice pull ERC20 tokens from pull target and send to push target
     /// if and only if the amount of tokens held in the contract is above

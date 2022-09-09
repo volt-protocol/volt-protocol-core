@@ -24,6 +24,9 @@ contract UnitTestERC20Allocator is DSTest {
         int8 decimalsNormalizer
     );
 
+    /// @notice PSM deletion event
+    event PSMDeleted(address psm);
+
     /// @notice event emitted when tokens are dripped
     event Dripped(uint256 amount);
 
@@ -95,7 +98,7 @@ contract UnitTestERC20Allocator is DSTest {
             address psmToken,
             uint248 psmTargetBalance,
             int8 decimalsNormalizer
-        ) = allocator.allDeposits(address(psm));
+        ) = allocator.allPSMs(address(psm));
 
         assertEq(psmTargetBalance, targetBalance);
         assertEq(decimalsNormalizer, 0);
@@ -182,15 +185,15 @@ contract UnitTestERC20Allocator is DSTest {
     function testDeleteDepositGovSucceeds() public {
         vm.prank(addresses.governorAddress);
         vm.expectEmit(true, false, false, true, address(allocator));
-        emit DepositDeleted(address(psm));
-        allocator.deleteDeposit(address(psm));
+        emit PSMDeleted(address(psm));
+        allocator.deletePSM(address(psm));
 
         (
             address psmPcvDeposit,
             address psmToken,
             uint248 psmTargetBalance,
             int8 decimalsNormalizer
-        ) = allocator.allDeposits(address(psm));
+        ) = allocator.allPSMs(address(psm));
 
         assertEq(psmTargetBalance, 0);
         assertEq(decimalsNormalizer, 0);
@@ -464,7 +467,7 @@ contract UnitTestERC20Allocator is DSTest {
             address psmToken,
             uint248 psmTargetBalance,
             int8 _decimalsNormalizer
-        ) = allocator.allDeposits(address(newPsm));
+        ) = allocator.allPSMs(address(newPsm));
 
         /// assert new PSM has been properly wired into the allocator
         assertEq(psmTargetBalance, newTargetBalance);
@@ -478,15 +481,19 @@ contract UnitTestERC20Allocator is DSTest {
         {
             (
                 uint256 psmAmountToDrip,
-                uint256 psmAdjustedAmountToDrip,
-                PCVDeposit psmTarget
-            ) = allocator.getDripDetails(address(psm));
+                uint256 psmAdjustedAmountToDrip
+            ) = allocator.getDripDetails(
+                    address(psm),
+                    PCVDeposit(address(pcvDeposit))
+                );
 
             (
                 uint256 newPsmAmountToDrip,
-                uint256 newPsmAdjustedAmountToDrip,
-                PCVDeposit newPsmTarget
-            ) = allocator.getDripDetails(address(newPsm));
+                uint256 newPsmAdjustedAmountToDrip
+            ) = allocator.getDripDetails(
+                    address(newPsm),
+                    PCVDeposit(address(newPcvDeposit))
+                );
 
             /// drips are 0 because pcv deposits are not funded
 
@@ -495,9 +502,6 @@ contract UnitTestERC20Allocator is DSTest {
 
             assertEq(psmAdjustedAmountToDrip, 0);
             assertEq(newPsmAdjustedAmountToDrip, 0);
-
-            assertEq(address(newPsmTarget), address(newPcvDeposit));
-            assertEq(address(psmTarget), address(pcvDeposit));
         }
 
         token.mint(address(pcvDeposit), targetBalance);
@@ -506,15 +510,19 @@ contract UnitTestERC20Allocator is DSTest {
         {
             (
                 uint256 psmAmountToDrip,
-                uint256 psmAdjustedAmountToDrip,
-
-            ) = allocator.getDripDetails(address(psm));
+                uint256 psmAdjustedAmountToDrip
+            ) = allocator.getDripDetails(
+                    address(psm),
+                    PCVDeposit(address(pcvDeposit))
+                );
 
             (
                 uint256 newPsmAmountToDrip,
-                uint256 newPsmAdjustedAmountToDrip,
-
-            ) = allocator.getDripDetails(address(newPsm));
+                uint256 newPsmAdjustedAmountToDrip
+            ) = allocator.getDripDetails(
+                    address(newPsm),
+                    PCVDeposit(address(newPcvDeposit))
+                );
 
             assertEq(psmAmountToDrip, targetBalance);
             assertEq(newPsmAmountToDrip, newTargetBalance);
@@ -660,11 +668,8 @@ contract UnitTestERC20Allocator is DSTest {
         core.grantPCVController(address(allocator));
 
         uint256 bufferStart = allocator.buffer();
-        (
-            uint256 amountToDrip,
-            uint256 adjustedAmountToDrip,
-            PCVDeposit target
-        ) = allocator.getDripDetails(address(psm));
+        (uint256 amountToDrip, uint256 adjustedAmountToDrip) = allocator
+            .getDripDetails(address(psm), PCVDeposit(address(pcvDeposit)));
 
         /// this has to be true
         assertTrue(allocator.checkDripCondition(address(psm)));
@@ -677,7 +682,6 @@ contract UnitTestERC20Allocator is DSTest {
 
         assertEq(bufferStart, allocator.buffer() + adjustedAmountToDrip);
         assertEq(amountToDrip, adjustedAmountToDrip);
-        assertEq(address(target), address(pcvDeposit));
         assertEq(token.balanceOf(address(pcvDeposit)), 0);
         assertEq(token.balanceOf(address(psm)), depositBalance);
     }
@@ -711,7 +715,7 @@ contract UnitTestERC20Allocator is DSTest {
             address psmToken,
             uint248 psmTargetBalance,
             int8 decimalsNormalizer
-        ) = allocator.allDeposits(nonWhitelistedPSM);
+        ) = allocator.allPSMs(nonWhitelistedPSM);
 
         assertEq(psmTargetBalance, 0);
         assertEq(decimalsNormalizer, 0);
@@ -730,7 +734,7 @@ contract UnitTestERC20Allocator is DSTest {
             address psmToken,
             uint248 psmTargetBalance,
             int8 decimalsNormalizer
-        ) = allocator.allDeposits(nonWhitelistedPSM);
+        ) = allocator.allPSMs(nonWhitelistedPSM);
 
         assertEq(psmTargetBalance, 0);
         assertEq(decimalsNormalizer, 0);
@@ -749,7 +753,7 @@ contract UnitTestERC20Allocator is DSTest {
             address psmToken,
             uint248 psmTargetBalance,
             int8 decimalsNormalizer
-        ) = allocator.allDeposits(nonWhitelistedPSM);
+        ) = allocator.allPSMs(nonWhitelistedPSM);
 
         assertEq(psmTargetBalance, 0);
         assertEq(decimalsNormalizer, 0);
