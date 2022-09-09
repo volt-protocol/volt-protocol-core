@@ -70,16 +70,16 @@ contract IntegrationTestERC20Allocator is DSTest {
         vm.startPrank(MainnetAddresses.TIMELOCK_CONTROLLER);
         allocator.createDeposit(
             address(daiPSM),
-            address(daiDeposit),
             targetDaiBalance,
             decimalsNormalizerDai
         );
+        allocator.connectDeposit(address(daiPSM), address(daiDeposit));
         allocator.createDeposit(
             address(usdcPSM),
-            address(usdcDeposit),
             targetUsdcBalance,
             decimalsNormalizerUsdc
         );
+        allocator.connectDeposit(address(usdcPSM), address(usdcDeposit));
         core.grantPCVController(address(allocator));
         vm.stopPrank();
     }
@@ -92,30 +92,30 @@ contract IntegrationTestERC20Allocator is DSTest {
 
         {
             (
-                address psmPcvDeposit,
                 address psmToken,
                 uint248 psmTargetBalance,
                 int8 decimalsNormalizer
             ) = allocator.allPSMs(address(daiPSM));
+            address daipsm = allocator.pcvDepositToPSM(address(daiDeposit));
 
             assertEq(psmTargetBalance, targetDaiBalance);
             assertEq(decimalsNormalizer, decimalsNormalizerDai);
             assertEq(psmToken, address(dai));
-            assertEq(psmPcvDeposit, address(daiDeposit));
+            assertEq(daipsm, address(daiPSM));
         }
 
         {
             (
-                address psmPcvDeposit,
                 address psmToken,
                 uint248 psmTargetBalance,
                 int8 decimalsNormalizer
             ) = allocator.allPSMs(address(usdcPSM));
+            address usdcpsm = allocator.pcvDepositToPSM(address(usdcDeposit));
 
             assertEq(psmTargetBalance, targetUsdcBalance);
             assertEq(decimalsNormalizer, decimalsNormalizerUsdc);
             assertEq(psmToken, address(usdc));
-            assertEq(psmPcvDeposit, address(usdcDeposit));
+            assertEq(usdcpsm, address(usdcPSM));
         }
     }
 
@@ -131,15 +131,16 @@ contract IntegrationTestERC20Allocator is DSTest {
         (uint256 amountToDrip, uint256 adjustedAmountToDrip) = allocator
             .getDripDetails(address(daiPSM), daiDeposit);
 
-        assertTrue(allocator.checkDripCondition(address(daiPSM)));
-        assertTrue(!allocator.checkSkimCondition(address(daiPSM)));
-        assertTrue(allocator.checkActionAllowed(address(daiPSM)));
-        allocator.drip(address(daiPSM));
-        assertTrue(!allocator.checkDripCondition(address(daiPSM)));
-        assertTrue(!allocator.checkSkimCondition(address(daiPSM)));
-        assertTrue(!allocator.checkActionAllowed(address(daiPSM)));
+        assertTrue(allocator.checkDripCondition(address(daiDeposit)));
+        assertTrue(!allocator.checkSkimCondition(address(daiDeposit)));
+        assertTrue(allocator.checkActionAllowed(address(daiDeposit)));
+        allocator.drip(address(daiDeposit));
+        assertTrue(!allocator.checkDripCondition(address(daiDeposit)));
+        assertTrue(!allocator.checkSkimCondition(address(daiDeposit)));
+        assertTrue(!allocator.checkActionAllowed(address(daiDeposit)));
 
         daiBalance = dai.balanceOf(address(daiPSM));
+
         assertEq(amountToDrip, adjustedAmountToDrip);
         assertEq(amountToDrip, targetDaiBalance);
         assertEq(daiBalance, targetDaiBalance);
@@ -154,13 +155,13 @@ contract IntegrationTestERC20Allocator is DSTest {
         usdcDeposit.deposit(); /// deposit so it will be counted in balance
 
         (uint256 amountToDrip, uint256 adjustedAmountToDrip) = allocator
-            .getDripDetails(address(usdcPSM), daiDeposit);
+            .getDripDetails(address(usdcPSM), usdcDeposit);
 
-        assertTrue(allocator.checkDripCondition(address(usdcPSM)));
-        assertTrue(allocator.checkActionAllowed(address(usdcPSM)));
-        allocator.drip(address(usdcPSM));
-        assertTrue(!allocator.checkDripCondition(address(usdcPSM)));
-        assertTrue(!allocator.checkActionAllowed(address(usdcPSM)));
+        assertTrue(allocator.checkDripCondition(address(usdcDeposit)));
+        assertTrue(allocator.checkActionAllowed(address(usdcDeposit)));
+        allocator.drip(address(usdcDeposit));
+        assertTrue(!allocator.checkDripCondition(address(usdcDeposit)));
+        assertTrue(!allocator.checkActionAllowed(address(usdcDeposit)));
 
         usdcBalance = usdc.balanceOf(address(usdcPSM));
         assertEq(amountToDrip * scalingFactorUsdc, adjustedAmountToDrip);
@@ -181,22 +182,22 @@ contract IntegrationTestERC20Allocator is DSTest {
         vm.prank(MainnetAddresses.GOVERNOR);
         daiDeposit.withdraw(address(daiPSM), daiBalance); /// send all dai to psm
 
-        (uint256 amountToSkim, uint256 adjustedAmountToSkim, , ) = allocator
-            .getSkimDetails(address(daiPSM));
+        (uint256 amountToSkim, uint256 adjustedAmountToSkim) = allocator
+            .getSkimDetails(address(daiDeposit));
 
         uint256 skimAmount = daiPSM.balance() - targetDaiBalance;
         assertEq(amountToSkim, skimAmount);
         assertEq(adjustedAmountToSkim, skimAmount);
 
-        assertTrue(!allocator.checkDripCondition(address(daiPSM))); /// all assets are in dai psm, not eligble for skim
-        assertTrue(allocator.checkSkimCondition(address(daiPSM)));
-        assertTrue(allocator.checkActionAllowed(address(daiPSM)));
+        assertTrue(!allocator.checkDripCondition(address(daiDeposit))); /// all assets are in dai psm, not eligble for skim
+        assertTrue(allocator.checkSkimCondition(address(daiDeposit)));
+        assertTrue(allocator.checkActionAllowed(address(daiDeposit)));
 
-        allocator.skim(address(daiPSM));
+        allocator.skim(address(daiDeposit));
 
-        assertTrue(!allocator.checkDripCondition(address(daiPSM)));
-        assertTrue(!allocator.checkSkimCondition(address(daiPSM)));
-        assertTrue(!allocator.checkActionAllowed(address(daiPSM)));
+        assertTrue(!allocator.checkDripCondition(address(daiDeposit)));
+        assertTrue(!allocator.checkSkimCondition(address(daiDeposit)));
+        assertTrue(!allocator.checkActionAllowed(address(daiDeposit)));
 
         assertEq(dai.balanceOf(address(daiPSM)), targetDaiBalance);
         assertApproxEq(
@@ -216,22 +217,22 @@ contract IntegrationTestERC20Allocator is DSTest {
         vm.prank(MainnetAddresses.GOVERNOR);
         usdcDeposit.withdraw(address(usdcPSM), usdcBalance); /// send all usdc to psm
 
-        (uint256 amountToSkim, uint256 adjustedAmountToSkim, , ) = allocator
-            .getSkimDetails(address(usdcPSM));
+        (uint256 amountToSkim, uint256 adjustedAmountToSkim) = allocator
+            .getSkimDetails(address(usdcDeposit));
 
         uint256 skimAmount = usdcPSM.balance() - targetUsdcBalance;
         assertEq(amountToSkim, skimAmount);
         assertEq(adjustedAmountToSkim, skimAmount * scalingFactorUsdc);
 
-        assertTrue(!allocator.checkDripCondition(address(usdcPSM))); /// all assets are in usdc psm, not eligble for skim
-        assertTrue(allocator.checkSkimCondition(address(usdcPSM)));
-        assertTrue(allocator.checkActionAllowed(address(usdcPSM)));
+        assertTrue(!allocator.checkDripCondition(address(usdcDeposit))); /// all assets are in usdc psm, not eligble for skim
+        assertTrue(allocator.checkSkimCondition(address(usdcDeposit)));
+        assertTrue(allocator.checkActionAllowed(address(usdcDeposit)));
 
-        allocator.skim(address(usdcPSM));
+        allocator.skim(address(usdcDeposit));
 
-        assertTrue(!allocator.checkDripCondition(address(usdcPSM)));
-        assertTrue(!allocator.checkSkimCondition(address(usdcPSM)));
-        assertTrue(!allocator.checkActionAllowed(address(usdcPSM)));
+        assertTrue(!allocator.checkDripCondition(address(usdcDeposit)));
+        assertTrue(!allocator.checkSkimCondition(address(usdcDeposit)));
+        assertTrue(!allocator.checkActionAllowed(address(usdcDeposit)));
 
         assertEq(usdc.balanceOf(address(usdcPSM)), targetUsdcBalance);
         assertApproxEq(

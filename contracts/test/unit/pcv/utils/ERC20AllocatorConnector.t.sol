@@ -85,13 +85,10 @@ contract UnitTestERC20Allocator is DSTest {
             bufferCap
         );
 
-        vm.prank(addresses.governorAddress);
-        allocator.createDeposit(
-            address(psm),
-            address(pcvDeposit),
-            targetBalance,
-            0
-        );
+        vm.startPrank(addresses.governorAddress);
+        allocator.createDeposit(address(psm), targetBalance, 0);
+        allocator.connectDeposit(address(psm), address(pcvDeposit));
+        vm.stopPrank();
     }
 
     function testSkimFailsToNonConnectedAddress(address deposit) public {
@@ -189,9 +186,11 @@ contract UnitTestERC20Allocator is DSTest {
             IERC20(address(token))
         );
 
-        vm.expectRevert("ERC20Allocator: underlying token mismatch");
-        vm.prank(addresses.governorAddress);
-        allocator.createDeposit(address(newPsm), address(newPcvDeposit), 0, 0);
+        vm.startPrank(addresses.governorAddress);
+        allocator.createDeposit(address(newPsm), 0, 0);
+        vm.expectRevert("ERC20Allocator: token mismatch");
+        allocator.connectDeposit(address(newPsm), address(newPcvDeposit));
+        vm.stopPrank();
     }
 
     function testConnectNewDepositFailsUnderlyingTokenMismatch() public {
@@ -206,13 +205,12 @@ contract UnitTestERC20Allocator is DSTest {
     }
 
     function testEditDepositFailsUnderlyingTokenMismatch() public {
-        PCVDeposit newPcvDeposit = new ERC20HoldingPCVDeposit(
-            address(core),
-            IERC20(address(1))
-        );
-
-        vm.expectRevert("ERC20Allocator: underlying token mismatch");
-        vm.prank(addresses.governorAddress);
-        allocator.editDeposit(address(psm), address(newPcvDeposit), 0, 0);
+        // PCVDeposit newPcvDeposit = new ERC20HoldingPCVDeposit(
+        //     address(core),
+        //     IERC20(address(1))
+        // );
+        // vm.expectRevert("ERC20Allocator: underlying token mismatch");
+        // vm.prank(addresses.governorAddress);
+        // allocator.editDeposit(address(psm), 0, 0);
     }
 }

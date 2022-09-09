@@ -22,7 +22,6 @@ interface IERC20Allocator {
     /// @notice emitted when a new deposit is created
     event DepositCreated(
         address psm,
-        address pcvDeposit,
         address token,
         uint248 targetBalance,
         int8 decimalsNormalizer
@@ -31,7 +30,6 @@ interface IERC20Allocator {
     /// @notice emitted when an existing deposit is updated
     event DepositUpdated(
         address psm,
-        address pcvDeposit,
         address token,
         uint248 targetBalance,
         int8 decimalsNormalizer
@@ -50,24 +48,20 @@ interface IERC20Allocator {
 
     /// @notice create a new deposit
     /// @param psm Peg Stability Module for this deposit
-    /// @param pcvDeposit that this PSM is linked to
     /// @param targetBalance target amount of tokens for the PSM to hold
     /// @param decimalsNormalizer decimal normalizer to ensure buffer is depleted and replenished properly
     function createDeposit(
         address psm,
-        address pcvDeposit,
         uint248 targetBalance,
         int8 decimalsNormalizer
     ) external;
 
     /// @notice edit an existing deposit
     /// @param psm Peg Stability Module for this deposit
-    /// @param pcvDeposit that this PSM is linked to
     /// @param targetBalance target amount of tokens for the PSM to hold
     /// @param decimalsNormalizer decimal normalizer to ensure buffer is depleted and replenished properly
     function editDeposit(
         address psm,
-        address pcvDeposit,
         uint248 targetBalance,
         int8 decimalsNormalizer
     ) external;
