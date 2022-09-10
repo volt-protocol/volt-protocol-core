@@ -42,44 +42,77 @@ contract vip10 is DSTest, IVIP {
     ERC20CompoundPCVDeposit private usdcDeposit =
         ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_USDC_PCV_DEPOSIT);
 
+    ITimelockSimulation.action[] private proposal;
+
+    constructor() {
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: address(0), /// just a placeholder until deployment
+                arguments: abi.encodeWithSignature(
+                    "createDeposit(address,uint248,int8)",
+                    MainnetAddresses.VOLT_USDC_PSM,
+                    targetBalanceUsdc,
+                    usdcDecimalNormalizer /// 12 decimals of normalization
+                ),
+                description: "Add USDC deposit to the ERC20 Allocator"
+            })
+        );
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: address(0), /// just a placeholder until deployment
+                arguments: abi.encodeWithSignature(
+                    "createDeposit(address,uint248,int8)",
+                    MainnetAddresses.VOLT_DAI_PSM,
+                    targetBalanceDai,
+                    0 /// no decimal normalization
+                ),
+                description: "Add USDC deposit to the ERC20 Allocator"
+            })
+        );
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: address(0), /// just a placeholder until deployment
+                arguments: abi.encodeWithSignature(
+                    "connectDeposit(address,address)",
+                    MainnetAddresses.VOLT_DAI_PSM,
+                    MainnetAddresses.COMPOUND_DAI_PCV_DEPOSIT
+                ),
+                description: "Add USDC deposit to the ERC20 Allocator"
+            })
+        );
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: address(0), /// just a placeholder until deployment
+                arguments: abi.encodeWithSignature(
+                    "connectDeposit(address,address)",
+                    MainnetAddresses.VOLT_USDC_PSM,
+                    MainnetAddresses.COMPOUND_USDC_PCV_DEPOSIT
+                ),
+                description: "Add USDC deposit to the ERC20 Allocator"
+            })
+        );
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: MainnetAddresses.CORE,
+                arguments: abi.encodeWithSignature(
+                    "grantPCVController(address)"
+                    // MainnetAddresses.ERC20ALLOCATOR
+                ),
+                description: "Add USDC deposit to the ERC20 Allocator"
+            })
+        );
+    }
+
     function getMainnetProposal()
         public
-        pure
-        override
-        returns (ITimelockSimulation.action[] memory proposal)
+        returns (ITimelockSimulation.action[] memory prop)
     {
-        proposal = new ITimelockSimulation.action[](3);
-
-        // proposal[0].target = MainnetAddresses.ERC20_ALLOCATOR; commented while contract is not deployed
-        proposal[0].value = 0;
-        proposal[0].arguments = abi.encodeWithSignature(
-            "createDeposit(address,address,uint248,int8)",
-            MainnetAddresses.VOLT_USDC_PSM,
-            MainnetAddresses.COMPOUND_USDC_PCV_DEPOSIT,
-            targetBalanceUsdc,
-            usdcDecimalNormalizer /// 12 decimals of normalization
-        );
-        proposal[0].description = "Add USDC deposit to the ERC20 Allocator";
-
-        // proposal[1].target = MainnetAddresses.ERC20_ALLOCATOR; commented while contract is not deployed
-        proposal[1].value = 0;
-        proposal[1].arguments = abi.encodeWithSignature(
-            "createDeposit(address,address,uint248,int8)",
-            MainnetAddresses.VOLT_DAI_PSM,
-            MainnetAddresses.COMPOUND_DAI_PCV_DEPOSIT,
-            targetBalanceDai,
-            0 /// no decimal normalization
-        );
-        proposal[1].description = "Add DAI deposit to the ERC20 Allocator";
-
-        proposal[2].target = MainnetAddresses.CORE;
-        proposal[2].value = 0;
-        proposal[2].arguments = abi.encodeWithSignature(
-            "grantPCVController(address)"
-            // MainnetAddresses.ERC20_ALLOCATOR  commented while contract is not deployed
-        );
-        proposal[2]
-            .description = "Grant ERC20 Allocator pcv controller role to allow pulling from PCV deposits";
+        prop = proposal;
     }
 
     function mainnetSetup() public override {}
