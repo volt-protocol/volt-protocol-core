@@ -44,11 +44,11 @@ contract IntegrationTestCompoundPCVDeposits is DSTest {
     function setUp() public {
         daiBalance = daiDeposit.balance();
 
-        usdcBalance = usdcDeposit.balance();
-
         vm.prank(MainnetAddresses.CUSDC);
         usdc.transfer(address(usdcDeposit), usdcBalance);
         usdcDeposit.deposit();
+
+        usdcBalance = usdcDeposit.balance();
     }
 
     function testSetup() public {
