@@ -178,7 +178,7 @@ contract UnitTestERC20Allocator is DSTest {
         allocator.deleteDeposit(address(0));
     }
 
-    function testDeletePSMGovSucceeds() public {
+    function _deletePSM() internal {
         vm.prank(addresses.governorAddress);
         vm.expectEmit(true, false, false, true, address(allocator));
         emit PSMDeleted(address(psm));
@@ -189,10 +189,73 @@ contract UnitTestERC20Allocator is DSTest {
             uint248 psmTargetBalance,
             int8 decimalsNormalizer
         ) = allocator.allPSMs(address(psm));
+        /// this part of the mapping doesn't get deleted when PSM is deleted
+        address psmAddress = allocator.pcvDepositToPSM(address(pcvDeposit));
 
         assertEq(psmTargetBalance, 0);
         assertEq(decimalsNormalizer, 0);
         assertEq(psmToken, address(0));
+        assertEq(psmAddress, address(psm));
+    }
+
+    function testDeletePSMGovSucceeds() public {
+        _deletePSM();
+    }
+
+    /// test that you can no longer skim to this psm when pcv deposits
+    /// are still connected to a non existent psm
+    function testDeletePSMGovSucceedsSkimFails() public {
+        _deletePSM();
+
+        vm.expectRevert();
+        allocator.skim(address(psm), address(pcvDeposit));
+
+        vm.expectRevert();
+        allocator.skim(address(pcvDeposit));
+    }
+
+    /// test that you can no longer drip to this psm when pcv deposits
+    /// are still connected to a non existent psm
+    function testDeletePSMGovSucceedsDripFails() public {
+        _deletePSM();
+
+        vm.expectRevert();
+        allocator.drip(address(psm), address(pcvDeposit));
+
+        vm.expectRevert();
+        allocator.drip(address(pcvDeposit));
+    }
+
+    /// test that you can no longer skim to this psm when pcv deposits
+    /// are not connected to a non existent psm
+    function testDeletePSMGovSucceedsSkimFailsDeleteDeposit() public {
+        _deletePSM();
+        vm.prank(addresses.governorAddress);
+        allocator.deleteDeposit(address(pcvDeposit));
+
+        /// connection broken
+        address psmAddress = allocator.pcvDepositToPSM(address(pcvDeposit));
+        assertEq(psmAddress, address(0));
+
+        vm.expectRevert("ERC20Allocator: invalid pcvDeposit");
+        allocator.skim(address(psm), address(pcvDeposit));
+
+        vm.expectRevert();
+        allocator.skim(address(pcvDeposit));
+    }
+
+    /// test that you can no longer drip to this psm when pcv deposits
+    /// are not connected to a non existent psm
+    function testDeletePSMGovSucceedsDripFailsDeleteDeposit() public {
+        _deletePSM();
+        vm.prank(addresses.governorAddress);
+        allocator.deleteDeposit(address(pcvDeposit));
+
+        vm.expectRevert("ERC20Allocator: invalid pcvDeposit");
+        allocator.drip(address(psm), address(pcvDeposit));
+
+        vm.expectRevert();
+        allocator.drip(address(pcvDeposit));
     }
 
     function testDeleteDepositGovSucceeds() public {

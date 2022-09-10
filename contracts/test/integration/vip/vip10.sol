@@ -55,7 +55,7 @@ contract vip10 is DSTest, IVIP {
                     targetBalanceUsdc,
                     usdcDecimalNormalizer /// 12 decimals of normalization
                 ),
-                description: "Add USDC deposit to the ERC20 Allocator"
+                description: "Add USDC PSM to the ERC20 Allocator"
             })
         );
         proposal.push(
@@ -68,7 +68,7 @@ contract vip10 is DSTest, IVIP {
                     targetBalanceDai,
                     0 /// no decimal normalization
                 ),
-                description: "Add USDC deposit to the ERC20 Allocator"
+                description: "Add DAI PSM to the ERC20 Allocator"
             })
         );
         proposal.push(
@@ -80,7 +80,7 @@ contract vip10 is DSTest, IVIP {
                     MainnetAddresses.VOLT_DAI_PSM,
                     MainnetAddresses.COMPOUND_DAI_PCV_DEPOSIT
                 ),
-                description: "Add USDC deposit to the ERC20 Allocator"
+                description: "Connect DAI deposit to PSM in ERC20 Allocator"
             })
         );
         proposal.push(
@@ -92,7 +92,7 @@ contract vip10 is DSTest, IVIP {
                     MainnetAddresses.VOLT_USDC_PSM,
                     MainnetAddresses.COMPOUND_USDC_PCV_DEPOSIT
                 ),
-                description: "Add USDC deposit to the ERC20 Allocator"
+                description: "Connect USDC deposit to PSM in ERC20 Allocator"
             })
         );
         proposal.push(
@@ -103,7 +103,7 @@ contract vip10 is DSTest, IVIP {
                     "grantPCVController(address)"
                     // MainnetAddresses.ERC20ALLOCATOR
                 ),
-                description: "Add USDC deposit to the ERC20 Allocator"
+                description: "Grant ERC20 Allocator the PCV Controller Role"
             })
         );
     }
@@ -120,6 +120,7 @@ contract vip10 is DSTest, IVIP {
     /// assert erc20 allocator is pcv controller
     /// assert erc20 allocator has compound psm and pcv deposit connected
     /// assert erc20 allocator has dai psm and pcv deposit connected
+    /// assert decimal normalization and target balances are correct for both dai and usdc
     function mainnetValidate() public override {}
 
     /// prevent errors by reverting on arbitrum proposal functions being called on this VIP

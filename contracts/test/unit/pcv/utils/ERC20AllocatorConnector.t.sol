@@ -1,20 +1,21 @@
 pragma solidity =0.8.13;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Vm} from "./../../utils/Vm.sol";
 import {ICore} from "../../../../core/ICore.sol";
 import {DSTest} from "./../../utils/DSTest.sol";
+import {MockPSM} from "../../../../mock/MockPSM.sol";
 import {MockERC20} from "../../../../mock/MockERC20.sol";
-import {TribeRoles} from "../../../../core/TribeRoles.sol";
-import {ERC20Allocator} from "../../../../pcv/utils/ERC20Allocator.sol";
-import {PCVGuardAdmin} from "../../../../pcv/PCVGuardAdmin.sol";
 import {PCVDeposit} from "../../../../pcv/PCVDeposit.sol";
+import {TribeRoles} from "../../../../core/TribeRoles.sol";
+import {PCVGuardAdmin} from "../../../../pcv/PCVGuardAdmin.sol";
+import {ERC20Allocator} from "../../../../pcv/utils/ERC20Allocator.sol";
 import {ERC20HoldingPCVDeposit} from "../../../../pcv/ERC20HoldingPCVDeposit.sol";
 import {getCore, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "hardhat/console.sol";
 
-contract UnitTestERC20Allocator is DSTest {
+contract UnitTestERC20AllocatorConnector is DSTest {
     /// @notice emitted when an existing deposit is updated
     event DepositUpdated(
         address psm,
@@ -93,13 +94,13 @@ contract UnitTestERC20Allocator is DSTest {
 
     function testSkimFailsToNonConnectedAddress(address deposit) public {
         vm.assume(deposit != address(pcvDeposit));
-        vm.expectRevert("ERC20Allocator: invalid target");
+        vm.expectRevert("ERC20Allocator: invalid pcvDeposit");
         allocator.skim(address(psm), deposit);
     }
 
     function testDripFailsToNonConnectedAddress(address deposit) public {
         vm.assume(deposit != address(pcvDeposit));
-        vm.expectRevert("ERC20Allocator: invalid target");
+        vm.expectRevert("ERC20Allocator: invalid pcvDeposit");
         allocator.drip(address(psm), deposit);
     }
 
@@ -168,10 +169,10 @@ contract UnitTestERC20Allocator is DSTest {
 
         assertEq(allocator.pcvDepositToPSM(address(newPcvDeposit)), address(0));
 
-        vm.expectRevert("ERC20Allocator: invalid target");
+        vm.expectRevert("ERC20Allocator: invalid pcvDeposit");
         allocator.drip(address(psm), address(newPcvDeposit));
 
-        vm.expectRevert("ERC20Allocator: invalid target");
+        vm.expectRevert("ERC20Allocator: invalid pcvDeposit");
         allocator.skim(address(psm), address(newPcvDeposit));
     }
 
@@ -204,13 +205,27 @@ contract UnitTestERC20Allocator is DSTest {
         allocator.connectDeposit(address(psm), address(newPcvDeposit));
     }
 
-    function testEditDepositFailsUnderlyingTokenMismatch() public {
-        // PCVDeposit newPcvDeposit = new ERC20HoldingPCVDeposit(
-        //     address(core),
-        //     IERC20(address(1))
-        // );
-        // vm.expectRevert("ERC20Allocator: underlying token mismatch");
-        // vm.prank(addresses.governorAddress);
-        // allocator.editDeposit(address(psm), 0, 0);
+    function testEditDepositFailsPsmUnderlyingChanged() public {
+        MockPSM newPsm = new MockPSM(address(token));
+        vm.prank(addresses.governorAddress);
+        allocator.createDeposit(address(newPsm), targetBalance, 0);
+        newPsm.setUnderlying(address(1));
+
+        vm.expectRevert("ERC20Allocator: psm changed underlying");
+        vm.prank(addresses.governorAddress);
+        allocator.editDeposit(address(newPsm), 0, 0);
+    }
+
+    function testCreateDuplicateDepositFails() public {
+        vm.expectRevert("ERC20Allocator: cannot overwrite existing deposit");
+        vm.prank(addresses.governorAddress);
+        allocator.createDeposit(address(psm), targetBalance, 0);
+    }
+
+    function testEditNonExistingPsmFails() public {
+        MockPSM newPsm = new MockPSM(address(token));
+        vm.expectRevert("ERC20Allocator: cannot edit non-existent deposit");
+        vm.prank(addresses.governorAddress);
+        allocator.editDeposit(address(newPsm), targetBalance, 0);
     }
 }

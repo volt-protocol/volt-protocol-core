@@ -85,10 +85,6 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
             allPSMs[psm].token == address(0),
             "ERC20Allocator: cannot overwrite existing deposit"
         );
-        require(
-            token != address(0),
-            "ERC20Allocator: underlying token invalid"
-        );
 
         PSMInfo memory newDeposit = PSMInfo({
             token: token,
@@ -104,6 +100,8 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
     /// @param psm Peg Stability Module for this deposit
     /// @param targetBalance target amount of tokens for the PSM to hold
     /// @param decimalsNormalizer decimal normalizer to ensure buffer is depleted and replenished properly
+    /// cannot manually change the underlying token, as this is pulled from the PSM
+    /// underlying token is immutable in both pcv deposit and
     function editDeposit(
         address psm,
         uint248 targetBalance,
@@ -114,10 +112,6 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         require(
             storedToken != address(0),
             "ERC20Allocator: cannot edit non-existent deposit"
-        );
-        require(
-            token != address(0),
-            "ERC20Allocator: underlying token invalid"
         );
         /// assert pcv deposit and psm share same denomination
         require(token == storedToken, "ERC20Allocator: psm changed underlying");
@@ -201,19 +195,19 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
     /// if the amount of tokens held in the PSM is above
     /// the target balance.
     /// @param psm the peg stability to pull excess funds from
-    /// @param target the PCV Deposit to send excess funds to
-    function skim(address psm, address target) external whenNotPaused {
-        /// check that target has been whitelisted
+    /// @param pcvDeposit the PCV Deposit to send excess funds to
+    function skim(address psm, address pcvDeposit) external whenNotPaused {
+        /// check that pcvDeposit has been whitelisted
         /// will be true if both are address 0, but then check skim condition will fail
         /// meaning we do not have to check if address is 0 here
         require(
-            pcvDepositToPSM[target] == psm,
-            "ERC20Allocator: invalid target"
+            pcvDepositToPSM[pcvDeposit] == psm,
+            "ERC20Allocator: invalid pcvDeposit"
         );
-        _skim(psm, target);
+        _skim(psm, pcvDeposit);
     }
 
-    function _skim(address psm, address target) internal {
+    function _skim(address psm, address pcvDeposit) internal {
         /// Check
 
         /// note this check is redundant, as calculating amountToPull will revert
@@ -225,7 +219,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         );
 
         (uint256 amountToSkim, uint256 adjustedAmountToSkim) = getSkimDetails(
-            target
+            pcvDeposit
         );
 
         /// Effects
@@ -236,10 +230,10 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
 
         /// pull funds from pull target and send to push target
         /// automatically pulls underlying token
-        PCVDeposit(psm).withdraw(target, amountToSkim);
+        PCVDeposit(psm).withdraw(pcvDeposit, amountToSkim);
 
         /// deposit pulled funds into the selected yield venue
-        PCVDeposit(target).deposit();
+        PCVDeposit(pcvDeposit).deposit();
 
         emit Skimmed(amountToSkim);
     }
@@ -255,29 +249,29 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
     /// @notice push ERC20 tokens to PSM by pulling from a PCV deposit
     /// flow of funds: PCV Deposit -> PSM
     /// @param psm peg stability module to drip to
-    /// @param target pcv deposit to pull funds from
-    function drip(address psm, address target) external whenNotPaused {
+    /// @param pcvDeposit pcv deposit to pull funds from
+    function drip(address psm, address pcvDeposit) external whenNotPaused {
         /// check that target has been whitelisted and psm and target are connected
         /// will be true if both are address 0, but then check drip condition will fail
         /// meaning we do not have to check if address is 0 here
         require(
-            pcvDepositToPSM[target] == psm,
-            "ERC20Allocator: invalid target"
+            pcvDepositToPSM[pcvDeposit] == psm,
+            "ERC20Allocator: invalid pcvDeposit"
         );
-        _drip(psm, PCVDeposit(target));
+        _drip(psm, PCVDeposit(pcvDeposit));
     }
 
     /// helper function that does the dripping
-    function _drip(address psm, PCVDeposit target) internal {
+    function _drip(address psm, PCVDeposit pcvDeposit) internal {
         /// Check
         require(
-            _checkDripCondition(psm, target),
+            _checkDripCondition(psm, pcvDeposit),
             "ERC20Allocator: drip condition not met"
         );
 
         (uint256 amountToDrip, uint256 adjustedAmountToDrip) = getDripDetails(
             psm,
-            target
+            pcvDeposit
         );
 
         /// Effects
@@ -288,8 +282,8 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
 
         /// Interaction
 
-        /// drip amount to target psm so that it has targetBalance amount of tokens
-        target.withdraw(psm, amountToDrip);
+        /// drip amount to pcvDeposit psm so that it has targetBalance amount of tokens
+        pcvDeposit.withdraw(psm, amountToDrip);
         emit Dripped(amountToDrip);
     }
 
@@ -353,9 +347,9 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
 
     /// @notice return the amount that can be dripped to a given PSM
     /// @param psm peg stability module to check drip amount on
-    /// @param target pcv deposit to drip from
+    /// @param pcvDeposit pcv deposit to drip from
     /// returns amount that can be dripped, adjusted amount to drip and target
-    function getDripDetails(address psm, PCVDeposit target)
+    function getDripDetails(address psm, PCVDeposit pcvDeposit)
         public
         view
         returns (uint256 amountToDrip, uint256 adjustedAmountToDrip)
@@ -371,7 +365,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         /// only drip the lowest between amount and the buffer,
         /// as dripping more than the buffer will result in
         amountToDrip = Math.min(
-            Math.min(targetBalanceDelta, target.balance()),
+            Math.min(targetBalanceDelta, pcvDeposit.balance()),
             buffer()
         );
 
@@ -392,6 +386,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         override
         returns (bool)
     {
+        /// if paused or buffer empty, cannot drip
         if (paused() == true || buffer() == 0) {
             return false;
         }
@@ -424,14 +419,16 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         override
         returns (bool)
     {
-        if (buffer() == 0 || paused() == true) {
+        /// if paused, no actions allowed
+        if (paused() == true) {
             return false;
         }
+
         address psm = pcvDepositToPSM[pcvDeposit];
-        /// if drip condition is true, buffer must be greater than 0,
-        /// otherwise drip action isn't allowed
+        /// cannot drip with an empty buffer
         return
-            _checkDripCondition(psm, PCVDeposit(pcvDeposit)) ||
+            (buffer() != 0 &&
+                _checkDripCondition(psm, PCVDeposit(pcvDeposit))) ||
             _checkSkimCondition(psm);
     }
 
