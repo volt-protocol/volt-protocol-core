@@ -4,7 +4,7 @@ jobs:
     working_directory: ~/repo
     docker:
       - image: circleci/node:14
-    resource_class: 2xlarge
+    resource_class: xlarge
     steps:
       - checkout
       - run:
@@ -34,7 +34,7 @@ jobs:
     working_directory: ~/repo
     docker:
       - image: cimg/node:16.14
-    resource_class: 2xlarge
+    resource_class: xlarge
     steps:
       - checkout
       - restore_cache:
