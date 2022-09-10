@@ -7,7 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @notice Contract to remove all excess funds past a certain threshold from a smart contract
 /// used to allocate funds from a PSM to a yield venue so that liquid reserves are minimized
-/// This contract should never hold PCV, however it is a PCV Deposit, so if tokens get sent to it,
+/// This contract should never hold PCV, however it has a sweep function, so if tokens get sent to it,
 /// they can still be recovered.
 /// @author Volt Protocol
 interface IERC20Allocator {
