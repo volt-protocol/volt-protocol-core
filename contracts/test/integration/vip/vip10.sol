@@ -50,7 +50,7 @@ contract vip10 is DSTest, IVIP {
                 value: 0,
                 target: address(0), /// just a placeholder until deployment
                 arguments: abi.encodeWithSignature(
-                    "createDeposit(address,uint248,int8)",
+                    "connectPSM(address,uint248,int8)",
                     MainnetAddresses.VOLT_USDC_PSM,
                     targetBalanceUsdc,
                     usdcDecimalNormalizer /// 12 decimals of normalization
@@ -63,7 +63,7 @@ contract vip10 is DSTest, IVIP {
                 value: 0,
                 target: address(0), /// just a placeholder until deployment
                 arguments: abi.encodeWithSignature(
-                    "createDeposit(address,uint248,int8)",
+                    "connectPSM(address,uint248,int8)",
                     MainnetAddresses.VOLT_DAI_PSM,
                     targetBalanceDai,
                     0 /// no decimal normalization

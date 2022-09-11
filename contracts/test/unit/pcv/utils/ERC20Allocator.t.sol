@@ -16,7 +16,7 @@ import "hardhat/console.sol";
 
 contract UnitTestERC20Allocator is DSTest {
     /// @notice emitted when an existing deposit is updated
-    event DepositUpdated(
+    event PSMUpdated(
         address psm,
         address token,
         uint248 targetBalance,
@@ -82,7 +82,7 @@ contract UnitTestERC20Allocator is DSTest {
         );
 
         vm.startPrank(addresses.governorAddress);
-        allocator.createDeposit(address(psm), targetBalance, 0);
+        allocator.connectPSM(address(psm), targetBalance, 0);
         allocator.connectDeposit(address(psm), address(pcvDeposit));
         vm.stopPrank();
     }
@@ -172,12 +172,12 @@ contract UnitTestERC20Allocator is DSTest {
 
     function testCreateDepositNonGovFails() public {
         vm.expectRevert("CoreRef: Caller is not a governor");
-        allocator.createDeposit(address(0), 0, 0);
+        allocator.connectPSM(address(0), 0, 0);
     }
 
-    function testEditDepositNonGovFails() public {
+    function testeditPSMNonGovFails() public {
         vm.expectRevert("CoreRef: Caller is not a governor");
-        allocator.editDeposit(address(0), 0, 0);
+        allocator.editPSM(address(0), 0, 0);
     }
 
     function testDeleteDepositNonGovFails() public {
@@ -185,11 +185,11 @@ contract UnitTestERC20Allocator is DSTest {
         allocator.deleteDeposit(address(0));
     }
 
-    function _deletePSM() internal {
+    function _disconnectPSM() internal {
         vm.prank(addresses.governorAddress);
         vm.expectEmit(true, false, false, true, address(allocator));
         emit PSMDeleted(address(psm));
-        allocator.deletePSM(address(psm));
+        allocator.disconnectPSM(address(psm));
 
         (
             address psmToken,
@@ -206,13 +206,13 @@ contract UnitTestERC20Allocator is DSTest {
     }
 
     function testDeletePSMGovSucceeds() public {
-        _deletePSM();
+        _disconnectPSM();
     }
 
     /// test that you can no longer skim to this psm when pcv deposits
     /// are still connected to a non existent psm
     function testDeletePSMGovSucceedsSkimFails() public {
-        _deletePSM();
+        _disconnectPSM();
 
         vm.expectRevert();
         allocator.skim(address(psm), address(pcvDeposit));
@@ -224,7 +224,7 @@ contract UnitTestERC20Allocator is DSTest {
     /// test that you can no longer drip to this psm when pcv deposits
     /// are still connected to a non existent psm
     function testDeletePSMGovSucceedsDripFails() public {
-        _deletePSM();
+        _disconnectPSM();
 
         vm.expectRevert();
         allocator.drip(address(psm), address(pcvDeposit));
@@ -236,7 +236,7 @@ contract UnitTestERC20Allocator is DSTest {
     /// test that you can no longer skim to this psm when pcv deposits
     /// are not connected to a non existent psm
     function testDeletePSMGovSucceedsSkimFailsDeleteDeposit() public {
-        _deletePSM();
+        _disconnectPSM();
         vm.prank(addresses.governorAddress);
         allocator.deleteDeposit(address(pcvDeposit));
 
@@ -254,7 +254,7 @@ contract UnitTestERC20Allocator is DSTest {
     /// test that you can no longer drip to this psm when pcv deposits
     /// are not connected to a non existent psm
     function testDeletePSMGovSucceedsDripFailsDeleteDeposit() public {
-        _deletePSM();
+        _disconnectPSM();
         vm.prank(addresses.governorAddress);
         allocator.deleteDeposit(address(pcvDeposit));
 
@@ -343,9 +343,9 @@ contract UnitTestERC20Allocator is DSTest {
     function testTargetBalanceGovSucceeds() public {
         uint248 newThreshold = 10_000_000e18;
         vm.expectEmit(false, false, false, true, address(allocator));
-        emit DepositUpdated(address(psm), address(token), newThreshold, 0);
+        emit PSMUpdated(address(psm), address(token), newThreshold, 0);
         vm.prank(addresses.governorAddress);
-        allocator.editDeposit(address(psm), newThreshold, 0);
+        allocator.editPSM(address(psm), newThreshold, 0);
         assertEq(uint256(newThreshold), allocator.targetBalance(address(psm)));
     }
 
@@ -521,7 +521,7 @@ contract UnitTestERC20Allocator is DSTest {
         );
 
         vm.startPrank(addresses.governorAddress);
-        allocator.createDeposit(
+        allocator.connectPSM(
             address(newPsm),
             newTargetBalance,
             decimalsNormalizer

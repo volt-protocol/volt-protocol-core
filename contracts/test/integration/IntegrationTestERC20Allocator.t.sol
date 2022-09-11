@@ -68,13 +68,13 @@ contract IntegrationTestERC20Allocator is DSTest {
 
         /// TODO replace this with the vip 10 simulation script once ERC20 allocator is deployed
         vm.startPrank(MainnetAddresses.TIMELOCK_CONTROLLER);
-        allocator.createDeposit(
+        allocator.connectPSM(
             address(daiPSM),
             targetDaiBalance,
             decimalsNormalizerDai
         );
         allocator.connectDeposit(address(daiPSM), address(daiDeposit));
-        allocator.createDeposit(
+        allocator.connectPSM(
             address(usdcPSM),
             targetUsdcBalance,
             decimalsNormalizerUsdc

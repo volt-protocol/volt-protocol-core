@@ -6,14 +6,14 @@ const vip_10: ProposalDescription = {
     {
       target: 'erc20Allocator',
       values: '0',
-      method: 'createDeposit(address,address,uint248,int8)',
+      method: 'connectPSM(address,address,uint248,int8)',
       arguments: ['{usdcPriceBoundPSM}', '{usdcCompoundPCVDeposit}', '100000000000', '12'],
       description: 'Add USDC deposit to the ERC20 Allocator'
     },
     {
       target: 'erc20Allocator',
       values: '0',
-      method: 'createDeposit(address,address,uint248,int8)',
+      method: 'connectPSM(address,address,uint248,int8)',
       arguments: ['{daiPriceBoundPSM}', '{daiCompoundPCVDeposit}', '100000000000000000000000', '0'],
       description: 'Add DAI deposit to the ERC20 Allocator'
     },

@@ -19,16 +19,16 @@ interface IERC20Allocator {
     /// @notice event emitted when tokens are sent to the pullTarget from the pushTarget
     event Dripped(uint256 amount);
 
-    /// @notice emitted when a new deposit is created
-    event DepositCreated(
+    /// @notice emitted when a new PSM is connected
+    event PSMConnected(
         address psm,
         address token,
         uint248 targetBalance,
         int8 decimalsNormalizer
     );
 
-    /// @notice emitted when an existing deposit is updated
-    event DepositUpdated(
+    /// @notice emitted when an existing PSM is updated
+    event PSMUpdated(
         address psm,
         address token,
         uint248 targetBalance,
@@ -50,7 +50,7 @@ interface IERC20Allocator {
     /// @param psm Peg Stability Module for this deposit
     /// @param targetBalance target amount of tokens for the PSM to hold
     /// @param decimalsNormalizer decimal normalizer to ensure buffer is depleted and replenished properly
-    function createDeposit(
+    function connectPSM(
         address psm,
         uint248 targetBalance,
         int8 decimalsNormalizer
@@ -60,7 +60,7 @@ interface IERC20Allocator {
     /// @param psm Peg Stability Module for this deposit
     /// @param targetBalance target amount of tokens for the PSM to hold
     /// @param decimalsNormalizer decimal normalizer to ensure buffer is depleted and replenished properly
-    function editDeposit(
+    function editPSM(
         address psm,
         uint248 targetBalance,
         int8 decimalsNormalizer
@@ -68,7 +68,7 @@ interface IERC20Allocator {
 
     /// @notice delete an existing deposit
     /// @param psm Peg Stability Module to remove from allocation
-    function deletePSM(address psm) external;
+    function disconnectPSM(address psm) external;
 
     /// @notice establish connection between PSM and a PCV Deposit
     function connectDeposit(address psm, address pcvDeposit) external;

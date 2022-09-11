@@ -87,7 +87,7 @@ contract UnitTestERC20AllocatorConnector is DSTest {
         );
 
         vm.startPrank(addresses.governorAddress);
-        allocator.createDeposit(address(psm), targetBalance, 0);
+        allocator.connectPSM(address(psm), targetBalance, 0);
         allocator.connectDeposit(address(psm), address(pcvDeposit));
         vm.stopPrank();
     }
@@ -188,7 +188,7 @@ contract UnitTestERC20AllocatorConnector is DSTest {
         );
 
         vm.startPrank(addresses.governorAddress);
-        allocator.createDeposit(address(newPsm), 0, 0);
+        allocator.connectPSM(address(newPsm), 0, 0);
         vm.expectRevert("ERC20Allocator: token mismatch");
         allocator.connectDeposit(address(newPsm), address(newPcvDeposit));
         vm.stopPrank();
@@ -205,27 +205,27 @@ contract UnitTestERC20AllocatorConnector is DSTest {
         allocator.connectDeposit(address(psm), address(newPcvDeposit));
     }
 
-    function testEditDepositFailsPsmUnderlyingChanged() public {
+    function testeditPSMFailsPsmUnderlyingChanged() public {
         MockPSM newPsm = new MockPSM(address(token));
         vm.prank(addresses.governorAddress);
-        allocator.createDeposit(address(newPsm), targetBalance, 0);
+        allocator.connectPSM(address(newPsm), targetBalance, 0);
         newPsm.setUnderlying(address(1));
 
         vm.expectRevert("ERC20Allocator: psm changed underlying");
         vm.prank(addresses.governorAddress);
-        allocator.editDeposit(address(newPsm), 0, 0);
+        allocator.editPSM(address(newPsm), 0, 0);
     }
 
     function testCreateDuplicateDepositFails() public {
         vm.expectRevert("ERC20Allocator: cannot overwrite existing deposit");
         vm.prank(addresses.governorAddress);
-        allocator.createDeposit(address(psm), targetBalance, 0);
+        allocator.connectPSM(address(psm), targetBalance, 0);
     }
 
     function testEditNonExistingPsmFails() public {
         MockPSM newPsm = new MockPSM(address(token));
         vm.expectRevert("ERC20Allocator: cannot edit non-existent deposit");
         vm.prank(addresses.governorAddress);
-        allocator.editDeposit(address(newPsm), targetBalance, 0);
+        allocator.editPSM(address(newPsm), targetBalance, 0);
     }
 }

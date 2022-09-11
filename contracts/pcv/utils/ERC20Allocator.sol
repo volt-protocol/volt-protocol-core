@@ -74,7 +74,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
     /// @param psm Peg Stability Module for this deposit
     /// @param targetBalance target amount of tokens for the PSM to hold
     /// @param decimalsNormalizer decimal normalizer to ensure buffer is depleted and replenished properly
-    function createDeposit(
+    function connectPSM(
         address psm,
         uint248 targetBalance,
         int8 decimalsNormalizer
@@ -93,7 +93,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         });
         allPSMs[psm] = newDeposit;
 
-        emit DepositCreated(psm, token, targetBalance, decimalsNormalizer);
+        emit PSMConnected(psm, token, targetBalance, decimalsNormalizer);
     }
 
     /// @notice edit an existing deposit
@@ -102,7 +102,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
     /// @param decimalsNormalizer decimal normalizer to ensure buffer is depleted and replenished properly
     /// cannot manually change the underlying token, as this is pulled from the PSM
     /// underlying token is immutable in both pcv deposit and
-    function editDeposit(
+    function editPSM(
         address psm,
         uint248 targetBalance,
         int8 decimalsNormalizer
@@ -113,22 +113,18 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
             storedToken != address(0),
             "ERC20Allocator: cannot edit non-existent deposit"
         );
-        /// assert pcv deposit and psm share same denomination
         require(token == storedToken, "ERC20Allocator: psm changed underlying");
 
-        PSMInfo memory depositToEdit = PSMInfo({
-            token: token,
-            targetBalance: targetBalance,
-            decimalsNormalizer: decimalsNormalizer
-        });
-        allPSMs[psm] = depositToEdit;
+        PSMInfo storage depositToEdit = allPSMs[psm];
+        depositToEdit.decimalsNormalizer = decimalsNormalizer;
+        depositToEdit.targetBalance = targetBalance;
 
-        emit DepositUpdated(psm, token, targetBalance, decimalsNormalizer);
+        emit PSMUpdated(psm, token, targetBalance, decimalsNormalizer);
     }
 
-    /// @notice delete an existing deposit
+    /// @notice disconnect an existing deposit from the allocator
     /// @param psm Peg Stability Module to remove from allocation
-    function deletePSM(address psm) external override onlyGovernor {
+    function disconnectPSM(address psm) external override onlyGovernor {
         delete allPSMs[psm];
 
         emit PSMDeleted(psm);
@@ -240,8 +236,8 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
 
     /// @notice push ERC20 tokens to PSM by pulling from a PCV deposit
     /// flow of funds: PCV Deposit -> PSM
+    /// @param pcvDeposit to pull funds from and send to corresponding PSM
     function drip(address pcvDeposit) external whenNotPaused {
-        /// no need to
         address psm = pcvDepositToPSM[pcvDeposit];
         _drip(psm, PCVDeposit(pcvDeposit));
     }
@@ -262,6 +258,8 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
     }
 
     /// helper function that does the dripping
+    /// @param psm peg stability module to drip to
+    /// @param pcvDeposit pcv deposit to pull funds from
     function _drip(address psm, PCVDeposit pcvDeposit) internal {
         /// Check
         require(
