@@ -102,7 +102,7 @@ abstract contract RateLimitedV2 is CoreRef {
         2. Reverts
         Depending on whether doPartialAction is true or false
     */
-    function _depleteBuffer(uint256 amount) internal returns (uint256) {
+    function _depleteBuffer(uint256 amount) internal {
         uint256 newBuffer = buffer();
 
         require(newBuffer != 0, "RateLimited: no rate limit buffer");
@@ -113,8 +113,6 @@ abstract contract RateLimitedV2 is CoreRef {
         lastBufferUsedTime = block.timestamp.toUint32();
 
         emit BufferUsed(amount, bufferStored);
-
-        return amount;
     }
 
     /// @notice function to replenish buffer
