@@ -148,6 +148,13 @@ contract UnitTestERC20Allocator is DSTest {
         assertTrue(!allocator.checkSkimCondition(address(pcvDeposit))); /// cannot skim
         assertTrue(!allocator.checkActionAllowed(address(pcvDeposit)));
         assertEq(allocator.buffer(), 0);
+
+        token.mint(address(psm), targetBalance);
+
+        assertEq(psm.balance(), targetBalance * 2);
+        assertTrue(allocator.checkSkimCondition(address(pcvDeposit)));
+        assertTrue(allocator.checkActionAllowed(address(pcvDeposit)));
+        assertTrue(!allocator.checkDripCondition(address(pcvDeposit))); /// cannot drip as buffer is exhausted
     }
 
     function testDripFailsWhenBufferZero() public {
