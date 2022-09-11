@@ -119,7 +119,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         depositToEdit.decimalsNormalizer = decimalsNormalizer;
         depositToEdit.targetBalance = targetBalance;
 
-        emit PSMUpdated(psm, token, targetBalance, decimalsNormalizer);
+        emit PSMUpdated(psm, targetBalance, decimalsNormalizer);
     }
 
     /// @notice disconnect an existing deposit from the allocator

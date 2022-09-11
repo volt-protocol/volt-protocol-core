@@ -18,7 +18,6 @@ contract UnitTestERC20Allocator is DSTest {
     /// @notice emitted when an existing deposit is updated
     event PSMUpdated(
         address psm,
-        address token,
         uint248 targetBalance,
         int8 decimalsNormalizer
     );
@@ -457,7 +456,7 @@ contract UnitTestERC20Allocator is DSTest {
     function testTargetBalanceGovSucceeds() public {
         uint248 newThreshold = 10_000_000e18;
         vm.expectEmit(false, false, false, true, address(allocator));
-        emit PSMUpdated(address(psm), address(token), newThreshold, 0);
+        emit PSMUpdated(address(psm), newThreshold, 0);
         vm.prank(addresses.governorAddress);
         allocator.editPSM(address(psm), newThreshold, 0);
         assertEq(uint256(newThreshold), allocator.targetBalance(address(psm)));

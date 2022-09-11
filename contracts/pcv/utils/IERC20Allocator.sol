@@ -30,7 +30,6 @@ interface IERC20Allocator {
     /// @notice emitted when an existing PSM is updated
     event PSMUpdated(
         address psm,
-        address token,
         uint248 targetBalance,
         int8 decimalsNormalizer
     );
