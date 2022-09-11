@@ -289,6 +289,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
     /// @param pcvDeposit whose corresponding peg stability module action will be run on
     function doAction(address pcvDeposit) external whenNotPaused {
         address psm = pcvDepositToPSM[pcvDeposit];
+        /// don't check buffer != 0 as that will happen in drip function on effects
         if (_checkDripCondition(psm, PCVDeposit(pcvDeposit))) {
             _drip(psm, PCVDeposit(pcvDeposit));
         } else if (_checkSkimCondition(psm)) {
@@ -313,18 +314,19 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
     {
         if (decimalsNormalizer == 0) {
             adjustedAmountToDrip = amountToDrip;
-        } else if (decimalsNormalizer < 0) {
-            uint256 scalingFactor = 10**(-1 * decimalsNormalizer).toUint256();
-            adjustedAmountToDrip = amountToDrip / scalingFactor;
-        } else {
+        } else if (decimalsNormalizer > 0) {
             uint256 scalingFactor = 10**decimalsNormalizer.toUint256();
             adjustedAmountToDrip = amountToDrip * scalingFactor;
+        } else {
+            uint256 scalingFactor = 10**(-1 * decimalsNormalizer).toUint256();
+            adjustedAmountToDrip = amountToDrip / scalingFactor;
         }
     }
 
     /// @notice return the amount that can be skimmed off a given PSM
     /// @param pcvDeposit pcv deposit whose corresponding psm will have skim amount checked
     /// returns amount that can be skimmed, adjusted amount to skim and target to send proceeds
+    /// reverts if not skim eligbile
     function getSkimDetails(address pcvDeposit)
         public
         view
@@ -347,6 +349,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
     /// @param psm peg stability module to check drip amount on
     /// @param pcvDeposit pcv deposit to drip from
     /// returns amount that can be dripped, adjusted amount to drip and target
+    /// reverts if not drip eligbile
     function getDripDetails(address psm, PCVDeposit pcvDeposit)
         public
         view
@@ -361,10 +364,14 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         /// drip min between target drip amount and pcv deposit being pulled from
         /// to prevent edge cases when a venue runs out of liquidity
         /// only drip the lowest between amount and the buffer,
-        /// as dripping more than the buffer will result in
+        /// as dripping more than the buffer will result in a revert in the _drip function
         amountToDrip = Math.min(
             Math.min(targetBalanceDelta, pcvDeposit.balance()),
-            buffer()
+            /// adjust for decimals here as buffer is 1e18 scaled,
+            /// and if token is not scaled by 1e18, then this amountToDrip could be over the buffer
+            /// because buffer is 1e18 adjusted, and decimals normalizer is used to adjust up to the buffer
+            /// need to invert decimals normalizer for this to work properly
+            getAdjustedAmount(buffer(), toDrip.decimalsNormalizer * -1)
         );
 
         /// adjust amount to drip based on the decimals normalizer to deplete buffer

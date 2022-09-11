@@ -170,6 +170,72 @@ contract UnitTestERC20Allocator is DSTest {
         assertEq(allocator.buffer(), 0);
     }
 
+    /// add test here that drip succeeds when buffer is at 50%,
+    /// pcvDeposit is at targetBalance, and psm is empty
+    /// psm should receive the full buffer worth and should not revert
+    function testDripFailsWhenBufferFiftyPercentDepleted() public {
+        vm.startPrank(addresses.governorAddress);
+        core.grantPCVController(address(allocator));
+        allocator.setBufferCap(uint128(targetBalance / 2)); /// halfway exhaust buffer
+
+        token.mint(address(pcvDeposit), targetBalance * 2);
+
+        assertTrue(allocator.checkDripCondition(address(pcvDeposit)));
+        assertTrue(!allocator.checkSkimCondition(address(pcvDeposit))); /// cannot skim
+        assertTrue(allocator.checkActionAllowed(address(pcvDeposit)));
+        assertEq(allocator.buffer(), targetBalance / 2);
+
+        allocator.drip(address(pcvDeposit));
+
+        assertEq(psm.balance(), targetBalance / 2);
+    }
+
+    /// add test here that drip succeeds when buffer is at 50%,
+    /// pcvDeposit is at targetBalance, and psm is empty
+    /// psm should receive the full buffer worth and should not revert
+    function testDripFailsWhenBufferFiftyPercentDepletedDecimalsNormalized()
+        public
+    {
+        int8 decimalsNormalizer = 12; /// scale up new token by 12 decimals
+        uint256 scalingFactor = 1e12; /// scaling factor of 1e12 upwards
+        uint248 newTargetBalance = 100_000e6; /// target balance 100k
+
+        MockERC20 newToken = new MockERC20();
+        ERC20HoldingPCVDeposit newPsm = new ERC20HoldingPCVDeposit(
+            address(core),
+            IERC20(address(newToken))
+        );
+        ERC20HoldingPCVDeposit newPcvDeposit = new ERC20HoldingPCVDeposit(
+            address(core),
+            IERC20(address(newToken))
+        );
+
+        vm.startPrank(addresses.governorAddress);
+        allocator.connectPSM(
+            address(newPsm),
+            newTargetBalance,
+            decimalsNormalizer
+        );
+        allocator.connectDeposit(address(newPsm), address(newPcvDeposit));
+        vm.stopPrank();
+
+        vm.startPrank(addresses.governorAddress);
+        core.grantPCVController(address(allocator));
+        allocator.setBufferCap(uint128(targetBalance / 2)); /// halfway exhaust buffer
+
+        newToken.mint(address(newPcvDeposit), newTargetBalance * 2);
+
+        assertTrue(allocator.checkDripCondition(address(newPcvDeposit)));
+        assertTrue(!allocator.checkSkimCondition(address(newPcvDeposit))); /// cannot skim
+        assertTrue(allocator.checkActionAllowed(address(newPcvDeposit)));
+        assertEq(allocator.buffer(), targetBalance / 2);
+
+        allocator.drip(address(newPcvDeposit));
+
+        assertEq(newPsm.balance(), newTargetBalance / 2);
+        assertEq(allocator.buffer(), 0);
+    }
+
     function testCreateDepositNonGovFails() public {
         vm.expectRevert("CoreRef: Caller is not a governor");
         allocator.connectPSM(address(0), 0, 0);
