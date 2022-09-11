@@ -173,7 +173,7 @@ contract UnitTestERC20Allocator is DSTest {
     /// add test here that drip succeeds when buffer is at 50%,
     /// pcvDeposit is at targetBalance, and psm is empty
     /// psm should receive the full buffer worth and should not revert
-    function testDripFailsWhenBufferFiftyPercentDepleted() public {
+    function testDripSucceedsWhenBufferFiftyPercentDepleted() public {
         vm.startPrank(addresses.governorAddress);
         core.grantPCVController(address(allocator));
         allocator.setBufferCap(uint128(targetBalance / 2)); /// halfway exhaust buffer
@@ -193,11 +193,10 @@ contract UnitTestERC20Allocator is DSTest {
     /// add test here that drip succeeds when buffer is at 50%,
     /// pcvDeposit is at targetBalance, and psm is empty
     /// psm should receive the full buffer worth and should not revert
-    function testDripFailsWhenBufferFiftyPercentDepletedDecimalsNormalized()
+    function testDripSucceedsWhenBufferFiftyPercentDepletedDecimalsNormalized()
         public
     {
         int8 decimalsNormalizer = 12; /// scale up new token by 12 decimals
-        uint256 scalingFactor = 1e12; /// scaling factor of 1e12 upwards
         uint248 newTargetBalance = 100_000e6; /// target balance 100k
 
         MockERC20 newToken = new MockERC20();
@@ -230,8 +229,16 @@ contract UnitTestERC20Allocator is DSTest {
         assertTrue(allocator.checkActionAllowed(address(newPcvDeposit)));
         assertEq(allocator.buffer(), targetBalance / 2);
 
+        (uint256 amountToDrip, uint256 adjustedAmountToDrip) = allocator
+            .getDripDetails(
+                address(newPsm),
+                PCVDeposit(address(newPcvDeposit))
+            );
+
         allocator.drip(address(newPcvDeposit));
 
+        assertEq(adjustedAmountToDrip, amountToDrip * 1e12);
+        assertEq(newPsm.balance(), amountToDrip);
         assertEq(newPsm.balance(), newTargetBalance / 2);
         assertEq(allocator.buffer(), 0);
     }
