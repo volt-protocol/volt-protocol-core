@@ -71,22 +71,19 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
   expect(await core.isPCVController(erc20Allocator.address)).to.be.true;
   expect(core.address).to.be.equal(await erc20Allocator.core());
   {
-    const [pcvDeposit, token, targetBalance, decimalsNormalizer] = await erc20Allocator.allDeposits(
-      daiPriceBoundPSM.address
-    );
-    console.log('pcvDeposit: ', pcvDeposit);
+    const [token, targetBalance, decimalsNormalizer] = await erc20Allocator.allPSMs(daiPriceBoundPSM.address);
+    const psmAddress = await erc20Allocator.pcvDepositToPSM(daiCompoundPCVDeposit.address);
     console.log('daiCompoundPCVDeposit.address: ', daiCompoundPCVDeposit.address);
-    expect(pcvDeposit).to.be.equal(daiCompoundPCVDeposit.address);
+    expect(psmAddress).to.be.equal(daiPriceBoundPSM.address);
     expect(token).to.be.equal(addresses.dai);
     expect(daiTargetBalance.toString()).to.be.equal(targetBalance.toString()); /// had to make it a string otherwise typescript threw an error about comparing objects
     expect(decimalsNormalizer.toString()).to.be.equal(daiDecimalsNormalizer.toString());
   }
 
   {
-    const [pcvDeposit, token, targetBalance, decimalsNormalizer] = await erc20Allocator.allDeposits(
-      usdcPriceBoundPSM.address
-    );
-    expect(pcvDeposit).to.be.equal(usdcCompoundPCVDeposit.address);
+    const [token, targetBalance, decimalsNormalizer] = await erc20Allocator.allPSMs(usdcPriceBoundPSM.address);
+    const psmAddress = await erc20Allocator.pcvDepositToPSM(usdcCompoundPCVDeposit.address);
+    expect(psmAddress).to.be.equal(usdcPriceBoundPSM.address);
     expect(token).to.be.equal(addresses.usdc);
     expect(usdcTargetBalance.toString()).to.be.equal(targetBalance.toString()); /// had to make it a string otherwise typescript threw an error about comparing objects
     expect(decimalsNormalizer.toString()).to.be.equal(usdcDecimalsNormalizer.toString());
