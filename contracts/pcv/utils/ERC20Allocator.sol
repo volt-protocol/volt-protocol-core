@@ -182,27 +182,15 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
     /// @notice pull ERC20 tokens from PSM and send to PCV Deposit
     /// if the amount of tokens held in the PSM is above
     /// the target balance.
+    /// @param pcvDeposit deposit to send excess funds to
     function skim(address pcvDeposit) external whenNotPaused {
         address psm = pcvDepositToPSM[pcvDeposit];
         _skim(psm, pcvDeposit);
     }
 
-    /// @notice pull ERC20 tokens from PSM and send to PCV Deposit
-    /// if the amount of tokens held in the PSM is above
-    /// the target balance.
-    /// @param psm the peg stability to pull excess funds from
-    /// @param pcvDeposit the PCV Deposit to send excess funds to
-    function skim(address psm, address pcvDeposit) external whenNotPaused {
-        /// check that pcvDeposit has been whitelisted
-        /// will be true if both are address 0, but then check skim condition will fail
-        /// meaning we do not have to check if address is 0 here
-        require(
-            pcvDepositToPSM[pcvDeposit] == psm,
-            "ERC20Allocator: invalid pcvDeposit"
-        );
-        _skim(psm, pcvDeposit);
-    }
-
+    /// helper function that does the skimming
+    /// @param psm peg stability module to skim funds from
+    /// @param pcvDeposit pcv deposit to send funds to
     function _skim(address psm, address pcvDeposit) internal {
         /// Check
 
@@ -239,21 +227,6 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
     /// @param pcvDeposit to pull funds from and send to corresponding PSM
     function drip(address pcvDeposit) external whenNotPaused {
         address psm = pcvDepositToPSM[pcvDeposit];
-        _drip(psm, PCVDeposit(pcvDeposit));
-    }
-
-    /// @notice push ERC20 tokens to PSM by pulling from a PCV deposit
-    /// flow of funds: PCV Deposit -> PSM
-    /// @param psm peg stability module to drip to
-    /// @param pcvDeposit pcv deposit to pull funds from
-    function drip(address psm, address pcvDeposit) external whenNotPaused {
-        /// check that target has been whitelisted and psm and target are connected
-        /// will be true if both are address 0, but then check drip condition will fail
-        /// meaning we do not have to check if address is 0 here
-        require(
-            pcvDepositToPSM[pcvDeposit] == psm,
-            "ERC20Allocator: invalid pcvDeposit"
-        );
         _drip(psm, PCVDeposit(pcvDeposit));
     }
 

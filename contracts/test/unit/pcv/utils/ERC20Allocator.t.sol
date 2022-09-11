@@ -341,9 +341,6 @@ contract UnitTestERC20Allocator is DSTest {
         _disconnectPSM();
 
         vm.expectRevert();
-        allocator.skim(address(psm), address(pcvDeposit));
-
-        vm.expectRevert();
         allocator.skim(address(pcvDeposit));
     }
 
@@ -351,9 +348,6 @@ contract UnitTestERC20Allocator is DSTest {
     /// are still connected to a non existent psm
     function testDeletePSMGovSucceedsDripFails() public {
         _disconnectPSM();
-
-        vm.expectRevert();
-        allocator.drip(address(psm), address(pcvDeposit));
 
         vm.expectRevert();
         allocator.drip(address(pcvDeposit));
@@ -370,9 +364,6 @@ contract UnitTestERC20Allocator is DSTest {
         address psmAddress = allocator.pcvDepositToPSM(address(pcvDeposit));
         assertEq(psmAddress, address(0));
 
-        vm.expectRevert("ERC20Allocator: invalid pcvDeposit");
-        allocator.skim(address(psm), address(pcvDeposit));
-
         vm.expectRevert();
         allocator.skim(address(pcvDeposit));
     }
@@ -383,9 +374,6 @@ contract UnitTestERC20Allocator is DSTest {
         _disconnectPSM();
         vm.prank(addresses.governorAddress);
         allocator.deleteDeposit(address(pcvDeposit));
-
-        vm.expectRevert("ERC20Allocator: invalid pcvDeposit");
-        allocator.drip(address(psm), address(pcvDeposit));
 
         vm.expectRevert();
         allocator.drip(address(pcvDeposit));

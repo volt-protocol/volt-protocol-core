@@ -94,14 +94,14 @@ contract UnitTestERC20AllocatorConnector is DSTest {
 
     function testSkimFailsToNonConnectedAddress(address deposit) public {
         vm.assume(deposit != address(pcvDeposit));
-        vm.expectRevert("ERC20Allocator: invalid pcvDeposit");
-        allocator.skim(address(psm), deposit);
+        vm.expectRevert();
+        allocator.skim(address(deposit));
     }
 
     function testDripFailsToNonConnectedAddress(address deposit) public {
         vm.assume(deposit != address(pcvDeposit));
-        vm.expectRevert("ERC20Allocator: invalid pcvDeposit");
-        allocator.drip(address(psm), deposit);
+        vm.expectRevert();
+        allocator.drip(address(deposit));
     }
 
     function testConnectNewDepositSkimToDripFrom() public {
@@ -123,7 +123,7 @@ contract UnitTestERC20AllocatorConnector is DSTest {
 
         /// drip
         token.mint(address(newPcvDeposit), targetBalance);
-        allocator.drip(address(psm), address(newPcvDeposit));
+        allocator.drip(address(newPcvDeposit));
 
         assertEq(psm.balance(), targetBalance);
         assertEq(newPcvDeposit.balance(), 0);
@@ -133,7 +133,7 @@ contract UnitTestERC20AllocatorConnector is DSTest {
 
         assertEq(psm.balance(), targetBalance * 2);
 
-        allocator.skim(address(psm), address(newPcvDeposit));
+        allocator.skim(address(newPcvDeposit));
 
         assertEq(psm.balance(), targetBalance);
         assertEq(newPcvDeposit.balance(), targetBalance);
@@ -169,11 +169,11 @@ contract UnitTestERC20AllocatorConnector is DSTest {
 
         assertEq(allocator.pcvDepositToPSM(address(newPcvDeposit)), address(0));
 
-        vm.expectRevert("ERC20Allocator: invalid pcvDeposit");
-        allocator.drip(address(psm), address(newPcvDeposit));
+        vm.expectRevert();
+        allocator.drip(address(psm));
 
-        vm.expectRevert("ERC20Allocator: invalid pcvDeposit");
-        allocator.skim(address(psm), address(newPcvDeposit));
+        vm.expectRevert();
+        allocator.skim(address(psm));
     }
 
     function testCreateNewDepositFailsUnderlyingTokenMismatch() public {
