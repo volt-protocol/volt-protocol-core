@@ -964,7 +964,7 @@ contract UnitTestERC20Allocator is DSTest {
     }
 
     function testGetAdjustedAmountDown(uint128 amount) public {
-        int8 decimalsNormalizer = -18; /// add on 18 decimals
+        int8 decimalsNormalizer = -18; /// remove 18 decimals
         uint256 adjustedAmount = allocator.getAdjustedAmount(
             amount,
             decimalsNormalizer

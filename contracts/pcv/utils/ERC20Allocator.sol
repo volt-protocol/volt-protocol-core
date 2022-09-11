@@ -336,6 +336,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         PSMInfo memory toSkim = allPSMs[psm];
 
         address token = toSkim.token;
+        /// underflows when not skim eligble and reverts
         amountToSkim = IERC20(token).balanceOf(psm) - toSkim.targetBalance;
 
         /// adjust amount to skim based on the decimals normalizer to replenish buffer
@@ -358,6 +359,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         PSMInfo memory toDrip = allPSMs[psm];
 
         /// direct balanceOf call is cheaper than calling balance on psm
+        /// underflows when not drip eligble and reverts
         uint256 targetBalanceDelta = toDrip.targetBalance -
             IERC20(toDrip.token).balanceOf(psm);
 
@@ -365,6 +367,17 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         /// to prevent edge cases when a venue runs out of liquidity
         /// only drip the lowest between amount and the buffer,
         /// as dripping more than the buffer will result in a revert in the _drip function
+
+        /// example: usdc deposits
+        /// decimal normalizer = 12
+        /// target balance delta = 10,000e6
+        /// pcvDeposit.balance = 5,000e6
+        /// buffer = 1,000e18
+
+        /// getAdjustedAmount(1,000e18, -12) = 1,000e6
+
+        /// amountToDrip = 1,000e6
+
         amountToDrip = Math.min(
             Math.min(targetBalanceDelta, pcvDeposit.balance()),
             /// adjust for decimals here as buffer is 1e18 scaled,
@@ -412,6 +425,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         if (paused() == true) {
             return false;
         }
+
         address psm = pcvDepositToPSM[pcvDeposit];
         return _checkSkimCondition(psm);
     }
