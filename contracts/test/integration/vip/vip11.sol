@@ -48,7 +48,7 @@ contract vip11 is DSTest, IVIP {
 
     function getMainnetProposal()
         public
-        pure
+        view
         override
         returns (ITimelockSimulation.action[] memory prop)
     {
