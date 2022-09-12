@@ -36,7 +36,7 @@ const vip_10: ProposalDescription = {
       values: '0',
       method: 'grantPCVController(address)',
       arguments: ['{erc20Allocator}'],
-      description: 'Grant PCV Controller to the erc20Allocator'
+      description: 'Grant ERC20 Allocator the PCV Controller Role'
     }
   ],
   description: 'Create ERC20Allocator, add DAI and USDC psm and compound pcv deposit to the allocator'

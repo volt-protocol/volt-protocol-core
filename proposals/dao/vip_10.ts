@@ -23,7 +23,7 @@ Steps:
 
 const vipNumber = '10';
 
-const bufferCap = ethers.utils.parseEther('500000');
+const bufferCap = ethers.utils.parseEther('300000');
 const maxRateLimitPerSecond = ethers.utils.parseEther('100000');
 const rateLimitPerSecond = ethers.utils.parseEther('5.78');
 const daiTargetBalance = ethers.utils.parseEther('100000');
