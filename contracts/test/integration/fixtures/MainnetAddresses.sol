@@ -11,6 +11,8 @@ library MainnetAddresses {
         0xe733985a92Bfd5BC676095561BacE90E04606E4a;
     address public constant VOLT_SYSTEM_ORACLE =
         0xD4546B5B7D28aE0E048c073DCD92358721CEA8D4;
+    address public constant VOLT_SYSTEM_ORACLE_144_BIPS =
+        0xD4546B5B7D28aE0E048c073DCD92358721CEA8D4;
 
     /// deprecated oracles
     address public constant DEPRECATED_ORACLE_PASS_THROUGH =
