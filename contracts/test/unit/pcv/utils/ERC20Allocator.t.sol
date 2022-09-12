@@ -305,9 +305,19 @@ contract UnitTestERC20Allocator is DSTest {
         allocator.editPSM(address(0), 0, 0);
     }
 
+    function testConnectDepositNonGovFails() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        allocator.connectDeposit(address(0), address(0)); /// params don't matter as call reverts
+    }
+
     function testDeleteDepositNonGovFails() public {
         vm.expectRevert("CoreRef: Caller is not a governor");
         allocator.deleteDeposit(address(0));
+    }
+
+    function testDeletePSMNonGovFails() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        allocator.disconnectPSM(address(psm));
     }
 
     function _disconnectPSM() internal {

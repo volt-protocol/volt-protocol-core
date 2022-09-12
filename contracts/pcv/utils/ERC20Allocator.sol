@@ -273,7 +273,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
     /// ----------- PURE & VIEW Only APIs -----------
 
     /// @notice returns the target balance for a given PSM
-    function targetBalance(address psm) public view returns (uint256) {
+    function targetBalance(address psm) external view returns (uint256) {
         return allPSMs[psm].targetBalance;
     }
 

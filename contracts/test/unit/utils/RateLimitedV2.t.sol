@@ -15,8 +15,6 @@ import {MockRateLimitedV2} from "../../../mock/MockRateLimitedV2.sol";
 import {ERC20HoldingPCVDeposit} from "../../../pcv/ERC20HoldingPCVDeposit.sol";
 import {getCore, getAddresses, VoltTestAddresses} from "./Fixtures.sol";
 
-import "hardhat/console.sol";
-
 contract UnitTestRateLimitedV2 is DSTest {
     using SafeCast for *;
 
