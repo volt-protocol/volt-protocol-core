@@ -70,8 +70,8 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
 
     /// ----------- Governor Only API -----------
 
-    /// @notice create a new deposit
-    /// @param psm Peg Stability Module for this deposit
+    /// @notice connect a new PSM
+    /// @param psm Peg Stability Module to add
     /// @param targetBalance target amount of tokens for the PSM to hold
     /// @param decimalsNormalizer decimal normalizer to ensure buffer is depleted and replenished properly
     function connectPSM(
@@ -96,7 +96,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         emit PSMConnected(psm, token, targetBalance, decimalsNormalizer);
     }
 
-    /// @notice edit an existing deposit
+    /// @notice edit an existing PSM
     /// @param psm Peg Stability Module for this deposit
     /// @param targetBalance target amount of tokens for the PSM to hold
     /// @param decimalsNormalizer decimal normalizer to ensure buffer is depleted and replenished properly
