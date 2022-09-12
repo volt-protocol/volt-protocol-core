@@ -73,7 +73,6 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
   {
     const [token, targetBalance, decimalsNormalizer] = await erc20Allocator.allPSMs(daiPriceBoundPSM.address);
     const psmAddress = await erc20Allocator.pcvDepositToPSM(daiCompoundPCVDeposit.address);
-    console.log('daiCompoundPCVDeposit.address: ', daiCompoundPCVDeposit.address);
     expect(psmAddress).to.be.equal(daiPriceBoundPSM.address);
     expect(token).to.be.equal(addresses.dai);
     expect(daiTargetBalance.toString()).to.be.equal(targetBalance.toString()); /// had to make it a string otherwise typescript threw an error about comparing objects
