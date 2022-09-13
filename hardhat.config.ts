@@ -5,6 +5,7 @@ import '@typechain/hardhat';
 import '@idle-finance/hardhat-proposals-plugin';
 import 'solidity-coverage';
 import 'tsconfig-paths/register';
+import '@primitivefi/hardhat-dodoc';
 
 import * as dotenv from 'dotenv';
 
@@ -35,6 +36,20 @@ if (useJSONTestReporter) {
 }
 
 export default {
+  dodoc: {
+    runOnCompile: false,
+    debugMode: false,
+    include: [
+      'contracts/core',
+      'contracts/libs',
+      'contracts/oracle',
+      'contracts/pcv',
+      'contracts/peg',
+      'contracts/refs',
+      'contracts/utils'
+    ]
+    // More options...
+  },
   etherscan: {
     apiKey: {
       // Your API key for Etherscan
