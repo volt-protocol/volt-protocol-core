@@ -18,6 +18,10 @@ library Constants {
     IWETH public constant WETH =
         IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
+    /// @notice WETH9 address
+    IWETH public constant ARBITRUM_WETH =
+        IWETH(0x82aF49447D8a07e3bd95BD0d56f35241523fBab1);
+
     /// @notice USD stand-in address
     address public constant USD = 0x1111111111111111111111111111111111111111;
 

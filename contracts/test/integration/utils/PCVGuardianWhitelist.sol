@@ -15,7 +15,6 @@ contract PCVGuardianWhitelist {
     constructor() {
         functionDetectors[IERC20.transfer.selector] = true;
         functionDetectors[IERC20.approve.selector] = true;
-        functionDetectors[IPermissions.grantPCVController.selector] = true;
     }
 
     /// @notice function to verify actions and ensure that granting a PCV Controller or transferring assets
