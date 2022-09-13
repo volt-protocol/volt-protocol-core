@@ -122,7 +122,7 @@ contract PCVGuardVerification is DSTest {
     }
 
     /// @notice call after governance action to verify oracle values
-    function postActionVerifyPCV(Vm vm) internal {
+    function postActionVerifyPCV(Vm vm, bool doLogging) internal {
         address[] storage allDeposits = block.chainid == 1
             ? allMainnetPCVDeposits
             : allArbitrumPCVDeposits;
@@ -169,17 +169,19 @@ contract PCVGuardVerification is DSTest {
             }
         }
 
-        console.log("\n ~~~ PCV Stats ~~~");
-        console.log("pcv pre proposal: ", totalPCVPre);
-        console.log("pcv post proposal: ", totalPCVPost);
-        console.log(
-            "actual slippage: ",
-            Deviation.calculateDeviationThresholdBasisPoints(
-                totalPCVPost.toInt256(),
-                totalPCVPre.toInt256()
-            )
-        );
-        console.log("");
+        if (doLogging) {
+            console.log("\n ~~~ PCV Stats ~~~");
+            console.log("pcv pre proposal: ", totalPCVPre);
+            console.log("pcv post proposal: ", totalPCVPost);
+            console.log(
+                "actual slippage: ",
+                Deviation.calculateDeviationThresholdBasisPoints(
+                    totalPCVPost.toInt256(),
+                    totalPCVPre.toInt256()
+                )
+            );
+            console.log("");
+        }
 
         /// allow 3 bips slippage per proposal
         require(
