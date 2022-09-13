@@ -14,10 +14,10 @@ interface IERC20Allocator {
     /// ----------- Events -----------
 
     /// @notice event emitted when tokens are sent to the pushTarget from the pullTarget
-    event Skimmed(uint256 amount);
+    event Skimmed(uint256 amount, address target);
 
     /// @notice event emitted when tokens are sent to the pullTarget from the pushTarget
-    event Dripped(uint256 amount);
+    event Dripped(uint256 amount, address target);
 
     /// @notice emitted when a new PSM is connected
     event PSMConnected(
@@ -28,11 +28,7 @@ interface IERC20Allocator {
     );
 
     /// @notice emitted when an existing PSM is updated
-    event PSMUpdated(
-        address psm,
-        uint248 targetBalance,
-        int8 decimalsNormalizer
-    );
+    event PSMTargetBalanceUpdated(address psm, uint248 targetBalance);
 
     /// @notice emitted when a psm is connected to a PCV Deposit
     event DepositConnected(address psm, address pcvDeposit);
@@ -58,12 +54,7 @@ interface IERC20Allocator {
     /// @notice edit an existing deposit
     /// @param psm Peg Stability Module for this deposit
     /// @param targetBalance target amount of tokens for the PSM to hold
-    /// @param decimalsNormalizer decimal normalizer to ensure buffer is depleted and replenished properly
-    function editPSM(
-        address psm,
-        uint248 targetBalance,
-        int8 decimalsNormalizer
-    ) external;
+    function editPSMTargetBalance(address psm, uint248 targetBalance) external;
 
     /// @notice delete an existing deposit
     /// @param psm Peg Stability Module to remove from allocation

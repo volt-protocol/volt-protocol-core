@@ -94,13 +94,13 @@ contract UnitTestERC20AllocatorConnector is DSTest {
 
     function testSkimFailsToNonConnectedAddress(address deposit) public {
         vm.assume(deposit != address(pcvDeposit));
-        vm.expectRevert();
+        vm.expectRevert("ERC20Allocator: invalid PCVDeposit");
         allocator.skim(address(deposit));
     }
 
     function testDripFailsToNonConnectedAddress(address deposit) public {
         vm.assume(deposit != address(pcvDeposit));
-        vm.expectRevert();
+        vm.expectRevert("ERC20Allocator: invalid PCVDeposit");
         allocator.drip(address(deposit));
     }
 
@@ -169,11 +169,11 @@ contract UnitTestERC20AllocatorConnector is DSTest {
 
         assertEq(allocator.pcvDepositToPSM(address(newPcvDeposit)), address(0));
 
-        vm.expectRevert();
-        allocator.drip(address(psm));
+        vm.expectRevert("ERC20Allocator: invalid PCVDeposit");
+        allocator.drip(address(newPcvDeposit));
 
-        vm.expectRevert();
-        allocator.skim(address(psm));
+        vm.expectRevert("ERC20Allocator: invalid PCVDeposit");
+        allocator.skim(address(newPcvDeposit));
     }
 
     function testCreateNewDepositFailsUnderlyingTokenMismatch() public {
@@ -205,7 +205,7 @@ contract UnitTestERC20AllocatorConnector is DSTest {
         allocator.connectDeposit(address(psm), address(newPcvDeposit));
     }
 
-    function testeditPSMFailsPsmUnderlyingChanged() public {
+    function testEditPSMTargetBalanceFailsPsmUnderlyingChanged() public {
         MockPSM newPsm = new MockPSM(address(token));
         vm.prank(addresses.governorAddress);
         allocator.connectPSM(address(newPsm), targetBalance, 0);
@@ -213,7 +213,7 @@ contract UnitTestERC20AllocatorConnector is DSTest {
 
         vm.expectRevert("ERC20Allocator: psm changed underlying");
         vm.prank(addresses.governorAddress);
-        allocator.editPSM(address(newPsm), 0, 0);
+        allocator.editPSMTargetBalance(address(newPsm), 0);
     }
 
     function testCreateDuplicateDepositFails() public {
@@ -222,10 +222,10 @@ contract UnitTestERC20AllocatorConnector is DSTest {
         allocator.connectPSM(address(psm), targetBalance, 0);
     }
 
-    function testEditNonExistingPsmFails() public {
+    function testSetTargetBalanceNonExistingPsmFails() public {
         MockPSM newPsm = new MockPSM(address(token));
         vm.expectRevert("ERC20Allocator: cannot edit non-existent deposit");
         vm.prank(addresses.governorAddress);
-        allocator.editPSM(address(newPsm), targetBalance, 0);
+        allocator.editPSMTargetBalance(address(newPsm), targetBalance);
     }
 }

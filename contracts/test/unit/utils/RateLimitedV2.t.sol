@@ -95,6 +95,24 @@ contract UnitTestRateLimitedV2 is DSTest {
         rlm.setRateLimitPerSecond(0);
     }
 
+    function testSetRateLimitPerSecondAboveMaxFails() public {
+        vm.expectRevert("RateLimited: rateLimitPerSecond too high");
+        vm.prank(addresses.governorAddress);
+        rlm.setRateLimitPerSecond(maxRateLimitPerSecond.toUint128() + 1);
+    }
+
+    function testSetRateLimitPerSecondSucceeds() public {
+        vm.prank(addresses.governorAddress);
+        rlm.setRateLimitPerSecond(maxRateLimitPerSecond.toUint128());
+        assertEq(rlm.rateLimitPerSecond(), maxRateLimitPerSecond);
+    }
+
+    function testDepleteBufferFailsWhenZeroBuffer() public {
+        rlm.depleteBuffer(bufferCap);
+        vm.expectRevert("RateLimited: no rate limit buffer");
+        rlm.depleteBuffer(bufferCap);
+    }
+
     function testSetRateLimitPerSecondGovSucceeds() public {
         uint256 newRateLimitPerSecond = 15_000e18;
 

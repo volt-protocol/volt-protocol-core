@@ -99,14 +99,13 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
     /// @notice edit an existing PSM
     /// @param psm Peg Stability Module for this deposit
     /// @param targetBalance target amount of tokens for the PSM to hold
-    /// @param decimalsNormalizer decimal normalizer to ensure buffer is depleted and replenished properly
     /// cannot manually change the underlying token, as this is pulled from the PSM
     /// underlying token is immutable in both pcv deposit and
-    function editPSM(
-        address psm,
-        uint248 targetBalance,
-        int8 decimalsNormalizer
-    ) external override onlyGovernor {
+    function editPSMTargetBalance(address psm, uint248 targetBalance)
+        external
+        override
+        onlyGovernor
+    {
         address token = PCVDeposit(psm).balanceReportedIn();
         address storedToken = allPSMs[psm].token;
         require(
@@ -116,10 +115,9 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         require(token == storedToken, "ERC20Allocator: psm changed underlying");
 
         PSMInfo storage depositToEdit = allPSMs[psm];
-        depositToEdit.decimalsNormalizer = decimalsNormalizer;
         depositToEdit.targetBalance = targetBalance;
 
-        emit PSMUpdated(psm, targetBalance, decimalsNormalizer);
+        emit PSMTargetBalanceUpdated(psm, targetBalance);
     }
 
     /// @notice disconnect an existing deposit from the allocator
@@ -185,6 +183,8 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
     /// @param pcvDeposit deposit to send excess funds to
     function skim(address pcvDeposit) external whenNotPaused {
         address psm = pcvDepositToPSM[pcvDeposit];
+        require(psm != address(0), "ERC20Allocator: invalid PCVDeposit");
+
         _skim(psm, pcvDeposit);
     }
 
@@ -219,7 +219,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         /// deposit pulled funds into the selected yield venue
         PCVDeposit(pcvDeposit).deposit();
 
-        emit Skimmed(amountToSkim);
+        emit Skimmed(amountToSkim, pcvDeposit);
     }
 
     /// @notice push ERC20 tokens to PSM by pulling from a PCV deposit
@@ -227,6 +227,8 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
     /// @param pcvDeposit to pull funds from and send to corresponding PSM
     function drip(address pcvDeposit) external whenNotPaused {
         address psm = pcvDepositToPSM[pcvDeposit];
+        require(psm != address(0), "ERC20Allocator: invalid PCVDeposit");
+
         _drip(psm, PCVDeposit(pcvDeposit));
     }
 
@@ -255,13 +257,15 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
 
         /// drip amount to pcvDeposit psm so that it has targetBalance amount of tokens
         pcvDeposit.withdraw(psm, amountToDrip);
-        emit Dripped(amountToDrip);
+        emit Dripped(amountToDrip, psm);
     }
 
     /// @notice does an action if any are available
     /// @param pcvDeposit whose corresponding peg stability module action will be run on
     function doAction(address pcvDeposit) external whenNotPaused {
         address psm = pcvDepositToPSM[pcvDeposit];
+        require(psm != address(0), "ERC20Allocator: invalid PCVDeposit");
+
         /// don't check buffer != 0 as that will happen in drip function on effects
         if (_checkDripCondition(psm, PCVDeposit(pcvDeposit))) {
             _drip(psm, PCVDeposit(pcvDeposit));

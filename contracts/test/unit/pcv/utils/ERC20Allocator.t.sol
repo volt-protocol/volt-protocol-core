@@ -16,11 +16,7 @@ import "hardhat/console.sol";
 
 contract UnitTestERC20Allocator is DSTest {
     /// @notice emitted when an existing deposit is updated
-    event PSMUpdated(
-        address psm,
-        uint248 targetBalance,
-        int8 decimalsNormalizer
-    );
+    event PSMTargetBalanceUpdated(address psm, uint248 targetBalance);
 
     /// @notice PSM deletion event
     event PSMDeleted(address psm);
@@ -154,6 +150,12 @@ contract UnitTestERC20Allocator is DSTest {
         assertTrue(allocator.checkSkimCondition(address(pcvDeposit)));
         assertTrue(allocator.checkActionAllowed(address(pcvDeposit)));
         assertTrue(!allocator.checkDripCondition(address(pcvDeposit))); /// cannot drip as buffer is exhausted
+
+        token.mockBurn(address(psm), token.balanceOf(address(psm)));
+        assertEq(allocator.buffer(), 0);
+
+        vm.expectRevert("RateLimited: no rate limit buffer");
+        allocator.drip(address(pcvDeposit));
     }
 
     function testDripFailsWhenBufferZero() public {
@@ -300,9 +302,9 @@ contract UnitTestERC20Allocator is DSTest {
         allocator.connectPSM(address(0), 0, 0);
     }
 
-    function testeditPSMNonGovFails() public {
+    function testeditPSMTargetBalanceNonGovFails() public {
         vm.expectRevert("CoreRef: Caller is not a governor");
-        allocator.editPSM(address(0), 0, 0);
+        allocator.editPSMTargetBalance(address(0), 0);
     }
 
     function testConnectDepositNonGovFails() public {
@@ -373,7 +375,7 @@ contract UnitTestERC20Allocator is DSTest {
         address psmAddress = allocator.pcvDepositToPSM(address(pcvDeposit));
         assertEq(psmAddress, address(0));
 
-        vm.expectRevert();
+        vm.expectRevert("ERC20Allocator: invalid PCVDeposit");
         allocator.skim(address(pcvDeposit));
     }
 
@@ -384,7 +386,7 @@ contract UnitTestERC20Allocator is DSTest {
         vm.prank(addresses.governorAddress);
         allocator.deleteDeposit(address(pcvDeposit));
 
-        vm.expectRevert();
+        vm.expectRevert("ERC20Allocator: invalid PCVDeposit");
         allocator.drip(address(pcvDeposit));
     }
 
@@ -466,9 +468,9 @@ contract UnitTestERC20Allocator is DSTest {
     function testTargetBalanceGovSucceeds() public {
         uint248 newThreshold = 10_000_000e18;
         vm.expectEmit(false, false, false, true, address(allocator));
-        emit PSMUpdated(address(psm), newThreshold, 0);
+        emit PSMTargetBalanceUpdated(address(psm), newThreshold);
         vm.prank(addresses.governorAddress);
-        allocator.editPSM(address(psm), newThreshold, 0);
+        allocator.editPSMTargetBalance(address(psm), newThreshold);
         assertEq(uint256(newThreshold), allocator.targetBalance(address(psm)));
     }
 
@@ -906,7 +908,7 @@ contract UnitTestERC20Allocator is DSTest {
         assertEq(psmPcvDeposit, address(0));
 
         /// points to token address 0, thus reverting in check drip condition
-        vm.expectRevert();
+        vm.expectRevert("ERC20Allocator: invalid PCVDeposit");
         allocator.drip(address(nonWhitelistedPSM));
     }
 
@@ -925,7 +927,7 @@ contract UnitTestERC20Allocator is DSTest {
         assertEq(psmPcvDeposit, address(0));
 
         /// points to token address 0, thus reverting in check skim condition
-        vm.expectRevert();
+        vm.expectRevert("ERC20Allocator: invalid PCVDeposit");
         allocator.skim(address(nonWhitelistedPSM));
     }
 
@@ -944,7 +946,7 @@ contract UnitTestERC20Allocator is DSTest {
         assertEq(psmPcvDeposit, address(0));
 
         /// points to token address 0, thus reverting in check drip condition
-        vm.expectRevert();
+        vm.expectRevert("ERC20Allocator: invalid PCVDeposit");
         allocator.doAction(address(nonWhitelistedPSM));
     }
 
