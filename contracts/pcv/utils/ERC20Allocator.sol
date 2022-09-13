@@ -86,12 +86,12 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
             "ERC20Allocator: cannot overwrite existing deposit"
         );
 
-        PSMInfo memory newDeposit = PSMInfo({
+        PSMInfo memory newPSM = PSMInfo({
             token: token,
             targetBalance: targetBalance,
             decimalsNormalizer: decimalsNormalizer
         });
-        allPSMs[psm] = newDeposit;
+        allPSMs[psm] = newPSM;
 
         emit PSMConnected(psm, token, targetBalance, decimalsNormalizer);
     }
@@ -114,8 +114,8 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         );
         require(token == storedToken, "ERC20Allocator: psm changed underlying");
 
-        PSMInfo storage depositToEdit = allPSMs[psm];
-        depositToEdit.targetBalance = targetBalance;
+        PSMInfo storage psmToEdit = allPSMs[psm];
+        psmToEdit.targetBalance = targetBalance;
 
         emit PSMTargetBalanceUpdated(psm, targetBalance);
     }
