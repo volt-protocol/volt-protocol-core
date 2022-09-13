@@ -74,10 +74,15 @@ contract UnitTestERC20AllocatorConnector is DSTest {
 
         pcvDeposit = new ERC20HoldingPCVDeposit(
             address(core),
-            IERC20(address(token))
+            IERC20(address(token)),
+            address(0)
         );
 
-        psm = new ERC20HoldingPCVDeposit(address(core), IERC20(address(token)));
+        psm = new ERC20HoldingPCVDeposit(
+            address(core),
+            IERC20(address(token)),
+            address(0)
+        );
 
         allocator = new ERC20Allocator(
             address(core),
@@ -107,7 +112,8 @@ contract UnitTestERC20AllocatorConnector is DSTest {
     function testConnectNewDepositSkimToDripFrom() public {
         PCVDeposit newPcvDeposit = new ERC20HoldingPCVDeposit(
             address(core),
-            IERC20(address(token))
+            IERC20(address(token)),
+            address(0)
         );
 
         vm.startPrank(addresses.governorAddress);
@@ -142,7 +148,8 @@ contract UnitTestERC20AllocatorConnector is DSTest {
     function testConnectNewDepositFailsTokenMismatch() public {
         PCVDeposit newPcvDeposit = new ERC20HoldingPCVDeposit(
             address(core),
-            IERC20(address(0))
+            IERC20(address(0)),
+            address(0)
         );
 
         vm.prank(addresses.governorAddress);
@@ -153,7 +160,8 @@ contract UnitTestERC20AllocatorConnector is DSTest {
     function testConnectAndRemoveNewDeposit() public {
         PCVDeposit newPcvDeposit = new ERC20HoldingPCVDeposit(
             address(core),
-            IERC20(address(token))
+            IERC20(address(token)),
+            address(0)
         );
 
         vm.prank(addresses.governorAddress);
@@ -179,12 +187,14 @@ contract UnitTestERC20AllocatorConnector is DSTest {
     function testCreateNewDepositFailsUnderlyingTokenMismatch() public {
         PCVDeposit newPcvDeposit = new ERC20HoldingPCVDeposit(
             address(core),
-            IERC20(address(1))
+            IERC20(address(1)),
+            address(0)
         );
 
         ERC20HoldingPCVDeposit newPsm = new ERC20HoldingPCVDeposit(
             address(core),
-            IERC20(address(token))
+            IERC20(address(token)),
+            address(0)
         );
 
         vm.startPrank(addresses.governorAddress);
@@ -197,7 +207,8 @@ contract UnitTestERC20AllocatorConnector is DSTest {
     function testConnectNewDepositFailsUnderlyingTokenMismatch() public {
         PCVDeposit newPcvDeposit = new ERC20HoldingPCVDeposit(
             address(core),
-            IERC20(address(1))
+            IERC20(address(1)),
+            address(0)
         );
 
         vm.expectRevert("ERC20Allocator: token mismatch");

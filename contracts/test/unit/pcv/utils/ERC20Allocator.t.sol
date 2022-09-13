@@ -64,10 +64,15 @@ contract UnitTestERC20Allocator is DSTest {
 
         pcvDeposit = new ERC20HoldingPCVDeposit(
             address(core),
-            IERC20(address(token))
+            IERC20(address(token)),
+            address(0)
         );
 
-        psm = new ERC20HoldingPCVDeposit(address(core), IERC20(address(token)));
+        psm = new ERC20HoldingPCVDeposit(
+            address(core),
+            IERC20(address(token)),
+            address(0)
+        );
 
         allocator = new ERC20Allocator(
             address(core),
@@ -200,11 +205,13 @@ contract UnitTestERC20Allocator is DSTest {
         MockERC20 newToken = new MockERC20();
         ERC20HoldingPCVDeposit newPsm = new ERC20HoldingPCVDeposit(
             address(core),
-            IERC20(address(newToken))
+            IERC20(address(newToken)),
+            address(0)
         );
         ERC20HoldingPCVDeposit newPcvDeposit = new ERC20HoldingPCVDeposit(
             address(core),
-            IERC20(address(newToken))
+            IERC20(address(newToken)),
+            address(0)
         );
 
         vm.startPrank(addresses.governorAddress);
@@ -250,11 +257,13 @@ contract UnitTestERC20Allocator is DSTest {
         MockERC20 newToken = new MockERC20();
         ERC20HoldingPCVDeposit newPsm = new ERC20HoldingPCVDeposit(
             address(core),
-            IERC20(address(newToken))
+            IERC20(address(newToken)),
+            address(0)
         );
         ERC20HoldingPCVDeposit newPcvDeposit = new ERC20HoldingPCVDeposit(
             address(core),
-            IERC20(address(newToken))
+            IERC20(address(newToken)),
+            address(0)
         );
 
         vm.startPrank(addresses.governorAddress);
@@ -632,11 +641,13 @@ contract UnitTestERC20Allocator is DSTest {
         MockERC20 newToken = new MockERC20();
         ERC20HoldingPCVDeposit newPsm = new ERC20HoldingPCVDeposit(
             address(core),
-            IERC20(address(newToken))
+            IERC20(address(newToken)),
+            address(0)
         );
         ERC20HoldingPCVDeposit newPcvDeposit = new ERC20HoldingPCVDeposit(
             address(core),
-            IERC20(address(newToken))
+            IERC20(address(newToken)),
+            address(0)
         );
 
         vm.startPrank(addresses.governorAddress);

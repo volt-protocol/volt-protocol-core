@@ -31,13 +31,14 @@ contract UnitTestERC20HoldingsPCVDeposit is DSTest {
 
         erc20HoldingDeposit = new ERC20HoldingPCVDeposit(
             address(core),
-            IERC20(address(token))
+            IERC20(address(token)),
+            address(0)
         );
     }
 
     function testWrapEthFailsWhenNotOnMainnetOrArbitrum() public {
         vm.deal(address(erc20HoldingDeposit), 10 ether); /// deal some eth
-        vm.expectRevert("Can only wrap eth on mainnet and arbitrum");
+        vm.expectRevert(); /// call to address 0 fails
         erc20HoldingDeposit.wrapETH();
     }
 
