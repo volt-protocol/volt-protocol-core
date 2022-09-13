@@ -169,6 +169,9 @@ contract UnitTestERC20Allocator is DSTest {
         assertTrue(!allocator.checkSkimCondition(address(pcvDeposit))); /// cannot skim
         assertTrue(!allocator.checkActionAllowed(address(pcvDeposit)));
         assertEq(allocator.buffer(), 0);
+
+        vm.expectRevert("RateLimited: no rate limit buffer");
+        allocator.drip(address(pcvDeposit));
     }
 
     /// add test here that drip succeeds when buffer is at 50%,
