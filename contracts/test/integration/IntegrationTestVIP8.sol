@@ -14,7 +14,7 @@ import {IPCVGuardian} from "../../pcv/IPCVGuardian.sol";
 
 contract IntegrationTestVIP8 is TimelockSimulation, vip8 {
     using SafeCast for *;
-    PriceBoundPSM private psm;
+    PriceBoundPSM private psm = PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM);
 
     ICore private core = ICore(MainnetAddresses.CORE);
     IERC20 dai = IERC20(MainnetAddresses.DAI);
@@ -23,8 +23,6 @@ contract IntegrationTestVIP8 is TimelockSimulation, vip8 {
     uint256 public constant mintAmount = type(uint80).max;
 
     function setUp() public {
-        psm = PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM);
-
         vm.startPrank(MainnetAddresses.GOVERNOR);
         core.grantMinter(MainnetAddresses.GOVERNOR);
         volt.mint(address(this), mintAmount);

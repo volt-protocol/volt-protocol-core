@@ -86,7 +86,8 @@ contract MintRedeemVerification {
     function _mint(
         PriceBoundPSM psm,
         IERC20 underlying,
-        uint256 amountUnderlyingIn
+        uint256 amountUnderlyingIn,
+        bool doLogging
     ) private {
         uint256 startingUserVoltBalance = volt.balanceOf(address(this));
         uint256 startingUserDaiBalance = underlying.balanceOf(address(this));
@@ -119,7 +120,9 @@ contract MintRedeemVerification {
             "MintVerification: a3"
         );
 
-        console.log("successfully verified mint for psm: ", address(psm));
+        if (doLogging) {
+            console.log("successfully verified mint for psm: ", address(psm));
+        }
     }
 
     /// @notice call after governance action to verify redeem values
@@ -142,7 +145,7 @@ contract MintRedeemVerification {
         this.doRedeem(vm);
     }
 
-    function doMint(Vm vm) external {
+    function doMint(Vm vm, bool doLogging) external {
         for (uint256 i = 0; i < allMainnetPSMs.length; i++) {
             /// pull all tokens from psm into this address and use them to purchase VOLT
             uint256 amountIn = tokensIn[i].balanceOf(allMainnetPSMs[i]);
@@ -157,7 +160,8 @@ contract MintRedeemVerification {
             _mint(
                 PriceBoundPSM(allMainnetPSMs[i]),
                 tokensIn[i],
-                Math.min(maxAmountIn, amountIn)
+                Math.min(maxAmountIn, amountIn),
+                doLogging
             );
         }
 
@@ -165,8 +169,8 @@ contract MintRedeemVerification {
     }
 
     /// @notice call after governance action to verify mint values
-    function postActionVerifyMint(Vm vm) internal {
+    function postActionVerifyMint(Vm vm, bool doLogging) internal {
         vm.expectRevert("successfully minted on all PSMs");
-        this.doMint(vm);
+        this.doMint(vm, doLogging);
     }
 }

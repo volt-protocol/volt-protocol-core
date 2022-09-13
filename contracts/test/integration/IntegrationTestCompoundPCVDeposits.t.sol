@@ -44,11 +44,11 @@ contract IntegrationTestCompoundPCVDeposits is DSTest {
     function setUp() public {
         daiBalance = daiDeposit.balance();
 
-        usdcBalance = usdcDeposit.balance();
-
         vm.prank(MainnetAddresses.CUSDC);
         usdc.transfer(address(usdcDeposit), usdcBalance);
         usdcDeposit.deposit();
+
+        usdcBalance = usdcDeposit.balance();
     }
 
     function testSetup() public {
@@ -74,6 +74,7 @@ contract IntegrationTestCompoundPCVDeposits is DSTest {
         uint256 startingUsdcBalance = usdc.balanceOf(MainnetAddresses.GOVERNOR);
 
         uint256 feiToWithdraw = fei.balanceOf(MainnetAddresses.CFEI);
+
         vm.startPrank(MainnetAddresses.EOA_1);
 
         pcvGuardian.withdrawAllToSafeAddress(address(daiDeposit));
