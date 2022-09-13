@@ -7,7 +7,6 @@ import {
   TeardownUpgradeFunc,
   ValidateUpgradeFunc
 } from '@custom-types/types';
-import { getImpersonatedSigner } from '@test/helpers';
 
 /*
 
@@ -24,7 +23,7 @@ Steps:
 const vipNumber = '10';
 
 const bufferCap = ethers.utils.parseEther('300000');
-const maxRateLimitPerSecond = ethers.utils.parseEther('100000');
+const maxRateLimitPerSecond = ethers.utils.parseEther('1000');
 const rateLimitPerSecond = ethers.utils.parseEther('5.78');
 const daiTargetBalance = ethers.utils.parseEther('100000');
 const usdcTargetBalance = daiTargetBalance.div(1e12);

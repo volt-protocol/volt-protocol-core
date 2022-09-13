@@ -48,7 +48,7 @@ contract vip10 is DSTest, IVIP {
         proposal.push(
             ITimelockSimulation.action({
                 value: 0,
-                target: address(0), /// just a placeholder until deployment
+                target: MainnetAddresses.ERC20ALLOCATOR,
                 arguments: abi.encodeWithSignature(
                     "connectPSM(address,uint248,int8)",
                     MainnetAddresses.VOLT_USDC_PSM,
@@ -61,7 +61,7 @@ contract vip10 is DSTest, IVIP {
         proposal.push(
             ITimelockSimulation.action({
                 value: 0,
-                target: address(0), /// just a placeholder until deployment
+                target: MainnetAddresses.ERC20ALLOCATOR,
                 arguments: abi.encodeWithSignature(
                     "connectPSM(address,uint248,int8)",
                     MainnetAddresses.VOLT_DAI_PSM,
@@ -74,7 +74,7 @@ contract vip10 is DSTest, IVIP {
         proposal.push(
             ITimelockSimulation.action({
                 value: 0,
-                target: address(0), /// just a placeholder until deployment
+                target: MainnetAddresses.ERC20ALLOCATOR,
                 arguments: abi.encodeWithSignature(
                     "connectDeposit(address,address)",
                     MainnetAddresses.VOLT_DAI_PSM,
@@ -86,7 +86,7 @@ contract vip10 is DSTest, IVIP {
         proposal.push(
             ITimelockSimulation.action({
                 value: 0,
-                target: address(0), /// just a placeholder until deployment
+                target: MainnetAddresses.ERC20ALLOCATOR,
                 arguments: abi.encodeWithSignature(
                     "connectDeposit(address,address)",
                     MainnetAddresses.VOLT_USDC_PSM,
@@ -100,8 +100,8 @@ contract vip10 is DSTest, IVIP {
                 value: 0,
                 target: MainnetAddresses.CORE,
                 arguments: abi.encodeWithSignature(
-                    "grantPCVController(address)"
-                    // MainnetAddresses.ERC20ALLOCATOR
+                    "grantPCVController(address)",
+                    MainnetAddresses.ERC20ALLOCATOR
                 ),
                 description: "Grant ERC20 Allocator the PCV Controller Role"
             })
