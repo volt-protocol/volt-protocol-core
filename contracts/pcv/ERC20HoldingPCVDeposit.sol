@@ -14,6 +14,9 @@ import {IERC20HoldingPCVDeposit} from "./IERC20HoldingPCVDeposit.sol";
 
 /// @title ERC20HoldingPCVDeposit
 /// @notice PCVDeposit that is used to hold ERC20 tokens as a safe harbour. Deposit is a no-op
+
+/// DO NOT USE in prod, still needs multiple code reviews. Contract is only for testing currently
+
 contract ERC20HoldingPCVDeposit is PCVDeposit, IERC20HoldingPCVDeposit {
     using SafeERC20 for IERC20;
 
