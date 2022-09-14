@@ -5,4 +5,4 @@ lib-paths = "node_modules"
 contracts = "contracts"
 fuzz_max_global_rejects = 100000
 fuzz_max_local_rejects = 100000
-fuzz_runs = 5000
+fuzz_runs = 500

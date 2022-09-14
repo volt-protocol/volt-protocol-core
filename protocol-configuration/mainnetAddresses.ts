@@ -79,19 +79,19 @@ const MainnetAddresses: MainnetAddresses = {
   daiCompoundPCVDeposit: {
     address: '0xE3cbfd618463B7198fa0743AbFA56170557cc880',
     artifactName: 'ERC20CompoundPCVDeposit',
-    category: AddressCategory.Deprecated,
+    category: AddressCategory.PCV,
     network: Network.Mainnet
   },
   feiCompoundPCVDeposit: {
     address: '0x604556Bbc4aB70B3c73d7bb6c4867B6239511301',
     artifactName: 'ERC20CompoundPCVDeposit',
-    category: AddressCategory.Deprecated,
+    category: AddressCategory.PCV,
     network: Network.Mainnet
   },
   usdcCompoundPCVDeposit: {
     address: '0x3B69e3073cf86099a9bbB650e8682D6FdCfb29db',
     artifactName: 'ERC20CompoundPCVDeposit',
-    category: AddressCategory.Deprecated,
+    category: AddressCategory.PCV,
     network: Network.Mainnet
   },
   feiPriceBoundPSM: {
@@ -115,6 +115,12 @@ const MainnetAddresses: MainnetAddresses = {
   makerRouter: {
     address: '0xC403da9AaC46d3AdcD1a1bBe774601C0ddc542F7',
     artifactName: 'MakerRouter',
+    category: AddressCategory.PCV,
+    network: Network.Mainnet
+  },
+  erc20Allocator: {
+    address: '0x37518BbE48fEaE49ECBD83F7e9C01c1A6b4c2F69',
+    artifactName: 'ERC20Allocator',
     category: AddressCategory.PCV,
     network: Network.Mainnet
   },
