@@ -20,6 +20,9 @@ library MainnetAddresses {
     address public constant DEPRECATED_SCALING_PRICE_ORACLE =
         0x79412660E95F94a4D2d02a050CEA776200939917;
 
+    address public constant ERC20ALLOCATOR =
+        0x37518BbE48fEaE49ECBD83F7e9C01c1A6b4c2F69;
+
     address public constant GOVERNOR =
         0xcBB83206698E8788F85EFbEeeCAd17e53366EBDf;
     address public constant PCV_GUARDIAN =

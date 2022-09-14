@@ -30,10 +30,12 @@ contract vip11 is DSTest, IVIP {
     ERC20CompoundPCVDeposit private usdcDeposit =
         ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_USDC_PCV_DEPOSIT);
 
-    ITimelockSimulation.action[] private proposal;
+    ITimelockSimulation.action[] private mainnetProposal;
+
+    ITimelockSimulation.action[] private arbitrumProposal;
 
     constructor() {
-        proposal.push(
+        mainnetProposal.push(
             ITimelockSimulation.action({
                 value: 0,
                 target: MainnetAddresses.ORACLE_PASS_THROUGH,
@@ -41,7 +43,19 @@ contract vip11 is DSTest, IVIP {
                     "updateScalingPriceOracle(address)",
                     MainnetAddresses.VOLT_SYSTEM_ORACLE_144_BIPS
                 ),
-                description: "Set oracle pass through to Volt System Oracle yielding 144 bips APR"
+                description: "Set oracle pass through to Volt System Oracle 144 bips APR"
+            })
+        );
+
+        arbitrumProposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: ArbitrumAddresses.ORACLE_PASS_THROUGH,
+                arguments: abi.encodeWithSignature(
+                    "updateScalingPriceOracle(address)",
+                    ArbitrumAddresses.VOLT_SYSTEM_ORACLE_144_BIPS
+                ),
+                description: "Set oracle pass through to Volt System Oracle 144 bips APR"
             })
         );
     }
@@ -50,73 +64,27 @@ contract vip11 is DSTest, IVIP {
         public
         view
         override
-        returns (ITimelockSimulation.action[] memory prop)
+        returns (ITimelockSimulation.action[] memory)
     {
-        prop = proposal;
+        mainnetProposal;
     }
 
     function mainnetSetup() public override {}
 
-    function mainnetValidate() public override {
-        assertTrue(
-            PCVGuardian(MainnetAddresses.PCV_GUARDIAN).isWhitelistAddress(
-                address(daiDeposit)
-            )
-        );
-        assertTrue(
-            PCVGuardian(MainnetAddresses.PCV_GUARDIAN).isWhitelistAddress(
-                address(feiDeposit)
-            )
-        );
-        assertTrue(
-            PCVGuardian(MainnetAddresses.PCV_GUARDIAN).isWhitelistAddress(
-                address(usdcDeposit)
-            )
-        );
-        assertEq(address(daiDeposit.core()), core);
-        assertEq(address(feiDeposit.core()), core);
-        assertEq(address(usdcDeposit.core()), core);
-        assertEq(address(daiDeposit.cToken()), address(MainnetAddresses.CDAI));
-        assertEq(address(feiDeposit.cToken()), address(MainnetAddresses.CFEI));
-        assertEq(
-            address(usdcDeposit.cToken()),
-            address(MainnetAddresses.CUSDC)
-        );
-        assertEq(address(daiDeposit.token()), address(MainnetAddresses.DAI));
-        assertEq(address(feiDeposit.token()), address(MainnetAddresses.FEI));
-        assertEq(address(usdcDeposit.token()), address(MainnetAddresses.USDC));
+    /// assert oracle pass through is pointing to correct volt system oracle
+    function mainnetValidate() public override {}
 
-        uint256 tokenBalance = IERC20(fei).balanceOf(
-            MainnetAddresses.FEI_DAI_PSM
-        );
-        vm.prank(MainnetAddresses.FEI_DAI_PSM);
-        IERC20(fei).transfer(address(feiDeposit), tokenBalance);
-        feiDeposit.deposit();
-
-        vm.prank(MainnetAddresses.EOA_1);
-        PCVGuardian(MainnetAddresses.PCV_GUARDIAN).withdrawAllToSafeAddress(
-            address(feiDeposit)
-        );
-        assertTrue(
-            IERC20(fei).balanceOf(MainnetAddresses.GOVERNOR) > tokenBalance
-        );
-    }
-
-    /// prevent errors by reverting on arbitrum proposal functions being called on this VIP
     function getArbitrumProposal()
         public
         pure
         override
         returns (ITimelockSimulation.action[] memory)
     {
-        revert("no arbitrum proposal");
+        return arbitrumProposal;
     }
 
-    function arbitrumSetup() public override {
-        revert("no arbitrum proposal");
-    }
+    function arbitrumSetup() public override {}
 
-    function arbitrumValidate() public override {
-        revert("no arbitrum proposal");
-    }
+    /// assert oracle pass through is pointing to correct volt system oracle
+    function arbitrumValidate() public override {}
 }

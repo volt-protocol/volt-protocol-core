@@ -62,6 +62,8 @@ interface Vm {
 
     function expectRevert(bytes4) external;
 
+    function expectRevert() external;
+
     // Record all storage reads and writes
     function record() external;
 
@@ -78,6 +80,14 @@ interface Vm {
         bool,
         bool,
         bool
+    ) external;
+
+    function expectEmit(
+        bool,
+        bool,
+        bool,
+        bool,
+        address /// contract expected to emit event
     ) external;
 
     // Mocks a call to an address, returning specified data.
