@@ -52,8 +52,8 @@ contract vip11 is DSTest, IVIP {
                 value: 0,
                 target: ArbitrumAddresses.ORACLE_PASS_THROUGH,
                 arguments: abi.encodeWithSignature(
-                    "updateScalingPriceOracle(address)",
-                    ArbitrumAddresses.VOLT_SYSTEM_ORACLE_144_BIPS
+                    "updateScalingPriceOracle(address)"
+                    // ArbitrumAddresses.VOLT_SYSTEM_ORACLE_144_BIPS
                 ),
                 description: "Set oracle pass through to Volt System Oracle 144 bips APR"
             })
@@ -76,7 +76,7 @@ contract vip11 is DSTest, IVIP {
 
     function getArbitrumProposal()
         public
-        pure
+        view
         override
         returns (ITimelockSimulation.action[] memory)
     {

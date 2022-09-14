@@ -27,18 +27,18 @@ const vipNumber = '11';
 const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: NamedAddresses, logging: boolean) => {
   const VoltSystemOracleFactory = await ethers.getContractFactory('VoltSystemOracle');
 
-  const voltSystemOracle = await VoltSystemOracleFactory.deploy(
+  const arbitrumVoltSystemOracle = await VoltSystemOracleFactory.deploy(
     MONTHLY_CHANGE_RATE_BASIS_POINTS,
     ORACLE_PERIOD_START_TIME,
     STARTING_ORACLE_PRICE
   );
-  await voltSystemOracle.deployed();
+  await arbitrumVoltSystemOracle.deployed();
 
-  console.log(`Volt System Oracle ${voltSystemOracle.address}`);
+  console.log(`Volt System Oracle ${arbitrumVoltSystemOracle.address}`);
 
   console.log(`Deployed volt system oracle VIP-${vipNumber}`);
   return {
-    voltSystemOracle
+    arbitrumVoltSystemOracle
   };
 };
 
@@ -51,15 +51,15 @@ const teardown: TeardownUpgradeFunc = async (addresses, oldContracts, contracts,
 // Run any validations required on the vip using mocha or console logging
 // IE check balances, check state of contracts, etc.
 const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts, logging) => {
-  const { oraclePassThrough, voltSystemOracle, feiPriceBoundPSM, usdcPriceBoundPSM, timelockController } = contracts;
+  const { arbitrumOraclePassThrough, voltSystemOracle, arbitrumTimelockController } = contracts;
 
   expect((await voltSystemOracle.oraclePrice()).toString()).to.be.equal(STARTING_ORACLE_PRICE);
   expect((await voltSystemOracle.getCurrentOraclePrice()).toString()).to.be.equal(STARTING_ORACLE_PRICE);
   expect((await voltSystemOracle.periodStartTime()).toString()).to.be.equal(ORACLE_PERIOD_START_TIME);
   expect(Number(await voltSystemOracle.monthlyChangeRateBasisPoints())).to.be.equal(MONTHLY_CHANGE_RATE_BASIS_POINTS);
 
-  expect(await oraclePassThrough.scalingPriceOracle()).to.be.equal(voltSystemOracle.address);
-  expect(await oraclePassThrough.owner()).to.be.equal(timelockController.address);
+  expect(await arbitrumOraclePassThrough.scalingPriceOracle()).to.be.equal(voltSystemOracle.address);
+  expect(await arbitrumOraclePassThrough.owner()).to.be.equal(arbitrumTimelockController.address);
 
   console.log(`Successfully validated VIP-${vipNumber}`);
 };

@@ -16,19 +16,19 @@ const MainnetAddresses: MainnetAddresses = {
   },
   scalingPriceOracle: {
     address: '0x79412660E95F94a4D2d02a050CEA776200939917',
-    artifactName: 'OraclePassThrough',
+    artifactName: 'IScalingPriceOracle',
     category: AddressCategory.Deprecated,
     network: Network.Mainnet
   },
   /// Current Volt System Oracle
-  voltSystemOracle: {
-    address: '0xD4546B5B7D28aE0E048c073DCD92358721CEA8D4',
-    artifactName: 'VoltSystemOracle',
-    category: AddressCategory.Oracle,
-    network: Network.Mainnet
-  },
+  // voltSystemOracle: {
+  //   address: '',
+  //   artifactName: 'VoltSystemOracle',
+  //   category: AddressCategory.Oracle,
+  //   network: Network.Mainnet
+  // },
   /// Current Volt System Oracle Pass Through
-  voltSystemOraclePassThrough: {
+  oraclePassThrough: {
     address: '0xe733985a92Bfd5BC676095561BacE90E04606E4a',
     artifactName: 'OraclePassThrough',
     category: AddressCategory.Oracle,
@@ -282,12 +282,12 @@ const MainnetAddresses: MainnetAddresses = {
     network: Network.Arbitrum
   },
 
-  arbitrumVoltSystemOracle: {
-    address: '0x69DBf8dD98Aa40F50E4f2263c6f2d66f26f9cb5b',
-    artifactName: 'VoltSystemOracle',
-    category: AddressCategory.Oracle,
-    network: Network.Arbitrum
-  },
+  // arbitrumVoltSystemOracle: {
+  //   address: '',
+  //   artifactName: 'VoltSystemOracle',
+  //   category: AddressCategory.Oracle,
+  //   network: Network.Arbitrum
+  // },
   arbitrumOraclePassThrough: {
     address: '0xcd836280e4416e08F54E5584Bcd49Ac2E3a68747',
     artifactName: 'OraclePassThrough',

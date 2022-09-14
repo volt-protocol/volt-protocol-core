@@ -4,10 +4,9 @@ const config = {
   /// Volt System Oracle Params
   STARTING_ORACLE_PRICE: '1055473122573580018',
   ORACLE_PERIOD_START_TIME: '1663268400', /// September 13th, 12pm pst start time
-  MONTHLY_CHANGE_RATE_BASIS_POINTS: 12, /// Compound Trailing 30 Day Average yield is ~1.5% per year, in bips that is 150 bips
+  MONTHLY_CHANGE_RATE_BASIS_POINTS: 12, /// Compound Trailing 30 Day Average DAI yield is ~1.5% per year, 150 bips
 
   /// Mainnet
-  MAINNET_DEPLOYMENT: true,
   CHAINLINK_FEE: ethers.utils.parseEther('10'),
   CHAINLINK_ORACLE_ADDRESS: '0x049bd8c3adc3fe7d3fc2a44541d955a537c2a484',
   ORACLE_PASS_THROUGH_ADDRESS: '0x84dc71500D504163A87756dB6368CC8bB654592f',
