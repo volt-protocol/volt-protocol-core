@@ -43,7 +43,7 @@ contract vip11 is DSTest, IVIP {
                     "updateScalingPriceOracle(address)",
                     MainnetAddresses.VOLT_SYSTEM_ORACLE_144_BIPS
                 ),
-                description: "Set oracle pass through to Volt System Oracle 144 bips APR"
+                description: "Set Volt System Oracle on Oracle Pass Through"
             })
         );
 
@@ -52,10 +52,10 @@ contract vip11 is DSTest, IVIP {
                 value: 0,
                 target: ArbitrumAddresses.ORACLE_PASS_THROUGH,
                 arguments: abi.encodeWithSignature(
-                    "updateScalingPriceOracle(address)"
-                    // ArbitrumAddresses.VOLT_SYSTEM_ORACLE_144_BIPS
+                    "updateScalingPriceOracle(address)",
+                    ArbitrumAddresses.VOLT_SYSTEM_ORACLE_144_BIPS
                 ),
-                description: "Set oracle pass through to Volt System Oracle 144 bips APR"
+                description: "Set Volt System Oracle on Oracle Pass Through"
             })
         );
     }
@@ -66,7 +66,7 @@ contract vip11 is DSTest, IVIP {
         override
         returns (ITimelockSimulation.action[] memory)
     {
-        mainnetProposal;
+        return mainnetProposal;
     }
 
     function mainnetSetup() public override {}

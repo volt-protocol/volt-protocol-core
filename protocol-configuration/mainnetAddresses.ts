@@ -21,12 +21,12 @@ const MainnetAddresses: MainnetAddresses = {
     network: Network.Mainnet
   },
   /// Current Volt System Oracle
-  // voltSystemOracle: {
-  //   address: '',
-  //   artifactName: 'VoltSystemOracle',
-  //   category: AddressCategory.Oracle,
-  //   network: Network.Mainnet
-  // },
+  voltSystemOracle: {
+    address: '0xB8Ac4931A618B06498966cba3a560B867D8f567F',
+    artifactName: 'VoltSystemOracle',
+    category: AddressCategory.Oracle,
+    network: Network.Mainnet
+  },
   /// Current Volt System Oracle Pass Through
   oraclePassThrough: {
     address: '0xe733985a92Bfd5BC676095561BacE90E04606E4a',
@@ -281,13 +281,12 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.Governance,
     network: Network.Arbitrum
   },
-
-  // arbitrumVoltSystemOracle: {
-  //   address: '',
-  //   artifactName: 'VoltSystemOracle',
-  //   category: AddressCategory.Oracle,
-  //   network: Network.Arbitrum
-  // },
+  arbitrumVoltSystemOracle: {
+    address: '0x5DDf983CbD5819c13661046110EfCd2E8629d40b',
+    artifactName: 'VoltSystemOracle',
+    category: AddressCategory.Oracle,
+    network: Network.Arbitrum
+  },
   arbitrumOraclePassThrough: {
     address: '0xcd836280e4416e08F54E5584Bcd49Ac2E3a68747',
     artifactName: 'OraclePassThrough',

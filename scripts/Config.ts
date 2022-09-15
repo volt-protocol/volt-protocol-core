@@ -2,8 +2,8 @@ import { ethers } from 'ethers';
 
 const config = {
   /// Volt System Oracle Params
-  STARTING_ORACLE_PRICE: '1055473122573580018',
-  ORACLE_PERIOD_START_TIME: '1663268400', /// September 13th, 12pm pst start time
+  STARTING_ORACLE_PRICE: '1055476736004932282',
+  ORACLE_PERIOD_START_TIME: '1663286400', /// September 13th, 12pm pst start time
   MONTHLY_CHANGE_RATE_BASIS_POINTS: 12, /// Compound Trailing 30 Day Average DAI yield is ~1.5% per year, 150 bips
 
   /// Mainnet

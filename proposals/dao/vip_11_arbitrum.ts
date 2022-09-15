@@ -51,14 +51,16 @@ const teardown: TeardownUpgradeFunc = async (addresses, oldContracts, contracts,
 // Run any validations required on the vip using mocha or console logging
 // IE check balances, check state of contracts, etc.
 const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts, logging) => {
-  const { arbitrumOraclePassThrough, voltSystemOracle, arbitrumTimelockController } = contracts;
+  const { arbitrumOraclePassThrough, arbitrumVoltSystemOracle, arbitrumTimelockController } = contracts;
 
-  expect((await voltSystemOracle.oraclePrice()).toString()).to.be.equal(STARTING_ORACLE_PRICE);
-  expect((await voltSystemOracle.getCurrentOraclePrice()).toString()).to.be.equal(STARTING_ORACLE_PRICE);
-  expect((await voltSystemOracle.periodStartTime()).toString()).to.be.equal(ORACLE_PERIOD_START_TIME);
-  expect(Number(await voltSystemOracle.monthlyChangeRateBasisPoints())).to.be.equal(MONTHLY_CHANGE_RATE_BASIS_POINTS);
+  expect((await arbitrumVoltSystemOracle.oraclePrice()).toString()).to.be.equal(STARTING_ORACLE_PRICE);
+  expect((await arbitrumVoltSystemOracle.getCurrentOraclePrice()).toString()).to.be.equal(STARTING_ORACLE_PRICE);
+  expect((await arbitrumVoltSystemOracle.periodStartTime()).toString()).to.be.equal(ORACLE_PERIOD_START_TIME);
+  expect(Number(await arbitrumVoltSystemOracle.monthlyChangeRateBasisPoints())).to.be.equal(
+    MONTHLY_CHANGE_RATE_BASIS_POINTS
+  );
 
-  expect(await arbitrumOraclePassThrough.scalingPriceOracle()).to.be.equal(voltSystemOracle.address);
+  expect(await arbitrumOraclePassThrough.scalingPriceOracle()).to.be.equal(arbitrumVoltSystemOracle.address);
   expect(await arbitrumOraclePassThrough.owner()).to.be.equal(arbitrumTimelockController.address);
 
   console.log(`Successfully validated VIP-${vipNumber}`);

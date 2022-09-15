@@ -51,7 +51,7 @@ const teardown: TeardownUpgradeFunc = async (addresses, oldContracts, contracts,
 // Run any validations required on the vip using mocha or console logging
 // IE check balances, check state of contracts, etc.
 const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts, logging) => {
-  const { oraclePassThrough, voltSystemOracle, feiPriceBoundPSM, usdcPriceBoundPSM, timelockController } = contracts;
+  const { oraclePassThrough, voltSystemOracle, timelockController } = contracts;
 
   expect((await voltSystemOracle.oraclePrice()).toString()).to.be.equal(STARTING_ORACLE_PRICE);
   expect((await voltSystemOracle.getCurrentOraclePrice()).toString()).to.be.equal(STARTING_ORACLE_PRICE);

@@ -31,27 +31,14 @@ contract IntegrationTestOracleUpgrade is DSTest {
     IVolt private fei = IVolt(MainnetAddresses.FEI);
     IVolt private underlyingToken = fei;
 
-    /// ------------ Minting and RateLimited System Params ------------
-
-    uint256 public constant mintAmount = 10_000_000e18;
-    uint256 public constant bufferCap = 10_000_000e18;
-    uint256 public constant individualMaxBufferCap = 5_000_000e18;
-    uint256 public constant rps = 10_000e18;
-
-    /// ------------ Oracle System Params ------------
-
     /// @notice prices during test will increase 1% monthly
     int256 public constant monthlyChangeRateBasisPoints = 12;
-
-    /// @notice live FEI PCV Deposit
-    ERC20CompoundPCVDeposit public immutable rariVoltPCVDeposit =
-        ERC20CompoundPCVDeposit(MainnetAddresses.RARI_VOLT_PCV_DEPOSIT);
 
     /// @notice Oracle Pass Through contract
     OraclePassThrough public oracle =
         OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
-    uint256 public constant startTime = 1663268400;
+    uint256 public constant startTime = 1663286400;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
