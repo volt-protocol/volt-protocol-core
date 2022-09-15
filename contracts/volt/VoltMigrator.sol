@@ -19,17 +19,22 @@ contract VoltMigrator is IVoltMigrator, CoreRef {
     // solhint-disable-next-line const-name-snakecase
     Volt public constant oldVolt =
         Volt(0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18);
-    // solhint-disable-next-line const-name-snakecase
-    IVolt public constant newVolt =
-        IVolt(0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18);
 
-    constructor(address core) CoreRef(core) {}
+    // // solhint-disable-next-line const-name-snakecase
+    // IVolt public constant newVolt =
+    //     IVolt(0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18);
+
+    address public immutable newVolt;
+
+    constructor(address core, address _newVolt) CoreRef(core) {
+        newVolt = _newVolt;
+    }
 
     /// @notice function to exchange old VOLT for new VOLT
     /// @param amount the amount of old VOLT user wishes to exchange
     function exchange(uint256 amount) external {
         oldVolt.burnFrom(msg.sender, amount);
-        newVolt.transfer(msg.sender, amount);
+        IERC20(newVolt).transfer(msg.sender, amount);
     }
 
     /// @notice function to exchange old VOLT for new VOLT
@@ -42,7 +47,7 @@ contract VoltMigrator is IVoltMigrator, CoreRef {
         );
 
         oldVolt.burnFrom(msg.sender, amountToExchange);
-        newVolt.transfer(msg.sender, amountToExchange);
+        IERC20(newVolt).transfer(msg.sender, amountToExchange);
     }
 
     /// @notice sweep target token,

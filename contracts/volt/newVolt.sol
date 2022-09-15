@@ -7,7 +7,7 @@ import {TribeRoles} from "../core/TribeRoles.sol";
 // Forked from Uniswap's UNI
 // Reference: https://etherscan.io/address/0x1f9840a85d5af5bf1d1762f925bdaddc4201f984#code
 
-contract Volt is CoreRef {
+contract NewVolt is CoreRef {
     /// @notice EIP-20 token name for this token
     // solhint-disable-next-line const-name-snakecase
     string public constant name = "Volt";
