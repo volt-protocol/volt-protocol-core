@@ -32,6 +32,7 @@ contract ArbitrumTestAllArbitrumRoles is RoleTesting, AllRolesConfig {
         /// PCV Controllers
         allAddresses[2].push(ArbitrumAddresses.GOVERNOR);
         allAddresses[2].push(ArbitrumAddresses.PCV_GUARDIAN);
+        // allAddresses[2].push(ArbitrumAddresses.ERC20ALLOCATOR); update once deployed
 
         /// PCV Guards
         allAddresses[4].push(ArbitrumAddresses.EOA_1);
