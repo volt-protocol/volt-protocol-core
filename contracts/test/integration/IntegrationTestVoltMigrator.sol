@@ -5,16 +5,14 @@ import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ICore} from "../../core/ICore.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {VoltMigrator} from "../../volt/VoltMigrator.sol";
-import {NewVolt} from "../../volt/NewVolt.sol";
+import {VoltV2} from "../../volt/VoltV2.sol";
 import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 
-import "hardhat/console.sol";
-
 contract IntegrationTestVoltMigratorTest is DSTest {
     VoltMigrator private voltMigrator;
-    NewVolt private newVolt;
+    VoltV2 private newVolt;
 
     IVolt oldVolt = IVolt(MainnetAddresses.VOLT);
     ICore core = ICore(MainnetAddresses.CORE);
@@ -24,7 +22,7 @@ contract IntegrationTestVoltMigratorTest is DSTest {
     uint256 public constant mintAmount = 100_000_000e18;
 
     function setUp() public {
-        newVolt = new NewVolt(MainnetAddresses.CORE);
+        newVolt = new VoltV2(MainnetAddresses.CORE);
         voltMigrator = new VoltMigrator(
             MainnetAddresses.CORE,
             address(newVolt)
