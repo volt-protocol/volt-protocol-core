@@ -28,8 +28,8 @@ contract AllRolesConfig {
     /// PCV Guardian
     uint256 public constant numGuardians = 1;
 
-    /// multisig, PCV Guardian
-    uint256 public constant numPCVControllers = 2;
+    /// multisig, PCV Guardian, ERC20Allocator
+    uint256 public constant numPCVControllers = 3;
 
     /// Global Rate Limited Minter
     uint256 public constant numMinters = 0;
