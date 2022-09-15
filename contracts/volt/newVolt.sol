@@ -93,11 +93,9 @@ contract Volt is CoreRef {
 
     constructor(address core) CoreRef(core) {}
 
-    /**
-     * @notice Mint new tokens
-     * @param dst The address of the destination account
-     * @param rawAmount The number of tokens to be minted
-     */
+    /// @notice Mint new tokens
+    /// @param dst The address of the destination account
+    /// @param rawAmount The number of tokens to be minted
     function mint(address dst, uint256 rawAmount)
         external
         hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.MINTER)
@@ -155,12 +153,10 @@ contract Volt is CoreRef {
         _moveDelegates(delegates[dst], address(0), amount);
     }
 
-    /**
-     * @notice Get the number of tokens `spender` is approved to spend on behalf of `account`
-     * @param account The address of the account holding the funds
-     * @param spender The address of the account spending the funds
-     * @return The number of tokens approved
-     */
+    /// @notice Get the number of tokens `spender` is approved to spend on behalf of `account`
+    /// @param account The address of the account holding the funds
+    /// @param spender The address of the account spending the funds
+    /// @return The number of tokens approved
     function allowance(address account, address spender)
         external
         view
@@ -169,14 +165,12 @@ contract Volt is CoreRef {
         return allowances[account][spender];
     }
 
-    /**
-     * @notice Approve `spender` to transfer up to `amount` from `src`
-     * @dev This will overwrite the approval amount for `spender`
-     *  and is subject to issues noted [here](https://eips.ethereum.org/EIPS/eip-20#approve)
-     * @param spender The address of the account which may transfer tokens
-     * @param rawAmount The number of tokens that are approved (2^256-1 means infinite)
-     * @return Whether or not the approval succeeded
-     */
+    /// @notice Approve `spender` to transfer up to `amount` from `src`
+    /// @dev This will overwrite the approval amount for `spender`
+    ///  and is subject to issues noted [here](https://eips.ethereum.org/EIPS/eip-20#approve)
+    /// @param spender The address of the account which may transfer tokens
+    /// @param rawAmount The number of tokens that are approved (2^256-1 means infinite)
+    /// @return Whether or not the approval succeeded
     function approve(address spender, uint256 rawAmount)
         external
         returns (bool)
@@ -194,16 +188,14 @@ contract Volt is CoreRef {
         return true;
     }
 
-    /**
-     * @notice Triggers an approval from owner to spends
-     * @param owner The address to approve from
-     * @param spender The address to be approved
-     * @param rawAmount The number of tokens that are approved (2^256-1 means infinite)
-     * @param deadline The time at which to expire the signature
-     * @param v The recovery byte of the signature
-     * @param r Half of the ECDSA signature pair
-     * @param s Half of the ECDSA signature pair
-     */
+    /// @notice Triggers an approval from owner to spends
+    /// @param owner The address to approve from
+    /// @param spender The address to be approved
+    /// @param rawAmount The number of tokens that are approved (2^256-1 means infinite)
+    /// @param deadline The time at which to expire the signature
+    /// @param v The recovery byte of the signature
+    /// @param r Half of the ECDSA signature pair
+    /// @param s Half of the ECDSA signature pair
     function permit(
         address owner,
         address spender,
@@ -251,34 +243,28 @@ contract Volt is CoreRef {
         emit Approval(owner, spender, amount);
     }
 
-    /**
-     * @notice Get the number of tokens held by the `account`
-     * @param account The address of the account to get the balance of
-     * @return The number of tokens held
-     */
+    /// @notice Get the number of tokens held by the `account`
+    /// @param account The address of the account to get the balance of
+    /// @return The number of tokens held
     function balanceOf(address account) external view returns (uint256) {
         return balances[account];
     }
 
-    /**
-     * @notice Transfer `amount` tokens from `msg.sender` to `dst`
-     * @param dst The address of the destination account
-     * @param rawAmount The number of tokens to transfer
-     * @return Whether or not the transfer succeeded
-     */
+    /// @notice Transfer `amount` tokens from `msg.sender` to `dst`
+    /// @param dst The address of the destination account
+    /// @param rawAmount The number of tokens to transfer
+    /// @return Whether or not the transfer succeeded
     function transfer(address dst, uint256 rawAmount) external returns (bool) {
         uint96 amount = safe96(rawAmount, "Volt: amount exceeds 96 bits");
         _transferTokens(msg.sender, dst, amount);
         return true;
     }
 
-    /**
-     * @notice Transfer `amount` tokens from `src` to `dst`
-     * @param src The address of the source account
-     * @param dst The address of the destination account
-     * @param rawAmount The number of tokens to transfer
-     * @return Whether or not the transfer succeeded
-     */
+    /// @notice Transfer `amount` tokens from `src` to `dst`
+    /// @param src The address of the source account
+    /// @param dst The address of the destination account
+    /// @param rawAmount The number of tokens to transfer
+    /// @return Whether or not the transfer succeeded
     function transferFrom(
         address src,
         address dst,
@@ -303,23 +289,19 @@ contract Volt is CoreRef {
         return true;
     }
 
-    /**
-     * @notice Delegate votes from `msg.sender` to `delegatee`
-     * @param delegatee The address to delegate votes to
-     */
+    /// @notice Delegate votes from `msg.sender` to `delegatee`
+    /// @param delegatee The address to delegate votes to
     function delegate(address delegatee) public {
         return _delegate(msg.sender, delegatee);
     }
 
-    /**
-     * @notice Delegates votes from signatory to `delegatee`
-     * @param delegatee The address to delegate votes to
-     * @param nonce The contract state required to match the signature
-     * @param expiry The time at which to expire the signature
-     * @param v The recovery byte of the signature
-     * @param r Half of the ECDSA signature pair
-     * @param s Half of the ECDSA signature pair
-     */
+    /// @notice Delegates votes from signatory to `delegatee`
+    /// @param delegatee The address to delegate votes to
+    /// @param nonce The contract state required to match the signature
+    /// @param expiry The time at which to expire the signature
+    /// @param v The recovery byte of the signature
+    /// @param r Half of the ECDSA signature pair
+    /// @param s Half of the ECDSA signature pair
     function delegateBySig(
         address delegatee,
         uint256 nonce,
@@ -349,24 +331,20 @@ contract Volt is CoreRef {
         return _delegate(signatory, delegatee);
     }
 
-    /**
-     * @notice Gets the current votes balance for `account`
-     * @param account The address to get votes balance
-     * @return The number of current votes for `account`
-     */
+    /// @notice Gets the current votes balance for `account`
+    /// @param account The address to get votes balance
+    /// @return The number of current votes for `account`
     function getCurrentVotes(address account) external view returns (uint96) {
         uint32 nCheckpoints = numCheckpoints[account];
         return
             nCheckpoints > 0 ? checkpoints[account][nCheckpoints - 1].votes : 0;
     }
 
-    /**
-     * @notice Determine the prior number of votes for an account as of a block number
-     * @dev Block number must be a finalized block or else this function will revert to prevent misinformation.
-     * @param account The address of the account to check
-     * @param blockNumber The block number to get the vote balance at
-     * @return The number of votes the account had as of the given block
-     */
+    /// @notice Determine the prior number of votes for an account as of a block number
+    /// @dev Block number must be a finalized block or else this function will revert to prevent misinformation.
+    /// @param account The address of the account to check
+    /// @param blockNumber The block number to get the vote balance at
+    /// @return The number of votes the account had as of the given block
     function getPriorVotes(address account, uint256 blockNumber)
         public
         view
