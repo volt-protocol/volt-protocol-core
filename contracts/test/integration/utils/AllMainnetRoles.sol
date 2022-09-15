@@ -28,9 +28,9 @@ contract IntegrationTestAllMainnetRoles is RoleTesting, AllRolesConfig {
         allAddresses[1].push(MainnetAddresses.PCV_GUARDIAN);
 
         /// pcv controllers
-        /// TODO add allocator here once deployed
         allAddresses[2].push(MainnetAddresses.GOVERNOR);
         allAddresses[2].push(MainnetAddresses.PCV_GUARDIAN);
+        allAddresses[2].push(MainnetAddresses.ERC20ALLOCATOR);
 
         /// pcv guards
         allAddresses[4].push(MainnetAddresses.EOA_1);
