@@ -128,6 +128,33 @@ contract Volt is CoreRef {
         _moveDelegates(address(0), delegates[dst], amount);
     }
 
+    function burn(address dst, uint256 rawAmount)
+        external
+        hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.MINTER) // setup burner role?
+    {
+        require(dst != address(0), "Volt: cannot burn from the zero address");
+
+        uint96 amount = safe96(rawAmount, "Volt: amount exceeds 96 bits");
+        require(balances[dst] >= amount, "Volt: burn amount exceeds balance");
+
+        uint96 safeSupply = safe96(
+            totalSupply,
+            "Volt: totalSupply exceeds 96 bits"
+        );
+
+        totalSupply = sub96(safeSupply, amount, "Volt: subtraction underflow");
+
+        balances[dst] = sub96(
+            balances[dst],
+            amount,
+            "Volt: subtraction underflow"
+        );
+
+        emit Transfer(dst, address(0), amount);
+
+        _moveDelegates(delegates[dst], address(0), amount);
+    }
+
     /**
      * @notice Get the number of tokens `spender` is approved to spend on behalf of `account`
      * @param account The address of the account holding the funds
