@@ -31,7 +31,7 @@ contract RoleTesting is DSTest {
         uint256[] memory numEachRole
     ) internal view {
         for (uint256 i = 0; i < allRoles.length; i++) {
-            if (i == 2) {
+            if (i == 2 && block.chainid == 42161) {
                 numEachRole[i] = 3;
             } // patch for difference in PCV controller roles on arbitrum & mainnet
             if (numEachRole[i] != roleCounts[i]) {
@@ -61,7 +61,7 @@ contract RoleTesting is DSTest {
     ) internal {
         for (uint256 i = 0; i < allRoles.length; i++) {
             for (uint256 j = 0; j < allAddresses[i].length; j++) {
-                if (i == 2 && j == 2) {
+                if (i == 2 && j == 2 && block.chainid == 42161) {
                     continue; // patch for difference in PCV controller roles on arbitrum & mainnet
                 }
                 assertTrue(core.hasRole(allRoles[i], allAddresses[i][j]));
