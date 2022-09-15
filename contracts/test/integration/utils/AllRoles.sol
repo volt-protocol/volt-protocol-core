@@ -64,7 +64,7 @@ contract AllRoles is RoleTesting, AllRolesConfig {
 
         allAddresses[2].push(ArbitrumAddresses.GOVERNOR);
         allAddresses[2].push(ArbitrumAddresses.PCV_GUARDIAN);
-        // allAddresses[2].push(ArbitrumAddresses.ERC20ALLOCATOR); // update once deployed
+        allAddresses[2].push(ArbitrumAddresses.ERC20ALLOCATOR);
 
         allAddresses[4].push(ArbitrumAddresses.EOA_1);
         allAddresses[4].push(ArbitrumAddresses.EOA_2);
