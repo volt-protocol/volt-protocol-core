@@ -22,10 +22,7 @@ contract VoltV2 is CoreRef {
 
     /// @notice Total number of tokens in circulation
     // solhint-disable-next-line const-name-snakecase
-    uint256 public totalSupply = 1_000_000_000e18; // 1 billion Volt
-
-    /// @notice Address which may mint new tokens
-    address public minter;
+    uint256 public totalSupply;
 
     /// @notice Allowance amounts on behalf of others
     mapping(address => mapping(address => uint96)) internal allowances;
@@ -126,31 +123,33 @@ contract VoltV2 is CoreRef {
         _moveDelegates(address(0), delegates[dst], amount);
     }
 
-    function burn(address dst, uint256 rawAmount)
-        external
-        hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.MINTER) // setup burner role?
-    {
-        require(dst != address(0), "Volt: cannot burn from the zero address");
+    /// @notice Burns the rawAmount of the callers tokens
+    /// @param rawAmount The amount of tokens to be burned
+    function burn(uint256 rawAmount) external {
+        _burn(msg.sender, rawAmount);
+    }
 
+    /// @notice Burns tokens 'rawAmount' of tokens from 'src' address deducting\
+    /// from the callers allowance
+    /// @param src The address the tokens will be burned from
+    /// @param rawAmount The amount of tokens to be burned
+    function burnFrom(address src, uint256 rawAmount) external {
+        address spender = msg.sender;
+        uint96 spenderAllowance = allowances[src][spender];
         uint96 amount = safe96(rawAmount, "Volt: amount exceeds 96 bits");
-        require(balances[dst] >= amount, "Volt: burn amount exceeds balance");
 
-        uint96 safeSupply = safe96(
-            totalSupply,
-            "Volt: totalSupply exceeds 96 bits"
-        );
+        if (spender != src && spenderAllowance != type(uint96).max) {
+            uint96 newAllowance = sub96(
+                spenderAllowance,
+                amount,
+                "Volt: transfer amount exceeds spender allowance"
+            );
+            allowances[src][spender] = newAllowance;
 
-        totalSupply = sub96(safeSupply, amount, "Volt: subtraction underflow");
+            emit Approval(src, spender, newAllowance);
+        }
 
-        balances[dst] = sub96(
-            balances[dst],
-            amount,
-            "Volt: subtraction underflow"
-        );
-
-        emit Transfer(dst, address(0), amount);
-
-        _moveDelegates(delegates[dst], address(0), amount);
+        _burn(src, amount);
     }
 
     /// @notice Get the number of tokens `spender` is approved to spend on behalf of `account`
@@ -381,6 +380,30 @@ contract VoltV2 is CoreRef {
             }
         }
         return checkpoints[account][lower].votes;
+    }
+
+    function _burn(address dst, uint256 rawAmount) internal {
+        require(dst != address(0), "Volt: cannot burn from the zero address");
+
+        uint96 amount = safe96(rawAmount, "Volt: amount exceeds 96 bits");
+        require(balances[dst] >= amount, "Volt: burn amount exceeds balance");
+
+        uint96 safeSupply = safe96(
+            totalSupply,
+            "Volt: totalSupply exceeds 96 bits"
+        );
+
+        totalSupply = sub96(safeSupply, amount, "Volt: subtraction underflow");
+
+        balances[dst] = sub96(
+            balances[dst],
+            amount,
+            "Volt: subtraction underflow"
+        );
+
+        emit Transfer(dst, address(0), amount);
+
+        _moveDelegates(delegates[dst], address(0), amount);
     }
 
     function _delegate(address delegator, address delegatee) internal {
