@@ -126,7 +126,8 @@ contract VoltV2 is CoreRef {
     /// @notice Burns the rawAmount of the callers tokens
     /// @param rawAmount The amount of tokens to be burned
     function burn(uint256 rawAmount) external {
-        _burn(msg.sender, rawAmount);
+        uint96 amount = safe96(rawAmount, "Volt: amount exceeds 96 bits");
+        _burn(msg.sender, amount);
     }
 
     /// @notice Burns tokens 'rawAmount' of tokens from 'src' address deducting\
@@ -134,21 +135,8 @@ contract VoltV2 is CoreRef {
     /// @param src The address the tokens will be burned from
     /// @param rawAmount The amount of tokens to be burned
     function burnFrom(address src, uint256 rawAmount) external {
-        address spender = msg.sender;
-        uint96 spenderAllowance = allowances[src][spender];
         uint96 amount = safe96(rawAmount, "Volt: amount exceeds 96 bits");
-
-        if (spender != src && spenderAllowance != type(uint96).max) {
-            uint96 newAllowance = sub96(
-                spenderAllowance,
-                amount,
-                "Volt: transfer amount exceeds spender allowance"
-            );
-            allowances[src][spender] = newAllowance;
-
-            emit Approval(src, spender, newAllowance);
-        }
-
+        _spendAllowance(src, rawAmount);
         _burn(src, amount);
     }
 
@@ -269,21 +257,8 @@ contract VoltV2 is CoreRef {
         address dst,
         uint256 rawAmount
     ) external returns (bool) {
-        address spender = msg.sender;
-        uint96 spenderAllowance = allowances[src][spender];
         uint96 amount = safe96(rawAmount, "Volt: amount exceeds 96 bits");
-
-        if (spender != src && spenderAllowance != type(uint96).max) {
-            uint96 newAllowance = sub96(
-                spenderAllowance,
-                amount,
-                "Volt: transfer amount exceeds spender allowance"
-            );
-            allowances[src][spender] = newAllowance;
-
-            emit Approval(src, spender, newAllowance);
-        }
-
+        _spendAllowance(src, rawAmount);
         _transferTokens(src, dst, amount);
         return true;
     }
@@ -382,10 +357,8 @@ contract VoltV2 is CoreRef {
         return checkpoints[account][lower].votes;
     }
 
-    function _burn(address dst, uint256 rawAmount) internal {
+    function _burn(address dst, uint96 amount) internal {
         require(dst != address(0), "Volt: cannot burn from the zero address");
-
-        uint96 amount = safe96(rawAmount, "Volt: amount exceeds 96 bits");
         require(balances[dst] >= amount, "Volt: burn amount exceeds balance");
 
         uint96 safeSupply = safe96(
@@ -404,6 +377,23 @@ contract VoltV2 is CoreRef {
         emit Transfer(dst, address(0), amount);
 
         _moveDelegates(delegates[dst], address(0), amount);
+    }
+
+    function _spendAllowance(address src, uint256 rawAmount) internal {
+        address spender = msg.sender;
+        uint96 spenderAllowance = allowances[src][spender];
+        uint96 amount = safe96(rawAmount, "Volt: amount exceeds 96 bits");
+
+        if (spender != src && spenderAllowance != type(uint96).max) {
+            uint96 newAllowance = sub96(
+                spenderAllowance,
+                amount,
+                "Volt: transfer amount exceeds spender allowance"
+            );
+            allowances[src][spender] = newAllowance;
+
+            emit Approval(src, spender, newAllowance);
+        }
     }
 
     function _delegate(address delegator, address delegatee) internal {
