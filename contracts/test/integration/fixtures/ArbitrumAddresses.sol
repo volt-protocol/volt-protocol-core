@@ -16,6 +16,10 @@ library ArbitrumAddresses {
     address public constant DEPRECATED_SCALING_PRICE_ORACLE =
         0x138F30D35557FA72478663b601f0f0FD7cc4E39E;
 
+    /// @notice ERC20ALLOCATOR
+    address public constant ERC20ALLOCATOR =
+        0x37518BbE48fEaE49ECBD83F7e9C01c1A6b4c2F69; // update with actual address once deployed
+
     /// @notice multisig governor
     address public constant GOVERNOR =
         0x1A1075cef632624153176CCf19Ae0175953CF010;
