@@ -12,6 +12,7 @@ import {DSTest} from "./../../unit/utils/DSTest.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
 import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
+import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {ITimelockSimulation} from "../utils/ITimelockSimulation.sol";
 import {ERC20CompoundPCVDeposit} from "../../../pcv/compound/ERC20CompoundPCVDeposit.sol";
@@ -23,12 +24,10 @@ contract vip11 is DSTest, IVIP {
     address private fei = MainnetAddresses.FEI;
     address private core = MainnetAddresses.CORE;
 
-    ERC20CompoundPCVDeposit private daiDeposit =
-        ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_DAI_PCV_DEPOSIT);
-    ERC20CompoundPCVDeposit private feiDeposit =
-        ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_FEI_PCV_DEPOSIT);
-    ERC20CompoundPCVDeposit private usdcDeposit =
-        ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_USDC_PCV_DEPOSIT);
+    OraclePassThrough private mainnetOPT =
+        OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
+    OraclePassThrough private arbitrumOPT =
+        OraclePassThrough(ArbitrumAddresses.ORACLE_PASS_THROUGH);
 
     ITimelockSimulation.action[] private mainnetProposal;
 
@@ -72,7 +71,12 @@ contract vip11 is DSTest, IVIP {
     function mainnetSetup() public override {}
 
     /// assert oracle pass through is pointing to correct volt system oracle
-    function mainnetValidate() public override {}
+    function mainnetValidate() public override {
+        assertEq(
+            address(mainnetOPT.scalingPriceOracle()),
+            MainnetAddresses.VOLT_SYSTEM_ORACLE_144_BIPS
+        );
+    }
 
     function getArbitrumProposal()
         public
@@ -86,5 +90,10 @@ contract vip11 is DSTest, IVIP {
     function arbitrumSetup() public override {}
 
     /// assert oracle pass through is pointing to correct volt system oracle
-    function arbitrumValidate() public override {}
+    function arbitrumValidate() public override {
+        assertEq(
+            address(arbitrumOPT.scalingPriceOracle()),
+            ArbitrumAddresses.VOLT_SYSTEM_ORACLE_144_BIPS
+        );
+    }
 }

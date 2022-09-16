@@ -17,6 +17,7 @@ import {IVolt, Volt} from "../../volt/Volt.sol";
 import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
 import {MockPCVDepositV2} from "../../mock/MockPCVDepositV2.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
+import {ArbitrumAddresses} from "./fixtures/ArbitrumAddresses.sol";
 import {VoltSystemOracle} from "../../oracle/VoltSystemOracle.sol";
 import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
 import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
@@ -26,11 +27,9 @@ import {getCore, getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fix
 
 import "hardhat/console.sol";
 
-contract IntegrationTestOracleUpgrade is TimelockSimulation, vip11 {
+contract ArbitrumTestOracleUpgrade is TimelockSimulation, vip11 {
     using SafeCast for *;
     PriceBoundPSM private psm;
-    ICore private core = ICore(MainnetAddresses.CORE);
-    ICore private feiCore = ICore(MainnetAddresses.FEI_CORE);
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
     IVolt private fei = IVolt(MainnetAddresses.FEI);
     IVolt private underlyingToken = fei;
@@ -40,13 +39,13 @@ contract IntegrationTestOracleUpgrade is TimelockSimulation, vip11 {
 
     /// @notice Oracle Pass Through contract
     OraclePassThrough public oracle =
-        OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
+        OraclePassThrough(ArbitrumAddresses.ORACLE_PASS_THROUGH);
 
     VoltSystemOracle public newOracle =
-        VoltSystemOracle(MainnetAddresses.VOLT_SYSTEM_ORACLE_144_BIPS);
+        VoltSystemOracle(ArbitrumAddresses.VOLT_SYSTEM_ORACLE_144_BIPS);
 
-    PCVGuardian private immutable mainnetPCVGuardian =
-        PCVGuardian(MainnetAddresses.PCV_GUARDIAN);
+    PCVGuardian private immutable arbitrumPCVGuardian =
+        PCVGuardian(ArbitrumAddresses.PCV_GUARDIAN);
 
     uint256 public constant startTime = 1663286400;
 
@@ -64,10 +63,10 @@ contract IntegrationTestOracleUpgrade is TimelockSimulation, vip11 {
         );
 
         simulate(
-            getMainnetProposal(),
-            TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),
-            mainnetPCVGuardian,
-            MainnetAddresses.GOVERNOR,
+            getArbitrumProposal(),
+            TimelockController(payable(ArbitrumAddresses.TIMELOCK_CONTROLLER)),
+            arbitrumPCVGuardian,
+            ArbitrumAddresses.GOVERNOR,
             MainnetAddresses.EOA_1,
             vm,
             false
@@ -75,7 +74,7 @@ contract IntegrationTestOracleUpgrade is TimelockSimulation, vip11 {
 
         assertEq(
             address(oracle.scalingPriceOracle()),
-            MainnetAddresses.VOLT_SYSTEM_ORACLE_144_BIPS
+            ArbitrumAddresses.VOLT_SYSTEM_ORACLE_144_BIPS
         );
     }
 

@@ -158,12 +158,11 @@ contract MintRedeemVerification {
                     IVolt(ArbitrumAddresses.VOLT).balanceOf(allPSMs[i]),
                     1_000e18
                 );
-                vm.startPrank(allPSMs[i]);
+                vm.prank(allPSMs[i]);
                 IVolt(ArbitrumAddresses.VOLT).transfer(
                     address(this),
                     amountVoltIn
                 );
-                vm.stopPrank();
             }
 
             _redeem(
