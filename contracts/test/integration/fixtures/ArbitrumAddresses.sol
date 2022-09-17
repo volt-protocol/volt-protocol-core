@@ -9,6 +9,8 @@ library ArbitrumAddresses {
         0xcd836280e4416e08F54E5584Bcd49Ac2E3a68747;
     address public constant VOLT_SYSTEM_ORACLE =
         0x69DBf8dD98Aa40F50E4f2263c6f2d66f26f9cb5b;
+    address public constant VOLT_SYSTEM_ORACLE_144_BIPS =
+        0x5DDf983CbD5819c13661046110EfCd2E8629d40b;
 
     /// deprecated oracles
     address public constant DEPRECATED_ORACLE_PASS_THROUGH =

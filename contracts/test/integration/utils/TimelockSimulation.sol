@@ -127,8 +127,8 @@ contract TimelockSimulation is
             postActionVerifyOracle();
 
             /// verify mints and redeems work across all PSM's
-            postActionVerifyRedeem(vm);
             postActionVerifyMint(vm, doLogging);
+            postActionVerifyRedeem(vm);
 
             if (doLogging) {
                 console.log("execute batch calldata");
