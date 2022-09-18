@@ -25,7 +25,7 @@ contract ERC20HoldingPCVDepositArbitrumTest is DSTest {
         ERC20HoldingPCVDeposit wethDeposit = new ERC20HoldingPCVDeposit(
             address(core),
             weth,
-            address(0)
+            address(weth)
         );
 
         // Forking mainnet, Foundry uses same address to deploy for all users. This contract gets deployed to
@@ -56,7 +56,7 @@ contract ERC20HoldingPCVDepositArbitrumTest is DSTest {
         ERC20HoldingPCVDeposit wethDeposit = new ERC20HoldingPCVDeposit(
             address(core),
             weth,
-            address(0)
+            address(weth)
         );
         uint256 initialEthBalance = address(wethDeposit).balance;
         assertEq(wethDeposit.balance(), 0);
