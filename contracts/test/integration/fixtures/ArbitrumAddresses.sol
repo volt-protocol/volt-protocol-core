@@ -9,6 +9,8 @@ library ArbitrumAddresses {
         0xcd836280e4416e08F54E5584Bcd49Ac2E3a68747;
     address public constant VOLT_SYSTEM_ORACLE =
         0x69DBf8dD98Aa40F50E4f2263c6f2d66f26f9cb5b;
+    address public constant VOLT_SYSTEM_ORACLE_144_BIPS =
+        0x5DDf983CbD5819c13661046110EfCd2E8629d40b;
 
     /// deprecated oracles
     address public constant DEPRECATED_ORACLE_PASS_THROUGH =
@@ -16,13 +18,21 @@ library ArbitrumAddresses {
     address public constant DEPRECATED_SCALING_PRICE_ORACLE =
         0x138F30D35557FA72478663b601f0f0FD7cc4E39E;
 
+    /// @notice ERC20ALLOCATOR
+    address public constant ERC20ALLOCATOR =
+        0x37518BbE48fEaE49ECBD83F7e9C01c1A6b4c2F69; // update with actual address once deployed
+
+    /// @notice multisig governor
     address public constant GOVERNOR =
         0x1A1075cef632624153176CCf19Ae0175953CF010;
+    /// @notice PCV Guardian smart contract
     address public constant PCV_GUARDIAN =
         0x14eCB5Ff2A78364E0FF443B7F0F6e0e393531484;
+    /// @notice deployer
     address public constant DEPLOYER =
         0x25dCffa22EEDbF0A69F6277e24C459108c186ecB;
 
+    /// @notice timelock under active use
     address public constant TIMELOCK_CONTROLLER =
         0x2c01C9166FA3e16c24c118053E346B1DD8e72dE8;
 

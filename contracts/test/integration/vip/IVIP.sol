@@ -1,6 +1,6 @@
 pragma solidity =0.8.13;
 
-import {TimelockSimulation} from "../utils/TimelockSimulation.sol";
+import {ITimelockSimulation} from "../utils/ITimelockSimulation.sol";
 
 /// @notice standard interface all VIPs must comply with
 interface IVIP {
@@ -17,11 +17,9 @@ interface IVIP {
     /// @notice get the proposal calldata
     function getMainnetProposal()
         external
-        pure
-        returns (TimelockSimulation.action[] memory proposal);
+        returns (ITimelockSimulation.action[] memory proposal);
 
     function getArbitrumProposal()
         external
-        pure
-        returns (TimelockSimulation.action[] memory proposal);
+        returns (ITimelockSimulation.action[] memory proposal);
 }

@@ -1,32 +1,43 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.0;
+pragma solidity =0.8.13;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IPCVDeposit} from "./IPCVDeposit.sol";
-import {PCVDepositV2} from "./PCVDepositV2.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IWETH} from "@uniswap/v2-periphery/contracts/interfaces/IWETH.sol";
 import {CoreRef} from "../refs/CoreRef.sol";
+import {PCVDeposit} from "./PCVDeposit.sol";
 import {TribeRoles} from "../core/TribeRoles.sol";
-import {Constants} from "../Constants.sol";
-import {IERC20HoldingPCVDeposit} from "./IERC20HoldingPCVDeposit.sol";
+import {IPCVDeposit} from "./IPCVDeposit.sol";
 import {MainnetAddresses} from "../test/integration/fixtures/MainnetAddresses.sol";
 import {ArbitrumAddresses} from "../test/integration/fixtures/ArbitrumAddresses.sol";
+import {IERC20HoldingPCVDeposit} from "./IERC20HoldingPCVDeposit.sol";
 
 /// @title ERC20HoldingPCVDeposit
 /// @notice PCVDeposit that is used to hold ERC20 tokens as a safe harbour. Deposit is a no-op
-contract ERC20HoldingPCVDeposit is PCVDepositV2, IERC20HoldingPCVDeposit {
+
+/// DO NOT USE in prod, still needs multiple code reviews. Contract is only for testing currently
+
+contract ERC20HoldingPCVDeposit is PCVDeposit, IERC20HoldingPCVDeposit {
     using SafeERC20 for IERC20;
 
     /// @notice Token which the balance is reported in
     IERC20 public immutable override token;
 
-    constructor(address _core, IERC20 _token) CoreRef(_core) {
+    /// @notice WETH contract
+    IWETH public immutable weth;
+
+    constructor(
+        address _core,
+        IERC20 _token,
+        address _weth
+    ) CoreRef(_core) {
         require(
             address(_token) != MainnetAddresses.VOLT &&
                 address(_token) != ArbitrumAddresses.VOLT,
             "VOLT not supported"
         );
         token = _token;
+        weth = IWETH(_weth);
     }
 
     /// @notice Empty receive function to receive ETH
@@ -39,7 +50,7 @@ contract ERC20HoldingPCVDeposit is PCVDepositV2, IERC20HoldingPCVDeposit {
         return token.balanceOf(address(this));
     }
 
-    /// @notice returns the resistant balance and FEI in the deposit
+    /// @notice returns the resistant balance and VOLT in the deposit
     function resistantBalanceAndVolt()
         public
         view
@@ -59,9 +70,7 @@ contract ERC20HoldingPCVDeposit is PCVDepositV2, IERC20HoldingPCVDeposit {
         external
         override(IERC20HoldingPCVDeposit, IPCVDeposit)
         whenNotPaused
-    {
-        emit Deposit(msg.sender, balance());
-    }
+    {}
 
     /// @notice Withdraw underlying
     /// @param amountUnderlying of tokens withdrawn
@@ -91,13 +100,7 @@ contract ERC20HoldingPCVDeposit is PCVDepositV2, IERC20HoldingPCVDeposit {
         uint256 ethBalance = address(this).balance;
 
         if (ethBalance != 0) {
-            if (block.chainid == 1) {
-                Constants.WETH.deposit{value: ethBalance}();
-            } else if (block.chainid == 42161) {
-                Constants.ARBITRUM_WETH.deposit{value: ethBalance}();
-            } else {
-                revert("Can only wrap eth on mainnet and arbitrum");
-            }
+            weth.deposit{value: ethBalance}();
         }
     }
 }

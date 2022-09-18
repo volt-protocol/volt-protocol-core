@@ -1,11 +1,8 @@
 import { HardhatUserConfig } from 'hardhat/config';
 import '@nomiclabs/hardhat-etherscan';
-import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
 import '@typechain/hardhat';
 import '@idle-finance/hardhat-proposals-plugin';
-import 'hardhat-gas-reporter';
-import 'hardhat-contract-sizer';
 import 'solidity-coverage';
 import 'tsconfig-paths/register';
 
@@ -23,10 +20,10 @@ const mainnetAlchemyApiKey = process.env.MAINNET_ALCHEMY_API_KEY;
 const arbitrumAlchemyApiKey = process.env.ARBITRUM_ALCHEMY_API_KEY;
 const useJSONTestReporter = process.env.REPORT_TEST_RESULTS_AS_JSON;
 
-if (!(process.env.NODE_OPTIONS && process.env.NODE_OPTIONS.includes('max-old-space-size'))) {
-  throw new Error(
-    `Please export node env var max-old-space-size before running hardhat. "export NODE_OPTIONS=--max-old-space-size=4096"`
-  );
+if (enableArbitrumForking && !arbitrumAlchemyApiKey) {
+  throw new Error('Cannot fork arbitrum without arbitrum alchemy api key.');
+} else if (enableArbitrumForking) {
+  console.log('arbitrum forking enabled');
 }
 
 if (enableMainnetForking) {
@@ -61,8 +58,7 @@ export default {
       chainId: 5777, // Any network (default: none)
       forking: enableMainnetForking
         ? {
-            url: `https://eth-mainnet.alchemyapi.io/v2/${mainnetAlchemyApiKey}`,
-            blockNumber: 15175278
+            url: `https://eth-mainnet.alchemyapi.io/v2/${mainnetAlchemyApiKey}`
           }
         : enableArbitrumForking
         ? {

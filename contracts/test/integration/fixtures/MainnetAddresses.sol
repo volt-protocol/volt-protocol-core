@@ -11,12 +11,17 @@ library MainnetAddresses {
         0xe733985a92Bfd5BC676095561BacE90E04606E4a;
     address public constant VOLT_SYSTEM_ORACLE =
         0xD4546B5B7D28aE0E048c073DCD92358721CEA8D4;
+    address public constant VOLT_SYSTEM_ORACLE_144_BIPS =
+        0xB8Ac4931A618B06498966cba3a560B867D8f567F;
 
     /// deprecated oracles
     address public constant DEPRECATED_ORACLE_PASS_THROUGH =
         0x84dc71500D504163A87756dB6368CC8bB654592f;
     address public constant DEPRECATED_SCALING_PRICE_ORACLE =
         0x79412660E95F94a4D2d02a050CEA776200939917;
+
+    address public constant ERC20ALLOCATOR =
+        0x37518BbE48fEaE49ECBD83F7e9C01c1A6b4c2F69;
 
     address public constant GOVERNOR =
         0xcBB83206698E8788F85EFbEeeCAd17e53366EBDf;
@@ -59,8 +64,6 @@ library MainnetAddresses {
 
     // ---------- COMPOUND ADDRESSES ----------
 
-    address public constant CDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
-    address public constant CUSDC = 0x39AA39c021dfbaE8faC545936693aC917d5E7563;
     address public constant COMPTROLLER =
         0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
 
@@ -94,25 +97,33 @@ library MainnetAddresses {
     // ---------- USDC ADDRESSES ----------
 
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address public constant CUSDC = 0x39AA39c021dfbaE8faC545936693aC917d5E7563;
+
+    address public constant FEI = 0x956F47F50A910163D8BF957Cf5846D573E7f87CA;
+    address public constant CFEI = 0x7713DD9Ca933848F6819F38B8352D9A15EA73F67;
+
+    address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address public constant CDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
 
     address public constant MAKER_USDC_PSM =
         0xAe2D4617c862309A3d75A0fFB358c7a5009c673F;
 
-    address public constant MAKER_GEM_JOIN =
-        0x0A59649758aa4d66E25f08Dd01271e891fe52199;
-
-    address public constant FEI = 0x956F47F50A910163D8BF957Cf5846D573E7f87CA;
-
-    address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-
     address public constant MAKER_DAI_USDC_PSM =
         0x89B78CfA322F6C5dE0aBcEecab66Aee45393cC5A;
+
     // ---------- CHAINLINK ADDRESSES ----------
 
     address public constant CHAINLINK_ORACLE_ADDRESS =
         0x049Bd8C3adC3fE7d3Fc2a44541d955A537c2A484;
 
     // ---------- PCV DEPOSIT ADDRESSES ----------
+
+    address public constant COMPOUND_DAI_PCV_DEPOSIT =
+        0xE3cbfd618463B7198fa0743AbFA56170557cc880;
+    address public constant COMPOUND_FEI_PCV_DEPOSIT =
+        0x604556Bbc4aB70B3c73d7bb6c4867B6239511301;
+    address public constant COMPOUND_USDC_PCV_DEPOSIT =
+        0x3B69e3073cf86099a9bbB650e8682D6FdCfb29db;
 
     address public constant RARI_VOLT_PCV_DEPOSIT =
         0xFeBDf448C8484834bb399d930d7E1bdC773E23bA;

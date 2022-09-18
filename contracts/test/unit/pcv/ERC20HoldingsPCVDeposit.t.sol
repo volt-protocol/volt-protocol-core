@@ -12,8 +12,6 @@ import {ERC20HoldingPCVDeposit} from "../../../pcv/ERC20HoldingPCVDeposit.sol";
 import {getCore, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
 
 contract UnitTestERC20HoldingsPCVDeposit is DSTest {
-    event Deposit(address indexed _from, uint256 _amount);
-
     ICore private core;
 
     ERC20HoldingPCVDeposit private erc20HoldingDeposit;
@@ -31,13 +29,13 @@ contract UnitTestERC20HoldingsPCVDeposit is DSTest {
 
         erc20HoldingDeposit = new ERC20HoldingPCVDeposit(
             address(core),
-            IERC20(address(token))
+            IERC20(address(token)),address(0)
         );
     }
 
     function testWrapEthFailsWhenNotOnMainnetOrArbitrum() public {
         vm.deal(address(erc20HoldingDeposit), 10 ether); /// deal some eth
-        vm.expectRevert("Can only wrap eth on mainnet and arbitrum");
+        vm.expectRevert(); /// call to address 0 fails
         erc20HoldingDeposit.wrapETH();
     }
 
@@ -69,20 +67,6 @@ contract UnitTestERC20HoldingsPCVDeposit is DSTest {
         assertEq(token.balanceOf(address(erc20HoldingDeposit)), 0);
     }
 
-    function testWithdrawAllERC20Succeeds() public {
-        uint256 tokenAmount = 10_000_000e18;
-        token.mint(address(erc20HoldingDeposit), tokenAmount);
-
-        assertEq(token.balanceOf(address(erc20HoldingDeposit)), tokenAmount);
-        assertEq(token.balanceOf(address(this)), 0);
-
-        vm.prank(addresses.governorAddress);
-        erc20HoldingDeposit.withdrawAllERC20(address(token), address(this));
-
-        assertEq(token.balanceOf(address(this)), tokenAmount);
-        assertEq(token.balanceOf(address(erc20HoldingDeposit)), 0);
-    }
-
     function testWithdrawERC20Succeeds() public {
         uint256 tokenAmount = 10_000_000e18;
         token.mint(address(erc20HoldingDeposit), tokenAmount);
@@ -90,7 +74,7 @@ contract UnitTestERC20HoldingsPCVDeposit is DSTest {
         assertEq(token.balanceOf(address(erc20HoldingDeposit)), tokenAmount);
         assertEq(token.balanceOf(address(this)), 0);
 
-        vm.prank(addresses.governorAddress);
+        vm.prank(addresses.pcvControllerAddress);
         erc20HoldingDeposit.withdrawERC20(
             address(token),
             address(this),
@@ -110,20 +94,15 @@ contract UnitTestERC20HoldingsPCVDeposit is DSTest {
         assertEq(address(erc20HoldingDeposit).balance, tokenAmount);
         assertEq(recipient.balance, 0);
 
-        vm.prank(addresses.governorAddress);
+        vm.prank(addresses.pcvControllerAddress);
         erc20HoldingDeposit.withdrawETH(recipient, tokenAmount);
 
         assertEq(address(erc20HoldingDeposit).balance, 0);
         assertEq(recipient.balance, tokenAmount);
     }
 
-    function testWithdrawAllERC20FailsNonPCVController() public {
-        vm.expectRevert("UNAUTHORIZED");
-        erc20HoldingDeposit.withdrawAllERC20(address(token), address(this));
-    }
-
     function testWithdrawERC20FailsNonPCVController() public {
-        vm.expectRevert("UNAUTHORIZED");
+        vm.expectRevert("CoreRef: Caller is not a PCV controller");
         erc20HoldingDeposit.withdrawERC20(address(token), address(this), 0);
     }
 
@@ -138,13 +117,11 @@ contract UnitTestERC20HoldingsPCVDeposit is DSTest {
     }
 
     function testWithdrawEthFailsNonPCVController() public {
-        vm.expectRevert("UNAUTHORIZED");
+        vm.expectRevert("CoreRef: Caller is not a PCV controller");
         erc20HoldingDeposit.withdrawETH(payable(address(this)), 10);
     }
 
     function testDepositNoOp() public {
-        vm.expectEmit(true, true, false, true, address(erc20HoldingDeposit));
-        emit Deposit(address(this), 0);
         erc20HoldingDeposit.deposit();
     }
 

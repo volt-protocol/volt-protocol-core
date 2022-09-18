@@ -29,7 +29,7 @@ contract IntegrationTestPriceBoundPSMDaiTest is TimelockSimulation, vip7 {
     IVolt private dai = IVolt(MainnetAddresses.DAI);
     IVolt private underlyingToken = dai;
 
-    uint256 public constant mintAmount = 10_000_000e18;
+    uint256 public constant mintAmount = 1_000_000e18;
     OraclePassThrough public oracle =
         OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
@@ -47,20 +47,9 @@ contract IntegrationTestPriceBoundPSMDaiTest is TimelockSimulation, vip7 {
         vm.startPrank(MainnetAddresses.GOVERNOR);
         core.grantMinter(MainnetAddresses.GOVERNOR);
         /// mint VOLT to the user
-        volt.mint(address(psm), mintAmount);
         volt.mint(address(this), mintAmount);
         core.revokeMinter(MainnetAddresses.GOVERNOR);
         vm.stopPrank();
-
-        simulate(
-            getMainnetProposal(),
-            TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),
-            IPCVGuardian(MainnetAddresses.PCV_GUARDIAN),
-            MainnetAddresses.GOVERNOR,
-            MainnetAddresses.EOA_1,
-            vm,
-            false
-        );
     }
 
     /// @notice PSM is set up correctly
@@ -111,6 +100,11 @@ contract IntegrationTestPriceBoundPSMDaiTest is TimelockSimulation, vip7 {
         uint256 amountStableIn = 101_000;
         uint256 amountVoltOut = psm.getMintAmountOut(amountStableIn);
 
+        uint256 startingUserVoltBalance = volt.balanceOf(address(this));
+        uint256 startingPSMUnderlyingBalance = underlyingToken.balanceOf(
+            address(psm)
+        );
+
         underlyingToken.approve(address(psm), amountStableIn);
         psm.mint(address(this), amountStableIn, amountVoltOut);
 
@@ -119,14 +113,23 @@ contract IntegrationTestPriceBoundPSMDaiTest is TimelockSimulation, vip7 {
             address(psm)
         );
 
-        assertEq(endingPSMUnderlyingBalance, amountStableIn + mintAmount * 2);
-        assertEq(endingUserVoltBalance, mintAmount + amountVoltOut);
+        assertEq(
+            endingPSMUnderlyingBalance - startingPSMUnderlyingBalance,
+            amountStableIn
+        );
+        assertEq(
+            endingUserVoltBalance - startingUserVoltBalance,
+            amountVoltOut
+        );
     }
 
     /// @notice pcv deposit receives underlying token on mint
     function testSwapUnderlyingForVolt() public {
         uint256 userStartingVoltBalance = volt.balanceOf(address(this));
         uint256 minAmountOut = psm.getMintAmountOut(mintAmount);
+        uint256 startingPSMUnderlyingBalance = underlyingToken.balanceOf(
+            address(psm)
+        );
 
         underlyingToken.approve(address(psm), mintAmount);
         uint256 amountVoltOut = psm.mint(
@@ -144,13 +147,19 @@ contract IntegrationTestPriceBoundPSMDaiTest is TimelockSimulation, vip7 {
             endingUserVOLTBalance,
             amountVoltOut + userStartingVoltBalance
         );
-        assertEq(endingPSMUnderlyingBalance, (mintAmount + mintAmount * 2));
+        assertEq(
+            endingPSMUnderlyingBalance - startingPSMUnderlyingBalance,
+            mintAmount
+        );
     }
 
     /// @notice pcv deposit gets depleted on redeem
     function testSwapVoltForUnderlying() public {
         uint256 startingUserUnderlyingBalance = underlyingToken.balanceOf(
             address(this)
+        );
+        uint256 startingPSMUnderlyingBalance = underlyingToken.balanceOf(
+            address(psm)
         );
         volt.approve(address(psm), mintAmount);
         uint256 amountOut = psm.redeem(address(this), mintAmount, mintAmount);
@@ -163,11 +172,14 @@ contract IntegrationTestPriceBoundPSMDaiTest is TimelockSimulation, vip7 {
             address(psm)
         );
 
-        assertEq(endingPSMUnderlyingBalance, mintAmount * 2 - amountOut);
+        assertEq(
+            startingPSMUnderlyingBalance - endingPSMUnderlyingBalance,
+            amountOut
+        );
         assertEq(endingUserVOLTBalance, 0);
         assertEq(
-            endingUserUnderlyingBalance,
-            startingUserUnderlyingBalance + amountOut
+            endingUserUnderlyingBalance - startingUserUnderlyingBalance,
+            amountOut
         );
     }
 

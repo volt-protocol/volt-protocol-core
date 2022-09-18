@@ -16,19 +16,19 @@ const MainnetAddresses: MainnetAddresses = {
   },
   scalingPriceOracle: {
     address: '0x79412660E95F94a4D2d02a050CEA776200939917',
-    artifactName: 'OraclePassThrough',
+    artifactName: 'IScalingPriceOracle',
     category: AddressCategory.Deprecated,
     network: Network.Mainnet
   },
   /// Current Volt System Oracle
   voltSystemOracle: {
-    address: '0xD4546B5B7D28aE0E048c073DCD92358721CEA8D4',
+    address: '0xB8Ac4931A618B06498966cba3a560B867D8f567F',
     artifactName: 'VoltSystemOracle',
     category: AddressCategory.Oracle,
     network: Network.Mainnet
   },
   /// Current Volt System Oracle Pass Through
-  voltSystemOraclePassThrough: {
+  oraclePassThrough: {
     address: '0xe733985a92Bfd5BC676095561BacE90E04606E4a',
     artifactName: 'OraclePassThrough',
     category: AddressCategory.Oracle,
@@ -76,22 +76,22 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.Core,
     network: Network.Mainnet
   },
-  voltFusePCVDeposit: {
-    address: '0xFeBDf448C8484834bb399d930d7E1bdC773E23bA',
-    artifactName: 'CompoundPCVDepositV2',
-    category: AddressCategory.Deprecated,
+  daiCompoundPCVDeposit: {
+    address: '0xE3cbfd618463B7198fa0743AbFA56170557cc880',
+    artifactName: 'ERC20CompoundPCVDeposit',
+    category: AddressCategory.PCV,
     network: Network.Mainnet
   },
-  feiFusePCVDeposit: {
-    address: '0x4188fbD7aDC72853E3275F1c3503E170994888D7',
-    artifactName: 'CompoundPCVDepositV2',
-    category: AddressCategory.Deprecated,
+  feiCompoundPCVDeposit: {
+    address: '0x604556Bbc4aB70B3c73d7bb6c4867B6239511301',
+    artifactName: 'ERC20CompoundPCVDeposit',
+    category: AddressCategory.PCV,
     network: Network.Mainnet
   },
-  nonCustodialFusePSM: {
-    address: '0x18f251FC3CE0Cb690F13f62213aba343657d0E72',
-    artifactName: 'INonCustodialPSM',
-    category: AddressCategory.Deprecated,
+  usdcCompoundPCVDeposit: {
+    address: '0x3B69e3073cf86099a9bbB650e8682D6FdCfb29db',
+    artifactName: 'ERC20CompoundPCVDeposit',
+    category: AddressCategory.PCV,
     network: Network.Mainnet
   },
   feiPriceBoundPSM: {
@@ -115,6 +115,12 @@ const MainnetAddresses: MainnetAddresses = {
   makerRouter: {
     address: '0xC403da9AaC46d3AdcD1a1bBe774601C0ddc542F7',
     artifactName: 'MakerRouter',
+    category: AddressCategory.PCV,
+    network: Network.Mainnet
+  },
+  erc20Allocator: {
+    address: '0x37518BbE48fEaE49ECBD83F7e9C01c1A6b4c2F69',
+    artifactName: 'ERC20Allocator',
     category: AddressCategory.PCV,
     network: Network.Mainnet
   },
@@ -197,6 +203,24 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.External,
     network: Network.Mainnet
   },
+  cDai: {
+    address: '0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643',
+    artifactName: 'unknown', /// CErc20Delegator
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  cFei: {
+    address: '0x7713DD9Ca933848F6819F38B8352D9A15EA73F67',
+    artifactName: 'unknown', /// CErc20Delegator
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  cUsdc: {
+    address: '0x39AA39c021dfbaE8faC545936693aC917d5E7563',
+    artifactName: 'unknown', /// CErc20Delegator
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
   pool8Fei: {
     address: '0xd8553552f8868C1Ef160eEdf031cF0BCf9686945',
     artifactName: 'unknown', /// CErc20Delegator
@@ -257,9 +281,8 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.Governance,
     network: Network.Arbitrum
   },
-
   arbitrumVoltSystemOracle: {
-    address: '0x69DBf8dD98Aa40F50E4f2263c6f2d66f26f9cb5b',
+    address: '0x5DDf983CbD5819c13661046110EfCd2E8629d40b',
     artifactName: 'VoltSystemOracle',
     category: AddressCategory.Oracle,
     network: Network.Arbitrum

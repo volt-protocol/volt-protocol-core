@@ -30,7 +30,7 @@ contract IntegrationTestMakerRouter is DSTest {
 
     uint256 public constant USDC_SCALING_FACTOR = 1e12;
 
-    uint256 public constant mintAmount = 400_000_000e18;
+    uint256 public mintAmount;
 
     function setUp() public {
         makerRouter = MakerRouter(MainnetAddresses.MAKER_ROUTER);
@@ -38,8 +38,9 @@ contract IntegrationTestMakerRouter is DSTest {
         fei.approve(address(makerRouter), type(uint256).max);
         dai.approve(address(makerRouter), type(uint256).max);
 
-        vm.prank(0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643); //cDai contract
-        dai.transfer(address(feiPSM), mintAmount + 50_000_000e18);
+        mintAmount = dai.balanceOf(MainnetAddresses.CDAI);
+        vm.prank(MainnetAddresses.CDAI);
+        dai.transfer(address(feiPSM), mintAmount);
 
         vm.prank(MainnetAddresses.FEI_GOVERNOR);
         fei.mint(address(this), mintAmount);

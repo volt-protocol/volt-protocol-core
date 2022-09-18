@@ -1,5 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity =0.8.13;
 
 import {CoreRef} from "../refs/CoreRef.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -30,8 +29,16 @@ abstract contract RateLimitedV2 is CoreRef {
     /// @notice the buffer at the timestamp of lastBufferUsedTime
     uint224 public bufferStored;
 
+    /// @notice event emitted when buffer gets eaten into
     event BufferUsed(uint256 amountUsed, uint256 bufferRemaining);
+
+    /// @notice event emitted when buffer gets replenished
+    event BufferReplenished(uint256 amountReplenished, uint256 bufferRemaining);
+
+    /// @notice event emitted when buffer cap is updated
     event BufferCapUpdate(uint256 oldBufferCap, uint256 newBufferCap);
+
+    /// @notice event emitted when rate limit per second is updated
     event RateLimitPerSecondUpdate(
         uint256 oldRateLimitPerSecond,
         uint256 newRateLimitPerSecond
@@ -64,7 +71,7 @@ abstract contract RateLimitedV2 is CoreRef {
     function setRateLimitPerSecond(uint128 newRateLimitPerSecond)
         external
         virtual
-        onlyGovernorOrAdmin
+        onlyGovernor
     {
         require(
             newRateLimitPerSecond <= MAX_RATE_LIMIT_PER_SECOND,
@@ -76,11 +83,7 @@ abstract contract RateLimitedV2 is CoreRef {
     }
 
     /// @notice set the buffer cap
-    function setBufferCap(uint128 newBufferCap)
-        external
-        virtual
-        onlyGovernorOrAdmin
-    {
+    function setBufferCap(uint128 newBufferCap) external virtual onlyGovernor {
         _setBufferCap(newBufferCap);
     }
 
@@ -99,7 +102,7 @@ abstract contract RateLimitedV2 is CoreRef {
         2. Reverts
         Depending on whether doPartialAction is true or false
     */
-    function _depleteBuffer(uint256 amount) internal virtual returns (uint256) {
+    function _depleteBuffer(uint256 amount) internal {
         uint256 newBuffer = buffer();
 
         require(newBuffer != 0, "RateLimited: no rate limit buffer");
@@ -110,8 +113,6 @@ abstract contract RateLimitedV2 is CoreRef {
         lastBufferUsedTime = block.timestamp.toUint32();
 
         emit BufferUsed(amount, bufferStored);
-
-        return amount;
     }
 
     /// @notice function to replenish buffer
@@ -123,6 +124,9 @@ abstract contract RateLimitedV2 is CoreRef {
 
         /// cannot replenish any further if already at buffer cap
         if (newBuffer == _bufferCap) {
+            /// save an SSTORE + some stack operations if buffer cannot be increased.
+            /// last buffer used time doesn't need to be updated as buffer cannot
+            /// increase past the buffer cap
             return;
         }
 
@@ -130,6 +134,8 @@ abstract contract RateLimitedV2 is CoreRef {
 
         /// ensure that bufferStored cannot be gt buffer cap
         bufferStored = Math.min(newBuffer + amount, _bufferCap).toUint224();
+
+        emit BufferReplenished(amount, bufferStored);
     }
 
     function _setRateLimitPerSecond(uint128 newRateLimitPerSecond) internal {
@@ -149,10 +155,6 @@ abstract contract RateLimitedV2 is CoreRef {
         bufferCap = newBufferCap;
 
         emit BufferCapUpdate(oldBufferCap, newBufferCap);
-    }
-
-    function _resetBuffer() internal {
-        bufferStored = bufferCap;
     }
 
     function _updateBufferStored() internal {
