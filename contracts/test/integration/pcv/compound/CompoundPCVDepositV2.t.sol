@@ -31,6 +31,6 @@ contract ERC20HoldingPCVDepositIntegrationTest is DSTest {
     /// @notice Validate can not deploy with VOLT mainnet address
     function testCanNotDeploy() public {
         vm.expectRevert(bytes("VOLT not supported"));
-        new ERC20HoldingPCVDeposit(address(core), volt,address(0));
+        new ERC20HoldingPCVDeposit(address(core), volt, address(0));
     }
 }

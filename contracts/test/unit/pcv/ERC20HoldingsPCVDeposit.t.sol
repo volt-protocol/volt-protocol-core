@@ -29,7 +29,8 @@ contract UnitTestERC20HoldingsPCVDeposit is DSTest {
 
         erc20HoldingDeposit = new ERC20HoldingPCVDeposit(
             address(core),
-            IERC20(address(token)),address(0)
+            IERC20(address(token)),
+            address(0)
         );
     }
 

@@ -24,7 +24,8 @@ contract ERC20HoldingPCVDepositArbitrumTest is DSTest {
     function testCanWrapEth() public {
         ERC20HoldingPCVDeposit wethDeposit = new ERC20HoldingPCVDeposit(
             address(core),
-            weth,address(0)
+            weth,
+            address(0)
         );
 
         // Forking mainnet, Foundry uses same address to deploy for all users. This contract gets deployed to
@@ -54,7 +55,8 @@ contract ERC20HoldingPCVDepositArbitrumTest is DSTest {
     function testCanWithdraWrappedEth() public {
         ERC20HoldingPCVDeposit wethDeposit = new ERC20HoldingPCVDeposit(
             address(core),
-            weth,address(0)
+            weth,
+            address(0)
         );
         uint256 initialEthBalance = address(wethDeposit).balance;
         assertEq(wethDeposit.balance(), 0);
@@ -84,12 +86,12 @@ contract ERC20HoldingPCVDepositArbitrumTest is DSTest {
     /// @notice Validate can not deploy with VOLT mainnet address
     function testCanNotDeployForVoltMainnet() public {
         vm.expectRevert(bytes("VOLT not supported"));
-        new ERC20HoldingPCVDeposit(address(core), volt,address(0));
+        new ERC20HoldingPCVDeposit(address(core), volt, address(0));
     }
 
     /// @notice Validate can not deploy with VOLT arbitrum address
     function testCanNotDeployForVoltArbitrum() public {
         vm.expectRevert(bytes("VOLT not supported"));
-        new ERC20HoldingPCVDeposit(address(core), arbitrumVolt,address(0));
+        new ERC20HoldingPCVDeposit(address(core), arbitrumVolt, address(0));
     }
 }
