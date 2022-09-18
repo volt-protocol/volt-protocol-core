@@ -9,6 +9,7 @@ import {Core} from "../../../core/Core.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
 import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
+import {Constants} from "../../../Constants.sol";
 
 contract ERC20HoldingPCVDepositIntegrationTest is DSTest {
     Vm public constant vm = Vm(HEVM_ADDRESS);
@@ -26,7 +27,7 @@ contract ERC20HoldingPCVDepositIntegrationTest is DSTest {
         ERC20HoldingPCVDeposit wethDeposit = new ERC20HoldingPCVDeposit(
             address(core),
             weth,
-            address(0)
+            address(Constants.WETH)
         );
 
         // Forking mainnet, Foundry uses same address to deploy for all users. This contract gets deployed to
@@ -53,11 +54,11 @@ contract ERC20HoldingPCVDepositIntegrationTest is DSTest {
     }
 
     /// @notice Validate that can withdraw ETH that was wrapped to WETH
-    function testCanWithdraWrappedEth() public {
+    function testCanWithdrawWrappedEth() public {
         ERC20HoldingPCVDeposit wethDeposit = new ERC20HoldingPCVDeposit(
             address(core),
             weth,
-            address(0)
+            address(Constants.WETH)
         );
         uint256 initialEthBalance = address(wethDeposit).balance;
         assertEq(wethDeposit.balance(), 0);
