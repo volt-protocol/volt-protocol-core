@@ -161,6 +161,12 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.External,
     network: Network.Mainnet
   },
+  makerGemJoin: {
+    address: '0x0A59649758aa4d66E25f08Dd01271e891fe52199',
+    artifactName: 'unknown',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
   feiDaiFixedPricePSM: {
     address: '0x2A188F9EB761F70ECEa083bA6c2A40145078dfc2',
     artifactName: 'unknown', /// Fixed Price PSM
