@@ -15,24 +15,48 @@ contract MigratorRouter is IMigratorRouter {
     IVolt public constant oldVolt =
         IVolt(0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18);
 
+    IPegStabilityModule public immutable daiPSM;
+    IPegStabilityModule public immutable usdcPSM;
+
     /// @notice the VOLT migrator contract
-    IVoltMigrator public constant voltMigrator =
-        IVoltMigrator(0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18); // fill with correct address once deployed
+    // IVoltMigrator public constant voltMigrator =
+    //     IVoltMigrator(0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18); // fill with correct address once deployed
+
+    // IVolt public constant newVolt =
+    //     IVolt(0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18);
+
+    /// new PSMS will be deployed will replace these addresses once they have been dpeloyed
 
     /// @notice the VOLT-DAI PSM to swap between the two assets
-    IPegStabilityModule public constant daiPSM =
-        IPegStabilityModule(0x42ea9cC945fca2dfFd0beBb7e9B3022f134d9Bdd);
+    // IPegStabilityModule public constant daiPSM =
+    //     IPegStabilityModule(0x42ea9cC945fca2dfFd0beBb7e9B3022f134d9Bdd);
 
-    /// @notice the VOLT-USDC PSM to swap between the two assets
-    IPegStabilityModule public constant usdcPSM =
-        IPegStabilityModule(0x0b9A7EA2FCA868C93640Dd77cF44df335095F501);
+    // /// @notice the VOLT-USDC PSM to swap between the two assets
+    // IPegStabilityModule public constant usdcPSM =
+    //     IPegStabilityModule(0x0b9A7EA2FCA868C93640Dd77cF44df335095F501);
+
+    address public immutable newVolt;
+    address public voltMigrator;
+
+    constructor(
+        address _newVolt,
+        address _voltMigrator,
+        IPegStabilityModule _daiPSM,
+        IPegStabilityModule _usdcPSM
+    ) {
+        newVolt = _newVolt;
+        voltMigrator = _voltMigrator;
+
+        daiPSM = _daiPSM;
+        usdcPSM = _usdcPSM;
+    }
 
     /// @notice This lets the user redeem DAI using old VOLT
     /// @param amountVoltIn the amount of old VOLT being deposited
     /// @param minAmountOut the minimum amount of DAI the user expects to receive
     function redeemDai(uint256 amountVoltIn, uint256 minAmountOut) external {
         oldVolt.transferFrom(msg.sender, address(this), amountVoltIn);
-        voltMigrator.exchange(amountVoltIn);
+        IVoltMigrator(voltMigrator).exchange(amountVoltIn);
 
         daiPSM.redeem(msg.sender, amountVoltIn, minAmountOut);
     }
@@ -42,7 +66,7 @@ contract MigratorRouter is IMigratorRouter {
     /// @param minAmountOut the minimum amount of USDC the user expects to receive
     function redeemUSDC(uint256 amountVoltIn, uint256 minAmountOut) external {
         oldVolt.transferFrom(msg.sender, address(this), amountVoltIn);
-        voltMigrator.exchange(amountVoltIn);
+        IVoltMigrator(voltMigrator).exchange(amountVoltIn);
 
         usdcPSM.redeem(msg.sender, amountVoltIn, minAmountOut);
     }
