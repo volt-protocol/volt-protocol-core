@@ -15,4 +15,7 @@ interface IDSSPSM {
 
     /// @notice mint fee
     function tout() external view returns (uint256);
+
+    /// @notice set mint or redeem fee
+    function file(bytes32 what, uint256 data) external;
 }

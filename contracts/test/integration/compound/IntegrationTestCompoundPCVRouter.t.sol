@@ -7,6 +7,7 @@ import {Vm} from "../../unit/utils/Vm.sol";
 import {Core} from "../../../core/Core.sol";
 import {CToken} from "../../../pcv/compound/CToken.sol";
 import {DSTest} from "../../unit/utils/DSTest.sol";
+import {IDSSPSM} from "./../../../pcv/maker/IDSSPSM.sol";
 import {stdError} from "../../unit/utils/StdLib.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
 import {TribeRoles} from "../../../core/TribeRoles.sol";
@@ -29,7 +30,11 @@ contract CompoundPCVRouterIntegrationTest is DSTest {
     CToken private cDai = CToken(MainnetAddresses.CDAI);
     CToken private cUsdc = CToken(MainnetAddresses.CUSDC);
 
+    IDSSPSM public immutable daiPSM =
+        IDSSPSM(0x89B78CfA322F6C5dE0aBcEecab66Aee45393cC5A);
+
     CompoundPCVRouter private compoundRouter;
+
     ERC20CompoundPCVDeposit private daiDeposit =
         ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_DAI_PCV_DEPOSIT);
     ERC20CompoundPCVDeposit private usdcDeposit =
@@ -38,6 +43,9 @@ contract CompoundPCVRouterIntegrationTest is DSTest {
     address public immutable pcvGuard = MainnetAddresses.EOA_1;
     PCVGuardian public immutable pcvGuardian =
         PCVGuardian(MainnetAddresses.PCV_GUARDIAN);
+
+    address public constant makerWard =
+        0xBE8E3e3618f7474F8cB1d074A26afFef007E98FB;
 
     /// @notice scaling factor for USDC
     uint256 public constant USDC_SCALING_FACTOR = 1e12;
@@ -163,5 +171,27 @@ contract CompoundPCVRouterIntegrationTest is DSTest {
         uint256 withdrawAmount = daiDeposit.balance();
         vm.expectRevert("UNAUTHORIZED");
         compoundRouter.swapDaiForUsdc(withdrawAmount);
+    }
+
+    function testSwapUsdcToDaiFailsTinNonZero() public {
+        vm.prank(makerWard);
+        daiPSM.file(bytes32("tin"), 1);
+
+        uint256 withdrawAmount = usdcDeposit.balance();
+
+        vm.prank(pcvGuard);
+        vm.expectRevert("CompoundPCVRouter: maker fee not 0");
+        compoundRouter.swapUsdcForDai(withdrawAmount);
+    }
+
+    function testSwapDaiToUsdcFailsToutNonZero() public {
+        vm.prank(makerWard);
+        daiPSM.file(bytes32("tout"), 1);
+
+        uint256 withdrawAmount = daiDeposit.balance();
+
+        vm.prank(pcvGuard);
+        vm.expectRevert("CompoundPCVRouter: maker fee not 0");
+        compoundRouter.swapDaiForUsdc(withdrawAmount); /// withdraw all balance
     }
 }
