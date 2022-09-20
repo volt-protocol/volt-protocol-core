@@ -18,16 +18,16 @@ import {IPegStabilityModule} from "../../peg/IPegStabilityModule.sol";
 contract CompoundPCVRouter is CoreRef {
     using SafeERC20 for IERC20;
 
-    /// @notice reference to the Maker DAI-USDC PSM that this router interacts with
-    /// @dev points to Makers DssPsm contract
-    IDSSPSM public immutable daiPSM =
-        IDSSPSM(0x89B78CfA322F6C5dE0aBcEecab66Aee45393cC5A);
-
     /// @notice reference to the Compound PCV deposit for USDC
     PCVDeposit public immutable daiPcvDeposit;
 
     /// @notice reference to the Compound PCV deposit for DAI
     PCVDeposit public immutable usdcPcvDeposit;
+
+    /// @notice reference to the Maker DAI-USDC PSM that this router interacts with
+    /// @dev points to Makers DssPsm contract
+    IDSSPSM public constant daiPSM =
+        IDSSPSM(0x89B78CfA322F6C5dE0aBcEecab66Aee45393cC5A);
 
     /// @notice reference to the DAI contract used.
     /// @dev Router can be redeployed if DAI address changes
