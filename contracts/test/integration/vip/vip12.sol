@@ -37,7 +37,7 @@ contract vip12 is DSTest, IVIP {
                     "grantPCVController(address)"
                     // MainnetAddresses.COMPOUND_PCV_ROUTER TODO on deployment
                 ),
-                description: "Grant PCV Controller to Compound PCV Router"
+                description: "Grant Compound PCV Router the PCV Controller Role"
             })
         );
     }
