@@ -36,16 +36,16 @@ contract Runner is TimelockSimulation, vip12 {
     }
 
     function testProposalArbitrum() public {
-        arbitrumSetup();
-        simulate(
-            getArbitrumProposal(),
-            TimelockController(payable(ArbitrumAddresses.TIMELOCK_CONTROLLER)),
-            arbitrumPCVGuardian,
-            ArbitrumAddresses.GOVERNOR,
-            ArbitrumAddresses.EOA_1,
-            vm,
-            true
-        );
-        arbitrumValidate();
+        // arbitrumSetup();
+        // simulate(
+        //     getArbitrumProposal(),
+        //     TimelockController(payable(ArbitrumAddresses.TIMELOCK_CONTROLLER)),
+        //     arbitrumPCVGuardian,
+        //     ArbitrumAddresses.GOVERNOR,
+        //     ArbitrumAddresses.EOA_1,
+        //     vm,
+        //     true
+        // );
+        // arbitrumValidate();
     }
 }
