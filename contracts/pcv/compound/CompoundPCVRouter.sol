@@ -20,7 +20,8 @@ contract CompoundPCVRouter is CoreRef {
 
     /// @notice reference to the Maker DAI-USDC PSM that this router interacts with
     /// @dev points to Makers DssPsm contract
-    IDSSPSM public immutable daiPSM;
+    IDSSPSM public immutable daiPSM =
+        IDSSPSM(0x89B78CfA322F6C5dE0aBcEecab66Aee45393cC5A);
 
     /// @notice reference to the Compound PCV deposit for USDC
     PCVDeposit public immutable daiPcvDeposit;
@@ -45,22 +46,20 @@ contract CompoundPCVRouter is CoreRef {
     uint256 public constant USDC_SCALING_FACTOR = 1e12;
 
     /// @param _core reference to the core contract
-    /// @param _daiPSM Maker DAO DAI PSM
     /// @param _daiPcvDeposit DAI PCV Deposit in compound
     /// @param _usdcPcvDeposit USDC PCV Deposit in compound
     constructor(
         address _core,
-        address _daiPSM,
         PCVDeposit _daiPcvDeposit,
         PCVDeposit _usdcPcvDeposit
     ) CoreRef(_core) {
-        daiPSM = IDSSPSM(_daiPSM);
         daiPcvDeposit = _daiPcvDeposit;
         usdcPcvDeposit = _usdcPcvDeposit;
     }
 
     /// @notice Function to swap cUSDC for cDAI
     /// @param amountUsdcIn the amount of USDC sold to the DAI PSM
+    /// reverts if there are any fees on redemption
     function swapUsdcForDai(uint256 amountUsdcIn)
         external
         hasAnyOfThreeRoles(
@@ -69,6 +68,8 @@ contract CompoundPCVRouter is CoreRef {
             TribeRoles.PCV_GUARD
         )
     {
+        require(daiPSM.tin() == 0, "CompoundPCVRouter: maker fee not 0");
+
         usdcPcvDeposit.withdraw(address(this), amountUsdcIn); /// pull USDC to router
         USDC.safeApprove(GEM_JOIN, amountUsdcIn); /// approve DAI PSM to spend USDC
         daiPSM.sellGem(address(daiPcvDeposit), amountUsdcIn); /// sell USDC for DAI
@@ -77,6 +78,7 @@ contract CompoundPCVRouter is CoreRef {
 
     /// @notice Function to swap cDAI for cUSDC
     /// @param amountDaiIn the amount of DAI sold to the DAI PSM in exchange for USDC
+    /// reverts if there are any fees on minting
     function swapDaiForUsdc(uint256 amountDaiIn)
         external
         hasAnyOfThreeRoles(
@@ -85,6 +87,8 @@ contract CompoundPCVRouter is CoreRef {
             TribeRoles.PCV_GUARD
         )
     {
+        require(daiPSM.tout() == 0, "CompoundPCVRouter: maker fee not 0");
+
         daiPcvDeposit.withdraw(address(this), amountDaiIn); /// pull DAI to router
         DAI.safeApprove(address(daiPSM), amountDaiIn); /// approve DAI PSM to spend DAI
         daiPSM.buyGem(

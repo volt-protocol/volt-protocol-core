@@ -41,7 +41,6 @@ contract CompoundPCVRouterIntegrationTest is DSTest {
     function setUp() public {
         compoundRouter = new CompoundPCVRouter(
             address(core),
-            MainnetAddresses.MAKER_DAI_USDC_PSM,
             daiDeposit,
             usdcDeposit
         );
@@ -77,7 +76,7 @@ contract CompoundPCVRouterIntegrationTest is DSTest {
                 .toInt256(),
             0
         );
-        assertTrue(daiDeposit.balance() < 1e18); /// assert only dust remains
+        assertTrue(daiDeposit.balance() < 10e18); /// assert only dust remains
     }
 
     function testSwapUsdcToDaiSucceeds() public {
@@ -125,7 +124,7 @@ contract CompoundPCVRouterIntegrationTest is DSTest {
                 .toInt256(),
             0
         );
-        assertTrue(daiDeposit.balance() < 1e18); /// assert only dust remains
+        assertTrue(daiDeposit.balance() < 10e18); /// assert only dust remains
     }
 
     function testSwapUsdcToDaiFailsNoLiquidity() public {

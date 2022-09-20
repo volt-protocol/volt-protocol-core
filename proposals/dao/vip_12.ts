@@ -29,7 +29,6 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
 
   const compoundPCVRouter = await compoundPCVRouterOracleFactory.deploy(
     addresses.core,
-    addresses.makerDaiUsdcPSM,
     addresses.daiCompoundPCVDeposit,
     addresses.usdcCompoundPCVDeposit
   );

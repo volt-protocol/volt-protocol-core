@@ -9,4 +9,10 @@ interface IDSSPSM {
 
     /// @notice Swap collateral type for DAI
     function sellGem(address usr, uint256 gemAmt) external;
+
+    /// @notice redeem fee
+    function tin() external view returns (uint256);
+
+    /// @notice mint fee
+    function tout() external view returns (uint256);
 }
