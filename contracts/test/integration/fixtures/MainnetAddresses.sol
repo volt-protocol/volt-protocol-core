@@ -43,8 +43,12 @@ library MainnetAddresses {
     address public constant TIMELOCK_CONTROLLER =
         0x75d078248eE49c585b73E73ab08bb3eaF93383Ae;
 
+    /// contracts that are routers and interact with maker routers
     address public constant MAKER_ROUTER =
         0xC403da9AaC46d3AdcD1a1bBe774601C0ddc542F7;
+
+    address public constant COMPOUND_PCV_ROUTER =
+        0x6338Ec144279b1f05AF8C90216d90C5b54Fa4D8F;
 
     /// current active EOA's
     address public constant OTC_LOAN_REPAYMENT =
@@ -101,6 +105,8 @@ library MainnetAddresses {
 
     address public constant MAKER_DAI_USDC_PSM =
         0x89B78CfA322F6C5dE0aBcEecab66Aee45393cC5A;
+    address public constant GEM_JOIN =
+        0x0A59649758aa4d66E25f08Dd01271e891fe52199;
 
     // ---------- CHAINLINK ADDRESSES ----------
 

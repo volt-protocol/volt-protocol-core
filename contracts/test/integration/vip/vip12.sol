@@ -14,19 +14,25 @@ import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
 import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {ITimelockSimulation} from "../utils/ITimelockSimulation.sol";
-import {ERC20CompoundPCVDeposit} from "../../../pcv/compound/ERC20CompoundPCVDeposit.sol";
+import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
 
 contract vip12 is DSTest, IVIP {
     using SafeERC20 for IERC20;
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
+    address private dai = MainnetAddresses.DAI;
     address private fei = MainnetAddresses.FEI;
+    address private usdc = MainnetAddresses.USDC;
     address private core = MainnetAddresses.CORE;
 
     OraclePassThrough private mainnetOPT =
         OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
     ITimelockSimulation.action[] private mainnetProposal;
+    address public immutable compoundPCVRouter =
+        MainnetAddresses.COMPOUND_PCV_ROUTER;
+    CompoundPCVRouter public immutable router =
+        CompoundPCVRouter(MainnetAddresses.COMPOUND_PCV_ROUTER);
 
     constructor() {
         mainnetProposal.push(
@@ -34,8 +40,8 @@ contract vip12 is DSTest, IVIP {
                 value: 0,
                 target: MainnetAddresses.CORE,
                 arguments: abi.encodeWithSignature(
-                    "grantPCVController(address)"
-                    // MainnetAddresses.COMPOUND_PCV_ROUTER TODO on deployment
+                    "grantPCVController(address)",
+                    compoundPCVRouter
                 ),
                 description: "Grant Compound PCV Router the PCV Controller Role"
             })
@@ -53,10 +59,25 @@ contract vip12 is DSTest, IVIP {
 
     function mainnetSetup() public override {}
 
-    /// TODO on deployment
     /// assert compound pcv router has pcv controller role
     /// assert all variables are correclty set in compound pcv router
-    function mainnetValidate() public override {}
+    function mainnetValidate() public override {
+        assertTrue(Core(core).isPCVController(compoundPCVRouter));
+
+        assertEq(address(router.core()), address(core));
+        assertEq(address(router.USDC()), usdc);
+        assertEq(address(router.DAI()), dai);
+        assertEq(
+            address(router.daiPcvDeposit()),
+            MainnetAddresses.COMPOUND_DAI_PCV_DEPOSIT
+        );
+        assertEq(
+            address(router.usdcPcvDeposit()),
+            MainnetAddresses.COMPOUND_USDC_PCV_DEPOSIT
+        );
+        assertEq(address(router.daiPSM()), MainnetAddresses.MAKER_DAI_USDC_PSM);
+        assertEq(address(router.GEM_JOIN()), MainnetAddresses.GEM_JOIN);
+    }
 
     function getArbitrumProposal()
         public

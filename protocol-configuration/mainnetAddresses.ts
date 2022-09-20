@@ -118,6 +118,12 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.PCV,
     network: Network.Mainnet
   },
+  compoundPCVRouter: {
+    address: '0x6338Ec144279b1f05AF8C90216d90C5b54Fa4D8F',
+    artifactName: 'CompoundPCVRouter',
+    category: AddressCategory.PCV,
+    network: Network.Mainnet
+  },
   erc20Allocator: {
     address: '0x37518BbE48fEaE49ECBD83F7e9C01c1A6b4c2F69',
     artifactName: 'ERC20Allocator',
