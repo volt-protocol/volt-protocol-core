@@ -10,4 +10,6 @@ interface CToken {
     function isCToken() external view returns (bool);
 
     function isCEther() external view returns (bool);
+
+    function accrueInterest() external returns (uint256);
 }

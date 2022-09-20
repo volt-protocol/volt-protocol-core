@@ -5,8 +5,9 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {Vm} from "../../unit/utils/Vm.sol";
 import {Core} from "../../../core/Core.sol";
-import {stdError} from "../../unit/utils/StdLib.sol";
+import {CToken} from "../../../pcv/compound/CToken.sol";
 import {DSTest} from "../../unit/utils/DSTest.sol";
+import {stdError} from "../../unit/utils/StdLib.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
 import {TribeRoles} from "../../../core/TribeRoles.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
@@ -24,6 +25,9 @@ contract CompoundPCVRouterIntegrationTest is DSTest {
     IERC20 private usdc = IERC20(MainnetAddresses.USDC);
     IERC20 private dai = IERC20(MainnetAddresses.DAI);
     address private governor = MainnetAddresses.GOVERNOR;
+
+    CToken private cDai = CToken(MainnetAddresses.CDAI);
+    CToken private cUsdc = CToken(MainnetAddresses.CUSDC);
 
     CompoundPCVRouter private compoundRouter;
     ERC20CompoundPCVDeposit private daiDeposit =
@@ -47,6 +51,9 @@ contract CompoundPCVRouterIntegrationTest is DSTest {
 
         vm.prank(governor);
         core.grantPCVController(address(compoundRouter));
+
+        cDai.accrueInterest();
+        cUsdc.accrueInterest();
     }
 
     function testSetup() public {
@@ -76,7 +83,7 @@ contract CompoundPCVRouterIntegrationTest is DSTest {
                 .toInt256(),
             0
         );
-        assertTrue(daiDeposit.balance() < 10e18); /// assert only dust remains
+        assertTrue(daiDeposit.balance() < 1e10); /// assert only dust remains
     }
 
     function testSwapUsdcToDaiSucceeds() public {
@@ -92,7 +99,8 @@ contract CompoundPCVRouterIntegrationTest is DSTest {
                 .toInt256(),
             0
         );
-        assertTrue(usdcDeposit.balance() < 1e6); /// assert only dust remains
+
+        assertTrue(usdcDeposit.balance() < 1e3); /// assert only dust remains
     }
 
     function testSwapUsdcToDaiSucceedsPCVGuard() public {
@@ -108,7 +116,7 @@ contract CompoundPCVRouterIntegrationTest is DSTest {
                 .toInt256(),
             0
         );
-        assertTrue(usdcDeposit.balance() < 1e6); /// assert only dust remains
+        assertTrue(usdcDeposit.balance() < 1e3); /// assert only dust remains
     }
 
     function testSwapDaiToUsdcSucceedsPCVGuard() public {
@@ -124,7 +132,7 @@ contract CompoundPCVRouterIntegrationTest is DSTest {
                 .toInt256(),
             0
         );
-        assertTrue(daiDeposit.balance() < 10e18); /// assert only dust remains
+        assertTrue(daiDeposit.balance() < 1e10); /// assert only dust remains
     }
 
     function testSwapUsdcToDaiFailsNoLiquidity() public {
