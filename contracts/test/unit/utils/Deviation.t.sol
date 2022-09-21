@@ -5,18 +5,16 @@ import {Vm} from "./../utils/Vm.sol";
 import "./../utils/DSTest.sol";
 import {Constants} from "./../../../Constants.sol";
 import {Deviation} from "./../../../utils/Deviation.sol";
-import {getCore, getAddresses, FeiTestAddresses} from "./../utils/Fixtures.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-contract DeviationTest is DSTest {
+contract UnitTestDeviation is DSTest {
     using SafeCast for *;
     using Deviation for *;
 
     uint256 maxDeviationThresholdBasisPoints = 10_000;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
-    FeiTestAddresses public addresses = getAddresses();
 
     function testDeviation() public {
         int256 x = 275000;
@@ -41,10 +39,6 @@ contract DeviationTest is DSTest {
         assertTrue(
             maxDeviationThresholdBasisPoints.isWithinDeviationThreshold(x, y)
         );
-    }
-
-    function testWithinDeviationFuzz(int128 x, int128 y) public view {
-        maxDeviationThresholdBasisPoints.isWithinDeviationThreshold(x, y);
     }
 
     function testOutsideDeviation() public {

@@ -20,6 +20,9 @@ interface IOraclePassThrough {
     /// @notice function to get the current oracle price for the entire system
     function getCurrentOraclePrice() external view returns (uint256);
 
+    /// @notice function to get the current oracle price for the entire system
+    function currPegPrice() external view returns (uint256);
+
     // ----------- Governor only state changing api -----------
 
     /// @notice function to update the pointer to the scaling price oracle

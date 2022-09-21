@@ -1,9 +1,28 @@
-import { Contract, ethers } from 'ethers';
-import { Core, Volt, IERC20, Vcon } from './contracts';
+import { BigNumber, ethers } from 'ethers';
+import {
+  Core,
+  Volt,
+  IERC20,
+  Vcon,
+  L2Core,
+  PCVGuardAdmin,
+  PCVGuardian,
+  OraclePassThrough,
+  PriceBoundPSM,
+  TimelockController
+} from './contracts';
 
 export type Env = {
   contracts: NamedContracts;
   contractAddresses: NamedAddresses;
+};
+
+export type ExtendedAlphaProposal = {
+  targets: string[];
+  values: BigNumber[];
+  signatures: string[];
+  calldatas: string[];
+  description: string;
 };
 
 export interface TestCoordinator {
@@ -76,11 +95,18 @@ export interface AddressConfig {
   artifactName: string;
   address: string;
   category: AddressCategory;
+  network: Network;
+}
+
+export enum Network {
+  Mainnet = 'Mainnet',
+  Arbitrum = 'Arbitrum'
 }
 
 export enum AddressCategory {
   Core = 'Core',
   Governance = 'Governance',
+  Guardian = 'Guardian',
   Peg = 'Peg',
   PCV = 'PCV',
   PCV_V1 = 'PCV_V1',
@@ -155,7 +181,18 @@ export interface MainnetContracts {
   dpi: IERC20;
   dai: IERC20;
   rai: IERC20;
+  timelockController: TimelockController;
+  arbitrumTimelockController: TimelockController;
+  optimisticTimelock: TimelockController;
+  optimisticTimelockArbitrum: TimelockController;
   curve3Metapool: IERC20;
+  arbitrumOptimisticTimelock: TimelockController;
+  arbitrumCore: L2Core;
+  arbitrumPCVGuardAdmin: PCVGuardAdmin;
+  arbitrumPCVGuardian: PCVGuardian;
+  arbitrumOraclePassThrough: OraclePassThrough;
+  arbitrumDAIPSM: PriceBoundPSM;
+  arbitrumUSDCPSM: PriceBoundPSM;
 }
 
 export interface MainnetContractAddresses {
@@ -163,7 +200,6 @@ export interface MainnetContractAddresses {
   tribe: string;
   fei: string;
   uniswapPCVDeposit: string;
-  bondingCurve: string;
   chainlinkEthUsdOracle: string;
   chainlinkFeiEthOracle: string;
   compositeOracle: string;
@@ -181,14 +217,8 @@ export interface MainnetContractAddresses {
   governorAlpha: string;
   indexCoopFusePoolDpi: string;
   reflexerStableAssetFusePoolRai: string;
-  bentoBox: string;
-  masterKashi: string;
   feiTribePair: string;
-  rariPool8Tribe: string;
-  curve3Metapool: string;
-  tribalChiefOptimisticMultisig: string;
-  stakingTokenWrapperRari: string;
-  rariRewardsDistributorDelegator: string;
+  arbitrumProtocolMultisig: string;
 }
 
 export type ContractAccessRights = {

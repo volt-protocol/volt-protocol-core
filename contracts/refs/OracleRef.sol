@@ -105,6 +105,11 @@ abstract contract OracleRef is IOracleRef, CoreRef {
         }
         require(valid, "OracleRef: oracle invalid");
 
+        // Invert the oracle price if necessary
+        if (doInvert) {
+            _peg = invert(_peg);
+        }
+
         // Scale the oracle price by token decimals delta if necessary
         uint256 scalingFactor;
         if (decimalsNormalizer < 0) {
@@ -115,10 +120,6 @@ abstract contract OracleRef is IOracleRef, CoreRef {
             _peg = _peg.mul(scalingFactor);
         }
 
-        // Invert the oracle price if necessary
-        if (doInvert) {
-            _peg = invert(_peg);
-        }
         return _peg;
     }
 

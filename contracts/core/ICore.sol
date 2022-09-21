@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
-import "./IPermissions.sol";
-import "../volt/IVolt.sol";
+import {IPermissions} from "./IPermissions.sol";
+import {IVolt, IERC20} from "../volt/IVolt.sol";
 
 /// @title Core Interface
 /// @author Fei Protocol
 interface ICore is IPermissions {
     // ----------- Events -----------
-    event VoltUpdate(address indexed _fei);
-    event VconUpdate(address indexed _tribe);
+    event VoltUpdate(IERC20 indexed _volt);
+    event VconUpdate(IERC20 indexed _vcon);
 
     // ----------- Getters -----------
 

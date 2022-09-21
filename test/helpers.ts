@@ -55,14 +55,23 @@ async function getAddresses(): Promise<NamedAddresses> {
 }
 
 async function getImpersonatedSigner(address: string): Promise<SignerWithAddress> {
-  await hre.network.provider.request({
-    method: 'hardhat_impersonateAccount',
-    params: [address]
-  });
+  await hre.network.provider.send('hardhat_setBalance', [address, ethers.utils.parseEther('10.0').toHexString()]);
 
-  const signer = await ethers.getSigner(address);
+  if (hre.network.name == 'localhost') {
+    const provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
+    await provider.send('hardhat_impersonateAccount', [address]);
+    const signer = provider.getSigner(address);
 
-  return signer;
+    return signer as unknown as SignerWithAddress;
+  } else {
+    await hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [address]
+    });
+    const signer = await ethers.getSigner(address);
+
+    return signer;
+  }
 }
 
 async function increaseTime(amount: number | string | BigNumberish): Promise<void> {

@@ -46,6 +46,11 @@ contract OraclePassThrough is IOraclePassThrough, Ownable {
         return scalingPriceOracle.getCurrentOraclePrice();
     }
 
+    /// @notice function to get the current oracle price for the entire system
+    function currPegPrice() external view override returns (uint256) {
+        return scalingPriceOracle.getCurrentOraclePrice();
+    }
+
     // ----------- Governance only state changing api -----------
 
     /// @notice function to update the pointer to the scaling price oracle
