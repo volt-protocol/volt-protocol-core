@@ -2,6 +2,7 @@
 pragma solidity ^0.8.4;
 
 import "./IOracleRef.sol";
+import "./TempCoreRef.sol";
 import "./CoreRef.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -9,7 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 /// @title Reference to an Oracle
 /// @author Fei Protocol
 /// @notice defines some utilities around interacting with the referenced oracle
-abstract contract OracleRef is IOracleRef, CoreRef {
+abstract contract OracleRef is IOracleRef, TempCoreRef {
     using Decimal for Decimal.D256;
     using SafeCast for int256;
 
@@ -35,8 +36,9 @@ abstract contract OracleRef is IOracleRef, CoreRef {
         address _oracle,
         address _backupOracle,
         int256 _decimalsNormalizer,
-        bool _doInvert
-    ) CoreRef(_core) {
+        bool _doInvert,
+        IVolt _volt
+    ) TempCoreRef(_core, _volt) {
         _setOracle(_oracle);
         if (_backupOracle != address(0) && _backupOracle != _oracle) {
             _setBackupOracle(_backupOracle);

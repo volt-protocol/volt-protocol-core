@@ -16,6 +16,8 @@ import {IPegStabilityModule} from "../../peg/IPegStabilityModule.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 import {TempCoreRef} from "../../refs/TempCoreRef.sol";
 
+import "hardhat/console.sol";
+
 contract IntegrationTestVoltMigratorRouterTest is DSTest {
     PriceBoundPSM private usdcPSM;
     PriceBoundPSM private daiPSM;
@@ -50,8 +52,6 @@ contract IntegrationTestVoltMigratorRouterTest is DSTest {
 
     function setUp() public {
         newVolt = new VoltV2(MainnetAddresses.CORE);
-        coreRef = new TempCoreRef(MainnetAddresses.CORE, newVolt);
-        voltMigrator = new VoltMigrator(address(coreRef), address(newVolt));
 
         PegStabilityModule.OracleParams memory oracleParamsUsdc;
         PegStabilityModule.OracleParams memory oracleParamsDai;
@@ -61,7 +61,8 @@ contract IntegrationTestVoltMigratorRouterTest is DSTest {
             oracleAddress: address(oracle),
             backupOracle: address(0),
             decimalsNormalizer: 12,
-            doInvert: true
+            doInvert: true,
+            volt: IVolt(address(newVolt))
         });
 
         oracleParamsDai = PegStabilityModule.OracleParams({
@@ -69,7 +70,8 @@ contract IntegrationTestVoltMigratorRouterTest is DSTest {
             oracleAddress: address(oracle),
             backupOracle: address(0),
             decimalsNormalizer: 0,
-            doInvert: true
+            doInvert: true,
+            volt: IVolt(address(newVolt))
         });
 
         usdcPSM = new PriceBoundPSM(
@@ -98,12 +100,25 @@ contract IntegrationTestVoltMigratorRouterTest is DSTest {
             compoundUsdcPcvDeposit
         );
 
+        coreRef = new TempCoreRef(
+            MainnetAddresses.CORE,
+            IVolt(address(newVolt))
+        );
+        voltMigrator = new VoltMigrator(
+            MainnetAddresses.CORE,
+            address(newVolt)
+        );
+
         migratorRouter = new MigratorRouter(
             address(newVolt),
             address(voltMigrator),
             daiPSM,
             usdcPSM
         );
+
+        uint256 balance = usdc.balanceOf(MainnetAddresses.MAKER_USDC_PSM);
+        vm.prank(MainnetAddresses.MAKER_USDC_PSM);
+        usdc.transfer(address(usdcPSM), balance);
 
         vm.startPrank(MainnetAddresses.GOVERNOR);
         core.grantMinter(MainnetAddresses.GOVERNOR);
@@ -116,7 +131,15 @@ contract IntegrationTestVoltMigratorRouterTest is DSTest {
         oldVolt.approve(address(migratorRouter), type(uint256).max);
     }
 
-    function testRedeemUsdc() public {}
+    function testRedeemUsdc() public {
+        uint256 amountVoltIn = 10_000e18;
+        uint256 minAmountOut = usdcPSM.getRedeemAmountOut(amountVoltIn);
+
+        console.log(address(migratorRouter));
+
+        migratorRouter.redeemUSDC(amountVoltIn, minAmountOut);
+        console.log(usdc.balanceOf(address(this)));
+    }
 
     function testRedeemDai() public {}
 }

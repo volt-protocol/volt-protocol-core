@@ -65,6 +65,7 @@ contract PegStabilityModule is
         address backupOracle;
         int256 decimalsNormalizer;
         bool doInvert;
+        IVolt volt;
     }
 
     /// @notice constructor
@@ -84,7 +85,8 @@ contract PegStabilityModule is
             params.oracleAddress,
             params.backupOracle,
             params.decimalsNormalizer,
-            params.doInvert
+            params.doInvert,
+            params.volt
         )
         /// rate limited minter passes false as the last param as there can be no partial mints
         RateLimitedMinter(_feiLimitPerSecond, _mintingBufferCap, false)
@@ -344,6 +346,12 @@ contract PegStabilityModule is
     }
 
     // ----------- Public View-Only API ----------
+
+    /// @notice address of the Volt contract referenced by TempCore
+    /// @return IVolt implementation address
+    function volt() public view override(CoreRef, TempCoreRef) returns (IVolt) {
+        return super.volt();
+    }
 
     /// @notice calculate the amount of FEI out for a given `amountIn` of underlying
     /// First get oracle price of token

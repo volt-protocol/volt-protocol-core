@@ -66,29 +66,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     uint256 voltCeilingPrice = 10_000; /// 1 volt for 1 fei is the minimum price
 
     function setUp() public {
-        PegStabilityModule.OracleParams memory oracleParams;
-
-        oracleParams = PegStabilityModule.OracleParams({
-            coreAddress: address(core),
-            oracleAddress: address(oracle),
-            backupOracle: address(0),
-            decimalsNormalizer: 0,
-            doInvert: true
-        });
-
-        /// create PSM
-        psm = new PriceBoundPSM(
-            voltFloorPrice,
-            voltCeilingPrice,
-            oracleParams,
-            30,
-            0,
-            10_000_000_000e18,
-            10_000e18,
-            10_000_000e18,
-            IERC20(address(fei)),
-            rariVoltPCVDeposit
-        );
+        psm = PriceBoundPSM(MainnetAddresses.VOLT_FEI_PSM);
 
         vm.prank(feiDAOTimelock);
         fei.mint(address(this), mintAmount);

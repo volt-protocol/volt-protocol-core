@@ -43,7 +43,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
 
     /// @notice Oracle Pass Through contract
     OraclePassThrough public oracle =
-        OraclePassThrough(MainnetAddresses.DEPRECATED_ORACLE_PASS_THROUGH);
+        OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
@@ -53,29 +53,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     uint256 reservesThreshold = type(uint256).max; /// max uint so that surplus can never be allocated into the pcv deposit
 
     function setUp() public {
-        PegStabilityModule.OracleParams memory oracleParams;
-
-        oracleParams = PegStabilityModule.OracleParams({
-            coreAddress: address(core),
-            oracleAddress: address(oracle),
-            backupOracle: address(0),
-            decimalsNormalizer: 12,
-            doInvert: true
-        });
-
-        /// create PSM
-        psm = new PriceBoundPSM(
-            voltFloorPrice,
-            voltCeilingPrice,
-            oracleParams,
-            30,
-            0,
-            reservesThreshold,
-            10_000e18,
-            10_000_000e18,
-            IERC20(address(usdc)),
-            rariVoltPCVDeposit
-        );
+        psm = PriceBoundPSM(MainnetAddresses.VOLT_USDC_PSM);
 
         uint256 balance = usdc.balanceOf(makerUSDCPSM);
         vm.prank(makerUSDCPSM);
@@ -102,7 +80,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
         assertEq(address(psm.oracle()), address(oracle));
         assertEq(address(psm.backupOracle()), address(0));
         assertEq(psm.decimalsNormalizer(), 12);
-        assertEq(psm.mintFeeBasisPoints(), 30); /// mint costs 30 bps
+        assertEq(psm.mintFeeBasisPoints(), 0); /// mint costs 30 bps
         assertEq(psm.redeemFeeBasisPoints(), 0); /// redeem has no fee
         assertEq(address(psm.underlyingToken()), address(usdc));
         assertEq(psm.reservesThreshold(), reservesThreshold);

@@ -2,12 +2,18 @@
 pragma solidity =0.8.13;
 
 import {CoreRef} from "./CoreRef.sol";
-import {VoltV2} from "../volt/VoltV2.sol";
+import {IVolt} from "../volt/IVolt.sol";
 
 contract TempCoreRef is CoreRef {
-    VoltV2 private immutable _volt;
+    IVolt private immutable _volt;
 
-    constructor(address core, VoltV2 volt) CoreRef(core) {
-        _volt = volt;
+    constructor(address core, IVolt voltToken) CoreRef(core) {
+        _volt = voltToken;
+    }
+
+    /// @notice address of the Volt contract referenced by Core
+    /// @return IVolt implementation address
+    function volt() public view virtual override returns (IVolt) {
+        return _volt;
     }
 }

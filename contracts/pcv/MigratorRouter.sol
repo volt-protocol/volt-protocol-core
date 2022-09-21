@@ -6,6 +6,8 @@ import {IPegStabilityModule} from "../peg/IPegStabilityModule.sol";
 import {IVolt} from "../volt/IVolt.sol";
 import {IVoltMigrator} from "../volt/IVoltMigrator.sol";
 
+import "hardhat/console.sol";
+
 /// @title Migrator Router
 /// @notice This contract is a router that wraps around the token migrator from
 /// the old volt ERC20 token to the new ERC20 token, to allow users to redeem for
@@ -49,6 +51,10 @@ contract MigratorRouter is IMigratorRouter {
 
         daiPSM = _daiPSM;
         usdcPSM = _usdcPSM;
+
+        IVolt(oldVolt).approve(voltMigrator, type(uint256).max);
+        IVolt(newVolt).approve(address(daiPSM), type(uint256).max);
+        IVolt(newVolt).approve(address(usdcPSM), type(uint256).max);
     }
 
     /// @notice This lets the user redeem DAI using old VOLT
