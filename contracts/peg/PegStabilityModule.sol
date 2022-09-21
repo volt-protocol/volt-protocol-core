@@ -2,16 +2,15 @@
 pragma solidity ^0.8.4;
 
 import "./../pcv/PCVDeposit.sol";
-import "./../volt/minter/RateLimitedMinter.sol";
 import "./IPegStabilityModule.sol";
 import "./../refs/OracleRef.sol";
 import "../Constants.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract PegStabilityModule is
     IPegStabilityModule,
-    RateLimitedMinter,
     OracleRef,
     PCVDeposit,
     ReentrancyGuard
@@ -86,8 +85,6 @@ contract PegStabilityModule is
             params.decimalsNormalizer,
             params.doInvert
         )
-        /// rate limited minter passes false as the last param as there can be no partial mints
-        RateLimitedMinter(_feiLimitPerSecond, _mintingBufferCap, false)
     {
         underlyingToken = _underlyingToken;
 
@@ -95,7 +92,6 @@ contract PegStabilityModule is
         _setMintFee(_mintFeeBasisPoints);
         _setRedeemFee(_redeemFeeBasisPoints);
         _setSurplusTarget(_surplusTarget);
-        _setContractAdminRole(keccak256("PSM_ADMIN_ROLE"));
     }
 
     /// @notice modifier that allows execution when redemptions are not paused
@@ -111,25 +107,25 @@ contract PegStabilityModule is
     }
 
     /// @notice set secondary pausable methods to paused
-    function pauseRedeem() external onlyGovernorOrGuardianOrAdmin {
+    function pauseRedeem() external onlyGuardianOrGovernor {
         redeemPaused = true;
         emit RedemptionsPaused(msg.sender);
     }
 
     /// @notice set secondary pausable methods to unpaused
-    function unpauseRedeem() external onlyGovernorOrGuardianOrAdmin {
+    function unpauseRedeem() external onlyGuardianOrGovernor {
         redeemPaused = false;
         emit RedemptionsUnpaused(msg.sender);
     }
 
     /// @notice set secondary pausable methods to paused
-    function pauseMint() external onlyGovernorOrGuardianOrAdmin {
+    function pauseMint() external onlyGuardianOrGovernor {
         mintPaused = true;
         emit MintingPaused(msg.sender);
     }
 
     /// @notice set secondary pausable methods to unpaused
-    function unpauseMint() external onlyGovernorOrGuardianOrAdmin {
+    function unpauseMint() external onlyGuardianOrGovernor {
         mintPaused = false;
         emit MintingUnpaused(msg.sender);
     }
@@ -148,7 +144,7 @@ contract PegStabilityModule is
     function setMintFee(uint256 newMintFeeBasisPoints)
         external
         override
-        onlyGovernorOrAdmin
+        onlyGovernor
     {
         _setMintFee(newMintFeeBasisPoints);
     }
@@ -157,7 +153,7 @@ contract PegStabilityModule is
     function setRedeemFee(uint256 newRedeemFeeBasisPoints)
         external
         override
-        onlyGovernorOrAdmin
+        onlyGovernor
     {
         _setRedeemFee(newRedeemFeeBasisPoints);
     }
@@ -166,7 +162,7 @@ contract PegStabilityModule is
     function setReservesThreshold(uint256 newReservesThreshold)
         external
         override
-        onlyGovernorOrAdmin
+        onlyGovernor
     {
         _setReservesThreshold(newReservesThreshold);
     }
@@ -175,7 +171,7 @@ contract PegStabilityModule is
     function setSurplusTarget(IPCVDeposit newTarget)
         external
         override
-        onlyGovernorOrAdmin
+        onlyGovernor
     {
         _setSurplusTarget(newTarget);
     }
@@ -300,7 +296,7 @@ contract PegStabilityModule is
         }
 
         if (amountFeiToMint != 0) {
-            _mintVolt(to, amountFeiToMint);
+            // _mintVolt(to, amountFeiToMint);
         }
 
         emit Mint(to, amountIn, amountFeiOut);
@@ -369,11 +365,6 @@ contract PegStabilityModule is
         returns (uint256 amountTokenOut)
     {
         amountTokenOut = _getRedeemAmountOut(amountFeiIn);
-    }
-
-    /// @notice the maximum mint amount out
-    function getMaxMintAmountOut() external view override returns (uint256) {
-        return volt().balanceOf(address(this)) + buffer();
     }
 
     /// @notice a flag for whether the current balance is above (true) or below (false) the reservesThreshold
@@ -471,14 +462,6 @@ contract PegStabilityModule is
         uint256 amount
     ) internal {
         SafeERC20.safeTransferFrom(underlyingToken, from, to, amount);
-    }
-
-    /// @notice mint amount of FEI to the specified user on a rate limit
-    function _mintVolt(address to, uint256 amount)
-        internal
-        override(CoreRef, RateLimitedMinter)
-    {
-        super._mintVolt(to, amount);
     }
 
     // ----------- Hooks -----------

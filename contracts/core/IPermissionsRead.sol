@@ -2,11 +2,9 @@
 pragma solidity ^0.8.4;
 
 /// @title Permissions Read interface
-/// @author Fei Protocol
+/// @author Fei, Volt Protocol
 interface IPermissionsRead {
     // ----------- Getters -----------
-
-    function isBurner(address _address) external view returns (bool);
 
     function isMinter(address _address) external view returns (bool);
 

@@ -1,19 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity =0.8.13;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./IPermissionsRead.sol";
 
 /// @title Permissions interface
-/// @author Fei Protocol
+/// @author Fei, Volt Protocol
 interface IPermissions is IAccessControl, IPermissionsRead {
     // ----------- Governor only state changing api -----------
 
     function createRole(bytes32 role, bytes32 adminRole) external;
 
     function grantMinter(address minter) external;
-
-    function grantBurner(address burner) external;
 
     function grantPCVController(address pcvController) external;
 
@@ -22,8 +20,6 @@ interface IPermissions is IAccessControl, IPermissionsRead {
     function grantGuardian(address guardian) external;
 
     function revokeMinter(address minter) external;
-
-    function revokeBurner(address burner) external;
 
     function revokePCVController(address pcvController) external;
 
@@ -40,8 +36,6 @@ interface IPermissions is IAccessControl, IPermissionsRead {
     function GUARDIAN_ROLE() external view returns (bytes32);
 
     function GOVERN_ROLE() external view returns (bytes32);
-
-    function BURNER_ROLE() external view returns (bytes32);
 
     function MINTER_ROLE() external view returns (bytes32);
 

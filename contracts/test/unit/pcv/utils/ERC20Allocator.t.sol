@@ -4,7 +4,7 @@ import {Vm} from "./../../utils/Vm.sol";
 import {ICore} from "../../../../core/ICore.sol";
 import {DSTest} from "./../../utils/DSTest.sol";
 import {MockERC20} from "../../../../mock/MockERC20.sol";
-import {TribeRoles} from "../../../../core/TribeRoles.sol";
+import {VoltRoles} from "../../../../core/VoltRoles.sol";
 import {ERC20Allocator} from "../../../../pcv/utils/ERC20Allocator.sol";
 import {PCVGuardAdmin} from "../../../../pcv/PCVGuardAdmin.sol";
 import {PCVDeposit} from "../../../../pcv/PCVDeposit.sol";

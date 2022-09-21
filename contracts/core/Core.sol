@@ -17,9 +17,7 @@ contract Core is ICore, Permissions, Initializable {
     /// @notice the address of the Vcon contract
     IERC20 public override vcon;
 
-    function init() external initializer {
-        volt = new Volt(address(this));
-        /// msg.sender already has the VOLT Minting abilities, so grant them governor as well
+    constructor() Permissions() {
         _setupGovernor(msg.sender);
     }
 
@@ -28,5 +26,12 @@ contract Core is ICore, Permissions, Initializable {
         vcon = _vcon;
 
         emit VconUpdate(_vcon);
+    }
+
+    /// @notice governor only function to set the VOLT token
+    function setVolt(IVolt _volt) external onlyGovernor {
+        volt = _volt;
+
+        emit VoltUpdate(IERC20(address(_volt)));
     }
 }

@@ -70,9 +70,6 @@ interface IPegStabilityModule {
         view
         returns (uint256 amountOut);
 
-    /// @notice the maximum mint amount out
-    function getMaxMintAmountOut() external view returns (uint256);
-
     /// @notice a flag for whether the current balance is above (true) or below and equal (false) to the reservesThreshold
     function hasSurplus() external view returns (bool);
 

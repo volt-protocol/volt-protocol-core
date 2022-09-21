@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity =0.8.13;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import "../refs/CoreRef.sol";
+import {IERC20, ERC20, ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import {CoreRef} from "../refs/CoreRef.sol";
+import {IVolt} from "./IVolt.sol";
 
-/// @title FEI stablecoin
-/// @author Fei Protocol
+/// @title Volt stablecoin
+/// @author Fei, Volt Protocol
 contract Volt is IVolt, ERC20Burnable, CoreRef {
     // solhint-disable-next-line var-name-mixedcase
     bytes32 public DOMAIN_SEPARATOR;
@@ -14,8 +15,8 @@ contract Volt is IVolt, ERC20Burnable, CoreRef {
         0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
     mapping(address => uint256) public nonces;
 
-    /// @notice Fei token constructor
-    /// @param core Fei Core address to reference
+    /// @notice Volt token constructor
+    /// @param core Volt Core address to reference
     constructor(address core) ERC20("VOLT", "VOLT") CoreRef(core) {
         uint256 chainId;
         // solhint-disable-next-line no-inline-assembly

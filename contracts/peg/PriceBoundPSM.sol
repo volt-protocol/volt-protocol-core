@@ -54,7 +54,7 @@ contract PriceBoundPSM is PegStabilityModule, IPriceBound {
     function setOracleFloorBasisPoints(uint256 newFloorBasisPoints)
         external
         override
-        onlyGovernorOrAdmin
+        onlyGovernor
     {
         _setFloorBasisPoints(newFloorBasisPoints);
     }
@@ -63,7 +63,7 @@ contract PriceBoundPSM is PegStabilityModule, IPriceBound {
     function setOracleCeilingBasisPoints(uint256 newCeilingBasisPoints)
         external
         override
-        onlyGovernorOrAdmin
+        onlyGovernor
     {
         _setCeilingBasisPoints(newCeilingBasisPoints);
     }

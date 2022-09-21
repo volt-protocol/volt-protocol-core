@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity =0.8.13;
 
-import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
-import "./IPermissions.sol";
+import {AccessControlEnumerable} from "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
+import {IPermissions} from "./IPermissions.sol";
 
 /// @title Access control module for Core
-/// @author Fei Protocol
+/// @author Fei, Volt Protocol
 contract Permissions is IPermissions, AccessControlEnumerable {
-    bytes32 public constant override BURNER_ROLE = keccak256("BURNER_ROLE");
     bytes32 public constant override MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant override PCV_CONTROLLER_ROLE =
         keccak256("PCV_CONTROLLER_ROLE");
@@ -19,7 +18,6 @@ contract Permissions is IPermissions, AccessControlEnumerable {
         _setupGovernor(address(this));
 
         _setRoleAdmin(MINTER_ROLE, GOVERN_ROLE);
-        _setRoleAdmin(BURNER_ROLE, GOVERN_ROLE);
         _setRoleAdmin(PCV_CONTROLLER_ROLE, GOVERN_ROLE);
         _setRoleAdmin(GOVERN_ROLE, GOVERN_ROLE);
         _setRoleAdmin(GUARDIAN_ROLE, GOVERN_ROLE);
@@ -56,13 +54,7 @@ contract Permissions is IPermissions, AccessControlEnumerable {
     /// @notice grants minter role to address
     /// @param minter new minter
     function grantMinter(address minter) external override onlyGovernor {
-        grantRole(MINTER_ROLE, minter);
-    }
-
-    /// @notice grants burner role to address
-    /// @param burner new burner
-    function grantBurner(address burner) external override onlyGovernor {
-        grantRole(BURNER_ROLE, burner);
+        _grantRole(MINTER_ROLE, minter);
     }
 
     /// @notice grants controller role to address
@@ -72,31 +64,25 @@ contract Permissions is IPermissions, AccessControlEnumerable {
         override
         onlyGovernor
     {
-        grantRole(PCV_CONTROLLER_ROLE, pcvController);
+        _grantRole(PCV_CONTROLLER_ROLE, pcvController);
     }
 
     /// @notice grants governor role to address
     /// @param governor new governor
     function grantGovernor(address governor) external override onlyGovernor {
-        grantRole(GOVERN_ROLE, governor);
+        _grantRole(GOVERN_ROLE, governor);
     }
 
     /// @notice grants guardian role to address
     /// @param guardian new guardian
     function grantGuardian(address guardian) external override onlyGovernor {
-        grantRole(GUARDIAN_ROLE, guardian);
+        _grantRole(GUARDIAN_ROLE, guardian);
     }
 
     /// @notice revokes minter role from address
     /// @param minter ex minter
     function revokeMinter(address minter) external override onlyGovernor {
-        revokeRole(MINTER_ROLE, minter);
-    }
-
-    /// @notice revokes burner role from address
-    /// @param burner ex burner
-    function revokeBurner(address burner) external override onlyGovernor {
-        revokeRole(BURNER_ROLE, burner);
+        _revokeRole(MINTER_ROLE, minter);
     }
 
     /// @notice revokes pcvController role from address
@@ -106,19 +92,19 @@ contract Permissions is IPermissions, AccessControlEnumerable {
         override
         onlyGovernor
     {
-        revokeRole(PCV_CONTROLLER_ROLE, pcvController);
+        _revokeRole(PCV_CONTROLLER_ROLE, pcvController);
     }
 
     /// @notice revokes governor role from address
     /// @param governor ex governor
     function revokeGovernor(address governor) external override onlyGovernor {
-        revokeRole(GOVERN_ROLE, governor);
+        _revokeRole(GOVERN_ROLE, governor);
     }
 
     /// @notice revokes guardian role from address
     /// @param guardian ex guardian
     function revokeGuardian(address guardian) external override onlyGovernor {
-        revokeRole(GUARDIAN_ROLE, guardian);
+        _revokeRole(GUARDIAN_ROLE, guardian);
     }
 
     /// @notice revokes a role from address
@@ -150,20 +136,6 @@ contract Permissions is IPermissions, AccessControlEnumerable {
         returns (bool)
     {
         return hasRole(MINTER_ROLE, _address);
-    }
-
-    /// @notice checks if address is a burner
-    /// @param _address address to check
-    /// @return true _address is a burner
-    // only virtual for testing mock override
-    function isBurner(address _address)
-        external
-        view
-        virtual
-        override
-        returns (bool)
-    {
-        return hasRole(BURNER_ROLE, _address);
     }
 
     /// @notice checks if address is a controller

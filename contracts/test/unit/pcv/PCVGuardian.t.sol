@@ -6,7 +6,7 @@ import {PCVGuardAdmin} from "../../../pcv/PCVGuardAdmin.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
 import {MockPCVDepositV2} from "../../../mock/MockPCVDepositV2.sol";
 import {getCore, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
-import {TribeRoles} from "../../../core/TribeRoles.sol";
+import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {ICore} from "../../../core/ICore.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {Vm} from "./../utils/Vm.sol";
@@ -59,11 +59,11 @@ contract UnitTestPCVGuardian is DSTest {
         core.grantGuardian(address(pcvGuardian));
 
         // create the PCV_GUARD_ADMIN role and grant it to the PCVGuardAdmin contract
-        core.createRole(TribeRoles.PCV_GUARD_ADMIN, TribeRoles.GOVERNOR);
-        core.grantRole(TribeRoles.PCV_GUARD_ADMIN, address(pcvGuardAdmin));
+        core.createRole(VoltRoles.PCV_GUARD_ADMIN, VoltRoles.GOVERNOR);
+        core.grantRole(VoltRoles.PCV_GUARD_ADMIN, address(pcvGuardAdmin));
 
         // create the PCV guard role, and grant it to the 'guard' address
-        core.createRole(TribeRoles.PCV_GUARD, TribeRoles.PCV_GUARD_ADMIN);
+        core.createRole(VoltRoles.PCV_GUARD, VoltRoles.PCV_GUARD_ADMIN);
         pcvGuardAdmin.grantPCVGuardRole(guard);
 
         underlyingToken.mint(address(pcvDeposit), mintAmount);
@@ -79,7 +79,7 @@ contract UnitTestPCVGuardian is DSTest {
 
     function testPCVGuardAdminRole() public {
         assertTrue(
-            core.hasRole(TribeRoles.PCV_GUARD_ADMIN, address(pcvGuardAdmin))
+            core.hasRole(VoltRoles.PCV_GUARD_ADMIN, address(pcvGuardAdmin))
         );
     }
 

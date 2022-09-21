@@ -17,7 +17,6 @@ struct VoltTestAddresses {
     address keeperAddress;
     address pcvControllerAddress;
     address minterAddress;
-    address burnerAddress;
     address guardianAddress;
     address voltGovernorAddress;
     address voltDeployerAddress;
@@ -41,10 +40,9 @@ function getAddresses() pure returns (VoltTestAddresses memory) {
         keeperAddress: address(0x7),
         pcvControllerAddress: address(0x8),
         minterAddress: address(0x9),
-        burnerAddress: address(0x10),
-        guardianAddress: address(0x11),
-        voltGovernorAddress: address(0x12),
-        voltDeployerAddress: address(0x13)
+        guardianAddress: address(0x10),
+        voltGovernorAddress: address(0x11),
+        voltDeployerAddress: address(0x12)
     });
 
     return addresses;
@@ -72,7 +70,6 @@ function getMainnetAddresses() pure returns (VoltTestAddresses memory) {
             0xd51dbA7a94e1adEa403553A8235C302cEbF41a3c
         ),
         minterAddress: address(0xd51dbA7a94e1adEa403553A8235C302cEbF41a3c),
-        burnerAddress: address(0x10),
         guardianAddress: address(0x2c2b362e6ae0F080F39b90Cb5657E5550090D6C3),
         voltGovernorAddress: address(
             0xcBB83206698E8788F85EFbEeeCAd17e53366EBDf
@@ -94,12 +91,10 @@ function getCore() returns (Core) {
     // Deploy Core from Governor address
     vm.startPrank(addresses.governorAddress);
     Core core = new Core();
-    core.init();
     Vcon vcon = new Vcon(addresses.governorAddress, addresses.governorAddress);
 
     core.setVcon(IERC20(address(vcon)));
     core.grantMinter(addresses.minterAddress);
-    core.grantBurner(addresses.burnerAddress);
     core.grantPCVController(addresses.pcvControllerAddress);
     core.grantGuardian(addresses.guardianAddress);
 
@@ -124,7 +119,6 @@ function getL2Core() returns (L2Core) {
 
     core.setVcon(IERC20(address(vcon)));
     core.grantMinter(addresses.minterAddress);
-    core.grantBurner(addresses.burnerAddress);
     core.grantPCVController(addresses.pcvControllerAddress);
     core.grantGuardian(addresses.guardianAddress);
 

@@ -6,7 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IWETH} from "@uniswap/v2-periphery/contracts/interfaces/IWETH.sol";
 import {CoreRef} from "../refs/CoreRef.sol";
 import {PCVDeposit} from "./PCVDeposit.sol";
-import {TribeRoles} from "../core/TribeRoles.sol";
+import {VoltRoles} from "../core/VoltRoles.sol";
 import {IPCVDeposit} from "./IPCVDeposit.sol";
 import {MainnetAddresses} from "../test/integration/fixtures/MainnetAddresses.sol";
 import {ArbitrumAddresses} from "../test/integration/fixtures/ArbitrumAddresses.sol";
@@ -78,7 +78,7 @@ contract ERC20HoldingPCVDeposit is PCVDeposit, IERC20HoldingPCVDeposit {
     function withdraw(address to, uint256 amountUnderlying)
         external
         override(IERC20HoldingPCVDeposit, IPCVDeposit)
-        hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
+        hasAnyOfTwoRoles(VoltRoles.GOVERNOR, VoltRoles.PCV_CONTROLLER)
     {
         token.safeTransfer(to, amountUnderlying);
         emit Withdrawal(msg.sender, to, amountUnderlying);
@@ -88,7 +88,7 @@ contract ERC20HoldingPCVDeposit is PCVDeposit, IERC20HoldingPCVDeposit {
     /// @param to the address to send PCV to
     function withdrawAll(address to)
         external
-        hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
+        hasAnyOfTwoRoles(VoltRoles.GOVERNOR, VoltRoles.PCV_CONTROLLER)
     {
         uint256 amountUnderlying = token.balanceOf(address(this));
         token.safeTransfer(to, amountUnderlying);

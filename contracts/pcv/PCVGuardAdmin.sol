@@ -3,7 +3,7 @@ pragma solidity ^0.8.4;
 
 import {IPCVGuardAdmin} from "./IPCVGuardAdmin.sol";
 import {CoreRef} from "../refs/CoreRef.sol";
-import {TribeRoles} from "../core/TribeRoles.sol";
+import {VoltRoles} from "../core/VoltRoles.sol";
 import {ICore} from "../core/ICore.sol";
 
 /// @title PCV Guard Admin
@@ -23,7 +23,7 @@ contract PCVGuardAdmin is IPCVGuardAdmin, CoreRef {
         override
         onlyGovernor
     {
-        core().grantRole(TribeRoles.PCV_GUARD, newGuard);
+        core().grantRole(VoltRoles.PCV_GUARD, newGuard);
     }
 
     // ---------- Governor-Or-Guardian-Only State-Changing API ----------
@@ -35,6 +35,6 @@ contract PCVGuardAdmin is IPCVGuardAdmin, CoreRef {
         override
         onlyGuardianOrGovernor
     {
-        core().revokeRole(TribeRoles.PCV_GUARD, oldGuard);
+        core().revokeRole(VoltRoles.PCV_GUARD, oldGuard);
     }
 }

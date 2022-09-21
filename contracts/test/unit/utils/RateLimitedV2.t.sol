@@ -8,7 +8,7 @@ import {Vm} from "./Vm.sol";
 import {ICore} from "../../../core/ICore.sol";
 import {DSTest} from "./DSTest.sol";
 import {PCVDeposit} from "../../../pcv/PCVDeposit.sol";
-import {TribeRoles} from "../../../core/TribeRoles.sol";
+import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {PCVGuardAdmin} from "../../../pcv/PCVGuardAdmin.sol";
 import {ERC20Allocator} from "../../../pcv/utils/ERC20Allocator.sol";
 import {MockRateLimitedV2} from "../../../mock/MockRateLimitedV2.sol";

@@ -4,7 +4,7 @@ pragma solidity ^0.8.4;
 import {Core} from "../../../core/Core.sol";
 import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
-import {TribeRoles} from "../../../core/TribeRoles.sol";
+import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {DSTest} from "./../../unit/utils/DSTest.sol";
 import {L2Core} from "../../../core/L2Core.sol";
 import {Core} from "../../../core/Core.sol";

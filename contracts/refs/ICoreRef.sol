@@ -1,29 +1,28 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity =0.8.13;
 
-import "../core/ICore.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ICore} from "../core/ICore.sol";
+import {IVolt} from "../volt/IVolt.sol";
 
 /// @title CoreRef interface
-/// @author Fei Protocol
+/// @author (s) Fei Protocol, Volt Protocol
 interface ICoreRef {
     // ----------- Events -----------
 
     event CoreUpdate(address indexed oldCore, address indexed newCore);
-
-    event ContractAdminRoleUpdate(
-        bytes32 indexed oldContractAdminRole,
-        bytes32 indexed newContractAdminRole
-    );
-
-    // ----------- Governor only state changing api -----------
-
-    function setContractAdminRole(bytes32 newContractAdminRole) external;
 
     // ----------- Governor or Guardian only state changing api -----------
 
     function pause() external;
 
     function unpause() external;
+
+    function sweep(
+        address token,
+        address to,
+        uint256 amount
+    ) external;
 
     // ----------- Getters -----------
 
@@ -36,8 +35,4 @@ interface ICoreRef {
     function voltBalance() external view returns (uint256);
 
     function vconBalance() external view returns (uint256);
-
-    function CONTRACT_ADMIN_ROLE() external view returns (bytes32);
-
-    function isContractAdmin(address admin) external view returns (bool);
 }

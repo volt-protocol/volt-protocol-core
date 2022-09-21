@@ -48,13 +48,6 @@ contract MockCore is Permissions, Initializable {
         return true;
     }
 
-    /// @notice checks if address is a burner
-    /// @return true _address is a burner
-    // only virtual for testing mock override
-    function isBurner(address) external view virtual override returns (bool) {
-        return true;
-    }
-
     /// @notice checks if address is a controller
     /// @return true _address is a controller
     // only virtual for testing mock override

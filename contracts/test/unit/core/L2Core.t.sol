@@ -40,14 +40,12 @@ contract UnitTestL2Core is DSTest {
         bytes32 governRole = core.GOVERN_ROLE();
         /// assert all roles have the proper admin
         assertEq(core.getRoleAdmin(core.GOVERN_ROLE()), governRole);
-        assertEq(core.getRoleAdmin(core.BURNER_ROLE()), governRole);
         assertEq(core.getRoleAdmin(core.MINTER_ROLE()), governRole);
         assertEq(core.getRoleAdmin(core.GUARDIAN_ROLE()), governRole);
         assertEq(core.getRoleAdmin(core.PCV_CONTROLLER_ROLE()), governRole);
 
         /// assert there is only 1 of each role
         assertEq(core.getRoleMemberCount(governRole), 2); /// msg.sender of contract and core is governor
-        assertEq(core.getRoleMemberCount(core.BURNER_ROLE()), 0); /// this role has not been granted
         assertEq(core.getRoleMemberCount(core.MINTER_ROLE()), 0); /// this role has not been granted
         assertEq(core.getRoleMemberCount(core.GUARDIAN_ROLE()), 0); /// this role has not been granted
         assertEq(core.getRoleMemberCount(core.PCV_CONTROLLER_ROLE()), 0); /// this role has not been granted

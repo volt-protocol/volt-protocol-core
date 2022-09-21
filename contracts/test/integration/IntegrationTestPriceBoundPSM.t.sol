@@ -127,21 +127,6 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     }
 
     /// @notice PSM is set up correctly and view functions are working
-    function testGetMaxMintAmountOut() public {
-        uint256 startingBalance = volt.balanceOf(address(psm));
-        assertEq(psm.getMaxMintAmountOut(), bufferCap + startingBalance);
-
-        vm.startPrank(MainnetAddresses.GOVERNOR);
-        volt.mint(address(psm), mintAmount);
-        vm.stopPrank();
-
-        assertEq(
-            psm.getMaxMintAmountOut(),
-            bufferCap + mintAmount + startingBalance
-        );
-    }
-
-    /// @notice PSM is set up correctly and view functions are working
     function testGetMintAmountOut() public {
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
 
