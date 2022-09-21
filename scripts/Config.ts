@@ -2,12 +2,11 @@ import { ethers } from 'ethers';
 
 const config = {
   /// Volt System Oracle Params
-  STARTING_ORACLE_PRICE: '1054710229549539283', /// pay out 92 bips for July 15th through August 2nd
-  ORACLE_PERIOD_START_TIME: '1659466800', /// August 2nd start time
-  MONTHLY_CHANGE_RATE_BASIS_POINTS: 5, /// AAVE Trailing 30 Day Average yield is 60 bips per year
+  STARTING_ORACLE_PRICE: '1055476736004932282',
+  ORACLE_PERIOD_START_TIME: '1663286400', /// September 13th, 12pm pst start time
+  MONTHLY_CHANGE_RATE_BASIS_POINTS: 12, /// Compound Trailing 30 Day Average DAI yield is ~1.5% per year, 150 bips
 
   /// Mainnet
-  MAINNET_DEPLOYMENT: true,
   CHAINLINK_FEE: ethers.utils.parseEther('10'),
   CHAINLINK_ORACLE_ADDRESS: '0x049bd8c3adc3fe7d3fc2a44541d955a537c2a484',
   ORACLE_PASS_THROUGH_ADDRESS: '0x84dc71500D504163A87756dB6368CC8bB654592f',

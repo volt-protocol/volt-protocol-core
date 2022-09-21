@@ -17,11 +17,9 @@ interface IVIP {
     /// @notice get the proposal calldata
     function getMainnetProposal()
         external
-        pure
         returns (ITimelockSimulation.action[] memory proposal);
 
     function getArbitrumProposal()
         external
-        pure
         returns (ITimelockSimulation.action[] memory proposal);
 }

@@ -122,7 +122,7 @@ contract PCVGuardVerification is DSTest {
     }
 
     /// @notice call after governance action to verify oracle values
-    function postActionVerifyPCV(Vm vm) internal {
+    function postActionVerifyPCV(Vm vm, bool doLogging) internal {
         address[] storage allDeposits = block.chainid == 1
             ? allMainnetPCVDeposits
             : allArbitrumPCVDeposits;
@@ -137,9 +137,9 @@ contract PCVGuardVerification is DSTest {
                 deposit.balanceReportedIn() == MainnetAddresses.USDC ||
                 deposit.balanceReportedIn() == ArbitrumAddresses.USDC
             ) {
-                totalPCVPre += deposit.balance() * 1e12;
+                totalPCVPost += deposit.balance() * 1e12;
             } else {
-                totalPCVPre += deposit.balance();
+                totalPCVPost += deposit.balance();
             }
         }
 
@@ -169,17 +169,19 @@ contract PCVGuardVerification is DSTest {
             }
         }
 
-        console.log("\n ~~~ PCV Stats ~~~");
-        console.log("pcv pre proposal: ", totalPCVPre);
-        console.log("pcv post proposal: ", totalPCVPost);
-        console.log(
-            "actual slippage: ",
-            Deviation.calculateDeviationThresholdBasisPoints(
-                totalPCVPost.toInt256(),
-                totalPCVPre.toInt256()
-            )
-        );
-        console.log("");
+        if (doLogging) {
+            console.log("\n ~~~ PCV Stats ~~~");
+            console.log("pcv pre proposal: ", totalPCVPre);
+            console.log("pcv post proposal: ", totalPCVPost);
+            console.log(
+                "actual slippage: ",
+                Deviation.calculateDeviationThresholdBasisPoints(
+                    totalPCVPost.toInt256(),
+                    totalPCVPre.toInt256()
+                )
+            );
+            console.log("");
+        }
 
         /// allow 3 bips slippage per proposal
         require(
@@ -197,11 +199,23 @@ contract PCVGuardVerification is DSTest {
     }
 
     function simulateAllWithdrawals(Vm vm) external {
-        for (uint256 i = 0; i < allMainnetPCVDeposits.length; i++) {
+        address[] storage allDeposits = block.chainid == 1
+            ? allMainnetPCVDeposits
+            : allArbitrumPCVDeposits;
+
+        for (uint256 i = 0; i < allDeposits.length; i++) {
+            /// currently there is no fei liquidity, so this withdraw all action will fail
+            if (
+                MainnetAddresses.COMPOUND_FEI_PCV_DEPOSIT ==
+                address(allDeposits[i])
+            ) {
+                continue;
+            }
             vm.prank(MainnetAddresses.EOA_1);
-            PCVGuardian(MainnetAddresses.PCV_GUARDIAN).withdrawAllToSafeAddress(
-                    allMainnetPCVDeposits[i]
-                );
+            address pcvGuardian = block.chainid == 1
+                ? MainnetAddresses.PCV_GUARDIAN
+                : ArbitrumAddresses.PCV_GUARDIAN;
+            PCVGuardian(pcvGuardian).withdrawAllToSafeAddress(allDeposits[i]);
         }
 
         revert("success"); /// always revert so as not to mess up mint and redeem tests

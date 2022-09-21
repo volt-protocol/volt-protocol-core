@@ -21,6 +21,12 @@ const mainnetAlchemyApiKey = process.env.MAINNET_ALCHEMY_API_KEY;
 const arbitrumAlchemyApiKey = process.env.ARBITRUM_ALCHEMY_API_KEY;
 const useJSONTestReporter = process.env.REPORT_TEST_RESULTS_AS_JSON;
 
+if (enableArbitrumForking && !arbitrumAlchemyApiKey) {
+  throw new Error('Cannot fork arbitrum without arbitrum alchemy api key.');
+} else if (enableArbitrumForking) {
+  console.log('arbitrum forking enabled');
+}
+
 if (enableMainnetForking) {
   if (!mainnetAlchemyApiKey) {
     throw new Error('Cannot fork mainnet without mainnet alchemy api key.');
@@ -67,8 +73,7 @@ export default {
       chainId: 5777, // Any network (default: none)
       forking: enableMainnetForking
         ? {
-            url: `https://eth-mainnet.alchemyapi.io/v2/${mainnetAlchemyApiKey}`,
-            blockNumber: 15175278
+            url: `https://eth-mainnet.alchemyapi.io/v2/${mainnetAlchemyApiKey}`
           }
         : enableArbitrumForking
         ? {

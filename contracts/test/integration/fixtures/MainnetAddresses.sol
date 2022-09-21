@@ -11,12 +11,17 @@ library MainnetAddresses {
         0xe733985a92Bfd5BC676095561BacE90E04606E4a;
     address public constant VOLT_SYSTEM_ORACLE =
         0xD4546B5B7D28aE0E048c073DCD92358721CEA8D4;
+    address public constant VOLT_SYSTEM_ORACLE_144_BIPS =
+        0xB8Ac4931A618B06498966cba3a560B867D8f567F;
 
     /// deprecated oracles
     address public constant DEPRECATED_ORACLE_PASS_THROUGH =
         0x84dc71500D504163A87756dB6368CC8bB654592f;
     address public constant DEPRECATED_SCALING_PRICE_ORACLE =
         0x79412660E95F94a4D2d02a050CEA776200939917;
+
+    address public constant ERC20ALLOCATOR =
+        0x37518BbE48fEaE49ECBD83F7e9C01c1A6b4c2F69;
 
     address public constant GOVERNOR =
         0xcBB83206698E8788F85EFbEeeCAd17e53366EBDf;
