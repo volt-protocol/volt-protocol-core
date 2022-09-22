@@ -98,6 +98,10 @@ contract VoltV2 is CoreRef {
         hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.MINTER)
     {
         require(dst != address(0), "Volt: cannot transfer to the zero address");
+        require(
+            dst != address(this),
+            "Volt: cannot transfer to the volt contract"
+        );
 
         // mint the amount
         uint96 amount = safe96(rawAmount, "Volt: amount exceeds 96 bits");
@@ -357,9 +361,9 @@ contract VoltV2 is CoreRef {
         return checkpoints[account][lower].votes;
     }
 
-    function _burn(address dst, uint96 amount) internal {
-        require(dst != address(0), "Volt: cannot burn from the zero address");
-        require(balances[dst] >= amount, "Volt: burn amount exceeds balance");
+    function _burn(address src, uint96 amount) internal {
+        require(src != address(0), "Volt: cannot burn from the zero address");
+        require(balances[src] >= amount, "Volt: burn amount exceeds balance");
 
         uint96 safeSupply = safe96(
             totalSupply,
@@ -368,15 +372,15 @@ contract VoltV2 is CoreRef {
 
         totalSupply = sub96(safeSupply, amount, "Volt: subtraction underflow");
 
-        balances[dst] = sub96(
-            balances[dst],
+        balances[src] = sub96(
+            balances[src],
             amount,
             "Volt: subtraction underflow"
         );
 
-        emit Transfer(dst, address(0), amount);
+        emit Transfer(src, address(0), amount);
 
-        _moveDelegates(delegates[dst], address(0), amount);
+        _moveDelegates(delegates[src], address(0), amount);
     }
 
     function _spendAllowance(address src, uint256 rawAmount) internal {
@@ -416,6 +420,10 @@ contract VoltV2 is CoreRef {
             "Volt: cannot transfer from the zero address"
         );
         require(dst != address(0), "Volt: cannot transfer to the zero address");
+        require(
+            dst != address(this),
+            "Volt: cannot transfer to the volt contract"
+        );
 
         balances[src] = sub96(
             balances[src],

@@ -27,13 +27,13 @@ contract IntegrationTestVoltMigratorRouterTest is DSTest {
     TempCoreRef private coreRef;
 
     /// @notice Oracle Pass Through contract
-    OraclePassThrough public oracle =
+    OraclePassThrough private oracle =
         OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
-    ERC20CompoundPCVDeposit public immutable compoundUsdcPcvDeposit =
+    ERC20CompoundPCVDeposit private compoundUsdcPcvDeposit =
         ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_USDC_PCV_DEPOSIT);
 
-    ERC20CompoundPCVDeposit public immutable compoundDaiPcvDeposit =
+    ERC20CompoundPCVDeposit private compoundDaiPcvDeposit =
         ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_DAI_PCV_DEPOSIT);
 
     IVolt oldVolt = IVolt(MainnetAddresses.VOLT);
@@ -55,8 +55,10 @@ contract IntegrationTestVoltMigratorRouterTest is DSTest {
     uint256 reservesThreshold = type(uint256).max; /// max uint so that surplus can never be allocated into the pcv deposit
 
     function setUp() public {
+        // Deploy new volt token
         newVolt = new VoltV2(MainnetAddresses.CORE);
 
+        // Deploy new PSMs
         PegStabilityModule.OracleParams memory oracleParamsUsdc;
         PegStabilityModule.OracleParams memory oracleParamsDai;
 
@@ -104,15 +106,19 @@ contract IntegrationTestVoltMigratorRouterTest is DSTest {
             compoundUsdcPcvDeposit
         );
 
+        // Deploy TempCoreRef
         coreRef = new TempCoreRef(
             MainnetAddresses.CORE,
             IVolt(address(newVolt))
         );
+
+        // Deploy Volt Migrator
         voltMigrator = new VoltMigrator(
             MainnetAddresses.CORE,
             address(newVolt)
         );
 
+        // Deploy Migrator Router
         migratorRouter = new MigratorRouter(
             address(newVolt),
             address(voltMigrator),
@@ -120,6 +126,7 @@ contract IntegrationTestVoltMigratorRouterTest is DSTest {
             usdcPSM
         );
 
+        // Grant stablecoin balances to PSMs
         uint256 balance = usdc.balanceOf(MainnetAddresses.MAKER_USDC_PSM);
         vm.prank(MainnetAddresses.MAKER_USDC_PSM);
         usdc.transfer(address(usdcPSM), balance);
@@ -128,6 +135,7 @@ contract IntegrationTestVoltMigratorRouterTest is DSTest {
         vm.prank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
         dai.transfer(address(daiPSM), balance);
 
+        // Grant old volt balance to user, and new volt balance to migrator
         vm.startPrank(MainnetAddresses.GOVERNOR);
         core.grantMinter(MainnetAddresses.GOVERNOR);
         // mint old volt to user
@@ -136,6 +144,7 @@ contract IntegrationTestVoltMigratorRouterTest is DSTest {
         newVolt.mint(address(voltMigrator), mintAmount);
         vm.stopPrank();
 
+        // approve migratorRouter to use users old volt
         oldVolt.approve(address(migratorRouter), type(uint256).max);
     }
 

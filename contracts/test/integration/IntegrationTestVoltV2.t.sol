@@ -46,9 +46,16 @@ contract IntegrationTestVoltV2 is DSTest {
         assertEq(volt.balanceOf(address(0xFFF)), 1e18);
     }
 
-    function testMintFailure() public {
+    function testMintFailureUnauthorized() public {
         vm.expectRevert("UNAUTHORIZED");
         volt.mint(address(0xFFF), 1e18);
+    }
+
+    function testMintFailToVoltContract() public {
+        vm.startPrank(MainnetAddresses.GOVERNOR);
+        vm.expectRevert("Volt: cannot transfer to the volt contract");
+        volt.mint(address(volt), 1e18);
+        vm.stopPrank();
     }
 
     function testBurn() public {
@@ -147,6 +154,11 @@ contract IntegrationTestVoltV2 is DSTest {
         volt.transfer(address(0xFFF), 1e18);
     }
 
+    function testTransferFailToVoltContract() public {
+        vm.expectRevert("Volt: cannot transfer to the volt contract");
+        volt.transfer(address(volt), 1e18);
+    }
+
     function testTransferFrom() public {
         address from = address(0xFFF);
         vm.prank(MainnetAddresses.GOVERNOR);
@@ -204,6 +216,19 @@ contract IntegrationTestVoltV2 is DSTest {
 
         vm.expectRevert("Volt: transfer amount exceeds spender allowance");
         volt.transferFrom(from, address(this), 1e18);
+    }
+
+    function testTransferFromFailToVoltContract() public {
+        address from = address(0xFFF);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        volt.mint(from, 1e18);
+
+        vm.prank(from);
+        volt.approve(address(this), 1e18);
+
+        vm.expectRevert("Volt: cannot transfer to the volt contract");
+        volt.transferFrom(from, address(volt), 1e18);
     }
 
     function testPermit() public {
