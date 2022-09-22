@@ -19,7 +19,7 @@ Only the VOLT timelock can change the address of the VoltSystemOracle in the Ora
 VOLT has undergone extensive internal review within the TRIBE DAO and has undergone an audit from Zellic and Code4rena.
 
 ## Whitepaper
-VOLT Protocol [Whitepaper](https://github.com/volt-protocol/whitepaper/blob/main/volt.md)
+VOLT Protocol [Whitepaper](https://github.com/volt-protocol/whitepaper)
 
 ## Dependencies
  Note that this has only been tested on Linux; you may encounter issues running on other operating systems.

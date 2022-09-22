@@ -22,22 +22,28 @@ contract MintRedeemVerification {
         MainnetAddresses.VOLT_USDC_PSM
     ];
 
-    /// @notice amount of volt to redeem for
-    uint256 private amountVoltIn = 10_000e18;
-
-    /// @notice amount of dai to mint volt with
-    uint256 private amountDaiIn = 1_000_000e18;
-
-    uint256[] private amountsIn = [1_000_000e18, 1_000_000e6];
+    address[] private allArbitrumPSMs = [
+        ArbitrumAddresses.VOLT_DAI_PSM,
+        ArbitrumAddresses.VOLT_USDC_PSM
+    ];
 
     ICore private core = ICore(MainnetAddresses.CORE);
+    ICore private arbitrumCore = ICore(ArbitrumAddresses.CORE);
     IERC20 private dai = IERC20(MainnetAddresses.DAI);
     IERC20 private usdc = IERC20(MainnetAddresses.USDC);
-    IERC20 private volt = IVolt(MainnetAddresses.VOLT);
 
-    IERC20[] private tokensIn = [dai, usdc];
+    IERC20[] private tokensInMainnet = [dai, usdc];
+    IERC20[] private tokensInAbitrum = [
+        IERC20(ArbitrumAddresses.DAI),
+        IERC20(ArbitrumAddresses.USDC)
+    ];
 
-    function _redeem(PriceBoundPSM psm, IERC20 underlying) private {
+    function _redeem(
+        PriceBoundPSM psm,
+        IERC20 underlying,
+        IERC20 volt,
+        uint256 amountVoltIn
+    ) private {
         uint256 startingUserUnderlyingBalance = underlying.balanceOf(
             address(this)
         );
@@ -69,7 +75,7 @@ contract MintRedeemVerification {
             "RedeemVerification: a0"
         );
         require(
-            endingUserVOLTBalance == startingUserVoltBalance - amountVoltIn,
+            endingUserVOLTBalance == (startingUserVoltBalance - amountVoltIn),
             "RedeemVerification: a1"
         );
         require(
@@ -86,6 +92,7 @@ contract MintRedeemVerification {
     function _mint(
         PriceBoundPSM psm,
         IERC20 underlying,
+        IERC20 volt,
         uint256 amountUnderlyingIn,
         bool doLogging
     ) private {
@@ -127,13 +134,43 @@ contract MintRedeemVerification {
 
     /// @notice call after governance action to verify redeem values
     function doRedeem(Vm vm) external {
-        for (uint256 i = 0; i < allMainnetPSMs.length; i++) {
-            vm.startPrank(MainnetAddresses.GOVERNOR);
-            core.grantMinter(MainnetAddresses.GOVERNOR);
-            IVolt(address(volt)).mint(address(this), amountVoltIn);
-            vm.stopPrank();
+        address[] storage allPSMs = block.chainid == 1
+            ? allMainnetPSMs
+            : allArbitrumPSMs;
+        IERC20[] storage allTokens = block.chainid == 1
+            ? tokensInMainnet
+            : tokensInAbitrum;
+        IERC20 volt = block.chainid == 1
+            ? IVolt(MainnetAddresses.VOLT)
+            : IVolt(ArbitrumAddresses.VOLT);
 
-            _redeem(PriceBoundPSM(allMainnetPSMs[i]), tokensIn[i]);
+        for (uint256 i = 0; i < allPSMs.length; i++) {
+            uint256 amountVoltIn;
+
+            if (block.chainid == 1) {
+                amountVoltIn = 10_000e18;
+                vm.startPrank(MainnetAddresses.GOVERNOR);
+                core.grantMinter(MainnetAddresses.GOVERNOR);
+                IVolt(address(volt)).mint(address(this), amountVoltIn);
+                vm.stopPrank();
+            } else {
+                amountVoltIn = Math.min(
+                    IVolt(ArbitrumAddresses.VOLT).balanceOf(allPSMs[i]),
+                    1_000e18
+                );
+                vm.prank(allPSMs[i]);
+                IVolt(ArbitrumAddresses.VOLT).transfer(
+                    address(this),
+                    amountVoltIn
+                );
+            }
+
+            _redeem(
+                PriceBoundPSM(allPSMs[i]),
+                allTokens[i],
+                volt,
+                amountVoltIn
+            );
         }
 
         revert("successfully redeemed on all PSMs");
@@ -146,20 +183,32 @@ contract MintRedeemVerification {
     }
 
     function doMint(Vm vm, bool doLogging) external {
-        for (uint256 i = 0; i < allMainnetPSMs.length; i++) {
+        address[] storage allPSMs = block.chainid == 1
+            ? allMainnetPSMs
+            : allArbitrumPSMs;
+        IERC20[] storage allTokens = block.chainid == 1
+            ? tokensInMainnet
+            : tokensInAbitrum;
+        IERC20 volt = block.chainid == 1
+            ? IVolt(MainnetAddresses.VOLT)
+            : IVolt(ArbitrumAddresses.VOLT);
+
+        for (uint256 i = 0; i < allPSMs.length; i++) {
             /// pull all tokens from psm into this address and use them to purchase VOLT
-            uint256 amountIn = tokensIn[i].balanceOf(allMainnetPSMs[i]);
-            vm.prank(allMainnetPSMs[i]);
-            tokensIn[i].transfer(address(this), amountIn);
+            uint256 amountIn = allTokens[i].balanceOf(allPSMs[i]);
+            vm.prank(allPSMs[i]);
+            allTokens[i].transfer(address(this), amountIn);
 
             /// figure out how many volt we can purchase
-            uint256 psmVoltBalance = volt.balanceOf(allMainnetPSMs[i]);
-            uint256 maxAmountIn = PriceBoundPSM(allMainnetPSMs[i])
-                .getRedeemAmountOut(psmVoltBalance);
+            uint256 psmVoltBalance = volt.balanceOf(allPSMs[i]);
+            uint256 maxAmountIn = PriceBoundPSM(allPSMs[i]).getRedeemAmountOut(
+                psmVoltBalance
+            );
 
             _mint(
-                PriceBoundPSM(allMainnetPSMs[i]),
-                tokensIn[i],
+                PriceBoundPSM(allPSMs[i]),
+                allTokens[i],
+                volt,
                 Math.min(maxAmountIn, amountIn),
                 doLogging
             );

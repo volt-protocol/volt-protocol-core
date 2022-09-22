@@ -5,6 +5,7 @@ import '@typechain/hardhat';
 import '@idle-finance/hardhat-proposals-plugin';
 import 'solidity-coverage';
 import 'tsconfig-paths/register';
+import '@primitivefi/hardhat-dodoc';
 
 import * as dotenv from 'dotenv';
 
@@ -19,6 +20,12 @@ const enableArbitrumForking = process.env.ENABLE_ARBITRUM_FORKING;
 const mainnetAlchemyApiKey = process.env.MAINNET_ALCHEMY_API_KEY;
 const arbitrumAlchemyApiKey = process.env.ARBITRUM_ALCHEMY_API_KEY;
 const useJSONTestReporter = process.env.REPORT_TEST_RESULTS_AS_JSON;
+
+if (enableArbitrumForking && !arbitrumAlchemyApiKey) {
+  throw new Error('Cannot fork arbitrum without arbitrum alchemy api key.');
+} else if (enableArbitrumForking) {
+  console.log('arbitrum forking enabled');
+}
 
 if (enableMainnetForking) {
   if (!mainnetAlchemyApiKey) {
@@ -35,6 +42,20 @@ if (useJSONTestReporter) {
 }
 
 export default {
+  dodoc: {
+    runOnCompile: false,
+    debugMode: false,
+    include: [
+      'contracts/core',
+      'contracts/libs',
+      'contracts/oracle',
+      'contracts/pcv',
+      'contracts/peg',
+      'contracts/refs',
+      'contracts/utils'
+    ]
+    // More options...
+  },
   etherscan: {
     apiKey: {
       // Your API key for Etherscan

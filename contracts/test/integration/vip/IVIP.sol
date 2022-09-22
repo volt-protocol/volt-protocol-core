@@ -21,6 +21,5 @@ interface IVIP {
 
     function getArbitrumProposal()
         external
-        pure
         returns (ITimelockSimulation.action[] memory proposal);
 }
