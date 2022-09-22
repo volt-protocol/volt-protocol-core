@@ -46,8 +46,12 @@ contract IntegrationTestVoltMigratorRouterTest is DSTest {
     uint256 public constant mintAmount = 100_000_000e18;
 
     /// these are inverted
-    uint256 voltFloorPrice = 9_000e12; /// 1 volt for .9 usdc is the max allowable price
-    uint256 voltCeilingPrice = 10_000e12; /// 1 volt for 1 usdc is the minimum price
+    uint256 voltDaiFloorPrice = 9_000; /// 1 volt for .9 dai is the max allowable price
+    uint256 voltDaiCeilingPrice = 10_000; /// 1 volt for 1 dai is the minimum price
+
+    uint256 voltUsdcFloorPrice = 9_000e12; /// 1 volt for .9 usdc is the max allowable price
+    uint256 voltUsdcCeilingPrice = 10_000e12; /// 1 volt for 1 usdc is the minimum price
+
     uint256 reservesThreshold = type(uint256).max; /// max uint so that surplus can never be allocated into the pcv deposit
 
     function setUp() public {
@@ -75,10 +79,10 @@ contract IntegrationTestVoltMigratorRouterTest is DSTest {
         });
 
         usdcPSM = new PriceBoundPSM(
-            voltFloorPrice,
-            voltCeilingPrice,
+            voltUsdcFloorPrice,
+            voltUsdcCeilingPrice,
             oracleParamsUsdc,
-            30,
+            0,
             0,
             reservesThreshold,
             10_000e18,
@@ -88,10 +92,10 @@ contract IntegrationTestVoltMigratorRouterTest is DSTest {
         );
 
         daiPSM = new PriceBoundPSM(
-            voltFloorPrice,
-            voltCeilingPrice,
+            voltDaiFloorPrice,
+            voltDaiCeilingPrice,
             oracleParamsDai,
-            30,
+            0,
             0,
             reservesThreshold,
             10_000e18,
@@ -120,6 +124,10 @@ contract IntegrationTestVoltMigratorRouterTest is DSTest {
         vm.prank(MainnetAddresses.MAKER_USDC_PSM);
         usdc.transfer(address(usdcPSM), balance);
 
+        balance = dai.balanceOf(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
+        vm.prank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
+        dai.transfer(address(daiPSM), balance);
+
         vm.startPrank(MainnetAddresses.GOVERNOR);
         core.grantMinter(MainnetAddresses.GOVERNOR);
         // mint old volt to user
@@ -131,15 +139,15 @@ contract IntegrationTestVoltMigratorRouterTest is DSTest {
         oldVolt.approve(address(migratorRouter), type(uint256).max);
     }
 
-    function testRedeemUsdc() public {
-        uint256 amountVoltIn = 10_000e18;
+    function testRedeemUsdc(uint64 amountVoltIn) public {
         uint256 minAmountOut = usdcPSM.getRedeemAmountOut(amountVoltIn);
 
-        console.log(address(migratorRouter));
-
         migratorRouter.redeemUSDC(amountVoltIn, minAmountOut);
-        console.log(usdc.balanceOf(address(this)));
     }
 
-    function testRedeemDai() public {}
+    function testRedeemDai(uint64 amountVoltIn) public {
+        uint256 minAmountOut = daiPSM.getRedeemAmountOut(amountVoltIn);
+
+        migratorRouter.redeemDai(amountVoltIn, minAmountOut);
+    }
 }
