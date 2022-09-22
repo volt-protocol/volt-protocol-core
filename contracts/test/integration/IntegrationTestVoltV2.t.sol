@@ -58,6 +58,13 @@ contract IntegrationTestVoltV2 is DSTest {
         vm.stopPrank();
     }
 
+    function testMintFailZeroAddress() public {
+        vm.startPrank(MainnetAddresses.GOVERNOR);
+        vm.expectRevert("Volt: cannot transfer to the zero address");
+        volt.mint(address(0), 1e18);
+        vm.stopPrank();
+    }
+
     function testBurn() public {
         vm.prank(MainnetAddresses.GOVERNOR);
         volt.mint(address(this), 1e18);
@@ -75,6 +82,13 @@ contract IntegrationTestVoltV2 is DSTest {
         volt.burn(2e18);
     }
 
+    function testBurnFailZeroAddress() public {
+        vm.startPrank(address(0));
+        vm.expectRevert("Volt: cannot burn from the zero address");
+        volt.burn(1e18);
+        vm.stopPrank();
+    }
+
     function testBurnFrom() public {
         address from = address(0xFFF);
         vm.prank(MainnetAddresses.GOVERNOR);
@@ -89,6 +103,17 @@ contract IntegrationTestVoltV2 is DSTest {
         assertEq(volt.balanceOf(from), 0);
         assertEq(volt.allowance(from, address(this)), 0);
         assertEq(volt.totalSupply(), 0);
+    }
+
+    function testBurnFromFailAddressZero() public {
+        address from = address(0);
+
+        vm.prank(from);
+        volt.approve(address(this), 1e18);
+        assertEq(volt.allowance(from, address(this)), 1e18);
+
+        vm.expectRevert("Volt: cannot burn from the zero address");
+        volt.burnFrom(from, 1e18);
     }
 
     function testBurnFromInfiniteApprovall() public {
@@ -157,6 +182,18 @@ contract IntegrationTestVoltV2 is DSTest {
     function testTransferFailToVoltContract() public {
         vm.expectRevert("Volt: cannot transfer to the volt contract");
         volt.transfer(address(volt), 1e18);
+    }
+
+    function testTransferFailToZeroAddress() public {
+        vm.expectRevert("Volt: cannot transfer to the zero address");
+        volt.transfer(address(0), 1e18);
+    }
+
+    function testTransferFailFromZeroAddress() public {
+        vm.startPrank(address(0));
+        vm.expectRevert("Volt: cannot transfer from the zero address");
+        volt.transfer(address(0), 1e18);
+        vm.stopPrank();
     }
 
     function testTransferFrom() public {
