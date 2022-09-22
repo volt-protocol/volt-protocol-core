@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity =0.8.13;
 
-import "./IPCVDepositBalances.sol";
+import {IPCVDepositBalances} from "./IPCVDepositBalances.sol";
 
 /// @title a PCV Deposit interface
 /// @author Fei Protocol
