@@ -396,7 +396,6 @@ contract VoltV2 is CoreRef {
             src != address(0),
             "Volt: cannot transfer from the zero address"
         );
-        require(dst != address(0), "Volt: cannot transfer to the zero address");
         require(
             dst != address(this),
             "Volt: cannot transfer to the volt contract"

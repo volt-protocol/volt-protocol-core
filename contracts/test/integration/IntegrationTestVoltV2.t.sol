@@ -180,11 +180,6 @@ contract IntegrationTestVoltV2 is DSTest {
         volt.transfer(address(volt), 1e18);
     }
 
-    function testTransferFailToZeroAddress() public {
-        vm.expectRevert("Volt: cannot transfer to the zero address");
-        volt.transfer(address(0), 1e18);
-    }
-
     function testTransferFailFromZeroAddress() public {
         vm.startPrank(address(0));
         vm.expectRevert("Volt: cannot transfer from the zero address");
