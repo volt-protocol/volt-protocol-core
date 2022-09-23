@@ -357,15 +357,6 @@ contract IntegrationTestVoltV2 is DSTest {
         volt.permit(owner, address(this), 1e18, timestamp, v, r, s);
     }
 
-    function getChainId() internal view returns (uint256) {
-        uint256 chainId;
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            chainId := chainid()
-        }
-        return chainId;
-    }
-
     function getDomainSeperator()
         internal
         view
@@ -375,7 +366,7 @@ contract IntegrationTestVoltV2 is DSTest {
             abi.encode(
                 volt.DOMAIN_TYPEHASH(),
                 keccak256(bytes(volt.name())),
-                getChainId(),
+                block.chainid,
                 address(volt)
             )
         );

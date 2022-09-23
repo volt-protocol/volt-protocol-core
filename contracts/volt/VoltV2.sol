@@ -199,7 +199,7 @@ contract VoltV2 is CoreRef {
             abi.encode(
                 DOMAIN_TYPEHASH,
                 keccak256(bytes(name)),
-                getChainId(),
+                block.chainid,
                 address(this)
             )
         );
@@ -284,7 +284,7 @@ contract VoltV2 is CoreRef {
             abi.encode(
                 DOMAIN_TYPEHASH,
                 keccak256(bytes(name)),
-                getChainId(),
+                block.chainid,
                 address(this)
             )
         );
@@ -462,14 +462,5 @@ contract VoltV2 is CoreRef {
         }
 
         emit DelegateVotesChanged(delegatee, oldVotes, newVotes);
-    }
-
-    function getChainId() internal view returns (uint256) {
-        uint256 chainId;
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            chainId := chainid()
-        }
-        return chainId;
     }
 }
