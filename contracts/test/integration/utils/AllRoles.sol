@@ -36,6 +36,8 @@ contract AllRoles is RoleTesting, AllRolesConfig {
 
         allAddresses[2].push(MainnetAddresses.GOVERNOR);
         allAddresses[2].push(MainnetAddresses.PCV_GUARDIAN);
+        allAddresses[2].push(MainnetAddresses.ERC20ALLOCATOR);
+        allAddresses[2].push(MainnetAddresses.COMPOUND_PCV_ROUTER);
 
         allAddresses[4].push(MainnetAddresses.EOA_1);
         allAddresses[4].push(MainnetAddresses.EOA_2);
@@ -64,7 +66,8 @@ contract AllRoles is RoleTesting, AllRolesConfig {
 
         allAddresses[2].push(ArbitrumAddresses.GOVERNOR);
         allAddresses[2].push(ArbitrumAddresses.PCV_GUARDIAN);
-        allAddresses[2].push(ArbitrumAddresses.ERC20ALLOCATOR);
+        allAddresses[2].push(MainnetAddresses.ERC20ALLOCATOR);
+        allAddresses[2].push(MainnetAddresses.COMPOUND_PCV_ROUTER);
 
         allAddresses[4].push(ArbitrumAddresses.EOA_1);
         allAddresses[4].push(ArbitrumAddresses.EOA_2);
