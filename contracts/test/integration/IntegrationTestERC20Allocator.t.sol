@@ -21,8 +21,10 @@ import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposi
 
 import "hardhat/console.sol";
 
-contract IntegrationTestERC20Allocator is TimelockSimulation, vip10 {
+contract IntegrationTestERC20Allocator is DSTest {
     using SafeCast for *;
+
+    Vm public constant vm = Vm(HEVM_ADDRESS);
 
     PCVGuardian private immutable mainnetPCVGuardian =
         PCVGuardian(MainnetAddresses.PCV_GUARDIAN);
@@ -62,15 +64,12 @@ contract IntegrationTestERC20Allocator is TimelockSimulation, vip10 {
     uint128 public constant bufferCap = 300_000e18;
 
     function setUp() public {
-        simulate(
-            getMainnetProposal(),
-            TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),
-            mainnetPCVGuardian,
-            MainnetAddresses.GOVERNOR,
-            MainnetAddresses.EOA_1,
-            vm,
-            false /// no logging
+        uint256 usdcBalance = usdc.balanceOf(
+            MainnetAddresses.KRAKEN_USDC_WHALE
         );
+        vm.prank(MainnetAddresses.KRAKEN_USDC_WHALE);
+        usdc.transfer(address(usdcDeposit), usdcBalance);
+        usdcDeposit.deposit();
     }
 
     function testSetup() public {

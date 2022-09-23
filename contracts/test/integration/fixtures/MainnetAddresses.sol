@@ -100,7 +100,7 @@ library MainnetAddresses {
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address public constant CDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
 
-    address public constant MAKER_USDC_PSM =
+    address public constant KRAKEN_USDC_WHALE =
         0xAe2D4617c862309A3d75A0fFB358c7a5009c673F;
 
     address public constant MAKER_DAI_USDC_PSM =

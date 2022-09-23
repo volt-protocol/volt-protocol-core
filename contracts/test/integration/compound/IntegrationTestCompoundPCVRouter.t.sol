@@ -144,6 +144,13 @@ contract CompoundPCVRouterIntegrationTest is DSTest {
     }
 
     function testSwapUsdcToDaiFailsNoLiquidity() public {
+        uint256 usdcBalance = usdc.balanceOf(
+            MainnetAddresses.KRAKEN_USDC_WHALE
+        );
+        vm.prank(MainnetAddresses.KRAKEN_USDC_WHALE);
+        usdc.transfer(address(usdcDeposit), usdcBalance);
+        usdcDeposit.deposit();
+
         uint256 withdrawAmount = usdcDeposit.balance();
         vm.startPrank(pcvGuard);
         pcvGuardian.withdrawAllToSafeAddress(address(usdcDeposit)); /// pull all funds from usdc pcv deposit
