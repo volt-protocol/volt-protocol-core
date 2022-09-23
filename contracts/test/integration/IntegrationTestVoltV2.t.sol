@@ -6,6 +6,7 @@ import {Vm} from "../unit/utils/Vm.sol";
 import {VoltV2} from "../../volt/VoltV2.sol";
 import {Core} from "../../core/Core.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
+import {stdError} from "../unit/utils/StdLib.sol";
 
 contract IntegrationTestVoltV2 is DSTest {
     VoltV2 private volt;
@@ -14,6 +15,9 @@ contract IntegrationTestVoltV2 is DSTest {
 
     function setUp() public {
         volt = new VoltV2(MainnetAddresses.CORE);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        core.grantMinter(MainnetAddresses.GOVERNOR);
     }
 
     function testTokenDetails() public {
@@ -39,7 +43,7 @@ contract IntegrationTestVoltV2 is DSTest {
     }
 
     function testMintFailureUnauthorized() public {
-        vm.expectRevert("UNAUTHORIZED");
+        vm.expectRevert("CoreRef: Caller is not a minter");
         volt.mint(address(0xFFF), 1e18);
     }
 
@@ -145,7 +149,7 @@ contract IntegrationTestVoltV2 is DSTest {
         vm.prank(from);
         volt.approve(address(this), 0.9e18);
 
-        vm.expectRevert("Volt: transfer amount exceeds spender allowance");
+        vm.expectRevert(stdError.arithmeticError);
         volt.burnFrom(from, 1e18);
     }
 
@@ -167,7 +171,7 @@ contract IntegrationTestVoltV2 is DSTest {
     }
 
     function testTransferFailInsufficientBalance() public {
-        vm.expectRevert("Volt: transfer amount exceeds balance");
+        vm.expectRevert(stdError.arithmeticError);
         volt.transfer(address(0xFFF), 1e18);
     }
 
@@ -230,7 +234,7 @@ contract IntegrationTestVoltV2 is DSTest {
         vm.prank(from);
         volt.approve(address(this), 2e18);
 
-        vm.expectRevert("Volt: transfer amount exceeds balance");
+        vm.expectRevert(stdError.arithmeticError);
         volt.transferFrom(from, address(this), 2e18);
     }
 
@@ -243,7 +247,7 @@ contract IntegrationTestVoltV2 is DSTest {
         vm.prank(from);
         volt.approve(address(this), 0.9e18);
 
-        vm.expectRevert("Volt: transfer amount exceeds spender allowance");
+        vm.expectRevert(stdError.arithmeticError);
         volt.transferFrom(from, address(this), 1e18);
     }
 
