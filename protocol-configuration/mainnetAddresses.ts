@@ -118,6 +118,12 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.PCV,
     network: Network.Mainnet
   },
+  compoundPCVRouter: {
+    address: '0x6338Ec144279b1f05AF8C90216d90C5b54Fa4D8F',
+    artifactName: 'CompoundPCVRouter',
+    category: AddressCategory.PCV,
+    network: Network.Mainnet
+  },
   erc20Allocator: {
     address: '0x37518BbE48fEaE49ECBD83F7e9C01c1A6b4c2F69',
     artifactName: 'ERC20Allocator',
@@ -157,6 +163,12 @@ const MainnetAddresses: MainnetAddresses = {
   },
   makerDaiUsdcPSM: {
     address: '0x89B78CfA322F6C5dE0aBcEecab66Aee45393cC5A',
+    artifactName: 'unknown',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  makerGemJoin: {
+    address: '0x0A59649758aa4d66E25f08Dd01271e891fe52199',
     artifactName: 'unknown',
     category: AddressCategory.External,
     network: Network.Mainnet
