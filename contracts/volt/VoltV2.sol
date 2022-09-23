@@ -109,18 +109,10 @@ contract VoltV2 is CoreRef {
             totalSupply,
             "Volt: totalSupply exceeds 96 bits"
         );
-        totalSupply = add96(
-            safeSupply,
-            amount,
-            "Volt: totalSupply exceeds 96 bits"
-        );
 
-        // transfer the amount to the recipient
-        balances[dst] = add96(
-            balances[dst],
-            amount,
-            "Volt: transfer amount overflows"
-        );
+        totalSupply = safeSupply + amount;
+        balances[dst] = balances[dst] + amount;
+
         emit Transfer(address(0), dst, amount);
 
         // move delegates
@@ -370,13 +362,8 @@ contract VoltV2 is CoreRef {
             "Volt: totalSupply exceeds 96 bits"
         );
 
-        totalSupply = sub96(safeSupply, amount, "Volt: subtraction underflow");
-
-        balances[src] = sub96(
-            balances[src],
-            amount,
-            "Volt: subtraction underflow"
-        );
+        totalSupply = safeSupply - amount;
+        balances[src] = balances[src] - amount;
 
         emit Transfer(src, address(0), amount);
 
@@ -389,11 +376,7 @@ contract VoltV2 is CoreRef {
         uint96 amount = safe96(rawAmount, "Volt: amount exceeds 96 bits");
 
         if (spender != src && spenderAllowance != type(uint96).max) {
-            uint96 newAllowance = sub96(
-                spenderAllowance,
-                amount,
-                "Volt: transfer amount exceeds spender allowance"
-            );
+            uint96 newAllowance = spenderAllowance - amount;
             allowances[src][spender] = newAllowance;
 
             emit Approval(src, spender, newAllowance);
@@ -425,16 +408,9 @@ contract VoltV2 is CoreRef {
             "Volt: cannot transfer to the volt contract"
         );
 
-        balances[src] = sub96(
-            balances[src],
-            amount,
-            "Volt: transfer amount exceeds balance"
-        );
-        balances[dst] = add96(
-            balances[dst],
-            amount,
-            "Volt: transfer amount overflows"
-        );
+        balances[src] = balances[src] - amount;
+        balances[dst] = balances[dst] + amount;
+
         emit Transfer(src, dst, amount);
 
         _moveDelegates(delegates[src], delegates[dst], amount);
@@ -451,11 +427,8 @@ contract VoltV2 is CoreRef {
                 uint96 srcRepOld = srcRepNum > 0
                     ? checkpoints[srcRep][srcRepNum - 1].votes
                     : 0;
-                uint96 srcRepNew = sub96(
-                    srcRepOld,
-                    amount,
-                    "Volt: vote amount underflows"
-                );
+
+                uint96 srcRepNew = srcRepOld - amount;
                 _writeCheckpoint(srcRep, srcRepNum, srcRepOld, srcRepNew);
             }
 
@@ -464,11 +437,8 @@ contract VoltV2 is CoreRef {
                 uint96 dstRepOld = dstRepNum > 0
                     ? checkpoints[dstRep][dstRepNum - 1].votes
                     : 0;
-                uint96 dstRepNew = add96(
-                    dstRepOld,
-                    amount,
-                    "Volt: vote amount overflows"
-                );
+
+                uint96 dstRepNew = dstRepOld + amount;
                 _writeCheckpoint(dstRep, dstRepNum, dstRepOld, dstRepNew);
             }
         }
@@ -517,25 +487,6 @@ contract VoltV2 is CoreRef {
     {
         require(n < 2**96, errorMessage);
         return uint96(n);
-    }
-
-    function add96(
-        uint96 a,
-        uint96 b,
-        string memory errorMessage
-    ) internal pure returns (uint96) {
-        uint96 c = a + b;
-        require(c >= a, errorMessage);
-        return c;
-    }
-
-    function sub96(
-        uint96 a,
-        uint96 b,
-        string memory errorMessage
-    ) internal pure returns (uint96) {
-        require(b <= a, errorMessage);
-        return a - b;
     }
 
     function getChainId() internal view returns (uint256) {
