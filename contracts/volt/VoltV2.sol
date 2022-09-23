@@ -3,11 +3,14 @@ pragma solidity =0.8.13;
 
 import {CoreRef} from "../refs/CoreRef.sol";
 import {TribeRoles} from "../core/TribeRoles.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 // Forked from Uniswap's UNI
 // Reference: https://etherscan.io/address/0x1f9840a85d5af5bf1d1762f925bdaddc4201f984#code
 
 contract VoltV2 is CoreRef {
+    using SafeCast for *;
+
     /// @notice EIP-20 token name for this token
     // solhint-disable-next-line const-name-snakecase
     string public constant name = "Volt";
@@ -104,11 +107,8 @@ contract VoltV2 is CoreRef {
         );
 
         // mint the amount
-        uint96 amount = safe96(rawAmount, "Volt: amount exceeds 96 bits");
-        uint96 safeSupply = safe96(
-            totalSupply,
-            "Volt: totalSupply exceeds 96 bits"
-        );
+        uint96 amount = rawAmount.toUint96();
+        uint96 safeSupply = totalSupply.toUint96();
 
         totalSupply = safeSupply + amount;
         balances[dst] = balances[dst] + amount;
@@ -122,7 +122,7 @@ contract VoltV2 is CoreRef {
     /// @notice Burns the rawAmount of the callers tokens
     /// @param rawAmount The amount of tokens to be burned
     function burn(uint256 rawAmount) external {
-        uint96 amount = safe96(rawAmount, "Volt: amount exceeds 96 bits");
+        uint96 amount = rawAmount.toUint96();
         _burn(msg.sender, amount);
     }
 
@@ -131,7 +131,7 @@ contract VoltV2 is CoreRef {
     /// @param src The address the tokens will be burned from
     /// @param rawAmount The amount of tokens to be burned
     function burnFrom(address src, uint256 rawAmount) external {
-        uint96 amount = safe96(rawAmount, "Volt: amount exceeds 96 bits");
+        uint96 amount = rawAmount.toUint96();
         _spendAllowance(src, rawAmount);
         _burn(src, amount);
     }
@@ -162,7 +162,7 @@ contract VoltV2 is CoreRef {
         if (rawAmount == type(uint256).max) {
             amount = type(uint96).max;
         } else {
-            amount = safe96(rawAmount, "Volt: amount exceeds 96 bits");
+            amount = rawAmount.toUint96();
         }
 
         allowances[msg.sender][spender] = amount;
@@ -192,7 +192,7 @@ contract VoltV2 is CoreRef {
         if (rawAmount == type(uint256).max) {
             amount = type(uint96).max;
         } else {
-            amount = safe96(rawAmount, "Volt: amount exceeds 96 bits");
+            amount = rawAmount.toUint96();
         }
 
         bytes32 domainSeparator = keccak256(
@@ -238,7 +238,7 @@ contract VoltV2 is CoreRef {
     /// @param rawAmount The number of tokens to transfer
     /// @return Whether or not the transfer succeeded
     function transfer(address dst, uint256 rawAmount) external returns (bool) {
-        uint96 amount = safe96(rawAmount, "Volt: amount exceeds 96 bits");
+        uint96 amount = rawAmount.toUint96();
         _transferTokens(msg.sender, dst, amount);
         return true;
     }
@@ -253,7 +253,7 @@ contract VoltV2 is CoreRef {
         address dst,
         uint256 rawAmount
     ) external returns (bool) {
-        uint96 amount = safe96(rawAmount, "Volt: amount exceeds 96 bits");
+        uint96 amount = rawAmount.toUint96();
         _spendAllowance(src, rawAmount);
         _transferTokens(src, dst, amount);
         return true;
@@ -357,10 +357,7 @@ contract VoltV2 is CoreRef {
         require(src != address(0), "Volt: cannot burn from the zero address");
         require(balances[src] >= amount, "Volt: burn amount exceeds balance");
 
-        uint96 safeSupply = safe96(
-            totalSupply,
-            "Volt: totalSupply exceeds 96 bits"
-        );
+        uint96 safeSupply = totalSupply.toUint96();
 
         totalSupply = safeSupply - amount;
         balances[src] = balances[src] - amount;
@@ -373,7 +370,7 @@ contract VoltV2 is CoreRef {
     function _spendAllowance(address src, uint256 rawAmount) internal {
         address spender = msg.sender;
         uint96 spenderAllowance = allowances[src][spender];
-        uint96 amount = safe96(rawAmount, "Volt: amount exceeds 96 bits");
+        uint96 amount = rawAmount.toUint96();
 
         if (spender != src && spenderAllowance != type(uint96).max) {
             uint96 newAllowance = spenderAllowance - amount;
@@ -450,11 +447,7 @@ contract VoltV2 is CoreRef {
         uint96 oldVotes,
         uint96 newVotes
     ) internal {
-        uint32 blockNumber = safe32(
-            block.number,
-            "Volt: block number exceeds 32 bits"
-        );
-
+        uint32 blockNumber = block.number.toUint32();
         if (
             nCheckpoints > 0 &&
             checkpoints[delegatee][nCheckpoints - 1].fromBlock == blockNumber
@@ -469,24 +462,6 @@ contract VoltV2 is CoreRef {
         }
 
         emit DelegateVotesChanged(delegatee, oldVotes, newVotes);
-    }
-
-    function safe32(uint256 n, string memory errorMessage)
-        internal
-        pure
-        returns (uint32)
-    {
-        require(n < 2**32, errorMessage);
-        return uint32(n);
-    }
-
-    function safe96(uint256 n, string memory errorMessage)
-        internal
-        pure
-        returns (uint96)
-    {
-        require(n < 2**96, errorMessage);
-        return uint96(n);
     }
 
     function getChainId() internal view returns (uint256) {
