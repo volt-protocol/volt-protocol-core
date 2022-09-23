@@ -28,14 +28,6 @@ contract IntegrationTestVoltV2 is DSTest {
         assertEq(volt.delegates(address(this)), address(0xFFF));
     }
 
-    function testMintSuccessGovernor() public {
-        vm.prank(MainnetAddresses.GOVERNOR);
-        volt.mint(address(0xFFF), 1e18);
-
-        assertEq(volt.totalSupply(), 1e18);
-        assertEq(volt.balanceOf(address(0xFFF)), 1e18);
-    }
-
     function testMintSuccessMinter() public {
         vm.prank(MainnetAddresses.GOVERNOR);
         core.grantMinter(address(this));

@@ -96,10 +96,7 @@ contract VoltV2 is CoreRef {
     /// @notice Mint new tokens
     /// @param dst The address of the destination account
     /// @param rawAmount The number of tokens to be minted
-    function mint(address dst, uint256 rawAmount)
-        external
-        hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.MINTER)
-    {
+    function mint(address dst, uint256 rawAmount) external onlyMinter {
         require(dst != address(0), "Volt: cannot transfer to the zero address");
         require(
             dst != address(this),
