@@ -19,12 +19,11 @@ Steps:
   1 - Deploy New Volt Token
   2 - Deploy new DAI PSM
   3 - Deploy new USDC PSM
-  4 - Deploy TempCoreRef
-  5 - Deploy Token Migrator
-  6 - Deploy Migrator Router
+  4 - Deploy Token Migrator
+  5 - Deploy Migrator Router
 */
 
-const vipNumber = '12'; // Change me!
+const vipNumber = '13';
 
 const voltFloorPrice = 9_000;
 const voltCeilingPrice = 10_000;
@@ -97,12 +96,6 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
   );
 
   console.log(`\nUSDC PriceBoundPSM deployed to: ${usdcPriceBoundPSM.address}`);
-
-  const TempCoreRef = await ethers.getContractFactory('TempCoreRef');
-  const tempCoreRef = await TempCoreRef.deploy(addresses.core, voltV2.address);
-  await tempCoreRef.deployed();
-
-  console.log(`\nTempCoreRef deployed to: ${tempCoreRef.address}`);
 
   const VoltMigrator = await ethers.getContractFactory('VoltMigrator');
   const voltMigrator = await VoltMigrator.deploy(addresses.core, voltV2.address);

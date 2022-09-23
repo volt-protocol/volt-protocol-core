@@ -16,12 +16,9 @@ import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {ITimelockSimulation} from "../utils/ITimelockSimulation.sol";
 import {ERC20CompoundPCVDeposit} from "../../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 
-contract vip9 is DSTest, IVIP {
+contract vip13 is DSTest, IVIP {
     using SafeERC20 for IERC20;
     Vm public constant vm = Vm(HEVM_ADDRESS);
-
-    address private fei = MainnetAddresses.FEI;
-    address private core = MainnetAddresses.CORE;
 
     ERC20CompoundPCVDeposit private daiDeposit =
         ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_DAI_PCV_DEPOSIT);

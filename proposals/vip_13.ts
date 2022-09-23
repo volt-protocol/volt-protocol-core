@@ -1,7 +1,7 @@
 import { ProposalDescription } from '@custom-types/types';
 
-const vip_x: ProposalDescription = {
-  title: 'VIP-12: Add new PSMs to PCV Guardian Whitelist',
+const vip_13: ProposalDescription = {
+  title: 'VIP-13: Add new PSMs to PCV Guardian Whitelist',
   commands: [
     {
       target: 'pcvGuardian',
@@ -14,4 +14,4 @@ const vip_x: ProposalDescription = {
   description: 'Add new DAI, and USDC PSMs to PCV Guardian whitelist'
 };
 
-export default vip_x;
+export default vip_13;
