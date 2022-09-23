@@ -32,7 +32,7 @@ contract RoleTesting is DSTest {
     ) internal view {
         for (uint256 i = 0; i < allRoles.length; i++) {
             if (i == 2 && block.chainid == 42161) {
-                numEachRole[i] = 3;
+                numEachRole[i] = 4;
             } // patch for difference in PCV controller roles on arbitrum & mainnet
             if (numEachRole[i] != roleCounts[i]) {
                 revert(
