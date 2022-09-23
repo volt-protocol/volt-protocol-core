@@ -127,8 +127,8 @@ contract IntegrationTestVoltMigratorRouterTest is DSTest {
         );
 
         // Grant stablecoin balances to PSMs
-        uint256 balance = usdc.balanceOf(MainnetAddresses.MAKER_USDC_PSM);
-        vm.prank(MainnetAddresses.MAKER_USDC_PSM);
+        uint256 balance = usdc.balanceOf(MainnetAddresses.KRAKEN_USDC_WHALE);
+        vm.prank(MainnetAddresses.KRAKEN_USDC_WHALE);
         usdc.transfer(address(usdcPSM), balance);
 
         balance = dai.balanceOf(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
