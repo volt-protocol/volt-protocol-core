@@ -31,11 +31,16 @@ const voltCeilingPrice = 10_000;
 const voltUsdcFloorPrice = '9000000000000000';
 const voltUsdcCeilingPrice = '10000000000000000';
 
-const reservesThreshold = ethers.constants.MaxUint256;
 // these variables are currently unused as the PSM doesn't have the ability to mint
+const reservesThreshold = ethers.constants.MaxUint256;
 const mintLimitPerSecond = ethers.utils.parseEther('10000');
 const voltPSMBufferCap = ethers.utils.parseEther('10000000');
 const addressOne = '0x0000000000000000000000000000000000000001';
+
+const daiTargetBalance = ethers.utils.parseEther('100000');
+const usdcTargetBalance = daiTargetBalance.div(1e12);
+const daiDecimalsNormalizer = 0;
+const usdcDecimalsNormalizer = 12;
 
 // Do any deployments
 // This should exclusively include new contract deployments
@@ -135,7 +140,35 @@ const teardown: TeardownUpgradeFunc = async (addresses, oldContracts, contracts,
 // Run any validations required on the vip using mocha or console logging
 // IE check balances, check state of contracts, etc.
 const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts, logging) => {
-  console.log(`No actions to complete in validate for vip${vipNumber}`);
+  const {
+    erc20Allocator,
+    PCVGuardian,
+    voltV2UsdcPriceBoundPSM,
+    voltV2DaiPriceBoundPSM,
+    daiCompoundPCVDeposit,
+    usdcCompoundPCVDeposit
+  } = contracts;
+
+  expect(PCVGuardian.isWhitelistAddress(voltV2UsdcPriceBoundPSM.address)).to.be.true;
+  expect(PCVGuardian.isWhitelistAddress(voltV2DaiPriceBoundPSM.address)).to.be.true;
+
+  {
+    const [token, targetBalance, decimalsNormalizer] = await erc20Allocator.allPSMs(voltV2DaiPriceBoundPSM.address);
+    const psmAddress = await erc20Allocator.pcvDepositToPSM(daiCompoundPCVDeposit.address);
+    expect(psmAddress).to.be.equal(voltV2DaiPriceBoundPSM.address);
+    expect(token).to.be.equal(addresses.dai);
+    expect(daiTargetBalance.toString()).to.be.equal(targetBalance.toString()); /// had to make it a string otherwise typescript threw an error about comparing objects
+    expect(decimalsNormalizer.toString()).to.be.equal(daiDecimalsNormalizer.toString());
+  }
+
+  {
+    const [token, targetBalance, decimalsNormalizer] = await erc20Allocator.allPSMs(voltV2UsdcPriceBoundPSM.address);
+    const psmAddress = await erc20Allocator.pcvDepositToPSM(usdcCompoundPCVDeposit.address);
+    expect(psmAddress).to.be.equal(voltV2UsdcPriceBoundPSM.address);
+    expect(token).to.be.equal(addresses.usdc);
+    expect(usdcTargetBalance.toString()).to.be.equal(targetBalance.toString()); /// had to make it a string otherwise typescript threw an error about comparing objects
+    expect(decimalsNormalizer.toString()).to.be.equal(usdcDecimalsNormalizer.toString());
+  }
 };
 
 export { deploy, setup, teardown, validate };

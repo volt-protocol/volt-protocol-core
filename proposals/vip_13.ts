@@ -42,7 +42,7 @@ const vip_13: ProposalDescription = {
       target: 'erc20Allocator',
       values: '0',
       method: 'connectDeposit(address,address)',
-      arguments: ['{voltV2daiPriceBoundPSM}', '{daiCompoundPCVDeposit}'],
+      arguments: ['{voltV2DaiPriceBoundPSM}', '{daiCompoundPCVDeposit}'],
       description: 'Connect DAI deposit to PSM in ERC20 Allocator'
     },
     {
