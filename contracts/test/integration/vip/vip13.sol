@@ -48,6 +48,30 @@ contract vip13 is DSTest, IVIP {
         ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_USDC_PCV_DEPOSIT);
 
     constructor() {
+        // proposal.push(
+        //     ITimelockSimulation.action({
+        //         value: 0,
+        //         target: MainnetAddresses.VOLT_MIGRATOR,
+        //         arguments: abi.encodeWithSignature(
+        //             "exchangeTo(address,uint256)",
+        //             MainnetAddresses.VOLTV2_USDC_PSM,
+        //             voltInUsdcPSM
+        //         ),
+        //         description: "Mint new volt for new USDC PSM"
+        //     })
+        // );
+        // proposal.push(
+        //     ITimelockSimulation.action({
+        //         value: 0,
+        //         target: MainnetAddresses.VOLT_MIGRATOR,
+        //         arguments: abi.encodeWithSignature(
+        //             "exchangeTo(address,uint256)",
+        //             MainnetAddresses.VOLTV2_DAI_PSM,
+        //             voltInDaiPSM
+        //         ),
+        //         description: "Mint new volt for new DAI PSM"
+        //     })
+        // );
         proposal.push(
             ITimelockSimulation.action({
                 value: 0,

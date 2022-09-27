@@ -28,10 +28,10 @@ contract VoltV2 is CoreRef {
     uint256 public totalSupply;
 
     /// @notice Allowance amounts on behalf of others
-    mapping(address => mapping(address => uint96)) internal allowances;
+    mapping(address => mapping(address => uint256)) internal allowances;
 
     /// @notice Official record of token balances for each account
-    mapping(address => uint96) internal balances;
+    mapping(address => uint256) internal balances;
 
     /// @notice A record of each accounts delegate
     mapping(address => address) public delegates;
@@ -39,7 +39,7 @@ contract VoltV2 is CoreRef {
     /// @notice A checkpoint for marking number of votes from a given block
     struct Checkpoint {
         uint32 fromBlock;
-        uint96 votes;
+        uint256 votes;
     }
 
     /// @notice A record of votes checkpoints for each account, by index
@@ -95,19 +95,15 @@ contract VoltV2 is CoreRef {
 
     /// @notice Mint new tokens
     /// @param dst The address of the destination account
-    /// @param rawAmount The number of tokens to be minted
-    function mint(address dst, uint256 rawAmount) external onlyMinter {
+    /// @param amount The number of tokens to be minted
+    function mint(address dst, uint256 amount) external onlyMinter {
         require(dst != address(0), "Volt: cannot transfer to the zero address");
         require(
             dst != address(this),
             "Volt: cannot transfer to the volt contract"
         );
 
-        // mint the amount
-        uint96 amount = rawAmount.toUint96();
-        uint96 safeSupply = totalSupply.toUint96();
-
-        totalSupply = safeSupply + amount;
+        totalSupply = totalSupply + amount;
         balances[dst] = balances[dst] + amount;
 
         emit Transfer(address(0), dst, amount);
@@ -117,19 +113,17 @@ contract VoltV2 is CoreRef {
     }
 
     /// @notice Burns the rawAmount of the callers tokens
-    /// @param rawAmount The amount of tokens to be burned
-    function burn(uint256 rawAmount) external {
-        uint96 amount = rawAmount.toUint96();
+    /// @param amount The amount of tokens to be burned
+    function burn(uint256 amount) external {
         _burn(msg.sender, amount);
     }
 
     /// @notice Burns tokens 'rawAmount' of tokens from 'src' address deducting\
     /// from the callers allowance
     /// @param src The address the tokens will be burned from
-    /// @param rawAmount The amount of tokens to be burned
-    function burnFrom(address src, uint256 rawAmount) external {
-        uint96 amount = rawAmount.toUint96();
-        _spendAllowance(src, rawAmount);
+    /// @param amount The amount of tokens to be burned
+    function burnFrom(address src, uint256 amount) external {
+        _spendAllowance(src, amount);
         _burn(src, amount);
     }
 
@@ -149,19 +143,9 @@ contract VoltV2 is CoreRef {
     /// @dev This will overwrite the approval amount for `spender`
     ///  and is subject to issues noted [here](https://eips.ethereum.org/EIPS/eip-20#approve)
     /// @param spender The address of the account which may transfer tokens
-    /// @param rawAmount The number of tokens that are approved (2^256-1 means infinite)
+    /// @param amount The number of tokens that are approved (2^256-1 means infinite)
     /// @return Whether or not the approval succeeded
-    function approve(address spender, uint256 rawAmount)
-        external
-        returns (bool)
-    {
-        uint96 amount;
-        if (rawAmount == type(uint256).max) {
-            amount = type(uint96).max;
-        } else {
-            amount = rawAmount.toUint96();
-        }
-
+    function approve(address spender, uint256 amount) external returns (bool) {
         allowances[msg.sender][spender] = amount;
 
         emit Approval(msg.sender, spender, amount);
@@ -171,7 +155,7 @@ contract VoltV2 is CoreRef {
     /// @notice Triggers an approval from owner to spends
     /// @param owner The address to approve from
     /// @param spender The address to be approved
-    /// @param rawAmount The number of tokens that are approved (2^256-1 means infinite)
+    /// @param amount The number of tokens that are approved (2^256-1 means infinite)
     /// @param deadline The time at which to expire the signature
     /// @param v The recovery byte of the signature
     /// @param r Half of the ECDSA signature pair
@@ -179,19 +163,12 @@ contract VoltV2 is CoreRef {
     function permit(
         address owner,
         address spender,
-        uint256 rawAmount,
+        uint256 amount,
         uint256 deadline,
         uint8 v,
         bytes32 r,
         bytes32 s
     ) external {
-        uint96 amount;
-        if (rawAmount == type(uint256).max) {
-            amount = type(uint96).max;
-        } else {
-            amount = rawAmount.toUint96();
-        }
-
         bytes32 domainSeparator = keccak256(
             abi.encode(
                 DOMAIN_TYPEHASH,
@@ -205,7 +182,7 @@ contract VoltV2 is CoreRef {
                 PERMIT_TYPEHASH,
                 owner,
                 spender,
-                rawAmount,
+                amount,
                 nonces[owner]++,
                 deadline
             )
@@ -232,10 +209,9 @@ contract VoltV2 is CoreRef {
 
     /// @notice Transfer `amount` tokens from `msg.sender` to `dst`
     /// @param dst The address of the destination account
-    /// @param rawAmount The number of tokens to transfer
+    /// @param amount The number of tokens to transfer
     /// @return Whether or not the transfer succeeded
-    function transfer(address dst, uint256 rawAmount) external returns (bool) {
-        uint96 amount = rawAmount.toUint96();
+    function transfer(address dst, uint256 amount) external returns (bool) {
         _transferTokens(msg.sender, dst, amount);
         return true;
     }
@@ -243,15 +219,14 @@ contract VoltV2 is CoreRef {
     /// @notice Transfer `amount` tokens from `src` to `dst`
     /// @param src The address of the source account
     /// @param dst The address of the destination account
-    /// @param rawAmount The number of tokens to transfer
+    /// @param amount The number of tokens to transfer
     /// @return Whether or not the transfer succeeded
     function transferFrom(
         address src,
         address dst,
-        uint256 rawAmount
+        uint256 amount
     ) external returns (bool) {
-        uint96 amount = rawAmount.toUint96();
-        _spendAllowance(src, rawAmount);
+        _spendAllowance(src, amount);
         _transferTokens(src, dst, amount);
         return true;
     }
@@ -301,7 +276,7 @@ contract VoltV2 is CoreRef {
     /// @notice Gets the current votes balance for `account`
     /// @param account The address to get votes balance
     /// @return The number of current votes for `account`
-    function getCurrentVotes(address account) external view returns (uint96) {
+    function getCurrentVotes(address account) external view returns (uint256) {
         uint32 nCheckpoints = numCheckpoints[account];
         return
             nCheckpoints > 0 ? checkpoints[account][nCheckpoints - 1].votes : 0;
@@ -315,7 +290,7 @@ contract VoltV2 is CoreRef {
     function getPriorVotes(address account, uint256 blockNumber)
         public
         view
-        returns (uint96)
+        returns (uint256)
     {
         require(blockNumber < block.number, "Volt: not yet determined");
 
@@ -350,13 +325,11 @@ contract VoltV2 is CoreRef {
         return checkpoints[account][lower].votes;
     }
 
-    function _burn(address src, uint96 amount) internal {
+    function _burn(address src, uint256 amount) internal {
         require(src != address(0), "Volt: cannot burn from the zero address");
         require(balances[src] >= amount, "Volt: burn amount exceeds balance");
 
-        uint96 safeSupply = totalSupply.toUint96();
-
-        totalSupply = safeSupply - amount;
+        totalSupply = totalSupply - amount;
         balances[src] = balances[src] - amount;
 
         emit Transfer(src, address(0), amount);
@@ -364,13 +337,12 @@ contract VoltV2 is CoreRef {
         _moveDelegates(delegates[src], address(0), amount);
     }
 
-    function _spendAllowance(address src, uint256 rawAmount) internal {
+    function _spendAllowance(address src, uint256 amount) internal {
         address spender = msg.sender;
-        uint96 spenderAllowance = allowances[src][spender];
-        uint96 amount = rawAmount.toUint96();
+        uint256 spenderAllowance = allowances[src][spender];
 
-        if (spender != src && spenderAllowance != type(uint96).max) {
-            uint96 newAllowance = spenderAllowance - amount;
+        if (spender != src && spenderAllowance != type(uint256).max) {
+            uint256 newAllowance = spenderAllowance - amount;
             allowances[src][spender] = newAllowance;
 
             emit Approval(src, spender, newAllowance);
@@ -379,7 +351,7 @@ contract VoltV2 is CoreRef {
 
     function _delegate(address delegator, address delegatee) internal {
         address currentDelegate = delegates[delegator];
-        uint96 delegatorBalance = balances[delegator];
+        uint256 delegatorBalance = balances[delegator];
         delegates[delegator] = delegatee;
 
         emit DelegateChanged(delegator, currentDelegate, delegatee);
@@ -390,7 +362,7 @@ contract VoltV2 is CoreRef {
     function _transferTokens(
         address src,
         address dst,
-        uint96 amount
+        uint256 amount
     ) internal {
         require(
             src != address(0),
@@ -412,26 +384,26 @@ contract VoltV2 is CoreRef {
     function _moveDelegates(
         address srcRep,
         address dstRep,
-        uint96 amount
+        uint256 amount
     ) internal {
         if (srcRep != dstRep && amount > 0) {
             if (srcRep != address(0)) {
                 uint32 srcRepNum = numCheckpoints[srcRep];
-                uint96 srcRepOld = srcRepNum > 0
+                uint256 srcRepOld = srcRepNum > 0
                     ? checkpoints[srcRep][srcRepNum - 1].votes
                     : 0;
 
-                uint96 srcRepNew = srcRepOld - amount;
+                uint256 srcRepNew = srcRepOld - amount;
                 _writeCheckpoint(srcRep, srcRepNum, srcRepOld, srcRepNew);
             }
 
             if (dstRep != address(0)) {
                 uint32 dstRepNum = numCheckpoints[dstRep];
-                uint96 dstRepOld = dstRepNum > 0
+                uint256 dstRepOld = dstRepNum > 0
                     ? checkpoints[dstRep][dstRepNum - 1].votes
                     : 0;
 
-                uint96 dstRepNew = dstRepOld + amount;
+                uint256 dstRepNew = dstRepOld + amount;
                 _writeCheckpoint(dstRep, dstRepNum, dstRepOld, dstRepNew);
             }
         }
@@ -440,8 +412,8 @@ contract VoltV2 is CoreRef {
     function _writeCheckpoint(
         address delegatee,
         uint32 nCheckpoints,
-        uint96 oldVotes,
-        uint96 newVotes
+        uint256 oldVotes,
+        uint256 newVotes
     ) internal {
         uint32 blockNumber = block.number.toUint32();
         if (

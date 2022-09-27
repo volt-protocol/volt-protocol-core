@@ -32,14 +32,14 @@ contract IntegrationTestVoltV2 is DSTest {
         assertEq(volt.delegates(address(this)), address(0xFFF));
     }
 
-    function testMintSuccessMinter() public {
+    function testMintSuccessMinter(uint256 voltToMint) public {
         vm.prank(MainnetAddresses.GOVERNOR);
         core.grantMinter(address(this));
 
-        volt.mint(address(0xFFF), 1e18);
+        volt.mint(address(0xFFF), voltToMint);
 
-        assertEq(volt.totalSupply(), 1e18);
-        assertEq(volt.balanceOf(address(0xFFF)), 1e18);
+        assertEq(volt.totalSupply(), voltToMint);
+        assertEq(volt.balanceOf(address(0xFFF)), voltToMint);
     }
 
     function testMintFailureUnauthorized() public {
@@ -61,13 +61,13 @@ contract IntegrationTestVoltV2 is DSTest {
         vm.stopPrank();
     }
 
-    function testBurn() public {
+    function testBurn(uint256 voltToBurn) public {
         vm.prank(MainnetAddresses.GOVERNOR);
-        volt.mint(address(this), 1e18);
-        volt.burn(0.9e18);
+        volt.mint(address(this), voltToBurn);
+        volt.burn(voltToBurn);
 
-        assertEq(volt.totalSupply(), 1e18 - 0.9e18);
-        assertEq(volt.balanceOf(address(this)), 0.1e18);
+        assertEq(volt.totalSupply(), 0);
+        assertEq(volt.balanceOf(address(this)), 0);
     }
 
     function testBurnFail() public {
@@ -85,16 +85,17 @@ contract IntegrationTestVoltV2 is DSTest {
         vm.stopPrank();
     }
 
-    function testBurnFrom() public {
+    function testBurnFrom(uint256 voltToBurn) public {
+        vm.assume(voltToBurn < type(uint256).max); // to make sure we don't run into infinite approval counter example
         address from = address(0xFFF);
         vm.prank(MainnetAddresses.GOVERNOR);
-        volt.mint(from, 1e18);
+        volt.mint(from, voltToBurn);
 
         vm.prank(from);
-        volt.approve(address(this), 1e18);
-        assertEq(volt.allowance(from, address(this)), 1e18);
+        volt.approve(address(this), voltToBurn);
+        assertEq(volt.allowance(from, address(this)), voltToBurn);
 
-        volt.burnFrom(from, 1e18);
+        volt.burnFrom(from, voltToBurn);
 
         assertEq(volt.balanceOf(from), 0);
         assertEq(volt.allowance(from, address(this)), 0);
@@ -112,19 +113,19 @@ contract IntegrationTestVoltV2 is DSTest {
         volt.burnFrom(from, 1e18);
     }
 
-    function testBurnFromInfiniteApprovall() public {
+    function testBurnFromInfiniteApproval(uint256 voltToBurn) public {
         address from = address(0xFFF);
         vm.prank(MainnetAddresses.GOVERNOR);
-        volt.mint(from, 1e18);
+        volt.mint(from, voltToBurn);
 
         vm.prank(from);
-        volt.approve(address(this), type(uint96).max);
-        assertEq(volt.allowance(from, address(this)), type(uint96).max);
+        volt.approve(address(this), type(uint256).max);
+        assertEq(volt.allowance(from, address(this)), type(uint256).max);
 
-        volt.burnFrom(from, 1e18);
+        volt.burnFrom(from, voltToBurn);
 
         assertEq(volt.balanceOf(from), 0);
-        assertEq(volt.allowance(from, address(this)), type(uint96).max);
+        assertEq(volt.allowance(from, address(this)), type(uint256).max);
         assertEq(volt.totalSupply(), 0);
     }
 
@@ -153,21 +154,21 @@ contract IntegrationTestVoltV2 is DSTest {
         volt.burnFrom(from, 1e18);
     }
 
-    function testApprove() public {
-        assertTrue(volt.approve(address(0xFFF), 1e18));
+    function testApprove(uint256 voltToApprove) public {
+        assertTrue(volt.approve(address(0xFFF), voltToApprove));
 
-        assertEq(volt.allowance(address(this), address(0xFFF)), 1e18);
+        assertEq(volt.allowance(address(this), address(0xFFF)), voltToApprove);
     }
 
-    function testTransfer() public {
+    function testTransfer(uint256 voltToTransfer) public {
         vm.prank(MainnetAddresses.GOVERNOR);
-        volt.mint(address(this), 1e18);
+        volt.mint(address(this), voltToTransfer);
 
-        volt.transfer(address(0xFFF), 1e18);
+        volt.transfer(address(0xFFF), voltToTransfer);
 
-        assertEq(volt.totalSupply(), 1e18);
+        assertEq(volt.totalSupply(), voltToTransfer);
         assertEq(volt.balanceOf(address(this)), 0);
-        assertEq(volt.balanceOf(address(0xFFF)), 1e18);
+        assertEq(volt.balanceOf(address(0xFFF)), voltToTransfer);
     }
 
     function testTransferFailInsufficientBalance() public {
@@ -187,38 +188,39 @@ contract IntegrationTestVoltV2 is DSTest {
         vm.stopPrank();
     }
 
-    function testTransferFrom() public {
+    function testTransferFrom(uint256 voltToTransfer) public {
+        vm.assume(voltToTransfer < type(uint256).max); // to make sure we don't run into infinite approval counter example
         address from = address(0xFFF);
         vm.prank(MainnetAddresses.GOVERNOR);
-        volt.mint(from, 1e18);
+        volt.mint(from, voltToTransfer);
 
         vm.prank(from);
-        volt.approve(address(this), 1e18);
-        assertEq(volt.allowance(from, address(this)), 1e18);
+        volt.approve(address(this), voltToTransfer);
+        assertEq(volt.allowance(from, address(this)), voltToTransfer);
 
-        volt.transferFrom(from, address(this), 1e18);
+        volt.transferFrom(from, address(this), voltToTransfer);
 
         assertEq(volt.balanceOf(from), 0);
-        assertEq(volt.balanceOf(address(this)), 1e18);
+        assertEq(volt.balanceOf(address(this)), voltToTransfer);
         assertEq(volt.allowance(from, address(this)), 0);
-        assertEq(volt.totalSupply(), 1e18);
+        assertEq(volt.totalSupply(), voltToTransfer);
     }
 
-    function testTransferFromInfiniteApproval() public {
+    function testTransferFromInfiniteApproval(uint256 voltToTransfer) public {
         address from = address(0xFFF);
         vm.prank(MainnetAddresses.GOVERNOR);
-        volt.mint(from, 1e18);
+        volt.mint(from, voltToTransfer);
 
         vm.prank(from);
-        volt.approve(address(this), type(uint96).max);
-        assertEq(volt.allowance(from, address(this)), type(uint96).max);
+        volt.approve(address(this), type(uint256).max);
+        assertEq(volt.allowance(from, address(this)), type(uint256).max);
 
-        volt.transferFrom(from, address(this), 1e18);
+        volt.transferFrom(from, address(this), voltToTransfer);
 
         assertEq(volt.balanceOf(from), 0);
-        assertEq(volt.balanceOf(address(this)), 1e18);
-        assertEq(volt.allowance(from, address(this)), type(uint96).max);
-        assertEq(volt.totalSupply(), 1e18);
+        assertEq(volt.balanceOf(address(this)), voltToTransfer);
+        assertEq(volt.allowance(from, address(this)), type(uint256).max);
+        assertEq(volt.totalSupply(), voltToTransfer);
     }
 
     function testTransferFromFailInsufficientBalance() public {
@@ -259,7 +261,7 @@ contract IntegrationTestVoltV2 is DSTest {
         volt.transferFrom(from, address(volt), 1e18);
     }
 
-    function testPermit() public {
+    function testPermit(uint256 voltToPermit) public {
         uint256 privateKey = 0xFFF;
         address owner = vm.addr(privateKey);
 
@@ -274,7 +276,7 @@ contract IntegrationTestVoltV2 is DSTest {
                             volt.PERMIT_TYPEHASH(),
                             owner,
                             address(this),
-                            1e18,
+                            voltToPermit,
                             0,
                             block.timestamp
                         )
@@ -283,9 +285,17 @@ contract IntegrationTestVoltV2 is DSTest {
             )
         );
 
-        volt.permit(owner, address(this), 1e18, block.timestamp, v, r, s);
+        volt.permit(
+            owner,
+            address(this),
+            voltToPermit,
+            block.timestamp,
+            v,
+            r,
+            s
+        );
 
-        assertEq(volt.allowance(owner, address(this)), 1e18);
+        assertEq(volt.allowance(owner, address(this)), voltToPermit);
         assertEq(volt.nonces(owner), 1);
     }
 
