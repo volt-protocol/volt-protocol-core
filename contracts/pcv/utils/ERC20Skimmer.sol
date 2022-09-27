@@ -17,10 +17,10 @@ contract ERC20Skimmer is CoreRef {
     /// @notice skim from a PCV deposit
     event Skimmed(address indexed deposit, uint256 amount);
 
-    /// @notice source PCV deposit to skim excess FEI from
+    /// @notice source to send tokens to
     address public immutable target;
 
-    /// @notice token to send
+    /// @notice token to send to target
     address public immutable token;
 
     /// @notice address that can be pulled from
