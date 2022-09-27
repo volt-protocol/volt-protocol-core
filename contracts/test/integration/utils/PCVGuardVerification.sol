@@ -53,8 +53,8 @@ contract PCVGuardVerification is DSTest {
     IERC20[] private allMainnetTokens = [
         IERC20(MainnetAddresses.USDC),
         IERC20(MainnetAddresses.FEI),
-        IERC20(MainnetAddresses.DAI),
-        IERC20(MainnetAddresses.VOLT)
+        IERC20(MainnetAddresses.DAI)
+        // IERC20(MainnetAddresses.VOLT)
     ];
 
     /// @notice all tokens currently in VOLT Protocol's PCV on arbitrum

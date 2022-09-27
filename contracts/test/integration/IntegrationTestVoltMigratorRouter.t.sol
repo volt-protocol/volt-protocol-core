@@ -106,12 +106,6 @@ contract IntegrationTestVoltMigratorRouterTest is DSTest {
             compoundUsdcPcvDeposit
         );
 
-        // Deploy TempCoreRef
-        coreRef = new TempCoreRef(
-            MainnetAddresses.CORE,
-            IVolt(address(newVolt))
-        );
-
         // Deploy Volt Migrator
         voltMigrator = new VoltMigrator(
             MainnetAddresses.CORE,

@@ -14,16 +14,18 @@ import {ITimelockSimulation} from "../utils/ITimelockSimulation.sol";
 import {ERC20Allocator} from "../../../pcv/utils/ERC20Allocator.sol";
 import {ERC20CompoundPCVDeposit} from "../../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 import {PriceBoundPSM} from "../../../peg/PriceBoundPSM.sol";
+import {IPegStabilityModule} from "../../../peg/IPegStabilityModule.sol";
 import {VoltMigrator} from "../../../volt/VoltMigrator.sol";
 import {VoltV2} from "../../../volt/VoltV2.sol";
 import {IVolt} from "../../../volt/IVolt.sol";
 import {IPCVDeposit} from "../../../pcv/IPCVDeposit.sol";
+import {MigratorRouter} from "../../../pcv/MigratorRouter.sol";
 
 contract vip13 is DSTest, IVIP {
     using SafeERC20 for IERC20;
     Vm public constant vm = Vm(HEVM_ADDRESS);
-    uint256 voltInUsdcPSM;
-    uint256 voltInDaiPSM;
+    uint256 public voltInUsdcPSM;
+    uint256 public voltInDaiPSM;
 
     PriceBoundPSM public voltV2DaiPriceBoundPSM;
     PriceBoundPSM public voltV2UsdcPriceBoundPSM;
@@ -31,8 +33,15 @@ contract vip13 is DSTest, IVIP {
     VoltV2 public voltV2;
 
     VoltMigrator public voltMigrator;
+    MigratorRouter public migratorRouter;
 
     ITimelockSimulation.action[] private proposal;
+
+    uint256 voltDaiFloorPrice = 9_000;
+    uint256 voltDaiCeilingPrice = 10_000;
+
+    uint256 voltUsdcFloorPrice = 9_000e12;
+    uint256 voltUsdcCeilingPrice = 10_000e12;
 
     /// @notice target token balance for the DAI PSM to hold
     uint248 private constant targetBalanceDai = 100_000e18;
@@ -57,14 +66,75 @@ contract vip13 is DSTest, IVIP {
     ERC20CompoundPCVDeposit private usdcDeposit =
         ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_USDC_PCV_DEPOSIT);
 
-    constructor() {
+    constructor() {}
+
+    function getMainnetProposal()
+        public
+        override
+        returns (ITimelockSimulation.action[] memory prop)
+    {
         voltV2 = new VoltV2(MainnetAddresses.CORE);
         voltMigrator = new VoltMigrator(MainnetAddresses.CORE, address(voltV2));
         deployPsms(address(voltV2));
 
-        address[] memory toWhitelist = new address[](2);
+        migratorRouter = new MigratorRouter(
+            address(voltV2),
+            address(voltMigrator),
+            voltV2DaiPriceBoundPSM,
+            voltV2UsdcPriceBoundPSM
+        );
+
+        address[] memory toWhitelist = new address[](3);
         toWhitelist[0] = address(voltV2UsdcPriceBoundPSM);
         toWhitelist[1] = address(voltV2DaiPriceBoundPSM);
+        toWhitelist[2] = address(voltMigrator);
+
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: MainnetAddresses.CORE,
+                arguments: abi.encodeWithSignature(
+                    "grantMinter(address)",
+                    MainnetAddresses.TIMELOCK_CONTROLLER
+                ),
+                description: "Grant minter role to timelock"
+            })
+        );
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: address(voltV2),
+                arguments: abi.encodeWithSignature(
+                    "mint(address,uint256)",
+                    address(voltMigrator),
+                    voltInDaiPSM + voltInUsdcPSM
+                ),
+                description: "Mint new volt for new VOLT to migrator contract"
+            })
+        );
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: MainnetAddresses.CORE,
+                arguments: abi.encodeWithSignature(
+                    "revokeMinter(address)",
+                    MainnetAddresses.TIMELOCK_CONTROLLER
+                ),
+                description: "Remove minter role from timelock"
+            })
+        );
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: address(MainnetAddresses.VOLT),
+                arguments: abi.encodeWithSignature(
+                    "approve(address,uint256)",
+                    address(voltMigrator),
+                    type(uint256).max // give max approval until we have hardcoded amount
+                ),
+                description: "Approve migrator to use VOLT"
+            })
+        );
 
         proposal.push(
             ITimelockSimulation.action({
@@ -75,10 +145,9 @@ contract vip13 is DSTest, IVIP {
                     address(voltV2UsdcPriceBoundPSM),
                     voltInUsdcPSM
                 ),
-                description: "Mint new volt for new USDC PSM"
+                description: "Exchange new volt for new USDC PSM"
             })
         );
-
         proposal.push(
             ITimelockSimulation.action({
                 value: 0,
@@ -88,10 +157,9 @@ contract vip13 is DSTest, IVIP {
                     address(voltV2DaiPriceBoundPSM),
                     voltInDaiPSM
                 ),
-                description: "Mint new volt for new DAI PSM"
+                description: "Exchange new volt for new DAI PSM"
             })
         );
-
         proposal.push(
             ITimelockSimulation.action({
                 value: 0,
@@ -173,17 +241,9 @@ contract vip13 is DSTest, IVIP {
                     "addWhitelistAddresses(address[])",
                     toWhitelist
                 ),
-                description: "Whitelist new PSMs on PCV Guardian"
+                description: "Add new DAI, and USDC PSMs to PCV Guardian whitelist"
             })
         );
-    }
-
-    function getMainnetProposal()
-        public
-        view
-        override
-        returns (ITimelockSimulation.action[] memory prop)
-    {
         prop = proposal;
     }
 
@@ -227,17 +287,77 @@ contract vip13 is DSTest, IVIP {
             MainnetAddresses.TIMELOCK_CONTROLLER,
             voltInDaiPSM + voltInUsdcPSM
         );
-
-        Core(MainnetAddresses.CORE).grantMinter(MainnetAddresses.GOVERNOR);
-        VoltV2(address(voltV2)).mint(
-            address(voltMigrator),
-            voltInDaiPSM + voltInUsdcPSM
-        );
-        Core(MainnetAddresses.CORE).revokeMinter(MainnetAddresses.GOVERNOR);
         vm.stopPrank();
     }
 
     function mainnetValidate() public override {
+        // Volt Token Validations
+        assertEq(voltV2.decimals(), 18);
+        assertEq(voltV2.symbol(), "VOLT");
+        assertEq(voltV2.name(), "Volt");
+        assertEq(voltV2.totalSupply(), voltInUsdcPSM + voltInDaiPSM);
+
+        // Volt Migrator Validations
+        assertEq(address(voltMigrator.core()), MainnetAddresses.CORE);
+        assertEq(address(voltMigrator.oldVolt()), MainnetAddresses.VOLT);
+        assertEq(address(voltMigrator.newVolt()), address(voltV2));
+        assertEq(IERC20(address(voltV2)).balanceOf(address(voltMigrator)), 0);
+
+        // Migrator Router Validations
+        assertEq(
+            address(migratorRouter.daiPSM()),
+            address(voltV2DaiPriceBoundPSM)
+        );
+        assertEq(
+            address(migratorRouter.usdcPSM()),
+            address(voltV2UsdcPriceBoundPSM)
+        );
+        assertEq(address(migratorRouter.voltMigrator()), address(voltMigrator));
+        assertEq(address(migratorRouter.newVolt()), address(voltV2));
+        assertEq(address(migratorRouter.oldVolt()), MainnetAddresses.VOLT);
+
+        // New USDC PriceBoundPSM validations
+        assertTrue(voltV2UsdcPriceBoundPSM.doInvert());
+        assertTrue(voltV2UsdcPriceBoundPSM.isPriceValid());
+        assertEq(voltV2UsdcPriceBoundPSM.floor(), voltUsdcFloorPrice);
+        assertEq(voltV2UsdcPriceBoundPSM.ceiling(), voltUsdcCeilingPrice);
+        assertEq(
+            address(voltV2UsdcPriceBoundPSM.oracle()),
+            address(MainnetAddresses.ORACLE_PASS_THROUGH)
+        );
+        assertEq(address(voltV2UsdcPriceBoundPSM.backupOracle()), address(0));
+        assertEq(voltV2UsdcPriceBoundPSM.decimalsNormalizer(), 12);
+        assertEq(voltV2UsdcPriceBoundPSM.mintFeeBasisPoints(), 0);
+        assertEq(voltV2UsdcPriceBoundPSM.redeemFeeBasisPoints(), 0);
+        assertEq(
+            address(voltV2UsdcPriceBoundPSM.underlyingToken()),
+            address(MainnetAddresses.USDC)
+        );
+        assertEq(
+            voltV2UsdcPriceBoundPSM.reservesThreshold(),
+            type(uint256).max
+        );
+
+        // New DAI PriceBoundPSM validations
+        assertTrue(voltV2DaiPriceBoundPSM.doInvert());
+        assertTrue(voltV2DaiPriceBoundPSM.isPriceValid());
+        assertEq(voltV2DaiPriceBoundPSM.floor(), voltDaiFloorPrice);
+        assertEq(voltV2DaiPriceBoundPSM.ceiling(), voltDaiCeilingPrice);
+        assertEq(
+            address(voltV2DaiPriceBoundPSM.oracle()),
+            address(MainnetAddresses.ORACLE_PASS_THROUGH)
+        );
+        assertEq(address(voltV2DaiPriceBoundPSM.backupOracle()), address(0));
+        assertEq(voltV2DaiPriceBoundPSM.decimalsNormalizer(), 0);
+        assertEq(voltV2DaiPriceBoundPSM.mintFeeBasisPoints(), 0);
+        assertEq(voltV2DaiPriceBoundPSM.redeemFeeBasisPoints(), 0);
+        assertEq(
+            address(voltV2DaiPriceBoundPSM.underlyingToken()),
+            address(MainnetAddresses.DAI)
+        );
+        assertEq(voltV2DaiPriceBoundPSM.reservesThreshold(), type(uint256).max);
+        assertEq(address(voltV2DaiPriceBoundPSM.surplusTarget()), address(1));
+
         // currently commented as new PSMs not deployed so will not compile
         /// assert erc20 allocator has usdc psm and pcv deposit connected
         {
@@ -310,12 +430,6 @@ contract vip13 is DSTest, IVIP {
         PegStabilityModule.OracleParams memory oracleParamsDai;
         PegStabilityModule.OracleParams memory oracleParamsUsdc;
 
-        uint256 voltDaiFloorPrice = 9_000;
-        uint256 voltDaiCeilingPrice = 10_000;
-
-        uint256 voltUsdcFloorPrice = 9_000e12;
-        uint256 voltUsdcCeilingPrice = 10_000e12;
-
         oracleParamsDai = PegStabilityModule.OracleParams({
             coreAddress: address(MainnetAddresses.CORE),
             oracleAddress: address(MainnetAddresses.ORACLE_PASS_THROUGH),
@@ -329,7 +443,7 @@ contract vip13 is DSTest, IVIP {
             coreAddress: address(MainnetAddresses.CORE),
             oracleAddress: address(MainnetAddresses.ORACLE_PASS_THROUGH),
             backupOracle: address(0),
-            decimalsNormalizer: 0,
+            decimalsNormalizer: 12,
             doInvert: true,
             volt: IVolt(_voltV2)
         });
