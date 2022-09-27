@@ -75,7 +75,8 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
             oracleAddress: address(oracle),
             backupOracle: address(0),
             decimalsNormalizer: 0,
-            doInvert: true
+            doInvert: true,
+            volt: IVolt(MainnetAddresses.VOLT) // to subdue error
         });
 
         /// create PSM

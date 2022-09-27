@@ -50,6 +50,29 @@ contract VoltMigrator is IVoltMigrator, CoreRef {
         IERC20(newVolt).transfer(msg.sender, amountToExchange);
     }
 
+    /// @notice function to exchange old VOLT for new VOLT
+    /// @param amount the amount of old VOLT user wishes to exchange
+    /// @param to address to send the new VOLT to
+    function exchangeTo(address to, uint256 amount) external {
+        oldVolt.burnFrom(msg.sender, amount);
+        IERC20(newVolt).transfer(to, amount);
+    }
+
+    /// @notice function to exchange old VOLT for new VOLT
+    /// takes the minimum of users old VOLT balance, or the amount
+    /// user has approved to the migrator contract & exchanges for new VOLT
+    /// @param to address to send the new VOLT to
+
+    function exchangeAllTo(address to) external {
+        uint256 amountToExchange = Math.min(
+            oldVolt.balanceOf(msg.sender),
+            oldVolt.allowance(msg.sender, address(this))
+        );
+
+        oldVolt.burnFrom(msg.sender, amountToExchange);
+        IERC20(newVolt).transfer(to, amountToExchange);
+    }
+
     /// @notice sweep target token,
     /// @param token to sweep
     /// @param to recipient
