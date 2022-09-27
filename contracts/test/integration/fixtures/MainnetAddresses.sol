@@ -70,6 +70,9 @@ library MainnetAddresses {
     address public constant FEI_DAI_PSM =
         0x2A188F9EB761F70ECEa083bA6c2A40145078dfc2;
 
+    address public constant FINAL_FEI_DAI_PSM =
+        0x7842186CDd11270C4Af8C0A99A5E0589c7F249ce;
+
     // ---------- TOKEN ADDRESSES ----------
 
     address public constant VOLT = 0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18;

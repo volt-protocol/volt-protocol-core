@@ -20,6 +20,8 @@ import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 
 import {Constants} from "../../Constants.sol";
 
+import "hardhat/console.sol";
+
 contract IntegrationTestPriceBoundPSMTest is DSTest {
     using SafeCast for *;
     PriceBoundPSM private psm;
@@ -53,8 +55,8 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     ERC20CompoundPCVDeposit public immutable rariVoltPCVDeposit =
         ERC20CompoundPCVDeposit(MainnetAddresses.RARI_VOLT_PCV_DEPOSIT);
 
-    /// @notice fei DAO timelock address
-    address public immutable feiDAOTimelock = MainnetAddresses.FEI_DAO_TIMELOCK;
+    /// @notice fei dai psm address
+    address public immutable feiDaiPsm = MainnetAddresses.FINAL_FEI_DAI_PSM;
 
     /// @notice Oracle Pass Through contract
     OraclePassThrough public oracle =
@@ -90,8 +92,13 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
             rariVoltPCVDeposit
         );
 
-        vm.prank(feiDAOTimelock);
+        console.log(
+            "isminter: ",
+            ICore(MainnetAddresses.FEI_CORE).isMinter(feiDaiPsm)
+        );
+        vm.prank(feiDaiPsm);
         fei.mint(address(this), mintAmount);
+        console.log("here: ");
 
         vm.startPrank(MainnetAddresses.GOVERNOR);
 
@@ -102,7 +109,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
         volt.mint(address(this), mintAmount);
         vm.stopPrank();
 
-        vm.prank(MainnetAddresses.FEI_GOVERNOR);
+        vm.prank(feiDaiPsm);
         fei.mint(address(psm), mintAmount * 100_000);
     }
 
@@ -255,7 +262,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
         vm.prank(MainnetAddresses.GOVERNOR);
         core.grantPCVController(address(this));
 
-        vm.prank(MainnetAddresses.FEI_GOVERNOR);
+        vm.prank(feiDaiPsm);
         underlyingToken.mint(address(psm), mintAmount);
 
         uint256 startingBalance = underlyingToken.balanceOf(address(this));
