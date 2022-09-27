@@ -2,17 +2,11 @@ import { ethers } from 'ethers';
 import { MainnetAddresses, AddressCategory, Network } from '../types/types'; // imported without custom path to allow docs to autogen without ts errors
 
 const MainnetAddresses: MainnetAddresses = {
-  fiewsChainlinkOracle: {
-    address: '0x049bd8c3adc3fe7d3fc2a44541d955a537c2a484',
+  compUsdChainlinkOracle: {
+    address: '0xdbd020CAeF83eFd542f4De03e3cF0C28A4428bd5',
     artifactName: 'unknown',
     category: AddressCategory.Oracle,
     network: Network.Mainnet
-  },
-  arbitrumFiewsChainlinkOracle: {
-    address: '0xf76F586F6aAC0c8dE147Eea75D76AB7c2f23eDC2',
-    artifactName: 'unknown',
-    category: AddressCategory.Oracle,
-    network: Network.Arbitrum
   },
   scalingPriceOracle: {
     address: '0x79412660E95F94a4D2d02a050CEA776200939917',
@@ -43,6 +37,12 @@ const MainnetAddresses: MainnetAddresses = {
   volt: {
     address: '0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18',
     artifactName: 'Volt',
+    category: AddressCategory.Core,
+    network: Network.Mainnet
+  },
+  comp: {
+    address: '0xc00e94Cb662C3520282E6f5717214004A7f26888',
+    artifactName: 'ERC20',
     category: AddressCategory.Core,
     network: Network.Mainnet
   },

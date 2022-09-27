@@ -106,6 +106,9 @@ library MainnetAddresses {
     address public constant CHAINLINK_ORACLE_ADDRESS =
         0x049Bd8C3adC3fE7d3Fc2a44541d955A537c2A484;
 
+    address public constant CHAINLINK_COMP_ORACLE_ADDRESS =
+        0xdbd020CAeF83eFd542f4De03e3cF0C28A4428bd5;
+
     // ---------- PCV DEPOSIT ADDRESSES ----------
 
     address public constant COMPOUND_DAI_PCV_DEPOSIT =
