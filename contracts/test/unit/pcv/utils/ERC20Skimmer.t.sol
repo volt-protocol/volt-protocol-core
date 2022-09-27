@@ -152,4 +152,16 @@ contract UnitTestERC20Skimmer is DSTest {
         vm.expectRevert("ERC20Skimmer: not in list");
         skimmer.removeDeposit(address(pcvDeposit2));
     }
+
+    function testGovRemoveDepositSucceeds() public {
+        vm.prank(addresses.governorAddress);
+        skimmer.removeDeposit(address(pcvDeposit1));
+        assertTrue(!skimmer.isDepositWhitelisted(address(pcvDeposit1)));
+    }
+
+    function testGovAddDepositSucceeds() public {
+        vm.prank(addresses.governorAddress);
+        skimmer.addDeposit(address(pcvDeposit2));
+        assertTrue(skimmer.isDepositWhitelisted(address(pcvDeposit2)));
+    }
 }
