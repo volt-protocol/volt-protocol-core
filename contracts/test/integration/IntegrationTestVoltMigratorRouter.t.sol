@@ -143,14 +143,20 @@ contract IntegrationTestVoltMigratorRouterTest is DSTest {
     }
 
     function testRedeemUsdc(uint64 amountVoltIn) public {
+        uint256 startBalance = usdc.balanceOf(address(this));
         uint256 minAmountOut = usdcPSM.getRedeemAmountOut(amountVoltIn);
-
         migratorRouter.redeemUSDC(amountVoltIn, minAmountOut);
+        uint256 endBalance = usdc.balanceOf(address(this));
+
+        assertEq(minAmountOut, endBalance - startBalance);
     }
 
     function testRedeemDai(uint64 amountVoltIn) public {
+        uint256 startBalance = dai.balanceOf(address(this));
         uint256 minAmountOut = daiPSM.getRedeemAmountOut(amountVoltIn);
-
         migratorRouter.redeemDai(amountVoltIn, minAmountOut);
+        uint256 endBalance = dai.balanceOf(address(this));
+
+        assertEq(minAmountOut, endBalance - startBalance);
     }
 }
