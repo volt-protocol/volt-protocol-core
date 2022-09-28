@@ -333,10 +333,12 @@ contract vip13 is DSTest, IVIP {
             address(voltV2UsdcPriceBoundPSM.underlyingToken()),
             address(MainnetAddresses.USDC)
         );
+        assertEq(address(voltV2DaiPriceBoundPSM.surplusTarget()), address(1));
         assertEq(
             voltV2UsdcPriceBoundPSM.reservesThreshold(),
             type(uint256).max
         );
+        assertEq(address(voltV2UsdcPriceBoundPSM.volt()), address(voltV2));
 
         // New DAI PriceBoundPSM validations
         assertTrue(voltV2DaiPriceBoundPSM.doInvert());
@@ -357,6 +359,7 @@ contract vip13 is DSTest, IVIP {
         );
         assertEq(voltV2DaiPriceBoundPSM.reservesThreshold(), type(uint256).max);
         assertEq(address(voltV2DaiPriceBoundPSM.surplusTarget()), address(1));
+        assertEq(address(voltV2DaiPriceBoundPSM.volt()), address(voltV2));
 
         // currently commented as new PSMs not deployed so will not compile
         /// assert erc20 allocator has usdc psm and pcv deposit connected

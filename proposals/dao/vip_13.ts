@@ -201,7 +201,7 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
 
   //  volt
   expect(await voltV2DaiPriceBoundPSM.underlyingToken()).to.be.equal(addresses.dai);
-  expect(await voltV2DaiPriceBoundPSM.volt()).to.be.equal(addresses.volt);
+  expect(await voltV2DaiPriceBoundPSM.volt()).to.be.equal(addresses.voltV2);
 
   //  psm params
   expect(await voltV2DaiPriceBoundPSM.redeemFeeBasisPoints()).to.be.equal(0);
@@ -221,7 +221,7 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
 
   //  volt
   expect(await voltV2UsdcPriceBoundPSM.underlyingToken()).to.be.equal(addresses.dai);
-  expect(await voltV2UsdcPriceBoundPSM.volt()).to.be.equal(addresses.volt);
+  expect(await voltV2UsdcPriceBoundPSM.volt()).to.be.equal(addresses.voltV2);
 
   //  psm params
   expect(await voltV2UsdcPriceBoundPSM.redeemFeeBasisPoints()).to.be.equal(0);
