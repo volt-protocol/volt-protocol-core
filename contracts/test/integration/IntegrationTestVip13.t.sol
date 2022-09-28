@@ -5,6 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {ICore} from "../../core/ICore.sol";
+import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
 import {IVolt} from "../../volt/Volt.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {vip13} from "./vip/vip13.sol";
@@ -13,6 +14,7 @@ import {PriceBoundPSM} from "../../peg/PriceBoundPSM.sol";
 import {IPCVGuardian} from "../../pcv/IPCVGuardian.sol";
 
 contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
+    using SafeCast for *;
     uint256 public constant mintAmountDai = 1_000_000e18;
     uint256 public constant mintAmountUsdc = 1_000_000e6;
     uint256 public constant voltMintAmount = 1_000_000e18;
@@ -21,6 +23,9 @@ contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
     IERC20 public usdc = IERC20(MainnetAddresses.USDC);
     ICore private core = ICore(MainnetAddresses.CORE);
     IVolt oldVolt = IVolt(MainnetAddresses.VOLT);
+
+    OraclePassThrough public oracle =
+        OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
     function setUp() public {
         mainnetSetup();
@@ -60,6 +65,7 @@ contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
     }
 
     function testSwapDaiForVolt() public {
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
         uint256 userStartingVoltBalance = voltV2.balanceOf(address(this));
         uint256 minAmountOut = voltV2DaiPriceBoundPSM.getMintAmountOut(
             mintAmountDai
@@ -71,7 +77,7 @@ contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
         dai.approve(address(voltV2DaiPriceBoundPSM), mintAmountDai);
         uint256 amountVoltOut = voltV2DaiPriceBoundPSM.mint(
             address(this),
-            mintAmountDai,
+            voltMintAmount,
             minAmountOut
         );
 
@@ -88,22 +94,29 @@ contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
             endingPSMUnderlyingBalance - startingPSMUnderlyingBalance,
             mintAmountDai
         );
+        assertApproxEq(
+            ((mintAmountDai * 1e18) / currentPegPrice).toInt256(),
+            minAmountOut.toInt256(),
+            0
+        );
     }
 
     function testSwapVoltForDai() public {
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
         uint256 startingUserUnderlyingBalance = dai.balanceOf(address(this));
         uint256 startingPSMUnderlyingBalance = dai.balanceOf(
             address(voltV2DaiPriceBoundPSM)
         );
+
         uint256 redeemAmountOut = voltV2DaiPriceBoundPSM.getRedeemAmountOut(
             voltMintAmount
         );
         uint256 startingUserVOLTBalance = voltV2.balanceOf(address(this));
 
-        voltV2.approve(address(voltV2DaiPriceBoundPSM), mintAmountDai);
+        voltV2.approve(address(voltV2DaiPriceBoundPSM), voltMintAmount);
         uint256 amountOut = voltV2DaiPriceBoundPSM.redeem(
             address(this),
-            mintAmountDai,
+            voltMintAmount,
             redeemAmountOut
         );
 
@@ -125,22 +138,28 @@ contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
             endingPSMUnderlyingBalance,
             startingPSMUnderlyingBalance - amountOut
         );
+        assertApproxEq(
+            ((voltMintAmount * currentPegPrice) / 1e18).toInt256(),
+            amountOut.toInt256(),
+            0
+        );
     }
 
     function testSwapVoltForUsdc() public {
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice() / 1e12;
         uint256 startingUserUnderlyingBalance = usdc.balanceOf(address(this));
         uint256 startingPSMUnderlyingBalance = usdc.balanceOf(
             address(voltV2UsdcPriceBoundPSM)
         );
         uint256 redeemAmountOut = voltV2UsdcPriceBoundPSM.getRedeemAmountOut(
-            mintAmountUsdc
+            voltMintAmount
         );
         uint256 startingUserVOLTBalance = voltV2.balanceOf(address(this));
 
-        voltV2.approve(address(voltV2UsdcPriceBoundPSM), mintAmountUsdc);
+        voltV2.approve(address(voltV2UsdcPriceBoundPSM), voltMintAmount);
         uint256 amountOut = voltV2UsdcPriceBoundPSM.redeem(
             address(this),
-            mintAmountUsdc,
+            voltMintAmount,
             redeemAmountOut
         );
 
@@ -152,7 +171,7 @@ contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
 
         assertEq(
             startingUserVOLTBalance,
-            endingUserVOLTBalance + mintAmountUsdc
+            endingUserVOLTBalance + voltMintAmount
         );
         assertEq(
             endingUserUnderlyingBalance,
@@ -162,9 +181,15 @@ contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
             endingPSMUnderlyingBalance,
             startingPSMUnderlyingBalance - amountOut
         );
+        assertApproxEq(
+            ((voltMintAmount * currentPegPrice) / 1e18).toInt256(),
+            amountOut.toInt256(),
+            0
+        );
     }
 
     function testSwapUsdcForVolt() public {
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
         uint256 userStartingVoltBalance = voltV2.balanceOf(address(this));
         uint256 minAmountOut = voltV2UsdcPriceBoundPSM.getMintAmountOut(
             mintAmountUsdc
@@ -192,6 +217,11 @@ contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
         assertEq(
             endingPSMUnderlyingBalance - startingPSMUnderlyingBalance,
             mintAmountUsdc
+        );
+        assertApproxEq(
+            ((((mintAmountUsdc * 1e18) / currentPegPrice)) * 1e12).toInt256(),
+            minAmountOut.toInt256(),
+            0
         );
     }
 }

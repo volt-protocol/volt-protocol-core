@@ -5,23 +5,14 @@ import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {ICore} from "../../core/ICore.sol";
-import {IVolt, Volt} from "../../volt/Volt.sol";
-import {VoltMigrator} from "../../volt/VoltMigrator.sol";
+import {IVolt} from "../../volt/Volt.sol";
 import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
-import {MigratorRouter} from "../../pcv/MigratorRouter.sol";
-import {VoltV2} from "../../volt/VoltV2.sol";
 import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
 import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
 import {vip13} from "./vip/vip13.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
-import {PriceBoundPSM, PegStabilityModule} from "../../peg/PriceBoundPSM.sol";
-import {IPegStabilityModule} from "../../peg/IPegStabilityModule.sol";
-import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
-import {TempCoreRef} from "../../refs/TempCoreRef.sol";
 import {IPCVGuardian} from "../../pcv/IPCVGuardian.sol";
-
-import "hardhat/console.sol";
 
 contract IntegrationTestVoltMigratorRouterTest is TimelockSimulation, vip13 {
     using SafeCast for *;

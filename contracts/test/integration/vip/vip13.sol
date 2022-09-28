@@ -457,6 +457,8 @@ contract vip13 is DSTest, IVIP {
             oracleParamsDai,
             0,
             0,
+            // the next 3 values are garbage values as
+            // psms are no longer given the minter role to mint
             type(uint256).max,
             10_000e18,
             10_000_000e18,
@@ -470,6 +472,8 @@ contract vip13 is DSTest, IVIP {
             oracleParamsUsdc,
             0,
             0,
+            // the next 3 values are garbage values as
+            // psms are no longer given the minter role to mint
             type(uint256).max,
             10_000e18,
             10_000_000e18,
