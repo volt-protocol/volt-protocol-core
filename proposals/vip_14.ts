@@ -6,7 +6,7 @@ const vip_14: ProposalDescription = {
     {
       target: 'compPSM',
       values: '0',
-      method: 'pauseRedeem()',
+      method: 'pauseMint()',
       arguments: [],
       description: 'Pause sale of COMP to this PSM'
     },
