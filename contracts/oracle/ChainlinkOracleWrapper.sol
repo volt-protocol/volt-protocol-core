@@ -14,6 +14,8 @@ contract ChainlinkOracleWrapper is IOracle, CoreRef {
 
     /// @notice the referenced chainlink oracle
     AggregatorV3Interface public immutable chainlinkOracle;
+
+    /// @notice number to divide answer from chainlink by
     uint256 public immutable oracleDecimalsNormalizer;
 
     /// @notice ChainlinkOracleWrapper constructor
@@ -60,6 +62,9 @@ contract ChainlinkOracleWrapper is IOracle, CoreRef {
         ) = chainlinkOracle.latestRoundData();
         bool valid = !paused() && price > 0 && answeredInRound == roundId;
 
+        /// Decimal.from scales up price by 18 decimals,
+        /// then we divide it down by the amount of decimals it has with oracleDecimalsNormalizer
+        /// this means the price is scaled up by 1e18 now
         Decimal.D256 memory value = Decimal.from(uint256(price)).div(
             oracleDecimalsNormalizer
         );

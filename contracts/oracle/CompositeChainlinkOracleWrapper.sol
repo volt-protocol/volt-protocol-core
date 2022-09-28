@@ -17,7 +17,7 @@ contract CompositeChainlinkOracleWrapper is ChainlinkOracleWrapper {
     /// @notice the oracle pass through to get the current Volt price
     OraclePassThrough public immutable oraclePassThrough;
 
-    /// @notice scaling factor to divide price by
+    /// @notice scaling factor to divide Volt price by
     uint256 public constant scalingFactor = 1e18;
 
     /// @notice ChainlinkOracleWrapper constructor
