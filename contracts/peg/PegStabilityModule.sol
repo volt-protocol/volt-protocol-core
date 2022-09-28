@@ -350,7 +350,7 @@ contract PegStabilityModule is
     /// @notice address of the Volt contract referenced by TempCore
     /// @return IVolt implementation address
     function volt() public view override(CoreRef, TempCoreRef) returns (IVolt) {
-        return super.volt();
+        return TempCoreRef.volt();
     }
 
     /// @notice calculate the amount of FEI out for a given `amountIn` of underlying
