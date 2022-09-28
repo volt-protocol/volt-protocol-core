@@ -10,7 +10,7 @@ import {CoreRef} from "../../refs/CoreRef.sol";
 import {PCVDeposit} from "../PCVDeposit.sol";
 
 /// @notice PCV Deposit for Morpho-Compound V2.
-/// Implements the PCV Deposit interface to deposit and withdraw funds into Morpho
+/// Implements the PCV Deposit interface to deposit and withdraw funds in Morpho
 contract MorphoCompoundPCVDeposit is PCVDeposit {
     using SafeERC20 for IERC20;
 
@@ -50,6 +50,10 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
     /// @notice deposit ERC-20 tokens to Morpho-Compound
     function deposit() public {
         uint256 amount = IERC20(token).balanceOf(address(this));
+        if (amount == 0) {
+            return;
+        }
+
         IERC20(token).approve(MORPHO, amount);
         IMorpho(MORPHO).supply(
             cToken, /// cToken to supply liquidity to
