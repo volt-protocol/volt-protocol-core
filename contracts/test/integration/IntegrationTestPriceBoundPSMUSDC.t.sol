@@ -20,11 +20,12 @@ import {Constants} from "../../Constants.sol";
 
 contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     using SafeCast for *;
-    PriceBoundPSM private psm;
     ICore private core = ICore(MainnetAddresses.CORE);
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
     IERC20 private usdc = IERC20(MainnetAddresses.USDC);
     IERC20 private underlyingToken = usdc;
+
+    PriceBoundPSM private psm = PriceBoundPSM(MainnetAddresses.VOLT_USDC_PSM);
 
     address public makerUSDCPSM = MainnetAddresses.KRAKEN_USDC_WHALE;
 
@@ -53,8 +54,6 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     uint256 reservesThreshold = type(uint256).max; /// max uint so that surplus can never be allocated into the pcv deposit
 
     function setUp() public {
-        psm = PriceBoundPSM(MainnetAddresses.VOLT_USDC_PSM);
-
         uint256 balance = usdc.balanceOf(makerUSDCPSM);
         vm.prank(makerUSDCPSM);
         usdc.transfer(address(this), balance);

@@ -6,8 +6,6 @@ import {IPegStabilityModule} from "../peg/IPegStabilityModule.sol";
 import {IVolt} from "../volt/IVolt.sol";
 import {IVoltMigrator} from "../volt/IVoltMigrator.sol";
 
-import "hardhat/console.sol";
-
 /// @title Migrator Router
 /// @notice This contract is a router that wraps around the token migrator from
 /// the old volt ERC20 token to the new ERC20 token, to allow users to redeem for
@@ -17,27 +15,13 @@ contract MigratorRouter is IMigratorRouter {
     IVolt public constant oldVolt =
         IVolt(0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18);
 
+    /// @notice VOLT-DAI PSM to swap between the two assets
     IPegStabilityModule public immutable daiPSM;
+    /// @notice VOLT-USDC PSM to swap between the two assets
     IPegStabilityModule public immutable usdcPSM;
-
-    /// @notice the VOLT migrator contract
-    // IVoltMigrator public constant voltMigrator =
-    //     IVoltMigrator(0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18); // fill with correct address once deployed
-
-    // IVolt public constant newVolt =
-    //     IVolt(0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18);
-
-    /// new PSMS will be deployed will replace these addresses once they have been dpeloyed
-
-    /// @notice the VOLT-DAI PSM to swap between the two assets
-    // IPegStabilityModule public constant daiPSM =
-    //     IPegStabilityModule(0x42ea9cC945fca2dfFd0beBb7e9B3022f134d9Bdd);
-
-    // /// @notice the VOLT-USDC PSM to swap between the two assets
-    // IPegStabilityModule public constant usdcPSM =
-    //     IPegStabilityModule(0x0b9A7EA2FCA868C93640Dd77cF44df335095F501);
-
+    /// @notice address of the new VOLT token
     address public immutable newVolt;
+    /// @notice the VOLT migrator contract to swap from old VOLT to new
     address public voltMigrator;
 
     constructor(
@@ -52,6 +36,10 @@ contract MigratorRouter is IMigratorRouter {
         daiPSM = _daiPSM;
         usdcPSM = _usdcPSM;
 
+        /// It's safe to give the following contracts max approval as they
+        /// are part of the Volt system and therefore we can be very confident
+        /// in their behavior, as such the scope of attack of giving the following
+        /// contracts max approvals is very limited.
         IVolt(oldVolt).approve(voltMigrator, type(uint256).max);
         IVolt(newVolt).approve(address(daiPSM), type(uint256).max);
         IVolt(newVolt).approve(address(usdcPSM), type(uint256).max);

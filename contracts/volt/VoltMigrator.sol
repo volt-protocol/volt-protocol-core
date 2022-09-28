@@ -16,14 +16,13 @@ import {IVoltMigrator} from "./IVoltMigrator.sol";
 /// will be minted to them.
 contract VoltMigrator is IVoltMigrator, CoreRef {
     using SafeERC20 for IERC20;
+
+    /// @notice address of the new VOLT token
     // solhint-disable-next-line const-name-snakecase
     Volt public constant oldVolt =
         Volt(0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18);
 
-    // // solhint-disable-next-line const-name-snakecase
-    // IVolt public constant newVolt =
-    //     IVolt(0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18);
-
+    /// @notice address of the new VOLT token
     address public immutable newVolt;
 
     constructor(address core, address _newVolt) CoreRef(core) {
