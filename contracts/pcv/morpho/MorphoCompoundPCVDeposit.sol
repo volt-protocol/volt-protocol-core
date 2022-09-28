@@ -10,14 +10,15 @@ import {CoreRef} from "../../refs/CoreRef.sol";
 import {PCVDeposit} from "../PCVDeposit.sol";
 
 /// @notice PCV Deposit for Morpho-Compound V2.
-///
+/// Implements the PCV Deposit interface to deposit and withdraw funds into Morpho
 contract MorphoCompoundPCVDeposit is PCVDeposit {
     using SafeERC20 for IERC20;
 
+    /// @notice reference to the lens contract for morpho-compound v2
     address public constant LENS = 0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67;
-    address public constant MORPHO = 0x8888882f8f843896699869179fB6E4f7e3B58888;
 
-    uint256 public constant BLOCKS_PER_YEAR = 4 * 60 * 24 * 365.25 days;
+    /// @notice reference to the morpho-compound v2 market
+    address public constant MORPHO = 0x8888882f8f843896699869179fB6E4f7e3B58888;
 
     /// @notice reference to underlying token
     address public immutable token;
@@ -25,10 +26,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
     /// @notice reference to cToken used in Morpho
     address public immutable cToken;
 
-    ICompoundOracle public immutable ORACLE;
-
     constructor(address _core, address _cToken) CoreRef(_core) {
-        ORACLE = ICompoundOracle(IMorpho(MORPHO).comptroller().oracle());
         cToken = _cToken;
         token = ICToken(_cToken).underlying();
     }
