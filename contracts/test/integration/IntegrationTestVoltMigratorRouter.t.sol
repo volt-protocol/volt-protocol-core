@@ -2,6 +2,7 @@
 pragma solidity =0.8.13;
 
 import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {ICore} from "../../core/ICore.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
@@ -23,14 +24,16 @@ import {IPCVGuardian} from "../../pcv/IPCVGuardian.sol";
 import "hardhat/console.sol";
 
 contract IntegrationTestVoltMigratorRouterTest is TimelockSimulation, vip13 {
-    uint256 public constant mintAmount = 100_000_000e18;
-
+    using SafeCast for *;
     IVolt oldVolt = IVolt(MainnetAddresses.VOLT);
     ICore core = ICore(MainnetAddresses.CORE);
     IERC20 private usdc = IERC20(MainnetAddresses.USDC);
     IERC20 private dai = IERC20(MainnetAddresses.DAI);
 
-    uint256 reservesThreshold = type(uint256).max; /// max uint so that surplus can never be allocated into the pcv deposit
+    OraclePassThrough public oracle =
+        OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
+
+    uint256 public constant mintAmount = 100_000_000e18;
 
     function setUp() public {
         mainnetSetup();
@@ -71,9 +74,14 @@ contract IntegrationTestVoltMigratorRouterTest is TimelockSimulation, vip13 {
         uint256 minAmountOut = voltV2UsdcPriceBoundPSM.getRedeemAmountOut(
             amountVoltIn
         );
+
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice() / 1e12;
+        uint256 amountOut = (amountVoltIn * currentPegPrice) / 1e18;
+
         migratorRouter.redeemUSDC(amountVoltIn, minAmountOut);
         uint256 endBalance = usdc.balanceOf(address(this));
 
+        assertApproxEq(minAmountOut.toInt256(), amountOut.toInt256(), 0);
         assertEq(minAmountOut, endBalance - startBalance);
     }
 
@@ -82,9 +90,14 @@ contract IntegrationTestVoltMigratorRouterTest is TimelockSimulation, vip13 {
         uint256 minAmountOut = voltV2DaiPriceBoundPSM.getRedeemAmountOut(
             amountVoltIn
         );
+
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
+        uint256 amountOut = (amountVoltIn * currentPegPrice) / 1e18;
+
         migratorRouter.redeemDai(amountVoltIn, minAmountOut);
         uint256 endBalance = dai.balanceOf(address(this));
 
+        assertApproxEq(minAmountOut.toInt256(), amountOut.toInt256(), 0);
         assertEq(minAmountOut, endBalance - startBalance);
     }
 }
