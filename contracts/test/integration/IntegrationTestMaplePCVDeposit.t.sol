@@ -97,6 +97,58 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
         assertTrue(mplBalance != 0);
     }
 
+    function testWithdrawAll() public {
+        uint256 rewardRate = IMplRewards(mplRewards).rewardRate();
+        vm.prank(mapleOwner);
+        IMplRewards(mplRewards).notifyRewardAmount(rewardRate);
+
+        vm.warp(block.timestamp + IPool(maplePool).lockupPeriod());
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.signalIntentToWithdraw();
+
+        vm.warp(block.timestamp + cooldownPeriod);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.withdrawAll(address(this));
+
+        uint256 mplBalance = maple.balanceOf(address(usdcDeposit));
+
+        assertEq(usdcDeposit.balance(), 0);
+        assertEq(usdc.balanceOf(address(this)), targetUsdcBalance);
+        assertTrue(mplBalance != 0);
+    }
+
+    function testSignalWithdrawPCVControllerSucceeds() public {
+        uint256 blockTimestamp = 10_000;
+
+        vm.warp(blockTimestamp);
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.signalIntentToWithdraw();
+
+        assertEq(
+            IPool(maplePool).withdrawCooldown(address(usdcDeposit)),
+            blockTimestamp
+        );
+    }
+
+    function testCancelWithdrawPCVControllerSucceeds() public {
+        uint256 blockTimestamp = 10_000;
+
+        vm.warp(blockTimestamp);
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.signalIntentToWithdraw();
+
+        assertEq(
+            IPool(maplePool).withdrawCooldown(address(usdcDeposit)),
+            blockTimestamp
+        );
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.cancelWithdraw();
+
+        assertEq(IPool(maplePool).withdrawCooldown(address(usdcDeposit)), 0);
+    }
+
     function testDepositNotPCVControllerFails() public {
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
         usdcDeposit.deposit();
@@ -115,5 +167,10 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
     function testWithdrawNonGovFails() public {
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
         usdcDeposit.withdraw(address(this), targetUsdcBalance);
+    }
+
+    function testWithdrawAllNonGovFails() public {
+        vm.expectRevert("CoreRef: Caller is not a PCV controller");
+        usdcDeposit.withdrawAll(address(this));
     }
 }
