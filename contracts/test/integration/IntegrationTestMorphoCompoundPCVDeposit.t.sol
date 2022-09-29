@@ -16,6 +16,8 @@ import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 import {MorphoCompoundPCVDeposit} from "../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
 
+import "hardhat/console.sol";
+
 contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     using SafeCast for *;
 
@@ -111,10 +113,10 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     }
 
     function testWithdrawNonGovFails() public {
-        vm.expectRevert("CoreRef: Caller is not a governor");
+        vm.expectRevert("CoreRef: Caller is not a PCV controller");
         usdcDeposit.withdraw(address(this), targetUsdcBalance);
 
-        vm.expectRevert("CoreRef: Caller is not a governor");
+        vm.expectRevert("CoreRef: Caller is not a PCV controller");
         daiDeposit.withdraw(address(this), targetDaiBalance);
     }
 }

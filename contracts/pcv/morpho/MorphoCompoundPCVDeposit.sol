@@ -11,6 +11,9 @@ import {PCVDeposit} from "../PCVDeposit.sol";
 
 /// @notice PCV Deposit for Morpho-Compound V2.
 /// Implements the PCV Deposit interface to deposit and withdraw funds in Morpho
+/// Liquidity profile of Morpho for this deposit is fully liquid for USDC and DAI
+/// because the incentivized rates are higher than the P2P rate.
+/// Only for depositing USDC and DAI. USDT is not in scope
 contract MorphoCompoundPCVDeposit is PCVDeposit {
     using SafeERC20 for IERC20;
 
@@ -51,6 +54,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
     function deposit() public {
         uint256 amount = IERC20(token).balanceOf(address(this));
         if (amount == 0) {
+            /// no op to prevent revert on empty deposit
             return;
         }
 
@@ -67,8 +71,10 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
     /// @notice withdraw tokens from the PCV allocation
     /// @param to the address PCV will be sent to
     /// @param amount of tokens withdrawn
-    function withdraw(address to, uint256 amount) external onlyGovernor {
+    function withdraw(address to, uint256 amount) external onlyPCVController {
         IMorpho(MORPHO).withdraw(cToken, amount);
         IERC20(token).safeTransfer(to, amount);
+
+        emit Withdrawal(msg.sender, to, amount);
     }
 }
