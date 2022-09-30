@@ -6,7 +6,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPool} from "./IPool.sol";
 import {IMplRewards} from "./IMplRewards.sol";
 import {CoreRef} from "../../refs/CoreRef.sol";
-import {TribeRoles} from "../../core/TribeRoles.sol";
 import {PCVDeposit} from "../PCVDeposit.sol";
 
 /// @notice PCV Deposit for Maple
