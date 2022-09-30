@@ -41,6 +41,13 @@ library MainnetAddresses {
     address public constant VOLT_SYSTEM_ORACLE_144_BIPS =
         0xB8Ac4931A618B06498966cba3a560B867D8f567F;
 
+    // ---------- EULER ADDRESSES ----------
+
+    address public constant EULER_MAIN =
+        0x27182842E098f60e3D576794A5bFFb0777E025d3;
+
+    address public constant EUSDC = 0xEb91861f8A4e1C12333F42DCE8fB0Ecdc28dA716;
+
     // ---------- ACTIVE EOA ADDRESSES ----------
 
     address public constant EOA_1 = 0xB320e376Be6459421695F2b6B1E716AE4bc8129A;
