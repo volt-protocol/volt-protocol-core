@@ -92,13 +92,8 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
             rariVoltPCVDeposit
         );
 
-        console.log(
-            "isminter: ",
-            ICore(MainnetAddresses.FEI_CORE).isMinter(feiDaiPsm)
-        );
         vm.prank(feiDaiPsm);
         fei.mint(address(this), mintAmount);
-        console.log("here: ");
 
         vm.startPrank(MainnetAddresses.GOVERNOR);
 
