@@ -78,8 +78,12 @@ contract UnitTestERC20Skimmer is DSTest {
     }
 
     function testSetup() public {
+        assertEq(address(skimmer.core()), address(core));
+
         assertTrue(skimmer.isDepositWhitelisted(address(pcvDeposit0)));
         assertTrue(skimmer.isDepositWhitelisted(address(pcvDeposit1)));
+        assertTrue(!skimmer.isDepositWhitelisted(address(pcvDeposit2)));
+
         assertTrue(core.isPCVController(address(skimmer)));
         assertEq(skimmer.target(), target);
         assertEq(skimmer.token(), address(token));
@@ -118,11 +122,17 @@ contract UnitTestERC20Skimmer is DSTest {
         skimmer.skim(address(pcvDeposit2));
     }
 
-    function testSkimFailsFromDepositNotInListFuzz(address targetDeposit)
-        public
-    {
+    function testSkimFailsFromDepositNotInListFuzz(
+        address targetDeposit,
+        uint256 amount
+    ) public {
         if (skimmer.isDepositWhitelisted(targetDeposit)) {
+            assertEq(token.balanceOf(target), 0);
+
+            token.mint(targetDeposit, amount);
             skimmer.skim(targetDeposit);
+
+            assertEq(token.balanceOf(target), amount);
         } else {
             vm.expectRevert("ERC20Skimmer: invalid target");
             skimmer.skim(address(pcvDeposit2));
