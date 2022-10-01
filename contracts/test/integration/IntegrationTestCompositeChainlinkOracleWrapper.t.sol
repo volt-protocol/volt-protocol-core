@@ -23,8 +23,6 @@ import {CompositeChainlinkOracleWrapper} from "../../oracle/CompositeChainlinkOr
 import {PriceBoundPSM, PegStabilityModule} from "../../peg/PriceBoundPSM.sol";
 import {getCore, getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
 
-import "hardhat/console.sol";
-
 contract IntegrationTestCompositeChainlinkOracleWrapper is DSTest {
     using Decimal for Decimal.D256;
     using SafeCast for *;

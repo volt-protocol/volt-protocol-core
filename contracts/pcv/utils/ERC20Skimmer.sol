@@ -43,7 +43,7 @@ contract ERC20Skimmer is CoreRef {
     /// condition returns true if deposit has gt 0 token balance
     /// @param deposit the deposit to pull from
     function skimEligible(address deposit) external view returns (bool) {
-        return IERC20(token).balanceOf(address(deposit)) > 0;
+        return IERC20(token).balanceOf(address(deposit)) != 0;
     }
 
     /// @notice skim token from the source.

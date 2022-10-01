@@ -16,8 +16,6 @@ import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 import {MorphoCompoundPCVDeposit} from "../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
 
-import "hardhat/console.sol";
-
 contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     using SafeCast for *;
 
@@ -51,6 +49,15 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
             address(core),
             MainnetAddresses.CUSDC
         );
+
+        vm.label(address(daiDeposit), "Morpho DAI Compound PCV Deposit");
+        vm.label(address(usdcDeposit), "Morpho USDC Compound PCV Deposit");
+        vm.label(address(MainnetAddresses.CDAI), "CDAI");
+        vm.label(address(MainnetAddresses.CUSDC), "CUSDC");
+        vm.label(address(usdc), "USDC");
+        vm.label(address(dai), "DAI");
+        vm.label(0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67, "Morpho Lens");
+        vm.label(0x8888882f8f843896699869179fB6E4f7e3B58888, "Morpho");
 
         vm.startPrank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
         dai.transfer(address(daiDeposit), targetDaiBalance);
@@ -107,8 +114,81 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
         );
     }
 
+    /// 2**80 / 1e18 = ~1.2m which is above target dai balance
+    function testWithdrawDaiFuzz(uint80 amount) public {
+        /// 1 fails in some underlying contract, and this isn't a scenario we are going to realistically have
+        /// as 1e9 wei of dai would always cost more to withdraw than the gas cost
+        vm.assume(amount >= 1e9);
+        vm.assume(amount <= targetDaiBalance);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        daiDeposit.withdraw(address(this), amount);
+
+        assertApproxEq(
+            dai.balanceOf(address(this)).toInt256(),
+            amount.toInt256(),
+            0
+        );
+
+        assertApproxEq(
+            daiDeposit.balance().toInt256(),
+            (targetDaiBalance - amount).toInt256(),
+            0
+        );
+    }
+
+    function testWithdrawUsdcFuzz(uint40 amount) public {
+        vm.assume(amount != 0);
+        vm.assume(amount <= targetUsdcBalance);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.withdraw(address(this), amount);
+
+        assertApproxEq(
+            usdc.balanceOf(address(this)).toInt256(),
+            amount.toInt256(),
+            0
+        );
+
+        assertApproxEq(
+            usdcDeposit.balance().toInt256(),
+            (targetUsdcBalance - amount).toInt256(),
+            0
+        );
+    }
+
+    function testWithdrawAll() public {
+        vm.startPrank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.withdrawAll(address(this));
+        daiDeposit.withdrawAll(address(this));
+        vm.stopPrank();
+
+        assertApproxEq(
+            dai.balanceOf(address(this)).toInt256(),
+            targetDaiBalance.toInt256(),
+            0
+        );
+        assertApproxEq(
+            usdc.balanceOf(address(this)).toInt256(),
+            targetUsdcBalance.toInt256(),
+            0
+        );
+    }
+
     function testDepositNoFundsSucceeds() public {
         usdcDeposit.deposit();
+        daiDeposit.deposit();
+    }
+
+    function testDepositWhenPausedFails() public {
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.pause();
+        vm.expectRevert("Pausable: paused");
+        usdcDeposit.deposit();
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        daiDeposit.pause();
+        vm.expectRevert("Pausable: paused");
         daiDeposit.deposit();
     }
 
@@ -118,5 +198,13 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
 
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
         daiDeposit.withdraw(address(this), targetDaiBalance);
+    }
+
+    function testWithdrawAllNonGovFails() public {
+        vm.expectRevert("CoreRef: Caller is not a PCV controller");
+        usdcDeposit.withdrawAll(address(this));
+
+        vm.expectRevert("CoreRef: Caller is not a PCV controller");
+        daiDeposit.withdrawAll(address(this));
     }
 }

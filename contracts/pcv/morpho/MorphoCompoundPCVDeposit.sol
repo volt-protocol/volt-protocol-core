@@ -26,7 +26,8 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
     /// @notice reference to underlying token
     address public immutable token;
 
-    /// @notice reference to cToken used in Morpho
+    /// @notice cToken in compound this deposit tracks
+    /// used to inform morpho about the desired market to supply liquidity
     address public immutable cToken;
 
     constructor(address _core, address _cToken) CoreRef(_core) {
@@ -51,7 +52,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
     }
 
     /// @notice deposit ERC-20 tokens to Morpho-Compound
-    function deposit() public {
+    function deposit() public whenNotPaused {
         uint256 amount = IERC20(token).balanceOf(address(this));
         if (amount == 0) {
             /// no op to prevent revert on empty deposit
@@ -72,6 +73,16 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
     /// @param to the address PCV will be sent to
     /// @param amount of tokens withdrawn
     function withdraw(address to, uint256 amount) external onlyPCVController {
+        IMorpho(MORPHO).withdraw(cToken, amount);
+        IERC20(token).safeTransfer(to, amount);
+
+        emit Withdrawal(msg.sender, to, amount);
+    }
+
+    /// @notice withdraw all tokens from Morpho
+    /// @param to the address PCV will be sent to
+    function withdrawAll(address to) external onlyPCVController {
+        uint256 amount = balance();
         IMorpho(MORPHO).withdraw(cToken, amount);
         IERC20(token).safeTransfer(to, amount);
 

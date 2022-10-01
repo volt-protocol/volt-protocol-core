@@ -44,6 +44,7 @@ contract IntegrationTestEulerPCVDeposit is DSTest {
         assertEq(address(usdcDeposit.core()), address(core));
         assertEq(usdcDeposit.balanceReportedIn(), address(usdc));
         assertEq(usdcDeposit.eulerMain(), MainnetAddresses.EULER_MAIN);
+        assertEq(address(usdcDeposit.eToken()), MainnetAddresses.EUSDC);
         assertEq(address(usdcDeposit.token()), address(MainnetAddresses.USDC));
         assertApproxEq(
             usdcDeposit.balance().toInt256(),
