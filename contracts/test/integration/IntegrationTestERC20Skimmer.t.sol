@@ -68,6 +68,9 @@ contract IntegrationTestERC20Skimmer is vip14, TimelockSimulation {
         assertTrue(erc20Skimmer.isDepositWhitelisted(address(daiDeposit)));
         assertTrue(erc20Skimmer.isDepositWhitelisted(address(usdcDeposit)));
 
+        assertTrue(erc20Skimmer.skimEligible(address(daiDeposit)));
+        assertTrue(erc20Skimmer.skimEligible(address(usdcDeposit)));
+
         assertTrue(core.isPCVController(address(erc20Skimmer)));
         assertEq(erc20Skimmer.target(), target);
         assertEq(erc20Skimmer.token(), address(comp));
@@ -76,7 +79,9 @@ contract IntegrationTestERC20Skimmer is vip14, TimelockSimulation {
     function testSkimFromDeposit0Succeeds() public {
         uint256 startingTokenBalance = comp.balanceOf(address(daiDeposit));
 
+        assertTrue(erc20Skimmer.skimEligible(address(daiDeposit)));
         erc20Skimmer.skim(address(daiDeposit));
+        assertTrue(!erc20Skimmer.skimEligible(address(daiDeposit)));
 
         assertEq(comp.balanceOf(address(daiDeposit)), 0);
         assertEq(comp.balanceOf(address(target)), startingTokenBalance);
@@ -85,7 +90,9 @@ contract IntegrationTestERC20Skimmer is vip14, TimelockSimulation {
     function testSkimFromDeposit1Succeeds() public {
         uint256 startingTokenBalance = comp.balanceOf(address(usdcDeposit));
 
+        assertTrue(erc20Skimmer.skimEligible(address(usdcDeposit)));
         erc20Skimmer.skim(address(usdcDeposit));
+        assertTrue(!erc20Skimmer.skimEligible(address(usdcDeposit)));
 
         assertEq(comp.balanceOf(address(usdcDeposit)), 0);
         assertEq(comp.balanceOf(address(target)), startingTokenBalance);
@@ -96,6 +103,7 @@ contract IntegrationTestERC20Skimmer is vip14, TimelockSimulation {
         core.revokePCVController(address(erc20Skimmer));
 
         assertTrue(!core.isPCVController(address(erc20Skimmer)));
+        assertTrue(erc20Skimmer.skimEligible(address(daiDeposit)));
 
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
         erc20Skimmer.skim(address(daiDeposit));
@@ -112,7 +120,13 @@ contract IntegrationTestERC20Skimmer is vip14, TimelockSimulation {
         if (erc20Skimmer.isDepositWhitelisted(targetDeposit)) {
             uint256 startingTokenBalance = comp.balanceOf(targetDeposit);
 
+            if (startingTokenBalance != 0) {
+                assertTrue(erc20Skimmer.skimEligible(targetDeposit));
+            }
             erc20Skimmer.skim(targetDeposit);
+            if (startingTokenBalance != 0) {
+                assertTrue(!erc20Skimmer.skimEligible(targetDeposit));
+            }
 
             assertEq(comp.balanceOf(targetDeposit), 0);
             assertEq(comp.balanceOf(target), startingTokenBalance);

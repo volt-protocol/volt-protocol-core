@@ -117,7 +117,7 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     /// 2**80 / 1e18 = ~1.2m which is above target dai balance
     function testWithdrawDaiFuzz(uint80 amount) public {
         /// 1 fails in some underlying contract, and this isn't a scenario we are going to realistically have
-        /// as 1e9 wei of dai would always cost more to withdraw than the gas cost
+        /// as 1e9 wei of dai would always cost more in gas than the dai is worth
         vm.assume(amount >= 1e9);
         vm.assume(amount <= targetDaiBalance);
 
