@@ -109,10 +109,16 @@ contract UnitTestERC20Skimmer is DSTest {
     }
 
     function testSkimFromDeposit1Succeeds(uint128 mintAmount) public {
+        vm.assume(mintAmount != 0);
+
         assertEq(token.balanceOf(address(target)), 0);
+        assertTrue(!skimmer.skimEligible(address(pcvDeposit1)));
 
         token.mint(address(pcvDeposit1), mintAmount);
+
+        assertTrue(skimmer.skimEligible(address(pcvDeposit1)));
         skimmer.skim(address(pcvDeposit1));
+        assertTrue(!skimmer.skimEligible(address(pcvDeposit1)));
 
         assertEq(token.balanceOf(address(target)), mintAmount);
     }
