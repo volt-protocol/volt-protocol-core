@@ -49,6 +49,8 @@ contract IntegrationTestCompositeChainlinkOracleWrapper is DSTest {
 
     uint256 public constant startTime = 1663286400;
 
+    Vm public constant vm = Vm(HEVM_ADDRESS);
+
     function setUp() public {
         chainlinkOracleWrapper = new ChainlinkOracleWrapper(
             address(core),
@@ -74,5 +76,12 @@ contract IntegrationTestCompositeChainlinkOracleWrapper is DSTest {
             ((currentOraclePrice * compPriceInVolt) / 1e18).toInt256(),
             0
         );
+    }
+
+    function testPauseTurnsReadValidFalse() public {
+        vm.prank(MainnetAddresses.GOVERNOR);
+        chainlinkCompositeOracle.pause();
+        (, bool valid) = chainlinkCompositeOracle.read();
+        assertTrue(!valid);
     }
 }
