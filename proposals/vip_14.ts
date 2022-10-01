@@ -11,6 +11,13 @@ const vip_14: ProposalDescription = {
       description: 'Pause sale of COMP to this PSM'
     },
     {
+      target: 'core',
+      values: '0',
+      method: 'grantPCVController(address)',
+      arguments: ['{erc20Skimmer}'],
+      description: 'Grant COMP Skimmer ERC20Allocator Role'
+    },
+    {
       target: 'erc20Skimmer',
       values: '0',
       method: 'addDeposit(address)',
@@ -23,13 +30,6 @@ const vip_14: ProposalDescription = {
       method: 'addDeposit(address)',
       arguments: ['{usdcCompoundPCVDeposit}'],
       description: 'Add Compound USDC PCV Deposit to COMP Skimmer'
-    },
-    {
-      target: 'core',
-      values: '0',
-      method: 'grantPCVController(address)',
-      arguments: ['{erc20Skimmer}'],
-      description: 'Grant COMP Skimmer ERC20Allocator Role'
     }
   ],
   description: 'VIP-14: COMP Sell Only PSM'
