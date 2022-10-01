@@ -43,7 +43,7 @@ const MainnetAddresses: MainnetAddresses = {
   comp: {
     address: '0xc00e94Cb662C3520282E6f5717214004A7f26888',
     artifactName: 'ERC20',
-    category: AddressCategory.Core,
+    category: AddressCategory.External,
     network: Network.Mainnet
   },
   arbitrumVolt: {
