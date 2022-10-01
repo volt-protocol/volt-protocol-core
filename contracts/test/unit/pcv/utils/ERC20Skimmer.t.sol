@@ -9,8 +9,6 @@ import {ERC20Skimmer} from "../../../../pcv/utils/ERC20Skimmer.sol";
 import {ERC20HoldingPCVDeposit} from "../../../../pcv/ERC20HoldingPCVDeposit.sol";
 import {getCore, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.sol";
 
-import "hardhat/console.sol";
-
 contract UnitTestERC20Skimmer is DSTest {
     ICore private core;
     Vm public constant vm = Vm(HEVM_ADDRESS);
