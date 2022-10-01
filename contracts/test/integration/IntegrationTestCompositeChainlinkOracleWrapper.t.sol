@@ -64,8 +64,17 @@ contract IntegrationTestCompositeChainlinkOracleWrapper is DSTest {
     }
 
     function testSetup() public {
-        (Decimal.D256 memory voltCompPrice, ) = chainlinkCompositeOracle.read();
-        (Decimal.D256 memory usdCompPrice, ) = chainlinkOracleWrapper.read();
+        (
+            Decimal.D256 memory voltCompPrice,
+            bool validCCO
+        ) = chainlinkCompositeOracle.read();
+        (
+            Decimal.D256 memory usdCompPrice,
+            bool validC0W
+        ) = chainlinkOracleWrapper.read();
+
+        assertTrue(validCCO);
+        assertTrue(validC0W);
 
         uint256 compPriceInVolt = voltCompPrice.value;
         uint256 compPriceInUsd = usdCompPrice.value;
