@@ -110,12 +110,48 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
         assertTrue(mplBalance != 0);
     }
 
+    function _testWithdraw(uint256 amount) private {
+        uint256 rewardRate = IMplRewards(mplRewards).rewardRate();
+        vm.prank(mapleOwner);
+        IMplRewards(mplRewards).notifyRewardAmount(rewardRate);
+
+        vm.warp(
+            block.timestamp + IPool(maplePool).lockupPeriod() - cooldownPeriod
+        );
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.signalIntentToWithdraw();
+
+        vm.warp(block.timestamp + cooldownPeriod);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.withdraw(address(this), amount);
+
+        uint256 mplBalance = maple.balanceOf(address(usdcDeposit));
+
+        uint256 targetBal = targetUsdcBalance - amount;
+        assertEq(usdcDeposit.balance(), targetBal);
+        assertEq(usdc.balanceOf(address(this)), amount);
+        assertTrue(mplBalance != 0);
+    }
+
+    function testWithdrawAtCoolDownEnd() public {
+        _testWithdraw(targetUsdcBalance);
+    }
+
+    function testWithdrawAtCoolDownEndFuzz(uint40 amount) public {
+        vm.assume(amount != 0);
+        vm.assume(amount <= targetUsdcBalance);
+        _testWithdraw(amount);
+    }
+
     function testWithdrawAll() public {
         uint256 rewardRate = IMplRewards(mplRewards).rewardRate();
         vm.prank(mapleOwner);
         IMplRewards(mplRewards).notifyRewardAmount(rewardRate);
 
-        vm.warp(block.timestamp + IPool(maplePool).lockupPeriod());
+        vm.warp(
+            block.timestamp + IPool(maplePool).lockupPeriod() - cooldownPeriod
+        );
         vm.prank(MainnetAddresses.GOVERNOR);
         usdcDeposit.signalIntentToWithdraw();
 
