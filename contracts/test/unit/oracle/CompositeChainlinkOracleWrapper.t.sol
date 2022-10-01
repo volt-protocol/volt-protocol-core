@@ -81,10 +81,6 @@ contract CompositeChainlinkOracleWrapperUnitTest is DSTest {
             address(compositeOracle.chainlinkOracle()),
             address(chainlinkOracle)
         );
-        assertEq(
-            address(compositeOracle.chainlinkOracle()),
-            address(chainlinkOracle)
-        );
         assertEq(compositeOracle.oracleDecimalsNormalizer(), 1e8);
         assertTrue(!compositeOracle.isOutdated());
     }
@@ -126,8 +122,10 @@ contract CompositeChainlinkOracleWrapperUnitTest is DSTest {
         compositeOracle.update();
     }
 
-    function testCompoundBeforePeriodStartFails() public {
-        vm.expectRevert("VoltSystemOracle: not past end time");
-        voltSystemOracle.compoundInterest();
+    function testReadValidFalseWhenPaused() public {
+        vm.prank(addresses.governorAddress);
+        compositeOracle.pause();
+        (, bool valid) = compositeOracle.read();
+        assertTrue(!valid);
     }
 }
