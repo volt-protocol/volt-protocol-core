@@ -103,6 +103,8 @@ library MainnetAddresses {
 
     address public constant CUSDC = 0x39AA39c021dfbaE8faC545936693aC917d5E7563;
 
+    address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
+
     // ---------- Maker ADDRESSES ----------
 
     address public constant MAKER_DAI_USDC_PSM =
