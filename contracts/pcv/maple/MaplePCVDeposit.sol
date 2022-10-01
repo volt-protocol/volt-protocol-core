@@ -10,6 +10,7 @@ import {PCVDeposit} from "../PCVDeposit.sol";
 
 /// @notice PCV Deposit for Maple
 /// Allows depositing only by privileged role to prevent lockup period being extended by griefers
+/// Can only deposit USDC in this MAPLE PCV deposit
 contract MaplePCVDeposit is PCVDeposit {
     using SafeERC20 for IERC20;
 
@@ -22,7 +23,9 @@ contract MaplePCVDeposit is PCVDeposit {
     /// @notice reference to the underlying token
     IERC20 public immutable token;
 
-    /// @notice scaling factor
+    /// @notice scaling factor for USDC
+    /// @dev hardcoded to use USDC decimals as this is the only
+    /// supplied asset Volt Protocol will support
     uint256 public constant scalingFactor = 1e12;
 
     /// @notice fetch underlying asset by calling pool and getting liquidity asset
@@ -33,12 +36,18 @@ contract MaplePCVDeposit is PCVDeposit {
         address _pool,
         address _mplRewards
     ) CoreRef(_core) {
-        pool = IPool(_pool);
         token = IERC20(IPool(_pool).liquidityAsset());
+        /// enforce underlying token is USDC
+        require(
+            address(token) == 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48,
+            "MaplePCVDeposit: Underlying not USDC"
+        );
+        pool = IPool(_pool);
         mplRewards = IMplRewards(_mplRewards);
     }
 
     /// @notice return the amount of funds this contract owns in Maple FDT's
+    /// without accounting for interest earned
     function balance() public view override returns (uint256) {
         return pool.balanceOf(address(this)) / scalingFactor;
     }

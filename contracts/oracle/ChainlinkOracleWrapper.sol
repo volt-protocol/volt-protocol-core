@@ -8,7 +8,7 @@ import {AggregatorV3Interface} from "../external/AggregatorV3Interface.sol";
 
 /// @title Chainlink oracle wrapper
 /// @author eswak, Elliot
-/// @notice Reads a Chainlink oracle value & wrap it under the standard Fei oracle interface
+/// @notice Reads a Chainlink oracle value & wrap it under the standard Volt oracle interface
 contract ChainlinkOracleWrapper is IOracle, CoreRef {
     using Decimal for Decimal.D256;
 
@@ -19,7 +19,7 @@ contract ChainlinkOracleWrapper is IOracle, CoreRef {
     uint256 public immutable oracleDecimalsNormalizer;
 
     /// @notice ChainlinkOracleWrapper constructor
-    /// @param _core Fei Core for reference
+    /// @param _core Volt Core for reference
     /// @param _chainlinkOracle reference to the target Chainlink oracle
     /// @dev decimals of the oracle are expected to never change, if Chainlink
     /// updates that behavior in the future, we might consider reading the

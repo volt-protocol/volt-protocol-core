@@ -6,6 +6,18 @@ interface IPool {
     function balanceOf(address) external view returns (uint256);
 
     /**
+        @dev    Returns the amount of funds that an account has earned in total.
+        @dev    accumulativeFundsOf(_owner) = withdrawableFundsOf(_owner) + withdrawnFundsOf(_owner)
+                                         = (pointsPerShare * balanceOf(_owner) + pointsCorrection[_owner]) / pointsMultiplier
+        @param  _owner The address of a token holder.
+        @return The amount of funds that `_owner` has earned in total.
+    */
+    function accumulativeFundsOf(address _owner)
+        external
+        view
+        returns (uint256);
+
+    /**
         @dev    Returns the total amount of funds a given address is able to withdraw currently.
         @param  owner Address of FDT holder.
         @return A uint256 representing the available funds for a given account.

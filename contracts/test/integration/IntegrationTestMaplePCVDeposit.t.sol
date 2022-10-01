@@ -13,6 +13,7 @@ import {IDSSPSM} from "../../pcv/maker/IDSSPSM.sol";
 import {Constants} from "../../Constants.sol";
 import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
 import {IMplRewards} from "../../pcv/maple/IMplRewards.sol";
+import {MockMaplePool} from "../../mock/MockMaplePool.sol";
 import {MaplePCVDeposit} from "../../pcv/maple/MaplePCVDeposit.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
@@ -54,6 +55,11 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
     function setUp() public {
         usdcDeposit = new MaplePCVDeposit(address(core), maplePool, mplRewards);
 
+        vm.label(address(usdcDeposit), "Maple USDC PCV Deposit");
+        vm.label(address(usdc), "USDC Token");
+        vm.label(address(maplePool), "Maple Pool");
+        vm.label(address(mplRewards), "Maple Rewards");
+
         vm.startPrank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
         usdc.transfer(address(usdcDeposit), targetUsdcBalance);
         vm.stopPrank();
@@ -74,6 +80,13 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
             targetUsdcBalance.toInt256(),
             0
         );
+    }
+
+    function testDeployFailsNotUSDCUnderlying() public {
+        MockMaplePool mockPool = new MockMaplePool(address(this));
+
+        vm.expectRevert("MaplePCVDeposit: Underlying not USDC");
+        new MaplePCVDeposit(address(core), address(mockPool), mplRewards);
     }
 
     function testWithdraw() public {
