@@ -84,7 +84,7 @@ contract MaplePCVDeposit is PCVDeposit {
     }
 
     /// @notice function to start the cooldown process to withdraw
-    /// 1. lp lockup on deposit --> 80 days locked up and can't withdraw
+    /// 1. lp lockup on deposit --> 90 days locked up and can't withdraw
     /// 2. cool down period, call intend to withdraw -->
     ///   must wait 10 days before withdraw after calling intend to withdraw function
     /// 3. after cool down and past the lockup period,
