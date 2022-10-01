@@ -48,6 +48,7 @@ contract MaplePCVDeposit is PCVDeposit {
 
     /// @notice return the amount of funds this contract owns in Maple FDT's
     /// without accounting for interest earned
+    /// does not account for unrealized losses in the venue
     function balance() public view override returns (uint256) {
         return pool.balanceOf(address(this)) / scalingFactor;
     }
