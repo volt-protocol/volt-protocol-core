@@ -74,7 +74,7 @@ contract MaplePCVDeposit is PCVDeposit {
         token.approve(address(pool), amount);
         pool.deposit(amount);
 
-        /// token withdraw
+        /// stake pool FDT for MPL rewards
         uint256 scaledDepositAmount = amount * scalingFactor;
         pool.increaseCustodyAllowance(address(mplRewards), scaledDepositAmount);
         mplRewards.stake(scaledDepositAmount);
@@ -83,6 +83,11 @@ contract MaplePCVDeposit is PCVDeposit {
     }
 
     /// @notice function to start the cooldown process to withdraw
+    /// 1. lp lockup on deposit --> 80 days locked up and can't withdraw
+    /// 2. cool down period, call intend to withdraw -->
+    ///   must wait 10 days before withdraw after calling intend to withdraw function
+    /// 3. after cool down and past the lockup period,
+    ///    have 2 days to withdraw before cool down period restarts.
     function signalIntentToWithdraw() external onlyPCVController {
         pool.intendToWithdraw();
     }
@@ -104,6 +109,11 @@ contract MaplePCVDeposit is PCVDeposit {
         uint256 scaledWithdrawAmount = amount * scalingFactor;
 
         mplRewards.getReward(); /// get MPL rewards
+        /// this call will withdraw amount of principal requested, and then send
+        /// over any accrued interest.
+        /// expected behavior is that this contract
+        /// receives either amount of USDC, or amount of USDC + interest accrued
+        /// if lending losses were taken, receive less than amount
         mplRewards.withdraw(scaledWithdrawAmount); /// decreases allowance
 
         /// withdraw from the pool
@@ -117,6 +127,11 @@ contract MaplePCVDeposit is PCVDeposit {
     function withdrawAll(address to) external onlyPCVController {
         uint256 amount = balance();
         mplRewards.exit(); /// unstakes from Maple reward contract and claims rewards
+        /// this call will withdraw all principal,
+        /// then send over any accrued interest.
+        /// expected behavior is that this contract
+        /// receives balance amount of USDC, or amount of USDC + interest accrued
+        /// if lending losses were taken, receive less than amount
         pool.withdraw(amount); /// call pool and withdraw entire balance
 
         uint256 tokenBalance = IERC20(token).balanceOf(address(this));
