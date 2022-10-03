@@ -10,8 +10,6 @@ import {getCore, getAddresses, VoltTestAddresses} from "./utils/Fixtures.sol";
 import {ICore} from "../../core/ICore.sol";
 import {stdError} from "../unit/utils/StdLib.sol";
 
-import "hardhat/console.sol";
-
 contract UnitTestVoltV2 is DSTest {
     using SafeCast for *;
     VoltV2 private volt;
@@ -22,7 +20,7 @@ contract UnitTestVoltV2 is DSTest {
 
     function setUp() public {
         core = getCore();
-        volt = new VoltV2(address(core));
+        volt = new VoltV2();
     }
 
     function testTokenDetails() public {
@@ -38,7 +36,6 @@ contract UnitTestVoltV2 is DSTest {
     }
 
     function testMintSuccessMinter(uint256 voltToMint) public {
-        vm.prank(addresses.minterAddress);
         volt.mint(address(0xFFF), voltToMint);
 
         vm.prank(address(0xFFF));
@@ -51,39 +48,33 @@ contract UnitTestVoltV2 is DSTest {
 
     function testMintAfterDelegation(uint256 voltToMint) public {
         vm.assume(voltToMint < type(uint256).max / 2);
-        vm.prank(addresses.minterAddress);
         volt.mint(address(0xFFF), voltToMint);
 
         vm.prank(address(0xFFF));
         volt.delegate(address(0xFFF));
-
-        vm.prank(addresses.minterAddress);
         volt.mint(address(0xFFF), voltToMint);
 
         assertEq(volt.getCurrentVotes(address(0xFFF)), voltToMint * 2);
     }
 
     function testMintFailureUnauthorized() public {
-        vm.expectRevert("CoreRef: Caller is not a minter");
+        vm.startPrank(address(0xFFF));
+        vm.expectRevert("Ownable: caller is not the owner");
         volt.mint(address(0xFFF), 1e18);
+        vm.stopPrank();
     }
 
     function testMintFailToVoltContract() public {
-        vm.startPrank(addresses.minterAddress);
         vm.expectRevert("Volt: cannot transfer to the volt contract");
         volt.mint(address(volt), 1e18);
-        vm.stopPrank();
     }
 
     function testMintFailZeroAddress() public {
-        vm.startPrank(addresses.minterAddress);
         vm.expectRevert("Volt: cannot transfer to the zero address");
         volt.mint(address(0), 1e18);
-        vm.stopPrank();
     }
 
     function testBurn(uint256 voltToBurn) public {
-        vm.prank(addresses.minterAddress);
         volt.mint(address(this), voltToBurn);
         volt.delegate(address(this));
         assertEq(volt.getCurrentVotes(address(this)), voltToBurn);
@@ -96,24 +87,15 @@ contract UnitTestVoltV2 is DSTest {
     }
 
     function testBurnFail() public {
-        vm.prank(addresses.minterAddress);
         volt.mint(address(this), 1e18);
 
         vm.expectRevert("Volt: burn amount exceeds balance");
         volt.burn(2e18);
     }
 
-    function testBurnFailZeroAddress() public {
-        vm.startPrank(address(0));
-        vm.expectRevert("Volt: cannot burn from the zero address");
-        volt.burn(1e18);
-        vm.stopPrank();
-    }
-
     function testBurnFrom(uint256 voltToBurn) public {
         vm.assume(voltToBurn < type(uint256).max); // to make sure we don't run into infinite approval counter example
         address from = address(0xFFF);
-        vm.prank(addresses.minterAddress);
         volt.mint(from, voltToBurn);
 
         vm.prank(from);
@@ -127,20 +109,8 @@ contract UnitTestVoltV2 is DSTest {
         assertEq(volt.totalSupply(), 0);
     }
 
-    function testBurnFromFailAddressZero() public {
-        address from = address(0);
-
-        vm.prank(from);
-        volt.approve(address(this), 1e18);
-        assertEq(volt.allowance(from, address(this)), 1e18);
-
-        vm.expectRevert("Volt: cannot burn from the zero address");
-        volt.burnFrom(from, 1e18);
-    }
-
     function testBurnFromInfiniteApproval(uint256 voltToBurn) public {
         address from = address(0xFFF);
-        vm.prank(addresses.minterAddress);
         volt.mint(from, voltToBurn);
 
         vm.prank(from);
@@ -156,7 +126,6 @@ contract UnitTestVoltV2 is DSTest {
 
     function testBurnFromFailInsufficientBalance() public {
         address from = address(0xFFF);
-        vm.prank(addresses.minterAddress);
         volt.mint(from, 1e18);
 
         vm.prank(from);
@@ -168,8 +137,6 @@ contract UnitTestVoltV2 is DSTest {
 
     function testBurnFromFailInsufficientAllowance() public {
         address from = address(0xFFF);
-
-        vm.prank(addresses.minterAddress);
         volt.mint(from, 1e18);
 
         vm.prank(from);
@@ -185,7 +152,6 @@ contract UnitTestVoltV2 is DSTest {
     }
 
     function testTransfer(uint256 voltToTransfer) public {
-        vm.prank(addresses.minterAddress);
         volt.mint(address(this), voltToTransfer);
 
         volt.transfer(address(0xFFF), voltToTransfer);
@@ -205,17 +171,9 @@ contract UnitTestVoltV2 is DSTest {
         volt.transfer(address(volt), 1e18);
     }
 
-    function testTransferFailFromZeroAddress() public {
-        vm.startPrank(address(0));
-        vm.expectRevert("Volt: cannot transfer from the zero address");
-        volt.transfer(address(0), 1e18);
-        vm.stopPrank();
-    }
-
     function testTransferFrom(uint256 voltToTransfer) public {
         vm.assume(voltToTransfer < type(uint256).max); // to make sure we don't run into infinite approval counter example
         address from = address(0xFFF);
-        vm.prank(addresses.minterAddress);
         volt.mint(from, voltToTransfer);
 
         vm.prank(from);
@@ -232,7 +190,6 @@ contract UnitTestVoltV2 is DSTest {
 
     function testTransferFromInfiniteApproval(uint256 voltToTransfer) public {
         address from = address(0xFFF);
-        vm.prank(addresses.minterAddress);
         volt.mint(from, voltToTransfer);
 
         vm.prank(from);
@@ -249,7 +206,6 @@ contract UnitTestVoltV2 is DSTest {
 
     function testTransferFromFailInsufficientBalance() public {
         address from = address(0xFFF);
-        vm.prank(addresses.minterAddress);
         volt.mint(from, 1e18);
 
         vm.prank(from);
@@ -261,8 +217,6 @@ contract UnitTestVoltV2 is DSTest {
 
     function testTransferFromInsufficientAllowance() public {
         address from = address(0xFFF);
-
-        vm.prank(addresses.minterAddress);
         volt.mint(from, 1e18);
 
         vm.prank(from);
@@ -274,8 +228,6 @@ contract UnitTestVoltV2 is DSTest {
 
     function testTransferFromFailToVoltContract() public {
         address from = address(0xFFF);
-
-        vm.prank(addresses.minterAddress);
         volt.mint(from, 1e18);
 
         vm.prank(from);

@@ -70,7 +70,9 @@ contract vip13 is DSTest, IVIP {
 
     constructor() {
         mainnetSetup();
-        voltV2 = new VoltV2(MainnetAddresses.CORE);
+        voltV2 = new VoltV2();
+        voltV2.transferOwnership(MainnetAddresses.TIMELOCK_CONTROLLER);
+
         voltMigrator = new VoltMigrator(
             MainnetAddresses.CORE,
             IVolt(address(voltV2))
@@ -91,17 +93,6 @@ contract vip13 is DSTest, IVIP {
         proposal.push(
             ITimelockSimulation.action({
                 value: 0,
-                target: MainnetAddresses.CORE,
-                arguments: abi.encodeWithSignature(
-                    "grantMinter(address)",
-                    MainnetAddresses.TIMELOCK_CONTROLLER
-                ),
-                description: "Grant minter role to timelock"
-            })
-        );
-        proposal.push(
-            ITimelockSimulation.action({
-                value: 0,
                 target: address(voltV2),
                 arguments: abi.encodeWithSignature(
                     "mint(address,uint256)",
@@ -109,17 +100,6 @@ contract vip13 is DSTest, IVIP {
                     oldVoltTotalSupply
                 ),
                 description: "Mint new volt for new VOLT to migrator contract"
-            })
-        );
-        proposal.push(
-            ITimelockSimulation.action({
-                value: 0,
-                target: MainnetAddresses.CORE,
-                arguments: abi.encodeWithSignature(
-                    "revokeMinter(address)",
-                    MainnetAddresses.TIMELOCK_CONTROLLER
-                ),
-                description: "Remove minter role from timelock"
             })
         );
         proposal.push(

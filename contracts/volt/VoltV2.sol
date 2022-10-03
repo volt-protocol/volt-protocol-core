@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.8.13;
 
-import {CoreRef} from "../refs/CoreRef.sol";
-import {TribeRoles} from "../core/TribeRoles.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // Forked from Uniswap's UNI
 // Reference: https://etherscan.io/address/0x1f9840a85d5af5bf1d1762f925bdaddc4201f984#code
 
-contract VoltV2 is CoreRef {
+contract VoltV2 is Ownable {
     using SafeCast for *;
 
     /// @notice EIP-20 token name for this token
@@ -91,20 +90,18 @@ contract VoltV2 is CoreRef {
         uint256 amount
     );
 
-    constructor(address core) CoreRef(core) {}
-
     /// @notice Mint new tokens
     /// @param dst The address of the destination account
     /// @param amount The number of tokens to be minted
-    function mint(address dst, uint256 amount) external onlyMinter {
+    function mint(address dst, uint256 amount) external onlyOwner {
         require(dst != address(0), "Volt: cannot transfer to the zero address");
         require(
             dst != address(this),
             "Volt: cannot transfer to the volt contract"
         );
 
-        totalSupply = totalSupply + amount;
-        balances[dst] = balances[dst] + amount;
+        totalSupply += amount;
+        balances[dst] += amount;
 
         emit Transfer(address(0), dst, amount);
 
@@ -112,13 +109,13 @@ contract VoltV2 is CoreRef {
         _moveDelegates(address(0), delegates[dst], amount);
     }
 
-    /// @notice Burns the rawAmount of the callers tokens
+    /// @notice Burns the amount of the callers tokens
     /// @param amount The amount of tokens to be burned
     function burn(uint256 amount) external {
         _burn(msg.sender, amount);
     }
 
-    /// @notice Burns tokens 'rawAmount' of tokens from 'src' address deducting\
+    /// @notice Burns tokens amount of tokens from 'src' address deducting\
     /// from the callers allowance
     /// @param src The address the tokens will be burned from
     /// @param amount The amount of tokens to be burned
@@ -128,15 +125,15 @@ contract VoltV2 is CoreRef {
     }
 
     /// @notice Get the number of tokens `spender` is approved to spend on behalf of `account`
-    /// @param account The address of the account holding the funds
+    /// @param owner The address of the account holding the funds
     /// @param spender The address of the account spending the funds
     /// @return The number of tokens approved
-    function allowance(address account, address spender)
+    function allowance(address owner, address spender)
         external
         view
         returns (uint256)
     {
-        return allowances[account][spender];
+        return allowances[owner][spender];
     }
 
     /// @notice Approve `spender` to transfer up to `amount` from `src`
@@ -326,11 +323,10 @@ contract VoltV2 is CoreRef {
     }
 
     function _burn(address src, uint256 amount) internal {
-        require(src != address(0), "Volt: cannot burn from the zero address");
         require(balances[src] >= amount, "Volt: burn amount exceeds balance");
 
-        totalSupply = totalSupply - amount;
-        balances[src] = balances[src] - amount;
+        totalSupply -= amount;
+        balances[src] -= amount;
 
         emit Transfer(src, address(0), amount);
 
@@ -365,16 +361,12 @@ contract VoltV2 is CoreRef {
         uint256 amount
     ) internal {
         require(
-            src != address(0),
-            "Volt: cannot transfer from the zero address"
-        );
-        require(
             dst != address(this),
             "Volt: cannot transfer to the volt contract"
         );
 
-        balances[src] = balances[src] - amount;
-        balances[dst] = balances[dst] + amount;
+        balances[src] -= amount;
+        balances[dst] += amount;
 
         emit Transfer(src, dst, amount);
 
@@ -417,7 +409,7 @@ contract VoltV2 is CoreRef {
     ) internal {
         uint32 blockNumber = block.number.toUint32();
         if (
-            nCheckpoints > 0 &&
+            nCheckpoints != 0 &&
             checkpoints[delegatee][nCheckpoints - 1].fromBlock == blockNumber
         ) {
             checkpoints[delegatee][nCheckpoints - 1].votes = newVotes;

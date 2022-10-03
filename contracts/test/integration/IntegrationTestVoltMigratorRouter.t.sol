@@ -46,14 +46,13 @@ contract IntegrationTestVoltMigratorRouterTest is TimelockSimulation, vip13 {
         vm.prank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
         dai.transfer(address(voltV2DaiPriceBoundPSM), balance);
 
-        // Grant old volt balance to user, and new volt balance to migrator
         vm.startPrank(MainnetAddresses.GOVERNOR);
         core.grantMinter(MainnetAddresses.GOVERNOR);
-        // mint old volt to user
         oldVolt.mint(address(this), mintAmount);
-        // mint new volt to migrator contract
-        voltV2.mint(address(voltMigrator), mintAmount);
         vm.stopPrank();
+
+        vm.prank(MainnetAddresses.TIMELOCK_CONTROLLER);
+        voltV2.mint(address(voltMigrator), mintAmount);
     }
 
     function testRedeemUsdc(uint64 amountVoltIn) public {
