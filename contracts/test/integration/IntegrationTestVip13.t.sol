@@ -22,13 +22,11 @@ contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
     IERC20 public dai = IERC20(MainnetAddresses.DAI);
     IERC20 public usdc = IERC20(MainnetAddresses.USDC);
     ICore private core = ICore(MainnetAddresses.CORE);
-    IVolt oldVolt = IVolt(MainnetAddresses.VOLT);
 
     OraclePassThrough public oracle =
         OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
     function setUp() public {
-        mainnetSetup();
         simulate(
             getMainnetProposal(),
             TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),

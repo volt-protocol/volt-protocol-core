@@ -16,7 +16,6 @@ import {IPCVGuardian} from "../../pcv/IPCVGuardian.sol";
 
 contract IntegrationTestVoltMigratorRouterTest is TimelockSimulation, vip13 {
     using SafeCast for *;
-    IVolt oldVolt = IVolt(MainnetAddresses.VOLT);
     ICore core = ICore(MainnetAddresses.CORE);
     IERC20 private usdc = IERC20(MainnetAddresses.USDC);
     IERC20 private dai = IERC20(MainnetAddresses.DAI);
@@ -27,7 +26,6 @@ contract IntegrationTestVoltMigratorRouterTest is TimelockSimulation, vip13 {
     uint256 public constant mintAmount = 100_000_000e18;
 
     function setUp() public {
-        mainnetSetup();
         simulate(
             getMainnetProposal(),
             TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),

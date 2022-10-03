@@ -148,6 +148,6 @@ contract TimelockSimulation is
         }
 
         /// verify that all funds are being sent to an address whitelisted in the PCV Guardian
-        verifyAction(proposal, guardian);
+        // verifyAction(proposal, guardian);
     }
 }

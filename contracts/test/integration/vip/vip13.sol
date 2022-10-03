@@ -31,11 +31,14 @@ contract vip13 is DSTest, IVIP {
     PriceBoundPSM public voltV2UsdcPriceBoundPSM;
 
     VoltV2 public voltV2;
+    IVolt public oldVolt = IVolt(MainnetAddresses.VOLT);
 
     VoltMigrator public voltMigrator;
     MigratorRouter public migratorRouter;
 
     ITimelockSimulation.action[] private proposal;
+
+    uint256 oldVoltTotalSupply = oldVolt.totalSupply();
 
     uint256 voltDaiFloorPrice = 9_000;
     uint256 voltDaiCeilingPrice = 10_000;
@@ -61,18 +64,11 @@ contract vip13 is DSTest, IVIP {
 
     ERC20CompoundPCVDeposit private daiDeposit =
         ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_DAI_PCV_DEPOSIT);
-    ERC20CompoundPCVDeposit private feiDeposit =
-        ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_FEI_PCV_DEPOSIT);
     ERC20CompoundPCVDeposit private usdcDeposit =
         ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_USDC_PCV_DEPOSIT);
 
-    constructor() {}
-
-    function getMainnetProposal()
-        public
-        override
-        returns (ITimelockSimulation.action[] memory prop)
-    {
+    constructor() {
+        mainnetSetup();
         voltV2 = new VoltV2(MainnetAddresses.CORE);
         voltMigrator = new VoltMigrator(MainnetAddresses.CORE, address(voltV2));
         deployPsms(address(voltV2));
@@ -84,10 +80,9 @@ contract vip13 is DSTest, IVIP {
             voltV2UsdcPriceBoundPSM
         );
 
-        address[] memory toWhitelist = new address[](3);
+        address[] memory toWhitelist = new address[](2);
         toWhitelist[0] = address(voltV2UsdcPriceBoundPSM);
         toWhitelist[1] = address(voltV2DaiPriceBoundPSM);
-        toWhitelist[2] = address(voltMigrator);
 
         proposal.push(
             ITimelockSimulation.action({
@@ -107,7 +102,7 @@ contract vip13 is DSTest, IVIP {
                 arguments: abi.encodeWithSignature(
                     "mint(address,uint256)",
                     address(voltMigrator),
-                    voltInDaiPSM + voltInUsdcPSM
+                    oldVoltTotalSupply
                 ),
                 description: "Mint new volt for new VOLT to migrator contract"
             })
@@ -132,7 +127,7 @@ contract vip13 is DSTest, IVIP {
                     address(voltMigrator),
                     type(uint256).max // give max approval until we have hardcoded amount
                 ),
-                description: "Approve migrator to use VOLT"
+                description: "Approve migrator to use old  VOLT"
             })
         );
 
@@ -168,7 +163,7 @@ contract vip13 is DSTest, IVIP {
                     "disconnectPSM(address)",
                     MainnetAddresses.VOLT_USDC_PSM
                 ),
-                description: "Disconnect USDC PSM from the ERC20 Allocator"
+                description: "Disconnect old USDC PSM from the ERC20 Allocator"
             })
         );
         proposal.push(
@@ -179,7 +174,7 @@ contract vip13 is DSTest, IVIP {
                     "disconnectPSM(address)",
                     MainnetAddresses.VOLT_DAI_PSM
                 ),
-                description: "Disconnect DAI PSM from the ERC20 Allocator"
+                description: "Disconnect old DAI PSM from the ERC20 Allocator"
             })
         );
         proposal.push(
@@ -192,7 +187,7 @@ contract vip13 is DSTest, IVIP {
                     targetBalanceUsdc,
                     usdcDecimalNormalizer /// 12 decimals of normalization
                 ),
-                description: "Add USDC PSM to the ERC20 Allocator"
+                description: "Add new USDC PSM to the ERC20 Allocator"
             })
         );
         proposal.push(
@@ -205,7 +200,7 @@ contract vip13 is DSTest, IVIP {
                     targetBalanceDai,
                     daiDecimalNormalizer
                 ),
-                description: "Add DAI PSM to the ERC20 Allocator"
+                description: "Add new DAI PSM to the ERC20 Allocator"
             })
         );
         proposal.push(
@@ -244,6 +239,14 @@ contract vip13 is DSTest, IVIP {
                 description: "Add new DAI, and USDC PSMs to PCV Guardian whitelist"
             })
         );
+    }
+
+    function getMainnetProposal()
+        public
+        view
+        override
+        returns (ITimelockSimulation.action[] memory prop)
+    {
         prop = proposal;
     }
 
@@ -295,13 +298,16 @@ contract vip13 is DSTest, IVIP {
         assertEq(voltV2.decimals(), 18);
         assertEq(voltV2.symbol(), "VOLT");
         assertEq(voltV2.name(), "Volt");
-        assertEq(voltV2.totalSupply(), voltInUsdcPSM + voltInDaiPSM);
+        assertEq(voltV2.totalSupply(), oldVoltTotalSupply);
 
         // Volt Migrator Validations
         assertEq(address(voltMigrator.core()), MainnetAddresses.CORE);
         assertEq(address(voltMigrator.oldVolt()), MainnetAddresses.VOLT);
         assertEq(address(voltMigrator.newVolt()), address(voltV2));
-        assertEq(IERC20(address(voltV2)).balanceOf(address(voltMigrator)), 0);
+        assertEq(
+            IERC20(address(voltV2)).balanceOf(address(voltMigrator)),
+            oldVoltTotalSupply - (voltInUsdcPSM + voltInDaiPSM)
+        );
 
         // Migrator Router Validations
         assertEq(

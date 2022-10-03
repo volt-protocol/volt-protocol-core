@@ -26,8 +26,8 @@ Steps:
 
 const vipNumber = '13';
 
-const voltFloorPrice = 9_000;
-const voltCeilingPrice = 10_000;
+const voltDaiFloorPrice = 9_000;
+const voltDaiCeilingPrice = 10_000;
 
 const voltUsdcFloorPrice = '9000000000000000';
 const voltUsdcCeilingPrice = '10000000000000000';
@@ -46,6 +46,8 @@ const usdcDecimalsNormalizer = 12;
 let voltInUsdcPSM = 0;
 let voltInDaiPSM = 0;
 
+let oldVoltTotalSupply = 0;
+
 // Do any deployments
 // This should exclusively include new contract deployments
 const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: NamedAddresses, logging: boolean) => {
@@ -54,13 +56,13 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
   const voltV2 = await VoltV2Factory.deploy(addresses.core);
   await voltV2.deployed();
 
-  console.log(`Volt Toke deployed to: ${voltV2.address}`);
+  console.log(`Volt Token deployed to: ${voltV2.address}`);
 
   const voltV2DaiPriceBoundPSM = await (
     await ethers.getContractFactory('PriceBoundPSM')
   ).deploy(
-    voltFloorPrice,
-    voltCeilingPrice,
+    voltDaiFloorPrice,
+    voltDaiCeilingPrice,
     {
       coreAddress: addresses.core,
       oracleAddress: addresses.voltSystemOraclePassThrough, // OPT
@@ -71,6 +73,7 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
     },
     0, // 0 mint fee
     0, // 0 redeem fee
+    //next three values are dummy values as psms do not mint volt
     reservesThreshold,
     mintLimitPerSecond,
     voltPSMBufferCap,
@@ -97,6 +100,7 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
     },
     0,
     0,
+    //next three values are dummy values as psms do not mint volt
     reservesThreshold,
     mintLimitPerSecond,
     voltPSMBufferCap,
@@ -138,6 +142,8 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
 const setup: SetupUpgradeFunc = async (addresses, oldContracts, contracts, logging) => {
   const { pcvGuardian, volt } = contracts;
 
+  oldVoltTotalSupply = await volt.totalSupply();
+
   const msgSigner = await getImpersonatedSigner(addresses.protocolMultisig);
   const governorVoltBalanceBeforeUsdc = await volt.balanceOf(msgSigner.address);
   await pcvGuardian.connect(msgSigner).withdrawAllERC20ToSafeAddress(addresses.usdcPriceBoundPSM, addresses.volt);
@@ -151,7 +157,7 @@ const setup: SetupUpgradeFunc = async (addresses, oldContracts, contracts, loggi
 
   voltInDaiPSM = governorVoltBalanceAfterDai - governorVoltBalanceBeforeDai;
 
-  await volt.connnect(msgSigner).safeTransfer(addresses.daiPriceBoundPSM, voltInUsdcPSM + voltInDaiPSM);
+  await volt.connnect(msgSigner).safeTransfer(addresses.timelockController, voltInUsdcPSM + voltInDaiPSM);
 };
 
 // Tears down any changes made in setup() that need to be
@@ -175,23 +181,24 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
     migratorRouter
   } = contracts;
 
-  expect(PCVGuardian.isWhitelistAddress(voltV2UsdcPriceBoundPSM.address)).to.be.true;
-  expect(PCVGuardian.isWhitelistAddress(voltV2DaiPriceBoundPSM.address)).to.be.true;
+  expect(await PCVGuardian.isWhitelistAddress(voltV2UsdcPriceBoundPSM.address)).to.be.true;
+  expect(await PCVGuardian.isWhitelistAddress(voltV2DaiPriceBoundPSM.address)).to.be.true;
 
-  expect(voltV2.decimals()).to.equal(18);
-  expect(voltV2.symbol()).to.equal('VOLT');
-  expect(voltV2.name()).to.equal('Volt');
-  expect(voltV2.totalSupply()).to.equal(voltInDaiPSM + voltInUsdcPSM);
+  expect(await voltV2.decimals()).to.equal(18);
+  expect(await voltV2.symbol()).to.equal('VOLT');
+  expect(await voltV2.name()).to.equal('Volt');
+  expect(await voltV2.totalSupply()).to.equal(oldVoltTotalSupply);
 
-  expect(voltMigrator.core()).to.equal(addresses.core);
-  expect(voltMigrator.oldVolt()).to.equal(addresses.volt);
-  expect(voltMigrator.newVolt()).to.equal(addresses.voltV2);
+  expect(await voltMigrator.core()).to.equal(addresses.core);
+  expect(await voltMigrator.oldVolt()).to.equal(addresses.volt);
+  expect(await voltMigrator.newVolt()).to.equal(addresses.voltV2);
+  expect(await voltV2.balanceOf(voltMigrator.address)).to.equal(oldVoltTotalSupply - (voltInDaiPSM + voltInUsdcPSM));
 
-  expect(migratorRouter.daiPSM()).to.equal(addresses.voltV2DaiPriceBoundPSM);
-  expect(migratorRouter.usdcPSM()).to.equal(addresses.voltV2UsdcPriceBoundPSM);
-  expect(migratorRouter.voltMigrator()).to.equal(addresses.voltMigrator);
-  expect(migratorRouter.oldVolt()).to.equal(addresses.volt);
-  expect(migratorRouter.newVolt()).to.equal(addresses.voltV2);
+  expect(await migratorRouter.daiPSM()).to.equal(addresses.voltV2DaiPriceBoundPSM);
+  expect(await migratorRouter.usdcPSM()).to.equal(addresses.voltV2UsdcPriceBoundPSM);
+  expect(await migratorRouter.voltMigrator()).to.equal(addresses.voltMigrator);
+  expect(await migratorRouter.oldVolt()).to.equal(addresses.volt);
+  expect(await migratorRouter.newVolt()).to.equal(addresses.voltV2);
 
   //  oracle
   expect(await voltV2DaiPriceBoundPSM.doInvert()).to.be.true;
@@ -220,7 +227,7 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
   expect(await voltV2UsdcPriceBoundPSM.isPriceValid()).to.be.true;
 
   //  volt
-  expect(await voltV2UsdcPriceBoundPSM.underlyingToken()).to.be.equal(addresses.dai);
+  expect(await voltV2UsdcPriceBoundPSM.underlyingToken()).to.be.equal(addresses.usdc);
   expect(await voltV2UsdcPriceBoundPSM.volt()).to.be.equal(addresses.voltV2);
 
   //  psm params
