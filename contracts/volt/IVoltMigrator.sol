@@ -2,6 +2,16 @@
 pragma solidity =0.8.13;
 
 interface IVoltMigrator {
+    // ----------- Events -----------
+
+    event VoltMigrated(
+        address indexed from,
+        address indexed to,
+        uint256 indexed amount
+    );
+
+    // ----------- State changing API -----------
+
     /// @notice function to exchange old VOLT for new VOLT
     /// @param amount the amount of old VOLT user wishes to exchange
     function exchange(uint256 amount) external;

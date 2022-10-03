@@ -70,7 +70,10 @@ contract vip13 is DSTest, IVIP {
     constructor() {
         mainnetSetup();
         voltV2 = new VoltV2(MainnetAddresses.CORE);
-        voltMigrator = new VoltMigrator(MainnetAddresses.CORE, address(voltV2));
+        voltMigrator = new VoltMigrator(
+            MainnetAddresses.CORE,
+            IVolt(address(voltV2))
+        );
         deployPsms(address(voltV2));
 
         migratorRouter = new MigratorRouter(

@@ -17,23 +17,22 @@ import {IVoltMigrator} from "./IVoltMigrator.sol";
 contract VoltMigrator is IVoltMigrator, CoreRef {
     using SafeERC20 for IERC20;
 
-    /// @notice address of the new VOLT token
+    /// @notice address of the old VOLT token
     // solhint-disable-next-line const-name-snakecase
     Volt public constant oldVolt =
         Volt(0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18);
 
     /// @notice address of the new VOLT token
-    address public immutable newVolt;
+    IVolt public immutable newVolt;
 
-    constructor(address core, address _newVolt) CoreRef(core) {
+    constructor(address core, IVolt _newVolt) CoreRef(core) {
         newVolt = _newVolt;
     }
 
     /// @notice function to exchange old VOLT for new VOLT
     /// @param amount the amount of old VOLT user wishes to exchange
     function exchange(uint256 amount) external {
-        oldVolt.burnFrom(msg.sender, amount);
-        IERC20(newVolt).transfer(msg.sender, amount);
+        _migrateVolt(msg.sender, amount);
     }
 
     /// @notice function to exchange old VOLT for new VOLT
@@ -45,31 +44,34 @@ contract VoltMigrator is IVoltMigrator, CoreRef {
             oldVolt.allowance(msg.sender, address(this))
         );
 
-        oldVolt.burnFrom(msg.sender, amountToExchange);
-        IERC20(newVolt).transfer(msg.sender, amountToExchange);
+        _migrateVolt(msg.sender, amountToExchange);
     }
 
     /// @notice function to exchange old VOLT for new VOLT
     /// @param amount the amount of old VOLT user wishes to exchange
     /// @param to address to send the new VOLT to
     function exchangeTo(address to, uint256 amount) external {
-        oldVolt.burnFrom(msg.sender, amount);
-        IERC20(newVolt).transfer(to, amount);
+        _migrateVolt(to, amount);
     }
 
     /// @notice function to exchange old VOLT for new VOLT
     /// takes the minimum of users old VOLT balance, or the amount
     /// user has approved to the migrator contract & exchanges for new VOLT
     /// @param to address to send the new VOLT to
-
     function exchangeAllTo(address to) external {
         uint256 amountToExchange = Math.min(
             oldVolt.balanceOf(msg.sender),
             oldVolt.allowance(msg.sender, address(this))
         );
 
-        oldVolt.burnFrom(msg.sender, amountToExchange);
-        IERC20(newVolt).transfer(to, amountToExchange);
+        _migrateVolt(to, amountToExchange);
+    }
+
+    function _migrateVolt(address to, uint256 amount) internal {
+        oldVolt.burnFrom(msg.sender, amount);
+        newVolt.transfer(to, amount);
+
+        emit VoltMigrated(msg.sender, to, amount);
     }
 
     /// @notice sweep target token,
