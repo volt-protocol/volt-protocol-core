@@ -17,10 +17,7 @@ import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposi
 import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
-
 import {Constants} from "../../Constants.sol";
-
-import "hardhat/console.sol";
 
 contract IntegrationTestPriceBoundPSMTest is DSTest {
     using SafeCast for *;
@@ -92,13 +89,8 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
             rariVoltPCVDeposit
         );
 
-        console.log(
-            "isminter: ",
-            ICore(MainnetAddresses.FEI_CORE).isMinter(feiDaiPsm)
-        );
         vm.prank(feiDaiPsm);
         fei.mint(address(this), mintAmount);
-        console.log("here: ");
 
         vm.startPrank(MainnetAddresses.GOVERNOR);
 
