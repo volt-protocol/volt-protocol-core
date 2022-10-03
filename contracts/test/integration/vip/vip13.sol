@@ -18,6 +18,7 @@ import {IPegStabilityModule} from "../../../peg/IPegStabilityModule.sol";
 import {VoltMigrator} from "../../../volt/VoltMigrator.sol";
 import {VoltV2} from "../../../volt/VoltV2.sol";
 import {IVolt} from "../../../volt/IVolt.sol";
+import {IVoltMigrator} from "../../../volt/IVoltMigrator.sol";
 import {IPCVDeposit} from "../../../pcv/IPCVDeposit.sol";
 import {MigratorRouter} from "../../../pcv/MigratorRouter.sol";
 
@@ -77,8 +78,8 @@ contract vip13 is DSTest, IVIP {
         deployPsms(address(voltV2));
 
         migratorRouter = new MigratorRouter(
-            address(voltV2),
-            address(voltMigrator),
+            IVolt(address(voltV2)),
+            IVoltMigrator(address(voltMigrator)),
             voltV2DaiPriceBoundPSM,
             voltV2UsdcPriceBoundPSM
         );

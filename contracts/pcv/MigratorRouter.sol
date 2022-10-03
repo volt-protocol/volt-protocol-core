@@ -20,13 +20,13 @@ contract MigratorRouter is IMigratorRouter {
     /// @notice VOLT-USDC PSM to swap between the two assets
     IPegStabilityModule public immutable usdcPSM;
     /// @notice address of the new VOLT token
-    address public immutable newVolt;
+    IVolt public immutable newVolt;
     /// @notice the VOLT migrator contract to swap from old VOLT to new
-    address public voltMigrator;
+    IVoltMigrator public voltMigrator;
 
     constructor(
-        address _newVolt,
-        address _voltMigrator,
+        IVolt _newVolt,
+        IVoltMigrator _voltMigrator,
         IPegStabilityModule _daiPSM,
         IPegStabilityModule _usdcPSM
     ) {
@@ -39,10 +39,12 @@ contract MigratorRouter is IMigratorRouter {
         /// It's safe to give the following contracts max approval as they
         /// are part of the Volt system and therefore we can be very confident
         /// in their behavior, as such the scope of attack of giving the following
-        /// contracts max approvals is very limited.
-        IVolt(oldVolt).approve(voltMigrator, type(uint256).max);
-        IVolt(newVolt).approve(address(daiPSM), type(uint256).max);
-        IVolt(newVolt).approve(address(usdcPSM), type(uint256).max);
+        /// contracts max approvals is very limited. Also the only time the migrator
+        /// contract uses the transferFrom it passes msg.sender, so the only way to spend
+        /// the approval is via the person who gave the approval requesting the transfer
+        oldVolt.approve(address(voltMigrator), type(uint256).max);
+        newVolt.approve(address(daiPSM), type(uint256).max);
+        newVolt.approve(address(usdcPSM), type(uint256).max);
     }
 
     /// @notice This lets the user redeem DAI using old VOLT
@@ -50,7 +52,7 @@ contract MigratorRouter is IMigratorRouter {
     /// @param minAmountOut the minimum amount of DAI the user expects to receive
     function redeemDai(uint256 amountVoltIn, uint256 minAmountOut) external {
         oldVolt.transferFrom(msg.sender, address(this), amountVoltIn);
-        IVoltMigrator(voltMigrator).exchange(amountVoltIn);
+        voltMigrator.exchange(amountVoltIn);
 
         daiPSM.redeem(msg.sender, amountVoltIn, minAmountOut);
     }
@@ -60,7 +62,7 @@ contract MigratorRouter is IMigratorRouter {
     /// @param minAmountOut the minimum amount of USDC the user expects to receive
     function redeemUSDC(uint256 amountVoltIn, uint256 minAmountOut) external {
         oldVolt.transferFrom(msg.sender, address(this), amountVoltIn);
-        IVoltMigrator(voltMigrator).exchange(amountVoltIn);
+        voltMigrator.exchange(amountVoltIn);
 
         usdcPSM.redeem(msg.sender, amountVoltIn, minAmountOut);
     }
