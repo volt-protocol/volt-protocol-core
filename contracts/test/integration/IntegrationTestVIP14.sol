@@ -14,16 +14,14 @@ import {IPCVGuardian} from "../../pcv/IPCVGuardian.sol";
 
 contract IntegrationTestVIP14 is TimelockSimulation, vip14 {
     using SafeCast for *;
-    PriceBoundPSM private psm = PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM);
-
-    ICore private core = ICore(MainnetAddresses.CORE);
-    IERC20 dai = IERC20(MainnetAddresses.DAI);
-    IVolt volt = IVolt(MainnetAddresses.VOLT);
-
-    uint256 public constant mintAmount = type(uint80).max;
 
     IPCVGuardian private immutable mainnetPCVGuardian =
         IPCVGuardian(MainnetAddresses.PCV_GUARDIAN);
+
+    /// @notice scaling factor for USDC
+    uint256 public constant USDC_SCALING_FACTOR = 1e12;
+
+    address private governor = MainnetAddresses.GOVERNOR;
 
     function setUp() public {
         mainnetSetup();
@@ -51,7 +49,48 @@ contract IntegrationTestVIP14 is TimelockSimulation, vip14 {
 
     function testClaimCompRewardsUsdc() public {}
 
-    function testSwapUsdcToDaiRouter() public {}
+    function testSwapUsdcToDaiRouter() public {
+        uint256 withdrawAmount = usdcDeposit.balance();
+        uint256 daiStartingBalance = daiDeposit.balance();
 
-    function testSwapDaiToUsdcRouter() public {}
+        vm.prank(governor);
+        router.swapUsdcForDai(withdrawAmount);
+
+        assertApproxEq(
+            daiDeposit.balance().toInt256(),
+            (withdrawAmount * USDC_SCALING_FACTOR + daiStartingBalance)
+                .toInt256(),
+            0
+        );
+
+        assertTrue(usdcDeposit.balance() < 1e3); /// assert only dust remains
+    }
+
+    function testSwapDaiToUsdcRouter() public {
+        uint256 withdrawAmount = daiDeposit.balance();
+        uint256 usdcStartingBalance = usdcDeposit.balance();
+
+        vm.prank(governor);
+        router.swapDaiForUsdc(withdrawAmount); /// withdraw all balance
+
+        assertApproxEq(
+            usdcDeposit.balance().toInt256(),
+            (withdrawAmount / USDC_SCALING_FACTOR + usdcStartingBalance)
+                .toInt256(),
+            0
+        );
+        assertTrue(daiDeposit.balance() < 1e10); /// assert only dust remains
+    }
+
+    function testSwapUsdcToDaiFailsUnauthorized() public {
+        uint256 withdrawAmount = usdcDeposit.balance();
+        vm.expectRevert("UNAUTHORIZED");
+        router.swapUsdcForDai(withdrawAmount);
+    }
+
+    function testSwapDaiToUsdcFailsUnauthorized() public {
+        uint256 withdrawAmount = daiDeposit.balance();
+        vm.expectRevert("UNAUTHORIZED");
+        router.swapDaiForUsdc(withdrawAmount);
+    }
 }

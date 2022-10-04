@@ -47,10 +47,10 @@ contract vip14 is DSTest, IVIP {
     using SafeERC20 for IERC20;
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
-    address private dai = MainnetAddresses.DAI;
-    address private fei = MainnetAddresses.FEI;
-    address private usdc = MainnetAddresses.USDC;
-    address private core = MainnetAddresses.CORE;
+    address public immutable dai = MainnetAddresses.DAI;
+    address public immutable fei = MainnetAddresses.FEI;
+    address public immutable usdc = MainnetAddresses.USDC;
+    address public immutable core = MainnetAddresses.CORE;
 
     ITimelockSimulation.action[] private mainnetProposal;
 
@@ -62,15 +62,15 @@ contract vip14 is DSTest, IVIP {
 
     uint256 public immutable startTime;
 
-    uint256 private constant monthlyChangeRateBasisPoints = 29;
+    uint256 public constant monthlyChangeRateBasisPoints = 29;
 
-    PCVGuardian private immutable pcvGuardian =
+    PCVGuardian public immutable pcvGuardian =
         PCVGuardian(MainnetAddresses.PCV_GUARDIAN);
 
     VoltSystemOracle private immutable oldOracle =
         VoltSystemOracle(MainnetAddresses.VOLT_SYSTEM_ORACLE_144_BIPS);
 
-    ERC20Allocator private immutable allocator =
+    ERC20Allocator public immutable allocator =
         ERC20Allocator(MainnetAddresses.ERC20ALLOCATOR);
 
     uint256 targetMapleDepositAmount = 750_000e6;
