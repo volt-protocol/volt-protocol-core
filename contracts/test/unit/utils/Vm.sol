@@ -54,6 +54,13 @@ interface Vm {
     // Sets an address' balance, (who, newBalance)
     function deal(address, uint256) external;
 
+    // Sets an address' balance in desired token, (token, who, newBalance)
+    function deal(
+        address,
+        address,
+        uint256
+    ) external;
+
     // Sets an address' code, (who, newCode)
     function etch(address, bytes calldata) external;
 
