@@ -118,6 +118,18 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.PCV,
     network: Network.Mainnet
   },
+  morphoCompound: {
+    address: '0x8888882f8f843896699869179fB6E4f7e3B58888',
+    artifactName: 'unknown',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  morphoCompoundLens: {
+    address: '0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67',
+    artifactName: 'unknown',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
   compoundPCVRouter: {
     address: '0x6338Ec144279b1f05AF8C90216d90C5b54Fa4D8F',
     artifactName: 'CompoundPCVRouter',
