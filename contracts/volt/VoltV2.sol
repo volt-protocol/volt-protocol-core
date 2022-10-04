@@ -105,7 +105,12 @@ contract VoltV2 is Ownable {
 
         emit Transfer(address(0), dst, amount);
 
-        // move delegates
+        /// If an address is being minted to for the first time as the src address
+        /// is address(0) the srcRep logic will not be executed, and as the user
+        /// will not have delegated at this point in time, the dstRep logic will
+        /// not be executed. However, if the user has a Volt balance, and has delegated
+        /// either themselves or another address, the dstRep logic will be executed
+        /// and the voting power will increase to the delegate by the minted amount
         _moveDelegates(address(0), delegates[dst], amount);
     }
 

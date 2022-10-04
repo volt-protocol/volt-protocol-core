@@ -4,26 +4,13 @@ const vip_13: ProposalDescription = {
   title: 'VIP-13: Add new PSMs to PCV Guardian Whitelist',
   commands: [
     {
-      target: 'core',
-      values: '0',
-      method: 'grantMinter(address)',
-      arguments: ['{timelockController}'],
-      description: 'Grant minter role to timelockr'
-    },
-    {
       target: 'voltV2',
       values: '0',
       method: 'mint(address,uint256)',
       arguments: ['{voltMigrator}', '1000000000000'],
       description: 'Mint new volt for new VOLT to migrator contract'
     },
-    {
-      target: 'core',
-      values: '0',
-      method: 'revokeMinter(address)',
-      arguments: ['{timelockController}'],
-      description: 'Disconnet USDC PSM from the ERC20 Allocator'
-    },
+
     {
       target: 'volt',
       values: '0',
@@ -95,7 +82,8 @@ const vip_13: ProposalDescription = {
       description: 'Add new DAI, and USDC PSMs to PCV Guardian whitelist'
     }
   ],
-  description: 'Add new DAI, and USDC PSMs to PCV Guardian whitelist'
+  description:
+    'Mint Volt total supply to migrator contract, fund new DAI and USDC PSMs with new Volt, connect new PSMs to the ERC20 Allocator, and ddd new DAI, and USDC PSMs to PCV Guardian whitelist'
 };
 
 export default vip_13;
