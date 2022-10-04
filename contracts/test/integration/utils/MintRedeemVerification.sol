@@ -14,7 +14,6 @@ import "hardhat/console.sol";
 /// @notice contract to verify that all PSM's are able to mint and redeem
 /// after a proposal
 contract MintRedeemVerification {
-
     /// @notice all PSM's on mainnet
     address[] private allMainnetPSMs = [
         MainnetAddresses.VOLT_DAI_PSM,
