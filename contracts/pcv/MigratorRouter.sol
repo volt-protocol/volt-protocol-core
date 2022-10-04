@@ -17,12 +17,15 @@ contract MigratorRouter is IMigratorRouter {
 
     /// @notice VOLT-DAI PSM to swap between the two assets
     IPegStabilityModule public immutable daiPSM;
+
     /// @notice VOLT-USDC PSM to swap between the two assets
     IPegStabilityModule public immutable usdcPSM;
+
     /// @notice address of the new VOLT token
     IVolt public immutable newVolt;
+
     /// @notice the VOLT migrator contract to swap from old VOLT to new
-    IVoltMigrator public voltMigrator;
+    IVoltMigrator public immutable voltMigrator;
 
     constructor(
         IVolt _newVolt,
