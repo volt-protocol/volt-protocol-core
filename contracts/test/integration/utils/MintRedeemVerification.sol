@@ -14,7 +14,6 @@ import "hardhat/console.sol";
 /// @notice contract to verify that all PSM's are able to mint and redeem
 /// after a proposal
 contract MintRedeemVerification {
-    /// TODO add support for arbitrum
 
     /// @notice all PSM's on mainnet
     address[] private allMainnetPSMs = [
@@ -192,6 +191,11 @@ contract MintRedeemVerification {
         IERC20 volt = block.chainid == 1
             ? IVolt(MainnetAddresses.VOLT)
             : IVolt(ArbitrumAddresses.VOLT);
+
+        /// skip Arbitrum minting because minting is paused on Arbitrum due to deprecation
+        if (block.chainid != 1) {
+            revert("successfully minted on all PSMs");
+        }
 
         for (uint256 i = 0; i < allPSMs.length; i++) {
             /// pull all tokens from psm into this address and use them to purchase VOLT

@@ -109,6 +109,22 @@ contract vip14 is DSTest, IVIP {
                     description: "Point Oracle Pass Through to new oracle address"
                 })
             );
+            arbitrumProposal.push(
+                ITimelockSimulation.action({
+                    value: 0,
+                    target: ArbitrumAddresses.VOLT_USDC_PSM,
+                    arguments: abi.encodeWithSignature("pauseMint()"),
+                    description: "Pause minting on USDC PSM on Arbitrum"
+                })
+            );
+            arbitrumProposal.push(
+                ITimelockSimulation.action({
+                    value: 0,
+                    target: ArbitrumAddresses.VOLT_DAI_PSM,
+                    arguments: abi.encodeWithSignature("pauseMint()"),
+                    description: "Pause minting on DAI PSM on Arbitrum"
+                })
+            );
 
             return;
         }
