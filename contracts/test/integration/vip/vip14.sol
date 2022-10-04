@@ -16,6 +16,7 @@ import {IPCVDeposit} from "../../../pcv/IPCVDeposit.sol";
 import {ERC20Allocator} from "../../../pcv/utils/ERC20Allocator.sol";
 import {MaplePCVDeposit} from "../../../pcv/maple/MaplePCVDeposit.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
+import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
 import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
@@ -53,16 +54,18 @@ contract vip14 is DSTest, IVIP {
     address public immutable core = MainnetAddresses.CORE;
 
     ITimelockSimulation.action[] private mainnetProposal;
+    ITimelockSimulation.action[] private arbitrumProposal;
 
-    CompoundPCVRouter public immutable router;
-    MorphoCompoundPCVDeposit public immutable daiDeposit;
-    MorphoCompoundPCVDeposit public immutable usdcDeposit;
-    VoltSystemOracle public immutable oracle;
-    MaplePCVDeposit public immutable mapleDeposit;
+    CompoundPCVRouter public router;
+    MorphoCompoundPCVDeposit public daiDeposit;
+    MorphoCompoundPCVDeposit public usdcDeposit;
+    VoltSystemOracle public oracle;
+    MaplePCVDeposit public mapleDeposit;
 
     uint256 public immutable startTime;
 
     uint256 public constant monthlyChangeRateBasisPoints = 29;
+    uint256 public constant arbitrumMonthlyChangeRateBasisPoints = 0;
 
     PCVGuardian public immutable pcvGuardian =
         PCVGuardian(MainnetAddresses.PCV_GUARDIAN);
@@ -84,6 +87,32 @@ contract vip14 is DSTest, IVIP {
         0xFeBd6F15Df3B73DC4307B1d7E65D46413e710C27;
 
     constructor() {
+        startTime = block.timestamp;
+
+        if (block.chainid != 1) {
+            oracle = new VoltSystemOracle(
+                arbitrumMonthlyChangeRateBasisPoints,
+                block.timestamp,
+                VoltSystemOracle(ArbitrumAddresses.VOLT_SYSTEM_ORACLE_144_BIPS)
+                    .getCurrentOraclePrice()
+            );
+
+            /// construct separate proposal on arbitrum
+            arbitrumProposal.push(
+                ITimelockSimulation.action({
+                    value: 0,
+                    target: ArbitrumAddresses.ORACLE_PASS_THROUGH,
+                    arguments: abi.encodeWithSignature(
+                        "updateScalingPriceOracle(address)",
+                        address(oracle)
+                    ),
+                    description: "Point Oracle Pass Through to new oracle address"
+                })
+            );
+
+            return;
+        }
+
         mapleDeposit = new MaplePCVDeposit(core, maplePool, mplRewards);
         daiDeposit = new MorphoCompoundPCVDeposit(core, MainnetAddresses.CDAI);
         usdcDeposit = new MorphoCompoundPCVDeposit(
@@ -102,8 +131,6 @@ contract vip14 is DSTest, IVIP {
             block.timestamp,
             oldOracle.getCurrentOraclePrice()
         );
-
-        startTime = block.timestamp;
 
         address[] memory toWhitelist = new address[](2);
         toWhitelist[0] = address(daiDeposit);
@@ -339,15 +366,21 @@ contract vip14 is DSTest, IVIP {
         override
         returns (ITimelockSimulation.action[] memory)
     {
-        revert("No Arbitrum proposal");
+        return arbitrumProposal;
     }
 
-    function arbitrumSetup() public override {
-        revert("No Arbitrum proposal");
-    }
+    /// no-op, nothing to setup
+    function arbitrumSetup() public override {}
 
     /// assert oracle pass through is pointing to correct volt system oracle
     function arbitrumValidate() public override {
-        revert("No Arbitrum proposal");
+        /// oracle pass through points to new scaling price oracle
+        assertEq(
+            address(
+                OraclePassThrough(ArbitrumAddresses.ORACLE_PASS_THROUGH)
+                    .scalingPriceOracle()
+            ),
+            address(oracle)
+        );
     }
 }
