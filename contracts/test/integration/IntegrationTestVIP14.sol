@@ -50,4 +50,8 @@ contract IntegrationTestVIP14 is TimelockSimulation, vip14 {
     function testClaimCompRewardsDai() public {}
 
     function testClaimCompRewardsUsdc() public {}
+
+    function testSwapUsdcToDaiRouter() public {}
+
+    function testSwapDaiToUsdcRouter() public {}
 }
