@@ -13,11 +13,12 @@ import {DSTest} from "./../../unit/utils/DSTest.sol";
 import {PCVDeposit} from "../../../pcv/PCVDeposit.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {IPCVDeposit} from "../../../pcv/IPCVDeposit.sol";
+import {PriceBoundPSM} from "../../../peg/PriceBoundPSM.sol";
 import {ERC20Allocator} from "../../../pcv/utils/ERC20Allocator.sol";
 import {MaplePCVDeposit} from "../../../pcv/maple/MaplePCVDeposit.sol";
+import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
 import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
-import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
 import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
 import {ITimelockSimulation} from "../utils/ITimelockSimulation.sol";
@@ -398,5 +399,18 @@ contract vip14 is DSTest, IVIP {
             ),
             address(oracle)
         );
+
+        assertTrue(PriceBoundPSM(ArbitrumAddresses.VOLT_USDC_PSM).mintPaused());
+        assertTrue(PriceBoundPSM(ArbitrumAddresses.VOLT_DAI_PSM).mintPaused());
+
+        vm.expectRevert("PegStabilityModule: Minting paused");
+        PriceBoundPSM(ArbitrumAddresses.VOLT_USDC_PSM).mint(
+            address(this),
+            0,
+            0
+        );
+
+        vm.expectRevert("PegStabilityModule: Minting paused");
+        PriceBoundPSM(ArbitrumAddresses.VOLT_DAI_PSM).mint(address(this), 0, 0);
     }
 }
