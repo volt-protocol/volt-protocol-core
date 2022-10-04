@@ -20,7 +20,9 @@ contract UnitTestVoltV2 is DSTest {
 
     function setUp() public {
         core = getCore();
-        volt = new VoltV2();
+        volt = new VoltV2(address(this));
+
+        volt.grantMinter(address(this));
     }
 
     function testTokenDetails() public {
@@ -46,6 +48,12 @@ contract UnitTestVoltV2 is DSTest {
         assertEq(volt.balanceOf(address(0xFFF)), voltToMint);
     }
 
+    function testMintFailWhenRevokedMinter() public {
+        volt.revokeMinter(address(this));
+        vm.expectRevert("Volt: caller is not a minter");
+        volt.mint(address(0xFFF), 1e18);
+    }
+
     function testMintAfterDelegation(uint256 voltToMint) public {
         vm.assume(voltToMint < type(uint256).max / 2);
         volt.mint(address(0xFFF), voltToMint);
@@ -59,7 +67,7 @@ contract UnitTestVoltV2 is DSTest {
 
     function testMintFailureUnauthorized() public {
         vm.startPrank(address(0xFFF));
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert("Volt: caller is not a minter");
         volt.mint(address(0xFFF), 1e18);
         vm.stopPrank();
     }
@@ -332,6 +340,37 @@ contract UnitTestVoltV2 is DSTest {
         vm.warp(timestamp + 1);
         vm.expectRevert("Volt: signature expired");
         volt.permit(owner, address(this), 1e18, timestamp, v, r, s);
+    }
+
+    function testSetMinterSuccess(uint256 voltToMint) public {
+        volt.grantMinter(address(0xABC));
+        volt.mint(address(0xFFF), voltToMint);
+
+        vm.prank(address(0xFFF));
+        volt.delegate(address(0xFFF));
+
+        assertEq(volt.totalSupply(), voltToMint);
+        assertEq(volt.getCurrentVotes(address(0xFFF)), voltToMint);
+        assertEq(volt.balanceOf(address(0xFFF)), voltToMint);
+    }
+
+    function testSetMinterFailNotGovernor() public {
+        vm.prank(address(0xFFF));
+        vm.expectRevert("Volt: caller is not a governor");
+        volt.grantMinter(address(0xABC));
+    }
+
+    function testRevokeMinterSuccess() public {
+        volt.revokeMinter(address(this));
+
+        vm.expectRevert("Volt: caller is not a minter");
+        volt.mint(address(0xFFF), 1e18);
+    }
+
+    function testRevokeMinterFailNotGovernor() public {
+        vm.prank(address(0xFFF));
+        vm.expectRevert("Volt: caller is not a governor");
+        volt.revokeMinter(address(this));
     }
 
     function getDomainSeperator()
