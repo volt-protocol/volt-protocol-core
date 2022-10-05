@@ -1,0 +1,207 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+pragma solidity ^0.8.4;
+
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+import {IVolt} from "./../volt/IVolt.sol";
+import {ICoreV2} from "./../core/ICoreV2.sol";
+import {ICoreRefV2} from "./ICoreRefV2.sol";
+import {VoltRoles} from "./../core/VoltRoles.sol";
+
+/// @title A Reference to Core
+/// @author Volt & Fei Protocol
+/// @notice defines some modifiers and utilities around interacting with Core
+abstract contract CoreRefV2 is ICoreRefV2, Pausable {
+    using SafeERC20 for IERC20;
+
+    /// @notice reference to Core
+    ICoreV2 private immutable _core;
+
+    /// @notice reference to Volt
+    IVolt private immutable _volt;
+
+    /// @notice reference to Vcon
+    IERC20 private immutable _vcon;
+
+    /// @notice reference to global reentrancy lock smart contract
+    address public immutable globalReentrantLock;
+
+    constructor(address coreAddress) {
+        _core = ICoreV2(coreAddress);
+
+        _volt = ICoreV2(coreAddress).volt();
+        _vcon = ICoreV2(coreAddress).vcon();
+        globalReentrantLock = ICoreV2(coreAddress).globalReentrantLock();
+    }
+
+    /// TODO
+    /// 1. call globalReentrantLock and lock the lock
+    /// 2. execute the code
+    /// 3. call globalReentrantLock and unlock the lock
+    modifier globalReentrancyLock() {
+        ///globalReentrantLock.lock();
+        _;
+        ///globalReentrantLock.unlock();
+    }
+
+    modifier onlyMinter() {
+        require(_core.isMinter(msg.sender), "CoreRef: Caller is not a minter");
+        _;
+    }
+
+    modifier onlyPCVController() {
+        require(
+            _core.isPCVController(msg.sender),
+            "CoreRef: Caller is not a PCV controller"
+        );
+        _;
+    }
+
+    modifier onlyGovernor() {
+        require(
+            _core.isGovernor(msg.sender),
+            "CoreRef: Caller is not a governor"
+        );
+        _;
+    }
+
+    modifier onlyGuardianOrGovernor() {
+        require(
+            _core.isGovernor(msg.sender) || _core.isGuardian(msg.sender),
+            "CoreRef: Caller is not a guardian or governor"
+        );
+        _;
+    }
+
+    // Named onlyTribeRole to prevent collision with OZ onlyRole modifier
+    modifier onlyTribeRole(bytes32 role) {
+        require(_core.hasRole(role, msg.sender), "UNAUTHORIZED");
+        _;
+    }
+
+    // Named onlyTribeRole to prevent collision with OZ onlyRole modifier
+    modifier onlyVoltMinter() {
+        require(
+            _core.hasRole(VoltRoles.VOLT_MINTER_ROLE, msg.sender),
+            "UNAUTHORIZED"
+        );
+        _;
+    }
+
+    // Modifiers to allow any combination of roles
+    modifier hasAnyOfTwoRoles(bytes32 role1, bytes32 role2) {
+        require(
+            _core.hasRole(role1, msg.sender) ||
+                _core.hasRole(role2, msg.sender),
+            "UNAUTHORIZED"
+        );
+        _;
+    }
+
+    modifier hasAnyOfThreeRoles(
+        bytes32 role1,
+        bytes32 role2,
+        bytes32 role3
+    ) {
+        require(
+            _core.hasRole(role1, msg.sender) ||
+                _core.hasRole(role2, msg.sender) ||
+                _core.hasRole(role3, msg.sender),
+            "UNAUTHORIZED"
+        );
+        _;
+    }
+
+    modifier hasAnyOfFourRoles(
+        bytes32 role1,
+        bytes32 role2,
+        bytes32 role3,
+        bytes32 role4
+    ) {
+        require(
+            _core.hasRole(role1, msg.sender) ||
+                _core.hasRole(role2, msg.sender) ||
+                _core.hasRole(role3, msg.sender) ||
+                _core.hasRole(role4, msg.sender),
+            "UNAUTHORIZED"
+        );
+        _;
+    }
+
+    modifier hasAnyOfFiveRoles(
+        bytes32 role1,
+        bytes32 role2,
+        bytes32 role3,
+        bytes32 role4,
+        bytes32 role5
+    ) {
+        require(
+            _core.hasRole(role1, msg.sender) ||
+                _core.hasRole(role2, msg.sender) ||
+                _core.hasRole(role3, msg.sender) ||
+                _core.hasRole(role4, msg.sender) ||
+                _core.hasRole(role5, msg.sender),
+            "UNAUTHORIZED"
+        );
+        _;
+    }
+
+    /// @notice set pausable methods to paused
+    function pause() public override onlyGuardianOrGovernor {
+        _pause();
+    }
+
+    /// @notice set pausable methods to unpaused
+    function unpause() public override onlyGuardianOrGovernor {
+        _unpause();
+    }
+
+    /// @notice address of the Core contract referenced
+    /// @return ICore implementation address
+    function core() public view override returns (ICoreV2) {
+        return _core;
+    }
+
+    /// @notice address of the Fei contract referenced by Core
+    /// @return IFei implementation address
+    function volt() public view override returns (IVolt) {
+        return _volt;
+    }
+
+    /// @notice address of the Tribe contract referenced by Core
+    /// @return IERC20 implementation address
+    function vcon() public view override returns (IERC20) {
+        return _vcon;
+    }
+
+    /// @notice volt balance of contract
+    /// @return volt amount held
+    function voltBalance() public view override returns (uint256) {
+        return _volt.balanceOf(address(this));
+    }
+
+    /// @notice vcon balance of contract
+    /// @return vcon amount held
+    function vconBalance() public view override returns (uint256) {
+        return _vcon.balanceOf(address(this));
+    }
+
+    function _burnVoltHeld() internal {
+        _volt.burn(voltBalance());
+    }
+
+    /// @notice sweep target token, this shouldn't be needed, however it is a backup
+    /// in case a contract holds tokens and isn't a PCV Deposit
+    /// @param token to sweep
+    /// @param to recipient
+    /// @param amount of token to be sent
+    function sweep(
+        address token,
+        address to,
+        uint256 amount
+    ) external onlyPCVController {
+        IERC20(token).safeTransfer(to, amount);
+    }
+}

@@ -8,7 +8,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IDSSPSM} from "./../maker/IDSSPSM.sol";
 import {CoreRef} from "../../refs/CoreRef.sol";
 import {Constants} from "../../Constants.sol";
-import {TribeRoles} from "../../core/TribeRoles.sol";
+import {VoltRoles} from "../../core/VoltRoles.sol";
 import {PCVDeposit} from "../PCVDeposit.sol";
 import {IPegStabilityModule} from "../../peg/IPegStabilityModule.sol";
 
@@ -63,9 +63,9 @@ contract CompoundPCVRouter is CoreRef {
     function swapUsdcForDai(uint256 amountUsdcIn)
         external
         hasAnyOfThreeRoles(
-            TribeRoles.GOVERNOR,
-            TribeRoles.PCV_CONTROLLER,
-            TribeRoles.PCV_GUARD
+            VoltRoles.GOVERNOR,
+            VoltRoles.PCV_CONTROLLER,
+            VoltRoles.PCV_GUARD
         )
     {
         require(daiPSM.tin() == 0, "CompoundPCVRouter: maker fee not 0");
@@ -82,9 +82,9 @@ contract CompoundPCVRouter is CoreRef {
     function swapDaiForUsdc(uint256 amountDaiIn)
         external
         hasAnyOfThreeRoles(
-            TribeRoles.GOVERNOR,
-            TribeRoles.PCV_CONTROLLER,
-            TribeRoles.PCV_GUARD
+            VoltRoles.GOVERNOR,
+            VoltRoles.PCV_CONTROLLER,
+            VoltRoles.PCV_GUARD
         )
     {
         require(daiPSM.tout() == 0, "CompoundPCVRouter: maker fee not 0");

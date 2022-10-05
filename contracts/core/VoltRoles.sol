@@ -9,7 +9,7 @@ pragma solidity ^0.8.4;
          * Admin Roles - roles with management capability over critical functionality. Should only be held by automated or optimistic mechanisms
          * Minor Roles - operational roles. May be held or managed by shorter optimistic timelocks or trusted multisigs.
  */
-library TribeRoles {
+library VoltRoles {
     /*///////////////////////////////////////////////////////////////
                                  Major Roles
     //////////////////////////////////////////////////////////////*/
@@ -23,8 +23,11 @@ library TribeRoles {
     /// @notice the role which can arbitrarily move PCV in any size from any contract
     bytes32 internal constant PCV_CONTROLLER = keccak256("PCV_CONTROLLER_ROLE");
 
-    /// @notice can mint FEI arbitrarily
+    /// @notice can mint VOLT arbitrarily
     bytes32 internal constant MINTER = keccak256("MINTER_ROLE");
+
+    /// @notice can mint VOLT through GlobalRateLimitedMinter on a rate limit
+    bytes32 internal constant VOLT_MINTER_ROLE = keccak256("VOLT_MINTER_ROLE");
 
     ///@notice is able to withdraw whitelisted PCV deposits to a safe address
     bytes32 internal constant PCV_GUARD = keccak256("PCV_GUARD_ROLE");

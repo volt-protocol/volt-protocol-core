@@ -4,7 +4,7 @@ pragma solidity ^0.8.4;
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Core, Vcon, Volt, IERC20, IVolt} from "../../../core/Core.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
-import {TribeRoles} from "../../../core/TribeRoles.sol";
+import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {DSTest} from "./../../unit/utils/DSTest.sol";
 import {L2Core} from "../../../core/L2Core.sol";
 import {Core} from "../../../core/Core.sol";
@@ -15,13 +15,13 @@ contract RoleTesting is DSTest {
     mapping(bytes32 => string) roleToName;
 
     constructor() {
-        roleToName[TribeRoles.GOVERNOR] = "GOVERNOR";
-        roleToName[TribeRoles.PCV_CONTROLLER] = "PCV_CONTROLLER";
-        roleToName[TribeRoles.GUARDIAN] = "GUARDIAN";
-        roleToName[TribeRoles.MINTER] = "MINTER";
-        roleToName[TribeRoles.PCV_GUARD] = "PCV_GUARD";
-        roleToName[TribeRoles.PCV_GUARD_ADMIN] = "PCV_GUARD_ADMIN";
-        roleToName[TribeRoles.PSM_ADMIN_ROLE] = "PSM_ADMIN_ROLE";
+        roleToName[VoltRoles.GOVERNOR] = "GOVERNOR";
+        roleToName[VoltRoles.PCV_CONTROLLER] = "PCV_CONTROLLER";
+        roleToName[VoltRoles.GUARDIAN] = "GUARDIAN";
+        roleToName[VoltRoles.MINTER] = "MINTER";
+        roleToName[VoltRoles.PCV_GUARD] = "PCV_GUARD";
+        roleToName[VoltRoles.PCV_GUARD_ADMIN] = "PCV_GUARD_ADMIN";
+        roleToName[VoltRoles.PSM_ADMIN_ROLE] = "PSM_ADMIN_ROLE";
     }
 
     /// load up number of roles from Core and ensure that they match up with numbers here

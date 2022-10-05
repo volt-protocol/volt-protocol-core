@@ -10,7 +10,7 @@ import {DSTest} from "../../unit/utils/DSTest.sol";
 import {IDSSPSM} from "./../../../pcv/maker/IDSSPSM.sol";
 import {stdError} from "../../unit/utils/StdLib.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
-import {TribeRoles} from "../../../core/TribeRoles.sol";
+import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
 import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";

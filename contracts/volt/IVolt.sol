@@ -3,8 +3,8 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-/// @title FEI stablecoin interface
-/// @author Fei Protocol
+/// @title Volt stablecoin interface
+/// @author Volt, Fei Protocol
 interface IVolt is IERC20 {
     // ----------- Events -----------
 

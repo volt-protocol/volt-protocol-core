@@ -1,7 +1,7 @@
 pragma solidity =0.8.13;
 
 import {KArrayTree} from "../../integration/utils/KArrayTree.sol";
-import {TribeRoles} from "../../../core/TribeRoles.sol";
+import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {DSTest} from "./DSTest.sol";
 import {Vm} from "./Vm.sol";
 
@@ -12,12 +12,12 @@ contract KArrayTreeUnitTest is DSTest {
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
     function setUp() public {
-        tree.setRole(TribeRoles.GOVERNOR);
-        tree.insert(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER);
-        tree.insert(TribeRoles.GOVERNOR, TribeRoles.MINTER);
-        tree.insert(TribeRoles.GOVERNOR, TribeRoles.GUARDIAN);
-        tree.insert(TribeRoles.GOVERNOR, TribeRoles.PCV_GUARD_ADMIN);
-        tree.insert(TribeRoles.PCV_GUARD_ADMIN, TribeRoles.PCV_GUARD);
+        tree.setRole(VoltRoles.GOVERNOR);
+        tree.insert(VoltRoles.GOVERNOR, VoltRoles.PCV_CONTROLLER);
+        tree.insert(VoltRoles.GOVERNOR, VoltRoles.MINTER);
+        tree.insert(VoltRoles.GOVERNOR, VoltRoles.GUARDIAN);
+        tree.insert(VoltRoles.GOVERNOR, VoltRoles.PCV_GUARD_ADMIN);
+        tree.insert(VoltRoles.PCV_GUARD_ADMIN, VoltRoles.PCV_GUARD);
     }
 
     function testSetup() public {
@@ -30,28 +30,28 @@ contract KArrayTreeUnitTest is DSTest {
 
         /// tree should have 1 child under PCV GUARD ADMIN
         (bool found, KArrayTree.Node storage pcvGuardAdmin) = tree.traverse(
-            TribeRoles.PCV_GUARD_ADMIN
+            VoltRoles.PCV_GUARD_ADMIN
         );
         assertTrue(found);
         assertEq(pcvGuardAdmin.getCountImmediateChildren(), 1);
 
-        (bool foundGuard, ) = tree.traverse(TribeRoles.PCV_GUARD);
+        (bool foundGuard, ) = tree.traverse(VoltRoles.PCV_GUARD);
         assertTrue(foundGuard);
     }
 
     function testAddDuplicateFails() public {
         vm.expectRevert("cannot insert duplicate");
-        tree.insert(TribeRoles.GOVERNOR);
+        tree.insert(VoltRoles.GOVERNOR);
     }
 
     function testAddDuplicateFailsFind() public {
         vm.expectRevert("cannot insert duplicate");
-        tree.insert(TribeRoles.GOVERNOR, TribeRoles.PCV_GUARD);
+        tree.insert(VoltRoles.GOVERNOR, VoltRoles.PCV_GUARD);
     }
 
     function testCanChangeRole() public {
         (bool foundGuard, KArrayTree.Node storage pcvGuard) = tree.traverse(
-            TribeRoles.PCV_GUARD_ADMIN
+            VoltRoles.PCV_GUARD_ADMIN
         );
         assertTrue(foundGuard);
         pcvGuard.setRole(bytes32(0));
@@ -60,7 +60,7 @@ contract KArrayTreeUnitTest is DSTest {
 
     function testCannotChangeToExistingRole() public {
         vm.expectRevert("cannot set duplicate");
-        tree.setRole(TribeRoles.GOVERNOR);
+        tree.setRole(VoltRoles.GOVERNOR);
     }
 
     function testFree() public {

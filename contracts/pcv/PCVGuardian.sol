@@ -7,7 +7,7 @@ import {CoreRef} from "../refs/CoreRef.sol";
 import {IPCVGuardian} from "./IPCVGuardian.sol";
 import {IPCVDeposit} from "./IPCVDeposit.sol";
 import {CoreRefPausableLib} from "../libs/CoreRefPausableLib.sol";
-import {TribeRoles} from "../core/TribeRoles.sol";
+import {VoltRoles} from "../core/VoltRoles.sol";
 
 /// @notice PCV Guardian is a contract to safeguard protocol funds
 /// by being able to withdraw whitelisted PCV deposits to an immutable safe address
@@ -129,9 +129,9 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         external
         override
         hasAnyOfThreeRoles(
-            TribeRoles.GOVERNOR,
-            TribeRoles.GUARDIAN,
-            TribeRoles.PCV_GUARD
+            VoltRoles.GOVERNOR,
+            VoltRoles.GUARDIAN,
+            VoltRoles.PCV_GUARD
         )
         onlyWhitelist(pcvDeposit)
     {
@@ -144,9 +144,9 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         external
         override
         hasAnyOfThreeRoles(
-            TribeRoles.GOVERNOR,
-            TribeRoles.GUARDIAN,
-            TribeRoles.PCV_GUARD
+            VoltRoles.GOVERNOR,
+            VoltRoles.GUARDIAN,
+            VoltRoles.PCV_GUARD
         )
         onlyWhitelist(pcvDeposit)
     {
@@ -165,9 +165,9 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         external
         override
         hasAnyOfThreeRoles(
-            TribeRoles.GOVERNOR,
-            TribeRoles.GUARDIAN,
-            TribeRoles.PCV_GUARD
+            VoltRoles.GOVERNOR,
+            VoltRoles.GUARDIAN,
+            VoltRoles.PCV_GUARD
         )
         onlyWhitelist(pcvDeposit)
     {
@@ -181,9 +181,9 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         external
         override
         hasAnyOfThreeRoles(
-            TribeRoles.GOVERNOR,
-            TribeRoles.GUARDIAN,
-            TribeRoles.PCV_GUARD
+            VoltRoles.GOVERNOR,
+            VoltRoles.GUARDIAN,
+            VoltRoles.PCV_GUARD
         )
         onlyWhitelist(pcvDeposit)
     {
