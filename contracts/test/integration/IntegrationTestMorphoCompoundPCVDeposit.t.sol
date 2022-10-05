@@ -165,11 +165,7 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
         vm.prank(MainnetAddresses.GOVERNOR);
         usdcDeposit.withdraw(address(this), amount);
 
-        assertApproxEq(
-            usdc.balanceOf(address(this)).toInt256(),
-            amount.toInt256(),
-            0
-        );
+        assertEq(usdc.balanceOf(address(this)), amount);
 
         assertApproxEq(
             usdcDeposit.balance().toInt256(),
@@ -189,6 +185,7 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
             targetDaiBalance.toInt256(),
             0
         );
+
         assertApproxEq(
             usdc.balanceOf(address(this)).toInt256(),
             targetUsdcBalance.toInt256(),
@@ -213,7 +210,7 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
         daiDeposit.deposit();
     }
 
-    function testWithdrawNonGovFails() public {
+    function testWithdrawNonPCVControllerFails() public {
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
         usdcDeposit.withdraw(address(this), targetUsdcBalance);
 
@@ -221,7 +218,7 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
         daiDeposit.withdraw(address(this), targetDaiBalance);
     }
 
-    function testWithdrawAllNonGovFails() public {
+    function testWithdrawAllNonPCVControllerFails() public {
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
         usdcDeposit.withdrawAll(address(this));
 

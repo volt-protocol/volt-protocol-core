@@ -31,7 +31,8 @@ contract MaplePCVDeposit is PCVDeposit {
 
     /// @notice fetch underlying asset by calling pool and getting liquidity asset
     /// @param _core reference to the Core contract
-    /// @param _pool reference to the Maple Pool contract
+    /// @param _pool Maple Pool contract
+    /// @param _mplRewards Maple Rewards contract
     constructor(
         address _core,
         address _pool,
@@ -126,6 +127,7 @@ contract MaplePCVDeposit is PCVDeposit {
     }
 
     /// @notice withdraw all PCV from Maple
+    /// @param to destination after funds are withdrawn from venue
     function withdrawAll(address to) external onlyPCVController {
         uint256 amount = balance();
         mplRewards.exit(); /// unstakes from Maple reward contract and claims rewards

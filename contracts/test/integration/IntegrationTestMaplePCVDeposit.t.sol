@@ -75,11 +75,7 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
         assertEq(address(usdcDeposit.pool()), maplePool);
         assertEq(address(usdcDeposit.mplRewards()), mplRewards);
         assertEq(address(usdcDeposit.token()), address(MainnetAddresses.USDC));
-        assertApproxEq(
-            usdcDeposit.balance().toInt256(),
-            targetUsdcBalance.toInt256(),
-            0
-        );
+        assertEq(usdcDeposit.balance(), targetUsdcBalance);
     }
 
     function testDeployFailsNotUSDCUnderlying() public {
@@ -227,12 +223,12 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
         usdcDeposit.cancelWithdraw();
     }
 
-    function testWithdrawNonGovFails() public {
+    function testWithdrawNonPCVControllerFails() public {
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
         usdcDeposit.withdraw(address(this), targetUsdcBalance);
     }
 
-    function testWithdrawAllNonGovFails() public {
+    function testWithdrawAllNonPCVControllerFails() public {
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
         usdcDeposit.withdrawAll(address(this));
     }

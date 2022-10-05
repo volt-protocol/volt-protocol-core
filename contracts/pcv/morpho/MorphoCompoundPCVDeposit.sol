@@ -74,17 +74,18 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
     /// @param to the address PCV will be sent to
     /// @param amount of tokens withdrawn
     function withdraw(address to, uint256 amount) external onlyPCVController {
-        MORPHO.withdraw(cToken, amount);
-        IERC20(token).safeTransfer(to, amount);
-
-        emit Withdrawal(msg.sender, to, amount);
+        _withdraw(to, amount);
     }
 
     /// @notice withdraw all tokens from Morpho
     /// @param to the address PCV will be sent to
     function withdrawAll(address to) external onlyPCVController {
         uint256 amount = balance();
-        MORPHO.withdraw(cToken, amount);
+        _withdraw(to, amount);
+    }
+
+    function _withdraw(address to, uint256 amount) private {
+        IMorpho(MORPHO).withdraw(cToken, amount);
         IERC20(token).safeTransfer(to, amount);
 
         emit Withdrawal(msg.sender, to, amount);
