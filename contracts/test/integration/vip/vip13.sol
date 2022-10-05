@@ -21,6 +21,7 @@ import {IVolt} from "../../../volt/IVolt.sol";
 import {IVoltMigrator} from "../../../volt/IVoltMigrator.sol";
 import {IPCVDeposit} from "../../../pcv/IPCVDeposit.sol";
 import {MigratorRouter} from "../../../pcv/MigratorRouter.sol";
+import "hardhat/console.sol";
 
 contract vip13 is DSTest, IVIP {
     using SafeERC20 for IERC20;
@@ -69,14 +70,21 @@ contract vip13 is DSTest, IVIP {
         ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_USDC_PCV_DEPOSIT);
 
     constructor() {
+        console.log("before setup");
         mainnetSetup();
+        console.log("after setup");
+
         voltV2 = new VoltV2(MainnetAddresses.CORE);
+        console.log("v2");
 
         voltMigrator = new VoltMigrator(
             MainnetAddresses.CORE,
             IVolt(address(voltV2))
         );
+        console.log("vm");
+
         deployPsms(address(voltV2));
+        console.log("psms");
 
         migratorRouter = new MigratorRouter(
             IVolt(address(voltV2)),
@@ -84,10 +92,13 @@ contract vip13 is DSTest, IVIP {
             voltV2DaiPriceBoundPSM,
             voltV2UsdcPriceBoundPSM
         );
+        console.log("router");
 
         address[] memory toWhitelist = new address[](2);
         toWhitelist[0] = address(voltV2UsdcPriceBoundPSM);
         toWhitelist[1] = address(voltV2DaiPriceBoundPSM);
+
+        console.log("here now");
 
         proposal.push(
             ITimelockSimulation.action({
@@ -100,6 +111,8 @@ contract vip13 is DSTest, IVIP {
                 description: "Grant minter role to timelock"
             })
         );
+        console.log("here now 1");
+
         proposal.push(
             ITimelockSimulation.action({
                 value: 0,
@@ -112,6 +125,8 @@ contract vip13 is DSTest, IVIP {
                 description: "Mint new volt for new VOLT to migrator contract"
             })
         );
+        console.log("here now 2");
+
         proposal.push(
             ITimelockSimulation.action({
                 value: 0,
@@ -123,6 +138,8 @@ contract vip13 is DSTest, IVIP {
                 description: "Remove minter role from timelock"
             })
         );
+        console.log("here now 3");
+
         proposal.push(
             ITimelockSimulation.action({
                 value: 0,
@@ -135,6 +152,7 @@ contract vip13 is DSTest, IVIP {
                 description: "Approve migrator to use old  VOLT"
             })
         );
+        console.log("here now 4");
 
         proposal.push(
             ITimelockSimulation.action({
@@ -148,6 +166,8 @@ contract vip13 is DSTest, IVIP {
                 description: "Exchange new volt for new USDC PSM"
             })
         );
+        console.log("here now 5");
+
         proposal.push(
             ITimelockSimulation.action({
                 value: 0,
@@ -160,6 +180,8 @@ contract vip13 is DSTest, IVIP {
                 description: "Exchange new volt for new DAI PSM"
             })
         );
+        console.log("here now 6");
+
         proposal.push(
             ITimelockSimulation.action({
                 value: 0,
@@ -171,6 +193,8 @@ contract vip13 is DSTest, IVIP {
                 description: "Disconnect old USDC PSM from the ERC20 Allocator"
             })
         );
+        console.log("here now 7");
+
         proposal.push(
             ITimelockSimulation.action({
                 value: 0,
@@ -182,6 +206,8 @@ contract vip13 is DSTest, IVIP {
                 description: "Disconnect old DAI PSM from the ERC20 Allocator"
             })
         );
+        console.log("here now 8");
+
         proposal.push(
             ITimelockSimulation.action({
                 value: 0,
@@ -195,6 +221,8 @@ contract vip13 is DSTest, IVIP {
                 description: "Add new USDC PSM to the ERC20 Allocator"
             })
         );
+        console.log("here now 9");
+
         proposal.push(
             ITimelockSimulation.action({
                 value: 0,
@@ -208,6 +236,8 @@ contract vip13 is DSTest, IVIP {
                 description: "Add new DAI PSM to the ERC20 Allocator"
             })
         );
+        console.log("here now 10");
+
         proposal.push(
             ITimelockSimulation.action({
                 value: 0,
@@ -220,6 +250,8 @@ contract vip13 is DSTest, IVIP {
                 description: "Connect USDC deposit to PSM in ERC20 Allocator"
             })
         );
+        console.log("here now 11");
+
         proposal.push(
             ITimelockSimulation.action({
                 value: 0,
@@ -232,6 +264,7 @@ contract vip13 is DSTest, IVIP {
                 description: "Connect DAI deposit to PSM in ERC20 Allocator"
             })
         );
+        console.log("here now 12");
 
         proposal.push(
             ITimelockSimulation.action({
@@ -244,6 +277,7 @@ contract vip13 is DSTest, IVIP {
                 description: "Add new DAI, and USDC PSMs to PCV Guardian whitelist"
             })
         );
+        console.log("here now 13");
     }
 
     function getMainnetProposal()

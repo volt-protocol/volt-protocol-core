@@ -184,7 +184,7 @@ abstract contract CoreRef is ICoreRef, Pausable {
 
     /// @notice address of the Core contract referenced
     /// @return ICore implementation address
-    function core() public view override returns (ICore) {
+    function core() public view virtual override returns (ICore) {
         return _core;
     }
 

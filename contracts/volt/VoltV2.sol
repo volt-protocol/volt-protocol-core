@@ -2,12 +2,12 @@
 pragma solidity =0.8.13;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {CoreRef} from "../refs/CoreRef.sol";
+import {VoltCoreRef} from "../refs/VoltCoreRef.sol";
 
 // Forked from Uniswap's UNI
 // Reference: https://etherscan.io/address/0x1f9840a85d5af5bf1d1762f925bdaddc4201f984#code
 
-contract VoltV2 is CoreRef {
+contract VoltV2 is VoltCoreRef {
     using SafeCast for *;
 
     /// @notice EIP-20 token name for this token
@@ -96,7 +96,7 @@ contract VoltV2 is CoreRef {
         uint256 amount
     );
 
-    constructor(address core) CoreRef(core) {}
+    constructor(address core) VoltCoreRef(core) {}
 
     /// @notice Mint new tokens
     /// @param dst The address of the destination account
