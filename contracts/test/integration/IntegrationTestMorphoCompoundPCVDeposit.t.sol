@@ -120,8 +120,7 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     }
 
     function testHarvest() public {
-        /// fast forward timestamps + block number
-        vm.warp(block.timestamp + epochLength);
+        /// fast forward block number amount
         vm.roll(block.number + epochLength / 12);
 
         uint256 startingCompBalance = comp.balanceOf(address(usdcDeposit)) +
