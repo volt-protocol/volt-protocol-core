@@ -24,13 +24,13 @@ contract VoltV2 is VoltCoreRef {
 
     /// @notice Total number of tokens in circulation
     // solhint-disable-next-line const-name-snakecase
-    uint224 public totalSupply;
+    uint256 public totalSupply;
 
     /// @notice Allowance amounts on behalf of others
-    mapping(address => mapping(address => uint224)) internal allowances;
+    mapping(address => mapping(address => uint256)) internal allowances;
 
     /// @notice Official record of token balances for each account
-    mapping(address => uint224) internal balances;
+    mapping(address => uint256) internal balances;
 
     /// @notice A record of each accounts delegate
     mapping(address => address) public delegates;
@@ -101,7 +101,7 @@ contract VoltV2 is VoltCoreRef {
     /// @notice Mint new tokens
     /// @param dst The address of the destination account
     /// @param amount The number of tokens to be minted
-    function mint(address dst, uint224 amount) external onlyMinter {
+    function mint(address dst, uint256 amount) external onlyMinter {
         require(dst != address(0), "Volt: cannot transfer to the zero address");
         require(
             dst != address(this),
@@ -124,7 +124,7 @@ contract VoltV2 is VoltCoreRef {
 
     /// @notice Burns the amount of the callers tokens
     /// @param amount The amount of tokens to be burned
-    function burn(uint224 amount) external {
+    function burn(uint256 amount) external {
         _burn(msg.sender, amount);
     }
 
@@ -132,7 +132,7 @@ contract VoltV2 is VoltCoreRef {
     /// from the callers allowance
     /// @param src The address the tokens will be burned from
     /// @param amount The amount of tokens to be burned
-    function burnFrom(address src, uint224 amount) external {
+    function burnFrom(address src, uint256 amount) external {
         _spendAllowance(src, amount);
         _burn(src, amount);
     }
@@ -155,7 +155,7 @@ contract VoltV2 is VoltCoreRef {
     /// @param spender The address of the account which may transfer tokens
     /// @param amount The number of tokens that are approved (2^256-1 means infinite)
     /// @return Whether or not the approval succeeded
-    function approve(address spender, uint224 amount) external returns (bool) {
+    function approve(address spender, uint256 amount) external returns (bool) {
         allowances[msg.sender][spender] = amount;
 
         emit Approval(msg.sender, spender, amount);
@@ -173,7 +173,7 @@ contract VoltV2 is VoltCoreRef {
     function permit(
         address owner,
         address spender,
-        uint224 amount,
+        uint256 amount,
         uint256 deadline,
         uint8 v,
         bytes32 r,
@@ -213,7 +213,7 @@ contract VoltV2 is VoltCoreRef {
     /// @notice Get the number of tokens held by the `account`
     /// @param account The address of the account to get the balance of
     /// @return The number of tokens held
-    function balanceOf(address account) external view returns (uint224) {
+    function balanceOf(address account) external view returns (uint256) {
         return balances[account];
     }
 
@@ -221,7 +221,7 @@ contract VoltV2 is VoltCoreRef {
     /// @param dst The address of the destination account
     /// @param amount The number of tokens to transfer
     /// @return Whether or not the transfer succeeded
-    function transfer(address dst, uint224 amount) external returns (bool) {
+    function transfer(address dst, uint256 amount) external returns (bool) {
         _transferTokens(msg.sender, dst, amount);
         return true;
     }
@@ -234,7 +234,7 @@ contract VoltV2 is VoltCoreRef {
     function transferFrom(
         address src,
         address dst,
-        uint224 amount
+        uint256 amount
     ) external returns (bool) {
         _spendAllowance(src, amount);
         _transferTokens(src, dst, amount);
@@ -335,7 +335,7 @@ contract VoltV2 is VoltCoreRef {
         return checkpoints[account][lower].votes;
     }
 
-    function _burn(address src, uint224 amount) internal {
+    function _burn(address src, uint256 amount) internal {
         require(balances[src] >= amount, "Volt: burn amount exceeds balance");
 
         totalSupply -= amount;
@@ -346,12 +346,12 @@ contract VoltV2 is VoltCoreRef {
         _moveDelegates(delegates[src], address(0), amount);
     }
 
-    function _spendAllowance(address src, uint224 amount) internal {
+    function _spendAllowance(address src, uint256 amount) internal {
         address spender = msg.sender;
-        uint224 spenderAllowance = allowances[src][spender];
+        uint256 spenderAllowance = allowances[src][spender];
 
-        if (spender != src && spenderAllowance != type(uint224).max) {
-            uint224 newAllowance = spenderAllowance - amount;
+        if (spender != src && spenderAllowance != type(uint256).max) {
+            uint256 newAllowance = spenderAllowance - amount;
             allowances[src][spender] = newAllowance;
 
             emit Approval(src, spender, newAllowance);
@@ -360,7 +360,7 @@ contract VoltV2 is VoltCoreRef {
 
     function _delegate(address delegator, address delegatee) internal {
         address currentDelegate = delegates[delegator];
-        uint224 delegatorBalance = balances[delegator];
+        uint256 delegatorBalance = balances[delegator];
         delegates[delegator] = delegatee;
 
         emit DelegateChanged(delegator, currentDelegate, delegatee);
@@ -371,7 +371,7 @@ contract VoltV2 is VoltCoreRef {
     function _transferTokens(
         address src,
         address dst,
-        uint224 amount
+        uint256 amount
     ) internal {
         require(
             dst != address(this),
@@ -389,26 +389,26 @@ contract VoltV2 is VoltCoreRef {
     function _moveDelegates(
         address srcRep,
         address dstRep,
-        uint224 amount
+        uint256 amount
     ) internal {
         if (srcRep != dstRep && amount > 0) {
             if (srcRep != address(0)) {
                 uint32 srcRepNum = numCheckpoints[srcRep];
-                uint224 srcRepOld = srcRepNum > 0
+                uint256 srcRepOld = srcRepNum > 0
                     ? checkpoints[srcRep][srcRepNum - 1].votes
                     : 0;
 
-                uint224 srcRepNew = srcRepOld - amount;
+                uint256 srcRepNew = srcRepOld - amount;
                 _writeCheckpoint(srcRep, srcRepNum, srcRepOld, srcRepNew);
             }
 
             if (dstRep != address(0)) {
                 uint32 dstRepNum = numCheckpoints[dstRep];
-                uint224 dstRepOld = dstRepNum > 0
+                uint256 dstRepOld = dstRepNum > 0
                     ? checkpoints[dstRep][dstRepNum - 1].votes
                     : 0;
 
-                uint224 dstRepNew = dstRepOld + amount;
+                uint256 dstRepNew = dstRepOld + amount;
                 _writeCheckpoint(dstRep, dstRepNum, dstRepOld, dstRepNew);
             }
         }
@@ -417,23 +417,25 @@ contract VoltV2 is VoltCoreRef {
     function _writeCheckpoint(
         address delegatee,
         uint32 nCheckpoints,
-        uint224 oldVotes,
-        uint224 newVotes
+        uint256 oldVotes,
+        uint256 newVotes
     ) internal {
         uint32 blockNumber = block.number.toUint32();
+        uint224 safeNewVotes = newVotes.toUint224();
+
         if (
             nCheckpoints != 0 &&
             checkpoints[delegatee][nCheckpoints - 1].fromBlock == blockNumber
         ) {
-            checkpoints[delegatee][nCheckpoints - 1].votes = newVotes;
+            checkpoints[delegatee][nCheckpoints - 1].votes = safeNewVotes;
         } else {
             checkpoints[delegatee][nCheckpoints] = Checkpoint(
                 blockNumber,
-                newVotes
+                safeNewVotes
             );
             numCheckpoints[delegatee] = nCheckpoints + 1;
         }
 
-        emit DelegateVotesChanged(delegatee, oldVotes, newVotes);
+        emit DelegateVotesChanged(delegatee, oldVotes, safeNewVotes);
     }
 }

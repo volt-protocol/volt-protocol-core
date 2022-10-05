@@ -47,35 +47,6 @@ contract UnitTestVoltV2 is DSTest {
         assertEq(volt.balanceOf(address(0xFFF)), voltToMint);
     }
 
-    function testMintAfterDelegationNoFuzz() public {
-        uint224 voltToMint = type(uint224).max / 2;
-
-        vm.prank(addresses.minterAddress);
-        volt.mint(address(0xFFF), voltToMint);
-
-        vm.prank(address(0xFFF));
-        volt.delegate(address(0xFFF));
-
-        vm.prank(addresses.minterAddress);
-        volt.mint(address(0xFFF), voltToMint);
-
-        assertEq(volt.getCurrentVotes(address(0xFFF)), voltToMint * 2);
-    }
-
-    function testTransferAfterDelegateNoFuzz() public {
-        uint224 voltToTransfer = type(uint224).max / 2;
-
-        vm.prank(addresses.minterAddress);
-        volt.mint(address(this), voltToTransfer);
-
-        volt.delegate(address(this));
-        volt.transfer(address(0xFFF), voltToTransfer);
-
-        assertEq(volt.totalSupply(), voltToTransfer);
-        assertEq(volt.balanceOf(address(this)), 0);
-        assertEq(volt.balanceOf(address(0xFFF)), voltToTransfer);
-    }
-
     function testMintAfterDelegation(uint224 voltToMint) public {
         vm.assume(voltToMint < type(uint224).max / 2);
 
@@ -156,13 +127,13 @@ contract UnitTestVoltV2 is DSTest {
         volt.mint(from, voltToBurn);
 
         vm.prank(from);
-        volt.approve(address(this), type(uint224).max);
-        assertEq(volt.allowance(from, address(this)), type(uint224).max);
+        volt.approve(address(this), type(uint256).max);
+        assertEq(volt.allowance(from, address(this)), type(uint256).max);
 
         volt.burnFrom(from, voltToBurn);
 
         assertEq(volt.balanceOf(from), 0);
-        assertEq(volt.allowance(from, address(this)), type(uint224).max);
+        assertEq(volt.allowance(from, address(this)), type(uint256).max);
         assertEq(volt.totalSupply(), 0);
     }
 
@@ -240,14 +211,14 @@ contract UnitTestVoltV2 is DSTest {
         volt.mint(from, voltToTransfer);
 
         vm.prank(from);
-        volt.approve(address(this), type(uint224).max);
-        assertEq(volt.allowance(from, address(this)), type(uint224).max);
+        volt.approve(address(this), type(uint256).max);
+        assertEq(volt.allowance(from, address(this)), type(uint256).max);
 
         volt.transferFrom(from, address(this), voltToTransfer);
 
         assertEq(volt.balanceOf(from), 0);
         assertEq(volt.balanceOf(address(this)), voltToTransfer);
-        assertEq(volt.allowance(from, address(this)), type(uint224).max);
+        assertEq(volt.allowance(from, address(this)), type(uint256).max);
         assertEq(volt.totalSupply(), voltToTransfer);
     }
 
