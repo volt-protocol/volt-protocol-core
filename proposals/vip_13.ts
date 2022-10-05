@@ -96,7 +96,7 @@ const vip_13: ProposalDescription = {
     }
   ],
   description:
-    'Mint Volt total supply to migrator contract, fund new DAI and USDC PSMs with new Volt, connect new PSMs to the ERC20 Allocator, and ddd new DAI, and USDC PSMs to PCV Guardian whitelist'
+    'Mint Volt total supply to migrator contract, fund new DAI and USDC PSMs with new Volt, connect new PSMs to the ERC20 Allocator, and add new DAI, and USDC PSMs to PCV Guardian whitelist'
 };
 
 export default vip_13;
