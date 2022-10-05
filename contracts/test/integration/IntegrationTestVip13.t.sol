@@ -17,7 +17,7 @@ contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
     using SafeCast for *;
     uint256 public constant mintAmountDai = 1_000_000e18;
     uint256 public constant mintAmountUsdc = 1_000_000e6;
-    uint256 public constant voltMintAmount = 1_000_000e18;
+    uint224 public constant voltMintAmount = 1_000_000e18;
 
     IERC20 public dai = IERC20(MainnetAddresses.DAI);
     IERC20 public usdc = IERC20(MainnetAddresses.USDC);

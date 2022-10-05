@@ -12,7 +12,7 @@ import {stdError} from "../unit/utils/StdLib.sol";
 contract IntegrationTestVoltMigratorTest is TimelockSimulation, vip13 {
     ICore core = ICore(MainnetAddresses.CORE);
 
-    uint256 public constant mintAmount = 100_000_000e18;
+    uint224 public constant mintAmount = 100_000_000e18;
 
     function setUp() public {
         simulate(

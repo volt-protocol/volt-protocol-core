@@ -24,7 +24,7 @@ contract IntegrationTestVoltMigratorRouterTest is TimelockSimulation, vip13 {
     OraclePassThrough public oracle =
         OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
-    uint256 public constant mintAmount = 100_000_000e18;
+    uint224 public constant mintAmount = 100_000_000e18;
 
     function setUp() public {
         simulate(

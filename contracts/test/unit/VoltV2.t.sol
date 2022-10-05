@@ -35,7 +35,7 @@ contract UnitTestVoltV2 is DSTest {
         assertEq(volt.delegates(address(this)), address(0xFFF));
     }
 
-    function testMintSuccessMinter(uint256 voltToMint) public {
+    function testMintSuccessMinter(uint224 voltToMint) public {
         vm.prank(addresses.minterAddress);
         volt.mint(address(0xFFF), voltToMint);
 
@@ -47,8 +47,37 @@ contract UnitTestVoltV2 is DSTest {
         assertEq(volt.balanceOf(address(0xFFF)), voltToMint);
     }
 
-    function testMintAfterDelegation(uint256 voltToMint) public {
-        vm.assume(voltToMint < type(uint256).max / 2);
+    function testMintAfterDelegationNoFuzz() public {
+        uint224 voltToMint = type(uint224).max / 2;
+
+        vm.prank(addresses.minterAddress);
+        volt.mint(address(0xFFF), voltToMint);
+
+        vm.prank(address(0xFFF));
+        volt.delegate(address(0xFFF));
+
+        vm.prank(addresses.minterAddress);
+        volt.mint(address(0xFFF), voltToMint);
+
+        assertEq(volt.getCurrentVotes(address(0xFFF)), voltToMint * 2);
+    }
+
+    function testTransferAfterDelegateNoFuzz() public {
+        uint224 voltToTransfer = type(uint224).max / 2;
+
+        vm.prank(addresses.minterAddress);
+        volt.mint(address(this), voltToTransfer);
+
+        volt.delegate(address(this));
+        volt.transfer(address(0xFFF), voltToTransfer);
+
+        assertEq(volt.totalSupply(), voltToTransfer);
+        assertEq(volt.balanceOf(address(this)), 0);
+        assertEq(volt.balanceOf(address(0xFFF)), voltToTransfer);
+    }
+
+    function testMintAfterDelegation(uint224 voltToMint) public {
+        vm.assume(voltToMint < type(uint224).max / 2);
 
         vm.prank(addresses.minterAddress);
         volt.mint(address(0xFFF), voltToMint);
@@ -83,7 +112,7 @@ contract UnitTestVoltV2 is DSTest {
         vm.stopPrank();
     }
 
-    function testBurn(uint256 voltToBurn) public {
+    function testBurn(uint224 voltToBurn) public {
         vm.prank(addresses.minterAddress);
         volt.mint(address(this), voltToBurn);
         volt.delegate(address(this));
@@ -104,8 +133,8 @@ contract UnitTestVoltV2 is DSTest {
         volt.burn(2e18);
     }
 
-    function testBurnFrom(uint256 voltToBurn) public {
-        vm.assume(voltToBurn < type(uint256).max); // to make sure we don't run into infinite approval counter example
+    function testBurnFrom(uint224 voltToBurn) public {
+        vm.assume(voltToBurn < type(uint224).max); // to make sure we don't run into infinite approval counter example
         address from = address(0xFFF);
         vm.prank(addresses.minterAddress);
         volt.mint(from, voltToBurn);
@@ -121,19 +150,19 @@ contract UnitTestVoltV2 is DSTest {
         assertEq(volt.totalSupply(), 0);
     }
 
-    function testBurnFromInfiniteApproval(uint256 voltToBurn) public {
+    function testBurnFromInfiniteApproval(uint224 voltToBurn) public {
         address from = address(0xFFF);
         vm.prank(addresses.minterAddress);
         volt.mint(from, voltToBurn);
 
         vm.prank(from);
-        volt.approve(address(this), type(uint256).max);
-        assertEq(volt.allowance(from, address(this)), type(uint256).max);
+        volt.approve(address(this), type(uint224).max);
+        assertEq(volt.allowance(from, address(this)), type(uint224).max);
 
         volt.burnFrom(from, voltToBurn);
 
         assertEq(volt.balanceOf(from), 0);
-        assertEq(volt.allowance(from, address(this)), type(uint256).max);
+        assertEq(volt.allowance(from, address(this)), type(uint224).max);
         assertEq(volt.totalSupply(), 0);
     }
 
@@ -161,12 +190,12 @@ contract UnitTestVoltV2 is DSTest {
         volt.burnFrom(from, 1e18);
     }
 
-    function testApprove(uint256 voltToApprove) public {
+    function testApprove(uint224 voltToApprove) public {
         assertTrue(volt.approve(address(0xFFF), voltToApprove));
         assertEq(volt.allowance(address(this), address(0xFFF)), voltToApprove);
     }
 
-    function testTransfer(uint256 voltToTransfer) public {
+    function testTransfer(uint224 voltToTransfer) public {
         vm.prank(addresses.minterAddress);
         volt.mint(address(this), voltToTransfer);
 
@@ -187,8 +216,8 @@ contract UnitTestVoltV2 is DSTest {
         volt.transfer(address(volt), 1e18);
     }
 
-    function testTransferFrom(uint256 voltToTransfer) public {
-        vm.assume(voltToTransfer < type(uint256).max); // to make sure we don't run into infinite approval counter example
+    function testTransferFrom(uint224 voltToTransfer) public {
+        vm.assume(voltToTransfer < type(uint224).max); // to make sure we don't run into infinite approval counter example
         address from = address(0xFFF);
         vm.prank(addresses.minterAddress);
         volt.mint(from, voltToTransfer);
@@ -205,20 +234,20 @@ contract UnitTestVoltV2 is DSTest {
         assertEq(volt.totalSupply(), voltToTransfer);
     }
 
-    function testTransferFromInfiniteApproval(uint256 voltToTransfer) public {
+    function testTransferFromInfiniteApproval(uint224 voltToTransfer) public {
         address from = address(0xFFF);
         vm.prank(addresses.minterAddress);
         volt.mint(from, voltToTransfer);
 
         vm.prank(from);
-        volt.approve(address(this), type(uint256).max);
-        assertEq(volt.allowance(from, address(this)), type(uint256).max);
+        volt.approve(address(this), type(uint224).max);
+        assertEq(volt.allowance(from, address(this)), type(uint224).max);
 
         volt.transferFrom(from, address(this), voltToTransfer);
 
         assertEq(volt.balanceOf(from), 0);
         assertEq(volt.balanceOf(address(this)), voltToTransfer);
-        assertEq(volt.allowance(from, address(this)), type(uint256).max);
+        assertEq(volt.allowance(from, address(this)), type(uint224).max);
         assertEq(volt.totalSupply(), voltToTransfer);
     }
 
@@ -258,7 +287,7 @@ contract UnitTestVoltV2 is DSTest {
         volt.transferFrom(from, address(volt), 1e18);
     }
 
-    function testPermit(uint256 voltToPermit) public {
+    function testPermit(uint224 voltToPermit) public {
         uint256 privateKey = 0xFFF;
         address owner = vm.addr(privateKey);
 
