@@ -47,9 +47,10 @@ contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
         vm.prank(MainnetAddresses.KRAKEN_USDC_WHALE);
         usdc.transfer(address(this), balance);
 
-        vm.startPrank(MainnetAddresses.TIMELOCK_CONTROLLER);
+        vm.startPrank(MainnetAddresses.GOVERNOR);
+        core.grantMinter(MainnetAddresses.GOVERNOR);
         voltV2.mint(address(voltV2UsdcPriceBoundPSM), voltMintAmount);
-        voltV2.mint(address(this), mintAmountDai);
+        oldVolt.mint(address(this), voltMintAmount);
         voltV2.mint(address(this), voltMintAmount);
         vm.stopPrank();
 

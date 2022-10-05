@@ -2,14 +2,12 @@
 pragma solidity =0.8.13;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {MainnetAddresses} from "../test/integration/fixtures/MainnetAddresses.sol";
+import {CoreRef} from "../refs/CoreRef.sol";
 
 // Forked from Uniswap's UNI
 // Reference: https://etherscan.io/address/0x1f9840a85d5af5bf1d1762f925bdaddc4201f984#code
 
-contract VoltV2 is AccessControl {
+contract VoltV2 is CoreRef {
     using SafeCast for *;
 
     /// @notice EIP-20 token name for this token
@@ -98,52 +96,7 @@ contract VoltV2 is AccessControl {
         uint256 amount
     );
 
-    constructor(address governor) {
-        _setupGovernor(governor);
-        _setRoleAdmin(MINTER_ROLE, GOVERN_ROLE);
-    }
-
-    modifier onlyGovernor() {
-        require(isGovernor(msg.sender), "Volt: caller is not a governor");
-        _;
-    }
-
-    modifier onlyMinter() {
-        require(isMinter(msg.sender), "Volt: caller is not a minter");
-        _;
-    }
-
-    /// @notice grants minter role to address
-    /// @param minter new minter
-    function grantMinter(address minter) public onlyGovernor {
-        _grantRole(MINTER_ROLE, minter);
-    }
-
-    /// @notice revokes minter role from address
-    /// @param minter ex minter
-    function revokeMinter(address minter) external onlyGovernor {
-        _revokeRole(MINTER_ROLE, minter);
-    }
-
-    /// @notice checks if address is a minter
-    /// @param _address address to check
-    /// @return true _address is a minter
-    // only virtual for testing mock override
-    function isMinter(address _address) public view returns (bool) {
-        return hasRole(MINTER_ROLE, _address);
-    }
-
-    /// @notice checks if address is a governor
-    /// @param _address address to check
-    /// @return true _address is a governor
-    // only virtual for testing mock override
-    function isGovernor(address _address) public view returns (bool) {
-        return hasRole(GOVERN_ROLE, _address);
-    }
-
-    function _setupGovernor(address governor) internal {
-        _setupRole(GOVERN_ROLE, governor);
-    }
+    constructor(address core) CoreRef(core) {}
 
     /// @notice Mint new tokens
     /// @param dst The address of the destination account

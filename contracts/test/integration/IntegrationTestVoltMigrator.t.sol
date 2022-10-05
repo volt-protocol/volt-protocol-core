@@ -29,10 +29,8 @@ contract IntegrationTestVoltMigratorTest is TimelockSimulation, vip13 {
         vm.startPrank(MainnetAddresses.GOVERNOR);
         core.grantMinter(MainnetAddresses.GOVERNOR);
         oldVolt.mint(address(this), mintAmount);
-        vm.stopPrank();
-
-        vm.prank(MainnetAddresses.TIMELOCK_CONTROLLER);
         voltV2.mint(address(voltMigrator), mintAmount);
+        vm.stopPrank();
     }
 
     function testExchange(uint64 amountOldVoltToExchange) public {
