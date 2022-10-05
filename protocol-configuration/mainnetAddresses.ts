@@ -70,6 +70,18 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.External,
     network: Network.Arbitrum
   },
+  mplPool: {
+    address: '0xFeBd6F15Df3B73DC4307B1d7E65D46413e710C27',
+    artifactName: 'unknown',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  mplRewards: {
+    address: '0x7869D7a3B074b5fa484dc04798E254c9C06A5e90',
+    artifactName: 'unknown',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
   globalRateLimitedMinter: {
     address: '0x87945f59E008aDc9ed6210a8e061f009d6ace718',
     artifactName: 'IGlobalRateLimitedMinter',

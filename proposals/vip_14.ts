@@ -52,8 +52,8 @@ const vip_14: ProposalDescription = {
       target: 'pcvGuardian',
       values: '0',
       method: 'addWhitelistAddresses(address[])',
-      arguments: [['{daiMorphoCompoundPCVDeposit}', '{usdcMorphoCompoundPCVDeposit}']],
-      description: 'Add USDC and DAI Morpho deposits to the PCV Guardian'
+      arguments: [['{daiMorphoCompoundPCVDeposit}', '{usdcMorphoCompoundPCVDeposit}', '{maplePCVDeposit}']],
+      description: 'Add USDC and DAI Morpho deposits and Maple deposit to the PCV Guardian'
     },
     /// oracle pass through setting Volt System Oracle
     {
@@ -62,6 +62,27 @@ const vip_14: ProposalDescription = {
       method: 'updateScalingPriceOracle(address)',
       arguments: ['{voltSystemOracle348Bips}'],
       description: 'Point Oracle Pass Through to new oracle address'
+    },
+    {
+      target: 'core',
+      values: '0',
+      method: 'grantPCVController(address)',
+      arguments: ['{timelockController}'],
+      description: 'Grant PCV Controller Role to timelock controller'
+    },
+    {
+      target: 'maplePCVDeposit',
+      values: '0',
+      method: 'deposit()',
+      arguments: [],
+      description: 'Deposit PCV into Maple'
+    },
+    {
+      target: 'core',
+      values: '0',
+      method: 'revokePCVController(address)',
+      arguments: ['{timelockController}'],
+      description: 'Revoke PCV Controller Role from timelock controller'
     }
   ],
   description: `

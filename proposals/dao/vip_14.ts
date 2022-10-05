@@ -20,6 +20,7 @@ Description:
 /// 2. deploy morpho usdc deposit
 /// 3. deploy compound pcv router pointed to morpho dai and usdc deposits
 /// 4. deploy volt system oracle
+/// 5. deploy maple usdc deposit
 
 Governance Steps:
 1. Grant Morpho PCV Router PCV Controller Role
@@ -47,6 +48,7 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
 
   const currentPrice = await voltSystemOracle.getCurrentOraclePrice();
 
+  const maplePCVDepositFactory = await ethers.getContractFactory('MaplePCVDeposit');
   const morphoPCVDepositFactory = await ethers.getContractFactory('MorphoCompoundPCVDeposit');
   const compoundPCVRouterFactory = await ethers.getContractFactory('CompoundPCVRouter');
   const voltSystemOracleFactory = await ethers.getContractFactory('VoltSystemOracle');
@@ -64,6 +66,9 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
   );
   await morphoCompoundPCVRouter.deployed();
 
+  const maplePCVDeposit = await maplePCVDepositFactory.deploy(addresses.core, addresses.mplPool, addresses.mplRewards);
+  await maplePCVDeposit.deployed();
+
   const voltSystemOracle348Bips = await voltSystemOracleFactory.deploy(
     monthlyChangeBasisPoints,
     startTime,
@@ -71,13 +76,16 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
   );
   await voltSystemOracle348Bips.deployed();
 
+  console.log(`Maple PCV Deposit deployed ${maplePCVDeposit.address}`);
   console.log(`Volt System Oracle deployed ${voltSystemOracle348Bips.address}`);
   console.log(`Morpho Compound PCV Router deployed ${morphoCompoundPCVRouter.address}`);
   console.log(`Morpho Compound DAI PCV Deposit deployed ${daiMorphoCompoundPCVDeposit.address}`);
   console.log(`Morpho Compound USDC PCV Deposit deployed ${usdcMorphoCompoundPCVDeposit.address}`);
 
   console.log(`Successfully Deployed VIP-${vipNumber}`);
+
   return {
+    maplePCVDeposit,
     voltSystemOracle348Bips,
     daiMorphoCompoundPCVDeposit,
     usdcMorphoCompoundPCVDeposit,
@@ -104,13 +112,15 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
     morphoCompoundPCVRouter,
     compoundPCVRouter,
     pcvGuardian,
-    erc20Allocator
+    erc20Allocator,
+    maplePCVDeposit
   } = contracts;
 
   /// Core address validations
-  expect(await daiMorphoCompoundPCVDeposit.core()).to.be.equal(core.address);
   expect(await usdcMorphoCompoundPCVDeposit.core()).to.be.equal(core.address);
+  expect(await daiMorphoCompoundPCVDeposit.core()).to.be.equal(core.address);
   expect(await morphoCompoundPCVRouter.core()).to.be.equal(core.address);
+  expect(await maplePCVDeposit.core()).to.be.equal(core.address);
 
   /// oracle pass through validation
   expect(await oraclePassThrough.scalingPriceOracle()).to.be.equal(voltSystemOracle348Bips.address);
@@ -140,9 +150,15 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
   expect(await daiMorphoCompoundPCVDeposit.LENS()).to.be.equal(addresses.morphoCompoundLens);
   expect(await usdcMorphoCompoundPCVDeposit.LENS()).to.be.equal(addresses.morphoCompoundLens);
 
+  expect(await maplePCVDeposit.balanceReportedIn()).to.be.equal(addresses.usdc);
+  expect(await maplePCVDeposit.mplRewards()).to.be.equal(addresses.mplRewards);
+  expect(await maplePCVDeposit.token()).to.be.equal(addresses.usdc);
+  expect(await maplePCVDeposit.pool()).to.be.equal(addresses.mplPool);
+
   /// pcv guardian validation
   expect(await pcvGuardian.isWhitelistAddress(usdcMorphoCompoundPCVDeposit.address)).to.be.true;
   expect(await pcvGuardian.isWhitelistAddress(daiMorphoCompoundPCVDeposit.address)).to.be.true;
+  expect(await pcvGuardian.isWhitelistAddress(maplePCVDeposit.address)).to.be.true;
 
   expect(await pcvGuardian.isWhitelistAddress(addresses.daiCompoundPCVDeposit)).to.be.true;
   expect(await pcvGuardian.isWhitelistAddress(addresses.usdcCompoundPCVDeposit)).to.be.true;

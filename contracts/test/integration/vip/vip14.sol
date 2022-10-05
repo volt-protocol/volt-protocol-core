@@ -29,6 +29,7 @@ import {MorphoCompoundPCVDeposit} from "../../../pcv/morpho/MorphoCompoundPCVDep
 /// 2. deploy morpho usdc deposit
 /// 3. deploy compound pcv router pointed to morpho dai and usdc deposits
 /// 4. deploy volt system oracle
+/// 5. deploy maple usdc deposit
 
 /// Governance Steps
 /// 1. grant new PCV router PCV Controller role
@@ -149,9 +150,10 @@ contract vip14 is DSTest, IVIP {
             oldOracle.getCurrentOraclePrice()
         );
 
-        address[] memory toWhitelist = new address[](2);
+        address[] memory toWhitelist = new address[](3);
         toWhitelist[0] = address(daiDeposit);
         toWhitelist[1] = address(usdcDeposit);
+        toWhitelist[2] = address(mapleDeposit);
 
         mainnetProposal.push(
             ITimelockSimulation.action({
@@ -234,7 +236,7 @@ contract vip14 is DSTest, IVIP {
                     "addWhitelistAddresses(address[])",
                     toWhitelist
                 ),
-                description: "Add USDC and DAI Morpho deposits to the PCV Guardian"
+                description: "Add USDC and DAI Morpho deposits and Maple deposit to the PCV Guardian"
             })
         );
 
@@ -247,6 +249,39 @@ contract vip14 is DSTest, IVIP {
                     address(oracle)
                 ),
                 description: "Point Oracle Pass Through to new oracle address"
+            })
+        );
+
+        mainnetProposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: MainnetAddresses.CORE,
+                arguments: abi.encodeWithSignature(
+                    "grantPCVController(address)",
+                    MainnetAddresses.TIMELOCK_CONTROLLER
+                ),
+                description: "Grant PCV Controller Role to timelock controller"
+            })
+        );
+
+        mainnetProposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: address(mapleDeposit),
+                arguments: abi.encodeWithSignature("deposit()"),
+                description: "Deposit PCV into Maple"
+            })
+        );
+
+        mainnetProposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: MainnetAddresses.CORE,
+                arguments: abi.encodeWithSignature(
+                    "revokePCVController(address)",
+                    MainnetAddresses.TIMELOCK_CONTROLLER
+                ),
+                description: "Revoke PCV Controller Role from timelock controller"
             })
         );
     }
@@ -278,7 +313,7 @@ contract vip14 is DSTest, IVIP {
             address(usdcDeposit),
             usdcBalance - targetMapleDepositAmount
         );
-        IERC20(usdc).transfer(address(usdcDeposit), targetMapleDepositAmount);
+        IERC20(usdc).transfer(address(mapleDeposit), targetMapleDepositAmount);
         IERC20(dai).transfer(
             address(daiDeposit),
             IERC20(dai).balanceOf(MainnetAddresses.GOVERNOR)
@@ -297,6 +332,7 @@ contract vip14 is DSTest, IVIP {
     /// assert old pcv deposits are disconnected in allocator
     /// assert oracle pass through is pointed to the proper Volt System Oracle
     function mainnetValidate() public override {
+        assertEq(address(mapleDeposit.core()), core);
         assertEq(address(usdcDeposit.core()), core);
         assertEq(address(daiDeposit.core()), core);
         assertEq(address(router.core()), core);
@@ -308,6 +344,7 @@ contract vip14 is DSTest, IVIP {
 
         assertTrue(pcvGuardian.isWhitelistAddress(address(daiDeposit)));
         assertTrue(pcvGuardian.isWhitelistAddress(address(usdcDeposit)));
+        assertTrue(pcvGuardian.isWhitelistAddress(address(mapleDeposit)));
 
         /// router parameter validations
         assertEq(address(router.daiPcvDeposit()), address(daiDeposit));
