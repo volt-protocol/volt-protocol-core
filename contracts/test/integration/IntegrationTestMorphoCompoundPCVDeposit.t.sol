@@ -145,11 +145,7 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
         vm.prank(MainnetAddresses.GOVERNOR);
         daiDeposit.withdraw(address(this), amount);
 
-        assertApproxEq(
-            dai.balanceOf(address(this)).toInt256(),
-            amount.toInt256(),
-            0
-        );
+        assertEq(dai.balanceOf(address(this)), amount);
 
         assertApproxEq(
             daiDeposit.balance().toInt256(),
