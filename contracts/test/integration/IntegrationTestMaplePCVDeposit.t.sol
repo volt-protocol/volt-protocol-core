@@ -19,6 +19,8 @@ import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 
+import "hardhat/console.sol";
+
 contract IntegrationTestMaplePCVDeposit is DSTest {
     using SafeCast for *;
 
@@ -208,6 +210,52 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
         assertEq(IPool(maplePool).withdrawCooldown(address(usdcDeposit)), 0);
     }
 
+    function testExitPCVControllerSucceeds() public {
+        uint256 blockTimestamp = 10_000;
+
+        vm.warp(blockTimestamp);
+
+        console.log(
+            "mpl rewards balance: ",
+            IMplRewards(mplRewards).balanceOf(address(usdcDeposit))
+        );
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.exit();
+
+        assertEq(
+            IPool(maplePool).custodyAllowance(
+                address(usdcDeposit),
+                address(mplRewards)
+            ),
+            0
+        );
+        assertEq(IMplRewards(mplRewards).balanceOf(address(usdcDeposit)), 0);
+    }
+
+    function testWithdrawFromRewardsContractPCVControllerSucceeds() public {
+        uint256 blockTimestamp = 10_000;
+
+        vm.warp(blockTimestamp);
+
+        console.log(
+            "mpl rewards balance: ",
+            IMplRewards(mplRewards).balanceOf(address(usdcDeposit))
+        );
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.withdrawFromRewardsContract();
+
+        assertEq(
+            IPool(maplePool).custodyAllowance(
+                address(usdcDeposit),
+                address(mplRewards)
+            ),
+            0
+        );
+        assertEq(IMplRewards(mplRewards).balanceOf(address(usdcDeposit)), 0);
+    }
+
     function testDepositNotPCVControllerFails() public {
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
         usdcDeposit.deposit();
@@ -228,8 +276,30 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
         usdcDeposit.withdraw(address(this), targetUsdcBalance);
     }
 
+    function testWithdrawWithoutExitingNonPCVControllerFails() public {
+        vm.expectRevert("CoreRef: Caller is not a PCV controller");
+        usdcDeposit.withdrawWithoutExiting(address(this), targetUsdcBalance);
+    }
+
+    function testWithdrawFromRewardsContractgNonPCVControllerFails() public {
+        vm.expectRevert("CoreRef: Caller is not a PCV controller");
+        usdcDeposit.withdrawFromRewardsContract();
+    }
+
     function testWithdrawAllNonPCVControllerFails() public {
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
         usdcDeposit.withdrawAll(address(this));
+    }
+
+    function testExitPCVControllerFails() public {
+        vm.expectRevert("CoreRef: Caller is not a PCV controller");
+        usdcDeposit.exit();
+    }
+
+    function testEmergencyActionNonPCVControllerFails() public {
+        MaplePCVDeposit.Call[] memory calls = new MaplePCVDeposit.Call[](2);
+
+        vm.expectRevert("CoreRef: Caller is not a PCV controller");
+        usdcDeposit.emergencyAction(calls);
     }
 }

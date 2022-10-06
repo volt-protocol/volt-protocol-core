@@ -17,6 +17,11 @@ interface IPool {
         view
         returns (uint256);
 
+    function custodyAllowance(address _owner, address _custodian)
+        external
+        view
+        returns (uint256);
+
     /**
         @dev    Returns the total amount of funds a given address is able to withdraw currently.
         @param  owner Address of FDT holder.

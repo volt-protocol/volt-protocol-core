@@ -2,11 +2,11 @@ pragma solidity =0.8.13;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IPool} from "./IPool.sol";
-import {IMplRewards} from "./IMplRewards.sol";
 import {CoreRef} from "../../refs/CoreRef.sol";
 import {PCVDeposit} from "../PCVDeposit.sol";
+import {IMplRewards} from "./IMplRewards.sol";
 
 /// @notice PCV Deposit for Maple
 /// Allows depositing only by privileged role to prevent lockup period being extended by griefers
@@ -121,6 +121,10 @@ contract MaplePCVDeposit is PCVDeposit {
 
         /// withdraw from the pool
         pool.withdraw(amount);
+
+        /// withdraw min between balance and amount as losses could be sustained in venue
+        /// causing less than amt to be withdrawn
+        amount = Math.min(token.balanceOf(address(this)), amount);
         token.safeTransfer(to, amount);
 
         emit Withdrawal(msg.sender, to, amount);
@@ -144,10 +148,55 @@ contract MaplePCVDeposit is PCVDeposit {
         emit Withdrawal(msg.sender, to, tokenBalance);
     }
 
-    /// permissionless function to harvest rewards before withdraw
+    /// @notice get rewards and unstake from rewards contract
+    function exit() external onlyPCVController {
+        mplRewards.exit();
+    }
+
+    /// @notice unstake from rewards contract
+    function withdrawFromRewardsContract() external onlyPCVController {
+        uint256 rewardsBalance = mplRewards.balanceOf(address(this));
+        mplRewards.withdraw(rewardsBalance);
+    }
+
+    /// @notice get rewards and unstake from rewards contract
+    function withdrawWithoutExiting(address to, uint256 amount)
+        external
+        onlyPCVController
+    {
+        pool.withdraw(amount);
+        /// withdraw min between balance and amount as losses could be sustained in venue
+        /// causing less than amt to be withdrawn
+        amount = Math.min(token.balanceOf(address(this)), amount);
+        token.safeTransfer(to, amount);
+    }
+
+    /// @notice permissionless function to harvest rewards before withdraw
     function harvest() external {
         mplRewards.getReward();
 
         emit Harvest();
+    }
+
+    struct Call {
+        address target;
+        bytes callData;
+    }
+
+    /// @notice due to Maple's complexity, add this ability to be able to execute
+    /// arbitrary calldata against arbitrary addresses.
+    function emergencyAction(Call[] memory calls)
+        external
+        onlyPCVController
+        returns (bytes[] memory returnData)
+    {
+        returnData = new bytes[](calls.length);
+        for (uint256 i = 0; i < calls.length; i++) {
+            (bool success, bytes memory returned) = calls[i].target.call(
+                calls[i].callData
+            );
+            require(success);
+            returnData[i] = returned;
+        }
     }
 }
