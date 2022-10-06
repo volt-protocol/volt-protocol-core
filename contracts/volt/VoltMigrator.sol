@@ -43,6 +43,7 @@ contract VoltMigrator is IVoltMigrator, CoreRef {
             oldVolt.balanceOf(msg.sender),
             oldVolt.allowance(msg.sender, address(this))
         );
+        require(amountToExchange != 0, "VoltMigrator: no amount to exchange");
 
         _migrateVolt(msg.sender, amountToExchange);
     }
@@ -63,6 +64,7 @@ contract VoltMigrator is IVoltMigrator, CoreRef {
             oldVolt.balanceOf(msg.sender),
             oldVolt.allowance(msg.sender, address(this))
         );
+        require(amountToExchange != 0, "VoltMigrator: no amount to exchange");
 
         _migrateVolt(to, amountToExchange);
     }

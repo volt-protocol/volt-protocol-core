@@ -167,6 +167,7 @@ contract IntegrationTestVoltMigratorTest is TimelockSimulation, vip13 {
         uint256 oldVoltBalanceBefore = oldVolt.balanceOf(address(this));
         uint256 newVoltBalanceBefore = voltV2.balanceOf(address(this));
 
+        vm.expectRevert("VoltMigrator: no amount to exchange");
         voltMigrator.exchangeAll();
 
         uint256 oldVoltBalanceAfter = oldVolt.balanceOf(address(this));
@@ -180,6 +181,7 @@ contract IntegrationTestVoltMigratorTest is TimelockSimulation, vip13 {
         uint256 oldVoltBalanceBefore = oldVolt.balanceOf(address(this));
         uint256 newVoltBalanceBefore = voltV2.balanceOf(address(0xFFF));
 
+        vm.expectRevert("VoltMigrator: no amount to exchange");
         voltMigrator.exchangeAllTo(address(0xFFF));
 
         uint256 oldVoltBalanceAfter = oldVolt.balanceOf(address(this));

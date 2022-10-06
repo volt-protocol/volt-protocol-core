@@ -41,12 +41,6 @@ contract VoltV2 is VoltCoreRef {
         uint224 votes;
     }
 
-    /// @notice hash digest for minter role
-    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-
-    /// @notice hash digest for govern role
-    bytes32 public constant GOVERN_ROLE = keccak256("GOVERN_ROLE");
-
     /// @notice A record of votes checkpoints for each account, by index
     mapping(address => mapping(uint32 => Checkpoint)) public checkpoints;
 

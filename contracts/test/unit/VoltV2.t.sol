@@ -355,6 +355,13 @@ contract UnitTestVoltV2 is DSTest {
         volt.permit(owner, address(this), 1e18, timestamp, v, r, s);
     }
 
+    function testSetCore() public {
+        vm.prank(addresses.governorAddress);
+        volt.setCore(address(0x1234));
+
+        assertEq(address(volt.core()), address(0x1234));
+    }
+
     function getDomainSeperator()
         internal
         view

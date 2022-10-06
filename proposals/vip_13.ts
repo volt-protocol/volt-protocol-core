@@ -8,7 +8,7 @@ const vip_13: ProposalDescription = {
       values: '0',
       method: 'grantMinter(address)',
       arguments: ['{timelockController}'],
-      description: 'Grant minter role to timelockr'
+      description: 'Grant minter role to timelock'
     },
     {
       target: 'voltV2',
@@ -22,7 +22,7 @@ const vip_13: ProposalDescription = {
       values: '0',
       method: 'revokeMinter(address)',
       arguments: ['{timelockController}'],
-      description: 'Disconnet USDC PSM from the ERC20 Allocator'
+      description: 'Revoke minter role to timelock'
     },
     {
       target: 'volt',
