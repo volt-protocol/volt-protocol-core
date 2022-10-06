@@ -40,8 +40,7 @@ contract vip13 is DSTest, IVIP {
 
     ITimelockSimulation.action[] private proposal;
 
-    uint256 oldVoltTotalSupply = oldVolt.totalSupply();
-
+    uint256 oldVoltTotalSupply;
     uint256 voltDaiFloorPrice = 9_000;
     uint256 voltDaiCeilingPrice = 10_000;
 
@@ -70,6 +69,10 @@ contract vip13 is DSTest, IVIP {
         ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_USDC_PCV_DEPOSIT);
 
     constructor() {
+        if (block.chainid != 1) {
+            return;
+        }
+
         mainnetSetup();
 
         voltV2 = new VoltV2(MainnetAddresses.CORE);
@@ -269,11 +272,11 @@ contract vip13 is DSTest, IVIP {
     }
 
     function mainnetSetup() public override {
-        // new pcv guardian to be deployed with safe address as timelock
+        oldVoltTotalSupply = oldVolt.totalSupply();
+        vm.startPrank(MainnetAddresses.GOVERNOR);
+
         uint256 governorVoltBalanceBeforeUsdc = IERC20(MainnetAddresses.VOLT)
             .balanceOf(MainnetAddresses.GOVERNOR);
-
-        vm.startPrank(MainnetAddresses.GOVERNOR);
 
         PCVGuardian(MainnetAddresses.PCV_GUARDIAN)
             .withdrawAllERC20ToSafeAddress(
