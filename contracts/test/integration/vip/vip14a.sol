@@ -77,7 +77,7 @@ contract vip14a is DSTest, IVIP {
                     "updateScalingPriceOracle(address)",
                     address(oracle)
                 ),
-                description: "Point Oracle Pass Through to new oracle address"
+                description: "Point Arbitrum Oracle Pass Through to 0 basis point Volt System Oracle"
             })
         );
         arbitrumProposal.push(

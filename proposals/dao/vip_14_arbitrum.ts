@@ -23,7 +23,7 @@ Governance Steps:
 /// TODO update this to correct start time
 let startTime;
 
-const monthlyChangeBasisPoints = 0;
+const ZERO_MONTHLY_CHANGE_BASIS_POINTS = 0;
 
 const vipNumber = '14';
 
@@ -36,7 +36,11 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
 
   const voltSystemOracleFactory = await ethers.getContractFactory('VoltSystemOracle');
 
-  const voltSystemOracle0Bips = await voltSystemOracleFactory.deploy(monthlyChangeBasisPoints, startTime, currentPrice);
+  const voltSystemOracle0Bips = await voltSystemOracleFactory.deploy(
+    ZERO_MONTHLY_CHANGE_BASIS_POINTS,
+    startTime,
+    currentPrice
+  );
   await voltSystemOracle0Bips.deployed();
 
   console.log(`Volt System Oracle deployed ${voltSystemOracle0Bips.address}`);
