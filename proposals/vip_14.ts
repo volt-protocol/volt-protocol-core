@@ -98,6 +98,7 @@ const vip_14: ProposalDescription = {
    2. deploy morpho usdc deposit
    3. deploy compound pcv router pointed to morpho dai and usdc deposits
    4. deploy volt system oracle
+   5. deploy maple pcv deposit
   
   Governance Steps:
   1. Grant Morpho PCV Router PCV Controller Role
