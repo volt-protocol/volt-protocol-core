@@ -31,6 +31,10 @@ Governance Steps:
 6. Add Morpho USDC Deposit to ERC20Allocator
 7. Add USDC and DAI Morpho deposits to the PCV Guardian
 8. Point Oracle Pass Through to new oracle address
+9. Grant PCV Controller to timelock
+10. Deposit funds in Maple PCV Deposit
+11. pause dai compound pcv deposit
+12. pause usdc compound pcv deposit
 
 */
 
