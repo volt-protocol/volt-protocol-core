@@ -60,6 +60,8 @@ contract MaplePCVDeposit is PCVDeposit {
         return address(token);
     }
 
+    /// ---------- Happy Path APIs ----------
+
     /// @notice deposit PCV into Maple.
     /// all deposits are subject to a minimum 90 day lockup,
     /// no op if 0 token balance
@@ -148,18 +150,30 @@ contract MaplePCVDeposit is PCVDeposit {
         emit Withdrawal(msg.sender, to, tokenBalance);
     }
 
+    /// @notice permissionless function to harvest rewards before withdraw
+    function harvest() external {
+        mplRewards.getReward();
+
+        emit Harvest();
+    }
+
+    /// ---------- Sad Path APIs ----------
+
     /// @notice get rewards and unstake from rewards contract
+    /// breaks functionality of happy path withdraw functions
     function exit() external onlyPCVController {
         mplRewards.exit();
     }
 
     /// @notice unstake from rewards contract without getting rewards
+    /// breaks functionality of happy path withdraw functions
     function withdrawFromRewardsContract() external onlyPCVController {
         uint256 rewardsBalance = pool.balanceOf(address(this));
         mplRewards.withdraw(rewardsBalance);
     }
 
     /// @notice unstake from Pool FDT contract without getting rewards
+    /// or unstaking from the reward contract.
     /// @param to destination after funds are withdrawn from venue
     /// @param amount of PCV to withdraw from the venue
     function withdrawFromPool(address to, uint256 amount)
@@ -173,22 +187,15 @@ contract MaplePCVDeposit is PCVDeposit {
         token.safeTransfer(to, amount);
     }
 
-    /// @notice permissionless function to harvest rewards before withdraw
-    function harvest() external {
-        mplRewards.getReward();
-
-        emit Harvest();
-    }
-
     /// @notice struct to pack calldata and targets for an emergency action
     struct Call {
         address target;
         bytes callData;
     }
 
-    /// @notice due to Maple's complexity, add this ability to be able to execute
-    /// arbitrary calldata against arbitrary addresses.
-    /// callable only by governor
+    /// @notice due to Maple's complexity, add this ability to be able
+    /// to execute arbitrary calldata against arbitrary addresses.
+    /// only callable by governor
     function emergencyAction(Call[] memory calls)
         external
         onlyGovernor

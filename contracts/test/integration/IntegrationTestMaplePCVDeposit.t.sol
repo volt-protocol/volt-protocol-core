@@ -231,22 +231,11 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
     function testWithdrawFromRewardsContractAndWithdrawFromPoolPCVControllerSucceeds()
         public
     {
-        _setRewardsAndWarp();
-
-        vm.prank(MainnetAddresses.GOVERNOR);
-        usdcDeposit.withdrawFromRewardsContract();
-
-        assertEq(
-            IPool(maplePool).custodyAllowance(
-                address(usdcDeposit),
-                address(mplRewards)
-            ),
-            0
-        );
-        assertEq(IMplRewards(mplRewards).balanceOf(address(usdcDeposit)), 0);
+        testWithdrawFromRewardsContractPCVControllerSucceeds();
 
         vm.prank(MainnetAddresses.GOVERNOR);
         usdcDeposit.signalIntentToWithdraw();
+
         vm.warp(block.timestamp + cooldownPeriod);
 
         vm.prank(MainnetAddresses.GOVERNOR);
