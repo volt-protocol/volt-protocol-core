@@ -65,8 +65,7 @@ contract vip14a is DSTest, IVIP {
         oracle = new VoltSystemOracle(
             monthlyChangeRateBasisPoints,
             block.timestamp,
-            VoltSystemOracle(ArbitrumAddresses.VOLT_SYSTEM_ORACLE_144_BIPS)
-                .getCurrentOraclePrice()
+            startPrice
         );
 
         arbitrumProposal.push(

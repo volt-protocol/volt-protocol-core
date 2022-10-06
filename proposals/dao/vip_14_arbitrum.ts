@@ -92,12 +92,6 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
   );
 
   await assertApproxEq(
-    await voltSystemOracle0Bips.oraclePrice(),
-    await arbitrumVoltSystemOracle.getCurrentOraclePrice(),
-    0 /// allow 0 bips of deviation
-  );
-
-  await assertApproxEq(
     await voltSystemOracle0Bips.getCurrentOraclePrice(),
     await voltSystemOracle0Bips.oraclePrice(),
     0
