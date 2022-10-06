@@ -10,17 +10,20 @@ import { ethers } from 'hardhat';
 import { assertApproxEq } from '@test/helpers';
 
 /*
+
 Arbitrum Volt Protocol Improvement Proposal #14
-Description: 
+
 Deployment Steps
 1. deploy volt system oracle with 0 monthlyChangeRateBasisPoints
 Governance Steps:
+
+Governance Steps
 1. Point Oracle Pass Through to new oracle address
-2. Pause DAI PSM
-3. Pause USDC PSM
+2. Pause minting DAI PSM
+3. Pause minting USDC PSM
+
 */
 
-/// TODO update this to correct start time
 let startTime;
 
 const ZERO_MONTHLY_CHANGE_BASIS_POINTS = 0;
