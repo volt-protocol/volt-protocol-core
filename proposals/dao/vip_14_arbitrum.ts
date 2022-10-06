@@ -91,11 +91,7 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
     0 /// allow 0 bips of deviation
   );
 
-  await assertApproxEq(
-    await voltSystemOracle0Bips.getCurrentOraclePrice(),
-    await voltSystemOracle0Bips.oraclePrice(),
-    0
-  );
+  expect(await voltSystemOracle0Bips.getCurrentOraclePrice()).to.be.equal(await voltSystemOracle0Bips.oraclePrice());
 
   console.log(`Successfully validated VIP-${vipNumber}`);
 };
