@@ -78,11 +78,18 @@ const vip_14: ProposalDescription = {
       description: 'Deposit PCV into Maple'
     },
     {
-      target: 'core',
+      target: 'daiCompoundPCVDeposit',
       values: '0',
-      method: 'revokePCVController(address)',
-      arguments: ['{timelockController}'],
-      description: 'Revoke PCV Controller Role from timelock controller'
+      method: 'pause()',
+      arguments: [],
+      description: 'Pause Compound DAI PCV Deposit'
+    },
+    {
+      target: 'usdcCompoundPCVDeposit',
+      values: '0',
+      method: 'pause()',
+      arguments: [],
+      description: 'Pause Compound USDC PCV Deposit'
     }
   ],
   description: `
@@ -99,8 +106,12 @@ const vip_14: ProposalDescription = {
   4. Remove Compound USDC Deposit from ERC20Allocator
   5. Add Morpho DAI Deposit to ERC20Allocator
   6. Add Morpho USDC Deposit to ERC20Allocator
-  7. Add USDC and DAI Morpho deposits to the PCV Guardian
+  7. Add USDC and DAI Morpho deposits as well as Maple PCV deposit to the PCV Guardian
   8. Point Oracle Pass Through to new oracle address
+  9. Grant PCV Controller to timelock
+  10. Deposit funds in Maple PCV Deposit
+  11. pause dai compound pcv deposit
+  12. pause usdc compound pcv deposit
   `
 };
 

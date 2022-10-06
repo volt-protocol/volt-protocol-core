@@ -19,8 +19,6 @@ import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 
-import "hardhat/console.sol";
-
 contract IntegrationTestMaplePCVDeposit is DSTest {
     using SafeCast for *;
 
@@ -123,13 +121,7 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
     }
 
     function _testWithdraw(uint256 amount) private {
-        uint256 rewardRate = IMplRewards(mplRewards).rewardRate();
-        vm.prank(mapleOwner);
-        IMplRewards(mplRewards).notifyRewardAmount(rewardRate);
-
-        vm.warp(
-            block.timestamp + IPool(maplePool).lockupPeriod() - cooldownPeriod
-        );
+        _setRewardsAndWarp();
         vm.prank(MainnetAddresses.GOVERNOR);
         usdcDeposit.signalIntentToWithdraw();
 
@@ -157,13 +149,7 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
     }
 
     function testWithdrawAll() public {
-        uint256 rewardRate = IMplRewards(mplRewards).rewardRate();
-        vm.prank(mapleOwner);
-        IMplRewards(mplRewards).notifyRewardAmount(rewardRate);
-
-        vm.warp(
-            block.timestamp + IPool(maplePool).lockupPeriod() - cooldownPeriod
-        );
+        _setRewardsAndWarp();
         vm.prank(MainnetAddresses.GOVERNOR);
         usdcDeposit.signalIntentToWithdraw();
 
@@ -211,14 +197,7 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
     }
 
     function testExitPCVControllerSucceeds() public {
-        uint256 blockTimestamp = 10_000;
-
-        vm.warp(blockTimestamp);
-
-        console.log(
-            "mpl rewards balance: ",
-            IMplRewards(mplRewards).balanceOf(address(usdcDeposit))
-        );
+        _setRewardsAndWarp();
 
         vm.prank(MainnetAddresses.GOVERNOR);
         usdcDeposit.exit();
@@ -234,17 +213,80 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
     }
 
     function testWithdrawFromRewardsContractPCVControllerSucceeds() public {
-        uint256 blockTimestamp = 10_000;
-
-        vm.warp(blockTimestamp);
-
-        console.log(
-            "mpl rewards balance: ",
-            IMplRewards(mplRewards).balanceOf(address(usdcDeposit))
-        );
+        _setRewardsAndWarp();
 
         vm.prank(MainnetAddresses.GOVERNOR);
         usdcDeposit.withdrawFromRewardsContract();
+
+        assertEq(
+            IPool(maplePool).custodyAllowance(
+                address(usdcDeposit),
+                address(mplRewards)
+            ),
+            0
+        );
+        assertEq(IMplRewards(mplRewards).balanceOf(address(usdcDeposit)), 0);
+    }
+
+    function testWithdrawFromRewardsContractAndWithdrawFromPoolPCVControllerSucceeds()
+        public
+    {
+        _setRewardsAndWarp();
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.withdrawFromRewardsContract();
+
+        assertEq(
+            IPool(maplePool).custodyAllowance(
+                address(usdcDeposit),
+                address(mplRewards)
+            ),
+            0
+        );
+        assertEq(IMplRewards(mplRewards).balanceOf(address(usdcDeposit)), 0);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.signalIntentToWithdraw();
+        vm.warp(block.timestamp + cooldownPeriod);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.withdrawFromPool(address(this), targetUsdcBalance);
+    }
+
+    function testExitRewardsContractAndWithdrawFromPoolPCVControllerSucceeds()
+        public
+    {
+        _setRewardsAndWarp();
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.exit();
+
+        assertEq(
+            IPool(maplePool).custodyAllowance(
+                address(usdcDeposit),
+                address(mplRewards)
+            ),
+            0
+        );
+        assertEq(IMplRewards(mplRewards).balanceOf(address(usdcDeposit)), 0);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.signalIntentToWithdraw();
+        vm.warp(block.timestamp + cooldownPeriod);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.withdrawFromPool(address(this), targetUsdcBalance);
+    }
+
+    function testGovernorEmergencyActionExitSucceeds() public {
+        _setRewardsAndWarp();
+
+        MaplePCVDeposit.Call[] memory calls = new MaplePCVDeposit.Call[](1);
+        calls[0].callData = abi.encodeWithSignature("exit()");
+        calls[0].target = mplRewards;
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.emergencyAction(calls);
 
         assertEq(
             IPool(maplePool).custodyAllowance(
@@ -276,9 +318,9 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
         usdcDeposit.withdraw(address(this), targetUsdcBalance);
     }
 
-    function testWithdrawWithoutExitingNonPCVControllerFails() public {
+    function testwithdrawFromPoolNonPCVControllerFails() public {
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
-        usdcDeposit.withdrawWithoutExiting(address(this), targetUsdcBalance);
+        usdcDeposit.withdrawFromPool(address(this), targetUsdcBalance);
     }
 
     function testWithdrawFromRewardsContractgNonPCVControllerFails() public {
@@ -299,7 +341,17 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
     function testEmergencyActionNonPCVControllerFails() public {
         MaplePCVDeposit.Call[] memory calls = new MaplePCVDeposit.Call[](2);
 
-        vm.expectRevert("CoreRef: Caller is not a PCV controller");
+        vm.expectRevert("CoreRef: Caller is not a governor");
         usdcDeposit.emergencyAction(calls);
+    }
+
+    function _setRewardsAndWarp() private {
+        uint256 rewardRate = IMplRewards(mplRewards).rewardRate();
+        vm.prank(mapleOwner);
+        IMplRewards(mplRewards).notifyRewardAmount(rewardRate);
+
+        vm.warp(
+            block.timestamp + IPool(maplePool).lockupPeriod() - cooldownPeriod
+        );
     }
 }

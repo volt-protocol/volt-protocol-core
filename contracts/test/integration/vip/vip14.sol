@@ -44,6 +44,10 @@ import {MorphoCompoundPCVDeposit} from "../../../pcv/morpho/MorphoCompoundPCVDep
 /// 7. add deposits as safe addresses
 
 /// 8. connect new oracle to oracle pass through with updated rate
+/// 9. Grant PCV Controller to timelock
+/// 10. Deposit funds in Maple PCV Deposit
+/// 11. pause dai compound pcv deposit
+/// 12. pause usdc compound pcv deposit
 
 contract vip14 is DSTest, IVIP {
     using SafeCast for uint256;
@@ -64,7 +68,7 @@ contract vip14 is DSTest, IVIP {
     VoltSystemOracle public oracle;
     MaplePCVDeposit public mapleDeposit;
 
-    uint256 public immutable startTime;
+    uint256 public startTime;
 
     uint256 public constant monthlyChangeRateBasisPoints = 29;
     uint256 public constant arbitrumMonthlyChangeRateBasisPoints = 0;
@@ -89,47 +93,8 @@ contract vip14 is DSTest, IVIP {
         0xFeBd6F15Df3B73DC4307B1d7E65D46413e710C27;
 
     constructor() {
-        startTime = block.timestamp;
-
-        if (block.chainid != 1) {
-            oracle = new VoltSystemOracle(
-                arbitrumMonthlyChangeRateBasisPoints,
-                block.timestamp,
-                VoltSystemOracle(ArbitrumAddresses.VOLT_SYSTEM_ORACLE_144_BIPS)
-                    .getCurrentOraclePrice()
-            );
-
-            /// construct separate proposal on arbitrum
-            arbitrumProposal.push(
-                ITimelockSimulation.action({
-                    value: 0,
-                    target: ArbitrumAddresses.ORACLE_PASS_THROUGH,
-                    arguments: abi.encodeWithSignature(
-                        "updateScalingPriceOracle(address)",
-                        address(oracle)
-                    ),
-                    description: "Point Oracle Pass Through to new oracle address"
-                })
-            );
-            arbitrumProposal.push(
-                ITimelockSimulation.action({
-                    value: 0,
-                    target: ArbitrumAddresses.VOLT_USDC_PSM,
-                    arguments: abi.encodeWithSignature("pauseMint()"),
-                    description: "Pause minting on USDC PSM on Arbitrum"
-                })
-            );
-            arbitrumProposal.push(
-                ITimelockSimulation.action({
-                    value: 0,
-                    target: ArbitrumAddresses.VOLT_DAI_PSM,
-                    arguments: abi.encodeWithSignature("pauseMint()"),
-                    description: "Pause minting on DAI PSM on Arbitrum"
-                })
-            );
-
-            return;
-        }
+        if (block.chainid != 1) return; /// keep ci pipeline happy
+        startTime = block.timestamp + 1 days;
 
         mapleDeposit = new MaplePCVDeposit(core, maplePool, mplRewards);
         daiDeposit = new MorphoCompoundPCVDeposit(core, MainnetAddresses.CDAI);
@@ -146,7 +111,7 @@ contract vip14 is DSTest, IVIP {
 
         oracle = new VoltSystemOracle(
             monthlyChangeRateBasisPoints,
-            block.timestamp,
+            block.timestamp + 1 days,
             oldOracle.getCurrentOraclePrice()
         );
 
@@ -276,12 +241,18 @@ contract vip14 is DSTest, IVIP {
         mainnetProposal.push(
             ITimelockSimulation.action({
                 value: 0,
-                target: MainnetAddresses.CORE,
-                arguments: abi.encodeWithSignature(
-                    "revokePCVController(address)",
-                    MainnetAddresses.TIMELOCK_CONTROLLER
-                ),
-                description: "Revoke PCV Controller Role from timelock controller"
+                target: MainnetAddresses.COMPOUND_DAI_PCV_DEPOSIT,
+                arguments: abi.encodeWithSignature("pause()"),
+                description: "Pause Compound DAI PCV Deposit"
+            })
+        );
+
+        mainnetProposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: MainnetAddresses.COMPOUND_USDC_PCV_DEPOSIT,
+                arguments: abi.encodeWithSignature("pause()"),
+                description: "Pause Compound USDC PCV Deposit"
             })
         );
     }
@@ -294,8 +265,6 @@ contract vip14 is DSTest, IVIP {
     {
         return mainnetProposal;
     }
-
-    /// TODO -> move funds to this address
 
     /// . move all funds from compound deposits to morpho deposits
     /// . move all needed funds to Maple
@@ -420,34 +389,16 @@ contract vip14 is DSTest, IVIP {
         override
         returns (ITimelockSimulation.action[] memory)
     {
-        return arbitrumProposal;
+        revert("no arbitrum proposal");
     }
 
     /// no-op, nothing to setup
-    function arbitrumSetup() public override {}
+    function arbitrumSetup() public override {
+        revert("no arbitrum proposal");
+    }
 
     /// assert oracle pass through is pointing to correct volt system oracle
     function arbitrumValidate() public override {
-        /// oracle pass through points to new scaling price oracle
-        assertEq(
-            address(
-                OraclePassThrough(ArbitrumAddresses.ORACLE_PASS_THROUGH)
-                    .scalingPriceOracle()
-            ),
-            address(oracle)
-        );
-
-        assertTrue(PriceBoundPSM(ArbitrumAddresses.VOLT_USDC_PSM).mintPaused());
-        assertTrue(PriceBoundPSM(ArbitrumAddresses.VOLT_DAI_PSM).mintPaused());
-
-        vm.expectRevert("PegStabilityModule: Minting paused");
-        PriceBoundPSM(ArbitrumAddresses.VOLT_USDC_PSM).mint(
-            address(this),
-            0,
-            0
-        );
-
-        vm.expectRevert("PegStabilityModule: Minting paused");
-        PriceBoundPSM(ArbitrumAddresses.VOLT_DAI_PSM).mint(address(this), 0, 0);
+        revert("no arbitrum proposal");
     }
 }

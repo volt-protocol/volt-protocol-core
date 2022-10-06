@@ -153,14 +153,16 @@ contract MaplePCVDeposit is PCVDeposit {
         mplRewards.exit();
     }
 
-    /// @notice unstake from rewards contract
+    /// @notice unstake from rewards contract without getting rewards
     function withdrawFromRewardsContract() external onlyPCVController {
-        uint256 rewardsBalance = mplRewards.balanceOf(address(this));
+        uint256 rewardsBalance = pool.balanceOf(address(this));
         mplRewards.withdraw(rewardsBalance);
     }
 
-    /// @notice get rewards and unstake from rewards contract
-    function withdrawWithoutExiting(address to, uint256 amount)
+    /// @notice unstake from Pool FDT contract without getting rewards
+    /// @param to destination after funds are withdrawn from venue
+    /// @param amount of PCV to withdraw from the venue
+    function withdrawFromPool(address to, uint256 amount)
         external
         onlyPCVController
     {
@@ -178,6 +180,7 @@ contract MaplePCVDeposit is PCVDeposit {
         emit Harvest();
     }
 
+    /// @notice struct to pack calldata and targets for an emergency action
     struct Call {
         address target;
         bytes callData;
@@ -185,9 +188,10 @@ contract MaplePCVDeposit is PCVDeposit {
 
     /// @notice due to Maple's complexity, add this ability to be able to execute
     /// arbitrary calldata against arbitrary addresses.
+    /// callable only by governor
     function emergencyAction(Call[] memory calls)
         external
-        onlyPCVController
+        onlyGovernor
         returns (bytes[] memory returnData)
     {
         returnData = new bytes[](calls.length);
