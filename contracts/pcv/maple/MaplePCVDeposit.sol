@@ -12,6 +12,8 @@ import {IMplRewards} from "./IMplRewards.sol";
 /// Allows depositing only by privileged role to prevent lockup period being extended by griefers
 
 /// Can only deposit USDC in this MAPLE PCV deposit
+/// @notice NEVER CONNECT THIS DEPOSIT INTO THE ALLOCATOR OR OTHER AUTOMATED PCV
+/// SYSTEM. DEPOSITING LOCKS FUNDS FOR AN EXTENDED PERIOD OF TIME.
 contract MaplePCVDeposit is PCVDeposit {
     using SafeERC20 for IERC20;
 
