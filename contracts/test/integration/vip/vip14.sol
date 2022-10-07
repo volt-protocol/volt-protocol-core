@@ -16,10 +16,7 @@ import {IPCVDeposit} from "../../../pcv/IPCVDeposit.sol";
 import {PriceBoundPSM} from "../../../peg/PriceBoundPSM.sol";
 import {ERC20Allocator} from "../../../pcv/utils/ERC20Allocator.sol";
 import {MaplePCVDeposit} from "../../../pcv/maple/MaplePCVDeposit.sol";
-import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
-import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
-import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
 import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
 import {ITimelockSimulation} from "../utils/ITimelockSimulation.sol";
 import {MorphoCompoundPCVDeposit} from "../../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
@@ -28,8 +25,7 @@ import {MorphoCompoundPCVDeposit} from "../../../pcv/morpho/MorphoCompoundPCVDep
 /// 1. deploy morpho dai deposit
 /// 2. deploy morpho usdc deposit
 /// 3. deploy compound pcv router pointed to morpho dai and usdc deposits
-/// 4. deploy volt system oracle
-/// 5. deploy maple usdc deposit
+/// 4. deploy maple usdc deposit
 
 /// Governance Steps
 /// 1. grant new PCV router PCV Controller role
@@ -43,11 +39,8 @@ import {MorphoCompoundPCVDeposit} from "../../../pcv/morpho/MorphoCompoundPCVDep
 
 /// 7. add deposits as safe addresses
 
-/// 8. connect new oracle to oracle pass through with updated rate
-/// 9. Grant PCV Controller to timelock
-/// 10. Deposit funds in Maple PCV Deposit
-/// 11. pause dai compound pcv deposit
-/// 12. pause usdc compound pcv deposit
+/// 8. pause dai compound pcv deposit
+/// 9. pause usdc compound pcv deposit
 
 contract vip14 is DSTest, IVIP {
     using SafeCast for uint256;
@@ -65,24 +58,13 @@ contract vip14 is DSTest, IVIP {
     CompoundPCVRouter public router;
     MorphoCompoundPCVDeposit public daiDeposit;
     MorphoCompoundPCVDeposit public usdcDeposit;
-    VoltSystemOracle public oracle;
     MaplePCVDeposit public mapleDeposit;
-
-    uint256 public startTime;
-
-    uint256 public constant monthlyChangeRateBasisPoints = 29;
-    uint256 public constant arbitrumMonthlyChangeRateBasisPoints = 0;
 
     PCVGuardian public immutable pcvGuardian =
         PCVGuardian(MainnetAddresses.PCV_GUARDIAN);
 
-    VoltSystemOracle private immutable oldOracle =
-        VoltSystemOracle(MainnetAddresses.VOLT_SYSTEM_ORACLE_144_BIPS);
-
     ERC20Allocator public immutable allocator =
         ERC20Allocator(MainnetAddresses.ERC20ALLOCATOR);
-
-    uint256 targetMapleDepositAmount = 750_000e6;
 
     /// --------- Maple Addresses ---------
 
@@ -94,7 +76,6 @@ contract vip14 is DSTest, IVIP {
 
     constructor() {
         if (block.chainid != 1) return; /// keep ci pipeline happy
-        startTime = block.timestamp + 1 days;
 
         mapleDeposit = new MaplePCVDeposit(core, maplePool, mplRewards);
         daiDeposit = new MorphoCompoundPCVDeposit(core, MainnetAddresses.CDAI);
@@ -107,12 +88,6 @@ contract vip14 is DSTest, IVIP {
             core,
             PCVDeposit(address(daiDeposit)),
             PCVDeposit(address(usdcDeposit))
-        );
-
-        oracle = new VoltSystemOracle(
-            monthlyChangeRateBasisPoints,
-            block.timestamp + 1 days,
-            oldOracle.getCurrentOraclePrice()
         );
 
         address[] memory toWhitelist = new address[](3);
@@ -208,39 +183,6 @@ contract vip14 is DSTest, IVIP {
         mainnetProposal.push(
             ITimelockSimulation.action({
                 value: 0,
-                target: MainnetAddresses.ORACLE_PASS_THROUGH,
-                arguments: abi.encodeWithSignature(
-                    "updateScalingPriceOracle(address)",
-                    address(oracle)
-                ),
-                description: "Point Oracle Pass Through to new oracle address"
-            })
-        );
-
-        mainnetProposal.push(
-            ITimelockSimulation.action({
-                value: 0,
-                target: MainnetAddresses.CORE,
-                arguments: abi.encodeWithSignature(
-                    "grantPCVController(address)",
-                    MainnetAddresses.TIMELOCK_CONTROLLER
-                ),
-                description: "Grant PCV Controller Role to timelock controller"
-            })
-        );
-
-        mainnetProposal.push(
-            ITimelockSimulation.action({
-                value: 0,
-                target: address(mapleDeposit),
-                arguments: abi.encodeWithSignature("deposit()"),
-                description: "Deposit PCV into Maple"
-            })
-        );
-
-        mainnetProposal.push(
-            ITimelockSimulation.action({
-                value: 0,
                 target: MainnetAddresses.COMPOUND_DAI_PCV_DEPOSIT,
                 arguments: abi.encodeWithSignature("pause()"),
                 description: "Pause Compound DAI PCV Deposit"
@@ -278,11 +220,7 @@ contract vip14 is DSTest, IVIP {
         );
 
         uint256 usdcBalance = IERC20(usdc).balanceOf(MainnetAddresses.GOVERNOR);
-        IERC20(usdc).transfer(
-            address(usdcDeposit),
-            usdcBalance - targetMapleDepositAmount
-        );
-        IERC20(usdc).transfer(address(mapleDeposit), targetMapleDepositAmount);
+        IERC20(usdc).transfer(address(usdcDeposit), usdcBalance);
         IERC20(dai).transfer(
             address(daiDeposit),
             IERC20(dai).balanceOf(MainnetAddresses.GOVERNOR)
@@ -299,7 +237,6 @@ contract vip14 is DSTest, IVIP {
     /// assert pcv deposits are set correctly in router
     /// assert pcv deposits are set correctly in allocator
     /// assert old pcv deposits are disconnected in allocator
-    /// assert oracle pass through is pointed to the proper Volt System Oracle
     function mainnetValidate() public override {
         assertEq(address(mapleDeposit.core()), core);
         assertEq(address(usdcDeposit.core()), core);
@@ -311,6 +248,7 @@ contract vip14 is DSTest, IVIP {
             !Core(core).isPCVController(MainnetAddresses.COMPOUND_PCV_ROUTER)
         );
 
+        /// pcv guardian whitelist assertions
         assertTrue(pcvGuardian.isWhitelistAddress(address(daiDeposit)));
         assertTrue(pcvGuardian.isWhitelistAddress(address(usdcDeposit)));
         assertTrue(pcvGuardian.isWhitelistAddress(address(mapleDeposit)));
@@ -361,35 +299,6 @@ contract vip14 is DSTest, IVIP {
 
         assertEq(usdcDeposit.cToken(), MainnetAddresses.CUSDC);
         assertEq(daiDeposit.cToken(), MainnetAddresses.CDAI);
-
-        /// oracle pass through points to new scaling price oracle
-        assertEq(
-            address(
-                OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH)
-                    .scalingPriceOracle()
-            ),
-            address(oracle)
-        );
-
-        /// volt system oracle
-        /// only 1 day of interest has accrued, so only .5 basis point diff in price between old and new oracle
-        assertApproxEq(
-            oracle.oraclePrice().toInt256(),
-            oldOracle.getCurrentOraclePrice().toInt256(),
-            0
-        );
-        assertApproxEq(
-            oracle.getCurrentOraclePrice().toInt256(),
-            oldOracle.getCurrentOraclePrice().toInt256(),
-            0
-        );
-
-        assertEq(
-            oracle.monthlyChangeRateBasisPoints(),
-            monthlyChangeRateBasisPoints
-        );
-        assertEq(oracle.periodStartTime(), startTime);
-        assertEq(oracle.getCurrentOraclePrice(), oracle.oraclePrice());
     }
 
     function getArbitrumProposal()
@@ -406,7 +315,6 @@ contract vip14 is DSTest, IVIP {
         revert("no arbitrum proposal");
     }
 
-    /// assert oracle pass through is pointing to correct volt system oracle
     function arbitrumValidate() public override {
         revert("no arbitrum proposal");
     }
