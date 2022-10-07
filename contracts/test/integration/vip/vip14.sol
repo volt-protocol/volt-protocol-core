@@ -323,6 +323,14 @@ contract vip14 is DSTest, IVIP {
         assertEq(address(router.GEM_JOIN()), MainnetAddresses.GEM_JOIN);
         assertEq(address(router.daiPSM()), MainnetAddresses.MAKER_DAI_USDC_PSM);
 
+        /// old deposits paused
+        assertTrue(
+            PCVDeposit(MainnetAddresses.COMPOUND_USDC_PCV_DEPOSIT).paused()
+        );
+        assertTrue(
+            PCVDeposit(MainnetAddresses.COMPOUND_DAI_PCV_DEPOSIT).paused()
+        );
+
         /// old deposits disconnected in allocator
         assertEq(
             allocator.pcvDepositToPSM(
