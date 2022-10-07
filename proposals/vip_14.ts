@@ -55,28 +55,6 @@ const vip_14: ProposalDescription = {
       arguments: [['{daiMorphoCompoundPCVDeposit}', '{usdcMorphoCompoundPCVDeposit}', '{maplePCVDeposit}']],
       description: 'Add USDC and DAI Morpho deposits and Maple deposit to the PCV Guardian'
     },
-    /// oracle pass through setting Volt System Oracle
-    {
-      target: 'oraclePassThrough',
-      values: '0',
-      method: 'updateScalingPriceOracle(address)',
-      arguments: ['{voltSystemOracle348Bips}'],
-      description: 'Point Oracle Pass Through to new oracle address'
-    },
-    {
-      target: 'core',
-      values: '0',
-      method: 'grantPCVController(address)',
-      arguments: ['{timelockController}'],
-      description: 'Grant PCV Controller Role to timelock controller'
-    },
-    {
-      target: 'maplePCVDeposit',
-      values: '0',
-      method: 'deposit()',
-      arguments: [],
-      description: 'Deposit PCV into Maple'
-    },
     {
       target: 'daiCompoundPCVDeposit',
       values: '0',
@@ -97,8 +75,7 @@ const vip_14: ProposalDescription = {
    1. deploy morpho dai deposit
    2. deploy morpho usdc deposit
    3. deploy compound pcv router pointed to morpho dai and usdc deposits
-   4. deploy volt system oracle
-   5. deploy maple pcv deposit
+   4. deploy maple pcv deposit
   
   Governance Steps:
   1. Grant Morpho PCV Router PCV Controller Role
@@ -108,11 +85,8 @@ const vip_14: ProposalDescription = {
   5. Add Morpho DAI Deposit to ERC20Allocator
   6. Add Morpho USDC Deposit to ERC20Allocator
   7. Add USDC and DAI Morpho deposits as well as Maple PCV deposit to the PCV Guardian
-  8. Point Oracle Pass Through to new oracle address
-  9. Grant PCV Controller to timelock
-  10. Deposit funds in Maple PCV Deposit
-  11. pause dai compound pcv deposit
-  12. pause usdc compound pcv deposit
+  8. pause dai compound pcv deposit
+  9. pause usdc compound pcv deposit
   `
 };
 

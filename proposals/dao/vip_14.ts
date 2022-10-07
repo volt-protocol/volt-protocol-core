@@ -19,8 +19,7 @@ Description:
 /// 1. deploy morpho dai deposit
 /// 2. deploy morpho usdc deposit
 /// 3. deploy compound pcv router pointed to morpho dai and usdc deposits
-/// 4. deploy volt system oracle
-/// 5. deploy maple usdc deposit
+/// 4. deploy maple usdc deposit
 
 Governance Steps:
 1. Grant Morpho PCV Router PCV Controller Role
@@ -30,32 +29,17 @@ Governance Steps:
 5. Add Morpho DAI Deposit to ERC20Allocator
 6. Add Morpho USDC Deposit to ERC20Allocator
 7. Add USDC and DAI Morpho, and Maple deposits to the PCV Guardian
-8. Point Oracle Pass Through to new oracle address
-9. Grant PCV Controller to timelock
-10. Deposit funds in Maple PCV Deposit
-11. pause dai compound pcv deposit
-12. pause usdc compound pcv deposit
+8. pause dai compound pcv deposit
+9. pause usdc compound pcv deposit
 
 */
-
-/// TODO update this to correct start time
-let startTime;
-
-const monthlyChangeBasisPoints = 29;
 
 const vipNumber = '14';
 
 const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: NamedAddresses, logging: boolean) => {
-  startTime = Math.floor(Date.now() / 1000).toString();
-
-  const voltSystemOracle = await ethers.getContractAt('VoltSystemOracle', addresses.voltSystemOracle);
-
-  const currentPrice = await voltSystemOracle.getCurrentOraclePrice();
-
   const maplePCVDepositFactory = await ethers.getContractFactory('MaplePCVDeposit');
   const morphoPCVDepositFactory = await ethers.getContractFactory('MorphoCompoundPCVDeposit');
   const compoundPCVRouterFactory = await ethers.getContractFactory('CompoundPCVRouter');
-  const voltSystemOracleFactory = await ethers.getContractFactory('VoltSystemOracle');
 
   const daiMorphoCompoundPCVDeposit = await morphoPCVDepositFactory.deploy(addresses.core, addresses.cDai);
   await daiMorphoCompoundPCVDeposit.deployed();
@@ -73,15 +57,7 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
   const maplePCVDeposit = await maplePCVDepositFactory.deploy(addresses.core, addresses.mplPool, addresses.mplRewards);
   await maplePCVDeposit.deployed();
 
-  const voltSystemOracle348Bips = await voltSystemOracleFactory.deploy(
-    monthlyChangeBasisPoints,
-    startTime,
-    currentPrice
-  );
-  await voltSystemOracle348Bips.deployed();
-
   console.log(`Maple PCV Deposit deployed ${maplePCVDeposit.address}`);
-  console.log(`Volt System Oracle deployed ${voltSystemOracle348Bips.address}`);
   console.log(`Morpho Compound PCV Router deployed ${morphoCompoundPCVRouter.address}`);
   console.log(`Morpho Compound DAI PCV Deposit deployed ${daiMorphoCompoundPCVDeposit.address}`);
   console.log(`Morpho Compound USDC PCV Deposit deployed ${usdcMorphoCompoundPCVDeposit.address}`);
@@ -90,7 +66,6 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
 
   return {
     maplePCVDeposit,
-    voltSystemOracle348Bips,
     daiMorphoCompoundPCVDeposit,
     usdcMorphoCompoundPCVDeposit,
     morphoCompoundPCVRouter
@@ -108,9 +83,6 @@ const teardown: TeardownUpgradeFunc = async (addresses, oldContracts, contracts,
 const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts, logging) => {
   const {
     core,
-    voltSystemOracle,
-    oraclePassThrough,
-    voltSystemOracle348Bips,
     daiMorphoCompoundPCVDeposit,
     usdcMorphoCompoundPCVDeposit,
     morphoCompoundPCVRouter,
@@ -125,9 +97,6 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
   expect(await daiMorphoCompoundPCVDeposit.core()).to.be.equal(core.address);
   expect(await morphoCompoundPCVRouter.core()).to.be.equal(core.address);
   expect(await maplePCVDeposit.core()).to.be.equal(core.address);
-
-  /// oracle pass through validation
-  expect(await oraclePassThrough.scalingPriceOracle()).to.be.equal(voltSystemOracle348Bips.address);
 
   /// pcv controller validation
   expect(await core.isPCVController(compoundPCVRouter.address)).to.be.false;
@@ -180,36 +149,6 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
   );
   expect(await erc20Allocator.pcvDepositToPSM(addresses.daiMorphoCompoundPCVDeposit)).to.be.equal(
     addresses.daiPriceBoundPSM
-  );
-
-  /// volt system oracle validation
-  expect((await voltSystemOracle348Bips.periodStartTime()).toString()).to.be.equal(startTime.toString());
-  expect((await voltSystemOracle348Bips.monthlyChangeRateBasisPoints()).toString()).to.be.equal(
-    monthlyChangeBasisPoints.toString()
-  );
-
-  await assertApproxEq(
-    await voltSystemOracle348Bips.getCurrentOraclePrice(),
-    await voltSystemOracle.getCurrentOraclePrice(),
-    0 /// allow 0 bips of deviation
-  );
-
-  await assertApproxEq(
-    await voltSystemOracle348Bips.oraclePrice(),
-    await voltSystemOracle.getCurrentOraclePrice(),
-    0 /// allow 0 bips of deviation
-  );
-
-  await assertApproxEq(
-    await voltSystemOracle348Bips.oraclePrice(),
-    await voltSystemOracle.getCurrentOraclePrice(),
-    0 /// allow 0 bips of deviation
-  );
-
-  await assertApproxEq(
-    await voltSystemOracle348Bips.getCurrentOraclePrice(),
-    await voltSystemOracle348Bips.oraclePrice(),
-    0
   );
 
   console.log(`Successfully validated VIP-${vipNumber}`);
