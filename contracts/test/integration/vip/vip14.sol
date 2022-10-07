@@ -266,8 +266,8 @@ contract vip14 is DSTest, IVIP {
         return mainnetProposal;
     }
 
-    /// . move all funds from compound deposits to morpho deposits
-    /// . move all needed funds to Maple
+    /// move all funds from compound deposits to morpho deposits
+    /// move all needed funds to Maple
     function mainnetSetup() public override {
         vm.startPrank(MainnetAddresses.GOVERNOR);
         pcvGuardian.withdrawAllToSafeAddress(
@@ -381,6 +381,7 @@ contract vip14 is DSTest, IVIP {
             monthlyChangeRateBasisPoints
         );
         assertEq(oracle.periodStartTime(), startTime);
+        assertEq(oracle.getCurrentOraclePrice(), oracle.oraclePrice());
     }
 
     function getArbitrumProposal()
