@@ -52,7 +52,10 @@ contract MaplePCVDeposit is PCVDeposit {
     /// without accounting for interest earned
     /// does not account for unrealized losses in the venue
     function balance() public view override returns (uint256) {
-        return pool.balanceOf(address(this)) / scalingFactor;
+        uint256 rawBalance = pool.balanceOf(address(this)) +
+            pool.accumulativeFundsOf(address(this)) -
+            pool.recognizableLossesOf(address(this));
+        return rawBalance / scalingFactor;
     }
 
     /// @notice return the underlying token denomination for this deposit

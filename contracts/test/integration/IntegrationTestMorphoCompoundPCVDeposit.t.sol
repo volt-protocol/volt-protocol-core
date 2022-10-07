@@ -16,8 +16,6 @@ import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 import {MorphoCompoundPCVDeposit} from "../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
 
-import "hardhat/console.sol";
-
 contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     using SafeCast for *;
 

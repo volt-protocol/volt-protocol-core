@@ -5,6 +5,8 @@ pragma solidity =0.8.13;
 interface IPool {
     function balanceOf(address) external view returns (uint256);
 
+    function recognizableLossesOf(address) external view returns (uint256);
+
     /**
         @dev    Returns the amount of funds that an account has earned in total.
         @dev    accumulativeFundsOf(_owner) = withdrawableFundsOf(_owner) + withdrawnFundsOf(_owner)
