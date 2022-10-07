@@ -48,9 +48,9 @@ contract MaplePCVDeposit is PCVDeposit {
         mplRewards = IMplRewards(_mplRewards);
     }
 
-    /// @notice return the amount of funds this contract owns in Maple FDT's
-    /// without accounting for interest earned
-    /// does not account for unrealized losses in the venue
+    /// @notice return the amount of funds this contract owns in USDC
+    /// accounting for interest earned
+    /// and unrealized losses in the venue
     function balance() public view override returns (uint256) {
         uint256 rawBalance = pool.balanceOf(address(this)) +
             pool.accumulativeFundsOf(address(this)) -
