@@ -362,6 +362,11 @@ contract UnitTestVoltV2 is DSTest {
         assertEq(address(volt.core()), address(0x1234));
     }
 
+    function testSetCoreFailsNonGovernor() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        volt.setCore(address(0x1234));
+    }
+
     function getDomainSeperator()
         internal
         view

@@ -2,6 +2,7 @@
 pragma solidity =0.8.13;
 
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ICore} from "../../core/ICore.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
@@ -232,6 +233,47 @@ contract IntegrationTestVoltMigratorTest is TimelockSimulation, vip13 {
         assertEq(
             oldVoltBalanceAfter,
             oldVoltBalanceBefore - amountOldVoltToExchange
+        );
+    }
+
+    function testSweep() public {
+        uint256 amountToTransfer = 1_000_000e6;
+        IERC20 usdc = IERC20(MainnetAddresses.USDC);
+
+        uint256 startingBalance = usdc.balanceOf(
+            MainnetAddresses.TIMELOCK_CONTROLLER
+        );
+
+        vm.prank(MainnetAddresses.KRAKEN_USDC_WHALE);
+        usdc.transfer(address(voltMigrator), amountToTransfer);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        voltMigrator.sweep(
+            address(usdc),
+            MainnetAddresses.TIMELOCK_CONTROLLER,
+            amountToTransfer
+        );
+
+        uint256 endingBalance = usdc.balanceOf(
+            MainnetAddresses.TIMELOCK_CONTROLLER
+        );
+
+        assertEq(endingBalance - startingBalance, amountToTransfer);
+    }
+
+    function testSweepNonGovernorFails() public {
+        uint256 amountToTransfer = 1_000_000e6;
+        IERC20 usdc = IERC20(MainnetAddresses.USDC);
+
+        vm.prank(MainnetAddresses.KRAKEN_USDC_WHALE);
+        usdc.transfer(address(voltMigrator), amountToTransfer);
+
+        vm.expectRevert("CoreRef: Caller is not a governor");
+
+        voltMigrator.sweep(
+            address(usdc),
+            MainnetAddresses.TIMELOCK_CONTROLLER,
+            amountToTransfer
         );
     }
 }

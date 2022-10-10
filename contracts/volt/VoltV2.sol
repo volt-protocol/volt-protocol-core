@@ -36,6 +36,11 @@ contract VoltV2 is VoltCoreRef {
     mapping(address => address) public delegates;
 
     /// @notice A checkpoint for marking number of votes from a given block
+    /// @dev  We use uint224 for the votes so we can pack this struct
+    /// into a single storage slot, therefore making transfers etc,
+    /// cheaper for our users, this follows the same pattern as
+    /// OpenZeppelins ERC20Votes which can be found here
+    /// https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/extensions/ERC20Votes.sol
     struct Checkpoint {
         uint32 fromBlock;
         uint224 votes;
