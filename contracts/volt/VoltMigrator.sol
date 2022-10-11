@@ -18,8 +18,7 @@ contract VoltMigrator is IVoltMigrator, CoreRef {
     using SafeERC20 for IERC20;
 
     /// @notice address of the old VOLT token
-    // solhint-disable-next-line const-name-snakecase
-    Volt public constant oldVolt =
+    Volt public constant OLD_VOLT =
         Volt(0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18);
 
     /// @notice address of the new VOLT token
@@ -40,8 +39,8 @@ contract VoltMigrator is IVoltMigrator, CoreRef {
     /// user has approved to the migrator contract & exchanges for new VOLT
     function exchangeAll() external {
         uint256 amountToExchange = Math.min(
-            oldVolt.balanceOf(msg.sender),
-            oldVolt.allowance(msg.sender, address(this))
+            OLD_VOLT.balanceOf(msg.sender),
+            OLD_VOLT.allowance(msg.sender, address(this))
         );
         require(amountToExchange != 0, "VoltMigrator: no amount to exchange");
 
@@ -61,8 +60,8 @@ contract VoltMigrator is IVoltMigrator, CoreRef {
     /// @param to address to send the new VOLT to
     function exchangeAllTo(address to) external {
         uint256 amountToExchange = Math.min(
-            oldVolt.balanceOf(msg.sender),
-            oldVolt.allowance(msg.sender, address(this))
+            OLD_VOLT.balanceOf(msg.sender),
+            OLD_VOLT.allowance(msg.sender, address(this))
         );
         require(amountToExchange != 0, "VoltMigrator: no amount to exchange");
 
@@ -70,7 +69,7 @@ contract VoltMigrator is IVoltMigrator, CoreRef {
     }
 
     function _migrateVolt(address to, uint256 amount) internal {
-        oldVolt.burnFrom(msg.sender, amount);
+        OLD_VOLT.burnFrom(msg.sender, amount);
         newVolt.transfer(to, amount);
 
         emit VoltMigrated(msg.sender, to, amount);

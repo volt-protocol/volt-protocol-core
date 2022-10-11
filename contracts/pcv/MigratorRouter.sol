@@ -12,7 +12,7 @@ import {IVoltMigrator} from "../volt/IVoltMigrator.sol";
 /// stables using the old volt version once the new version is live
 contract MigratorRouter is IMigratorRouter {
     /// @notice the old VOLT token
-    IVolt public constant oldVolt =
+    IVolt public constant OLD_VOLT =
         IVolt(0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18);
 
     /// @notice VOLT-DAI PSM to swap between the two assets
@@ -45,7 +45,7 @@ contract MigratorRouter is IMigratorRouter {
         /// contracts max approvals is very limited. Also the only time the migrator
         /// contract uses the transferFrom it passes msg.sender, so the only way to spend
         /// the approval is via the person who gave the approval requesting the transfer
-        oldVolt.approve(address(voltMigrator), type(uint256).max);
+        OLD_VOLT.approve(address(voltMigrator), type(uint256).max);
         newVolt.approve(address(daiPSM), type(uint256).max);
         newVolt.approve(address(usdcPSM), type(uint256).max);
     }
@@ -54,7 +54,7 @@ contract MigratorRouter is IMigratorRouter {
     /// @param amountVoltIn the amount of old VOLT being deposited
     /// @param minAmountOut the minimum amount of DAI the user expects to receive
     function redeemDai(uint256 amountVoltIn, uint256 minAmountOut) external {
-        oldVolt.transferFrom(msg.sender, address(this), amountVoltIn);
+        OLD_VOLT.transferFrom(msg.sender, address(this), amountVoltIn);
         voltMigrator.exchange(amountVoltIn);
 
         daiPSM.redeem(msg.sender, amountVoltIn, minAmountOut);
@@ -64,7 +64,7 @@ contract MigratorRouter is IMigratorRouter {
     /// @param amountVoltIn the amount of old VOLT being deposited
     /// @param minAmountOut the minimum amount of USDC the user expects to receive
     function redeemUSDC(uint256 amountVoltIn, uint256 minAmountOut) external {
-        oldVolt.transferFrom(msg.sender, address(this), amountVoltIn);
+        OLD_VOLT.transferFrom(msg.sender, address(this), amountVoltIn);
         voltMigrator.exchange(amountVoltIn);
 
         usdcPSM.redeem(msg.sender, amountVoltIn, minAmountOut);
