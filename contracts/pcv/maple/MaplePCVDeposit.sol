@@ -10,10 +10,27 @@ import {IMplRewards} from "./IMplRewards.sol";
 
 /// @notice PCV Deposit for Maple
 /// Allows depositing only by privileged role to prevent lockup period being extended by griefers
+/// Can only deposit USDC in this MAPLE PCV deposit due to scalingFactor being hardcoded
+/// and underlying token is enforced as USDC.
 
-/// Can only deposit USDC in this MAPLE PCV deposit
 /// @notice NEVER CONNECT THIS DEPOSIT INTO THE ALLOCATOR OR OTHER AUTOMATED PCV
 /// SYSTEM. DEPOSITING LOCKS FUNDS FOR AN EXTENDED PERIOD OF TIME.
+
+/// @dev On deposit, all Maple FDT tokens are immediately deposited into
+/// the maple rewards contract that corresponds with the pool where funds are deposited.
+/// On withdraw, the `signalIntentToWithdraw` function must be called.
+/// In the withdraw function, the Maple FDT tokens are unstaked
+/// from the rewards contract, this allows the underlying USDC to be withdrawn.
+/// Maple withdraws have some interesting properties such as interest not being calculated into
+/// the amount that is requested to be withdrawn. This means that asking to withdraw 100 USDC
+/// could yield 101 USDC received in this PCV Deposit if interest has been earned, or it could
+/// mean 95 USDC in this contract if losses are sustained in excess of interest earned.
+/// Supporting these two situations adds additional code complexity, so unlike other PCV Deposits,
+/// the amount withdrawn on this PCV Deposit is non-deterministic, so a sender could request 100
+/// USDC out, and get another amount out. Dealing with these different pathways would add additional
+/// code and complexity, so instead, Math.min(token.balanceOf(Address(this)), amountToWithdraw)
+/// is used to determine the amount of tokens that will be sent out of the contract
+/// after withdraw is called on the Maple market.
 contract MaplePCVDeposit is PCVDeposit {
     using SafeERC20 for IERC20;
 
@@ -131,10 +148,13 @@ contract MaplePCVDeposit is PCVDeposit {
 
         /// withdraw min between balance and amount as losses could be sustained in venue
         /// causing less than amt to be withdrawn
-        amount = Math.min(token.balanceOf(address(this)), amount);
-        token.safeTransfer(to, amount);
+        uint256 amountToTransfer = Math.min(
+            token.balanceOf(address(this)),
+            amount
+        );
+        token.safeTransfer(to, amountToTransfer);
 
-        emit Withdrawal(msg.sender, to, amount);
+        emit Withdrawal(msg.sender, to, amountToTransfer);
     }
 
     /// @notice withdraw all PCV from Maple
@@ -149,10 +169,10 @@ contract MaplePCVDeposit is PCVDeposit {
         /// if lending losses were taken, receive less than amount
         pool.withdraw(amount); /// call pool and withdraw entire balance
 
-        uint256 tokenBalance = IERC20(token).balanceOf(address(this));
-        token.safeTransfer(to, tokenBalance);
+        uint256 amountToTransfer = IERC20(token).balanceOf(address(this));
+        token.safeTransfer(to, amountToTransfer);
 
-        emit Withdrawal(msg.sender, to, tokenBalance);
+        emit Withdrawal(msg.sender, to, amountToTransfer);
     }
 
     /// @notice permissionless function to harvest rewards before withdraw
@@ -163,6 +183,12 @@ contract MaplePCVDeposit is PCVDeposit {
     }
 
     /// ---------- Sad Path APIs ----------
+
+    /// Assume that using these functions will likely
+    /// break all happy path functions
+    /// Only use these function in an emergency situation
+
+    /// -----------------------------------
 
     /// @notice get rewards and unstake from rewards contract
     /// breaks functionality of happy path withdraw functions
@@ -188,8 +214,11 @@ contract MaplePCVDeposit is PCVDeposit {
         pool.withdraw(amount);
         /// withdraw min between balance and amount as losses could be sustained in venue
         /// causing less than amt to be withdrawn
-        amount = Math.min(token.balanceOf(address(this)), amount);
-        token.safeTransfer(to, amount);
+        uint256 amountToTransfer = Math.min(
+            token.balanceOf(address(this)),
+            amount
+        );
+        token.safeTransfer(to, amountToTransfer);
     }
 
     /// @notice struct to pack calldata and targets for an emergency action
