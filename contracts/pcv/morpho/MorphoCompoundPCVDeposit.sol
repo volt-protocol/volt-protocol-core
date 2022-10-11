@@ -6,9 +6,9 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {ILens} from "./ILens.sol";
 import {IMorpho} from "./IMorpho.sol";
-import {ICompoundOracle, ICToken} from "./ICompound.sol";
 import {CoreRef} from "../../refs/CoreRef.sol";
 import {PCVDeposit} from "../PCVDeposit.sol";
+import {ICompoundOracle, ICToken} from "./ICompound.sol";
 
 /// @notice PCV Deposit for Morpho-Compound V2.
 /// Implements the PCV Deposit interface to deposit and withdraw funds in Morpho
