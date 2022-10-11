@@ -242,7 +242,7 @@ contract VoltV2 is VoltCoreRef {
 
     /// @notice Delegate votes from `msg.sender` to `delegatee`
     /// @param delegatee The address to delegate votes to
-    function delegate(address delegatee) public {
+    function delegate(address delegatee) external {
         return _delegate(msg.sender, delegatee);
     }
 
@@ -260,7 +260,7 @@ contract VoltV2 is VoltCoreRef {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public {
+    ) external {
         bytes32 domainSeparator = keccak256(
             abi.encode(
                 DOMAIN_TYPEHASH,
@@ -297,7 +297,7 @@ contract VoltV2 is VoltCoreRef {
     /// @param blockNumber The block number to get the vote balance at
     /// @return The number of votes the account had as of the given block
     function getPriorVotes(address account, uint256 blockNumber)
-        public
+        external
         view
         returns (uint256)
     {
@@ -334,6 +334,12 @@ contract VoltV2 is VoltCoreRef {
         return checkpoints[account][lower].votes;
     }
 
+    /// @notice Burns an `amount` of VOLT from a given address 'src'
+    /// called by `burn` where a `msg.sender` can burn their own VOLT
+    /// and `burnFrom` where another account can burn a seperate
+    /// accounts VOLT using the allowance mechanism
+    /// @param src the address the VOLT will be burned from
+    /// @param amount the amount of VOLT to be burned
     function _burn(address src, uint256 amount) internal {
         require(balances[src] >= amount, "Volt: burn amount exceeds balance");
 
@@ -345,6 +351,10 @@ contract VoltV2 is VoltCoreRef {
         _moveDelegates(delegates[src], address(0), amount);
     }
 
+    /// @notice Updates `src` address allowance for a `spender` based on the `amount`
+    /// being spent, the spender in this context is the `msg.sender`
+    /// @param src the address
+    /// @param amount the amount of VOLT allowance to be spent
     function _spendAllowance(address src, uint256 amount) internal {
         address spender = msg.sender;
         uint256 spenderAllowance = allowances[src][spender];
@@ -357,6 +367,9 @@ contract VoltV2 is VoltCoreRef {
         }
     }
 
+    /// @notice Updates the `delgatee` of a `delegator`
+    /// @param delegator the address of the delegator account
+    /// @param delegatee the addres of the new delegatee
     function _delegate(address delegator, address delegatee) internal {
         address currentDelegate = delegates[delegator];
         uint256 delegatorBalance = balances[delegator];
@@ -367,6 +380,10 @@ contract VoltV2 is VoltCoreRef {
         _moveDelegates(currentDelegate, delegatee, delegatorBalance);
     }
 
+    /// @notice Transfers and `amount` of VOLT from `src` to `dst`
+    /// @param src the address the funds are being transferred from
+    /// @param dst the address the funds are being transferred to
+    /// @param amount the amount of VOLT being sent
     function _transferTokens(
         address src,
         address dst,
@@ -385,6 +402,10 @@ contract VoltV2 is VoltCoreRef {
         _moveDelegates(delegates[src], delegates[dst], amount);
     }
 
+    /// @notice Transfers and `amount` of voting power from `srcRep` to `dstRep`
+    /// @param srcRep the address the voting powers are being transferred from
+    /// @param dstRep the address the voting powers are being transferred to
+    /// @param amount the amount of votes being transferred
     function _moveDelegates(
         address srcRep,
         address dstRep,
@@ -413,6 +434,10 @@ contract VoltV2 is VoltCoreRef {
         }
     }
 
+    /// @notice Chheckpoints a `delegatee`s voting power so it can be tracked
+    /// @param delegatee the address to be checkpointed
+    /// @param oldVotes the `delegatee`s previous voting power
+    /// @param newVotes the `delegatee`s new voting power
     function _writeCheckpoint(
         address delegatee,
         uint32 nCheckpoints,
