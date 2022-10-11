@@ -8,6 +8,9 @@ contract VoltCoreRef is CoreRef {
     /// @notice reference to core contract being used.
     ICore private _core;
 
+    /// @notice An event thats emitted when the core contract reference is changed
+    event CoreChanged(address indexed oldCore, address indexed newCore);
+
     constructor(address coreAddress) CoreRef(coreAddress) {
         _core = ICore(coreAddress);
     }
@@ -21,6 +24,9 @@ contract VoltCoreRef is CoreRef {
     /// @notice function to set a new core address
     /// @param coreAddress address of the core contract to point to
     function setCore(address coreAddress) external onlyGovernor {
+        address oldCore = address(_core);
         _core = ICore(coreAddress);
+
+        emit CoreChanged(oldCore, address(_core));
     }
 }

@@ -106,6 +106,10 @@ contract VoltV2 is VoltCoreRef {
             dst != address(this),
             "Volt: cannot transfer to the volt contract"
         );
+        require(
+            totalSupply + amount <= type(uint224).max,
+            "Volt: total supply exceeds 224 bits"
+        );
 
         totalSupply += amount;
         balances[dst] += amount;
@@ -360,6 +364,8 @@ contract VoltV2 is VoltCoreRef {
         uint256 spenderAllowance = allowances[src][spender];
 
         if (spender != src && spenderAllowance != type(uint256).max) {
+            /// This is safe as if amount > spenderAllowance an overflow
+            /// error will be thrown & caught by SafeMath
             uint256 newAllowance = spenderAllowance - amount;
             allowances[src][spender] = newAllowance;
 

@@ -53,7 +53,7 @@ contract IntegrationTestVoltMigratorRouterTest is TimelockSimulation, vip13 {
         vm.stopPrank();
     }
 
-    function testRedeemUsdc(uint64 amountVoltIn) public {
+    function testRedeemUsdc(uint72 amountVoltIn) public {
         oldVolt.approve(address(migratorRouter), type(uint256).max);
 
         uint256 startBalance = usdc.balanceOf(address(this));
@@ -71,7 +71,7 @@ contract IntegrationTestVoltMigratorRouterTest is TimelockSimulation, vip13 {
         assertEq(minAmountOut, endBalance - startBalance);
     }
 
-    function testRedeemDai(uint64 amountVoltIn) public {
+    function testRedeemDai(uint72 amountVoltIn) public {
         oldVolt.approve(address(migratorRouter), type(uint256).max);
 
         uint256 startBalance = dai.balanceOf(address(this));

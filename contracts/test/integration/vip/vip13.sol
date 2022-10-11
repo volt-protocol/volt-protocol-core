@@ -21,13 +21,15 @@ import {IVolt} from "../../../volt/IVolt.sol";
 import {IVoltMigrator} from "../../../volt/IVoltMigrator.sol";
 import {IPCVDeposit} from "../../../pcv/IPCVDeposit.sol";
 import {MigratorRouter} from "../../../pcv/MigratorRouter.sol";
-import "hardhat/console.sol";
 
 contract vip13 is DSTest, IVIP {
     using SafeERC20 for IERC20;
     Vm public constant vm = Vm(HEVM_ADDRESS);
     uint256 public voltInUsdcPSM;
     uint256 public voltInDaiPSM;
+
+    uint256 public usdcInUsdcPSM;
+    uint256 public daiInDaiPSM;
 
     PriceBoundPSM public voltV2DaiPriceBoundPSM;
     PriceBoundPSM public voltV2UsdcPriceBoundPSM;
@@ -157,6 +159,31 @@ contract vip13 is DSTest, IVIP {
                 description: "Exchange new volt for new USDC PSM"
             })
         );
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: MainnetAddresses.USDC,
+                arguments: abi.encodeWithSignature(
+                    "transfer(address,uint256)",
+                    address(voltV2UsdcPriceBoundPSM),
+                    usdcInUsdcPSM
+                ),
+                description: "Transfer USDC to the new USDC PSM"
+            })
+        );
+
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: MainnetAddresses.DAI,
+                arguments: abi.encodeWithSignature(
+                    "transfer(address,uint256)",
+                    address(voltV2DaiPriceBoundPSM),
+                    daiInDaiPSM
+                ),
+                description: "Transfer DAI to the new DAI PSM"
+            })
+        );
 
         proposal.push(
             ITimelockSimulation.action({
@@ -275,6 +302,7 @@ contract vip13 is DSTest, IVIP {
         oldVoltTotalSupply = oldVolt.totalSupply();
         vm.startPrank(MainnetAddresses.GOVERNOR);
 
+        // pull out VOLT from VOLT-USDC PSM to Governor
         uint256 governorVoltBalanceBeforeUsdc = IERC20(MainnetAddresses.VOLT)
             .balanceOf(MainnetAddresses.GOVERNOR);
 
@@ -290,6 +318,26 @@ contract vip13 is DSTest, IVIP {
         voltInUsdcPSM =
             governorVoltBalanceAfterUsdc -
             governorVoltBalanceBeforeUsdc;
+
+        // pull out USDC from VOLT-USDC PSM to Governor
+
+        uint256 governorUsdcBalanceBeforeUsdc = IERC20(MainnetAddresses.USDC)
+            .balanceOf(MainnetAddresses.GOVERNOR);
+
+        PCVGuardian(MainnetAddresses.PCV_GUARDIAN)
+            .withdrawAllERC20ToSafeAddress(
+                MainnetAddresses.VOLT_USDC_PSM,
+                MainnetAddresses.USDC
+            );
+
+        uint256 governorUsdcBalanceAfterUsdc = IERC20(MainnetAddresses.USDC)
+            .balanceOf(MainnetAddresses.GOVERNOR);
+
+        usdcInUsdcPSM =
+            governorUsdcBalanceAfterUsdc -
+            governorUsdcBalanceBeforeUsdc;
+
+        // pull out VOLT from VOLT-DAI PSM to Governor
 
         uint256 governorVoltBalanceBeforeDai = IERC20(MainnetAddresses.VOLT)
             .balanceOf(MainnetAddresses.GOVERNOR);
@@ -307,9 +355,33 @@ contract vip13 is DSTest, IVIP {
             governorVoltBalanceAfterDai -
             governorVoltBalanceBeforeDai;
 
+        // pull out DAI from VOLT-DAI PSM to Governor
+
+        uint256 governorDaiBalanceBeforeDai = IERC20(MainnetAddresses.DAI)
+            .balanceOf(MainnetAddresses.GOVERNOR);
+
+        PCVGuardian(MainnetAddresses.PCV_GUARDIAN)
+            .withdrawAllERC20ToSafeAddress(
+                MainnetAddresses.VOLT_DAI_PSM,
+                MainnetAddresses.DAI
+            );
+
+        uint256 governorDaiBalanceAfterDai = IERC20(MainnetAddresses.DAI)
+            .balanceOf(MainnetAddresses.GOVERNOR);
+
+        daiInDaiPSM = governorDaiBalanceAfterDai - governorDaiBalanceBeforeDai;
+
         IERC20(MainnetAddresses.VOLT).transfer(
             MainnetAddresses.TIMELOCK_CONTROLLER,
             voltInDaiPSM + voltInUsdcPSM
+        );
+        IERC20(MainnetAddresses.DAI).transfer(
+            MainnetAddresses.TIMELOCK_CONTROLLER,
+            daiInDaiPSM
+        );
+        IERC20(MainnetAddresses.USDC).transfer(
+            MainnetAddresses.TIMELOCK_CONTROLLER,
+            usdcInUsdcPSM
         );
         vm.stopPrank();
     }
@@ -320,10 +392,11 @@ contract vip13 is DSTest, IVIP {
         assertEq(voltV2.symbol(), "VOLT");
         assertEq(voltV2.name(), "Volt");
         assertEq(voltV2.totalSupply(), oldVoltTotalSupply);
+        assertEq(address(voltV2.core()), MainnetAddresses.CORE);
 
         // Volt Migrator Validations
         assertEq(address(voltMigrator.core()), MainnetAddresses.CORE);
-        assertEq(address(voltMigrator.oldVolt()), MainnetAddresses.VOLT);
+        assertEq(address(voltMigrator.OLD_VOLT()), MainnetAddresses.VOLT);
         assertEq(address(voltMigrator.newVolt()), address(voltV2));
         assertEq(
             IERC20(address(voltV2)).balanceOf(address(voltMigrator)),
@@ -341,7 +414,7 @@ contract vip13 is DSTest, IVIP {
         );
         assertEq(address(migratorRouter.voltMigrator()), address(voltMigrator));
         assertEq(address(migratorRouter.newVolt()), address(voltV2));
-        assertEq(address(migratorRouter.oldVolt()), MainnetAddresses.VOLT);
+        assertEq(address(migratorRouter.OLD_VOLT()), MainnetAddresses.VOLT);
 
         // New USDC PriceBoundPSM validations
         assertTrue(voltV2UsdcPriceBoundPSM.doInvert());
@@ -358,14 +431,24 @@ contract vip13 is DSTest, IVIP {
         assertEq(voltV2UsdcPriceBoundPSM.redeemFeeBasisPoints(), 0);
         assertEq(
             address(voltV2UsdcPriceBoundPSM.underlyingToken()),
-            address(MainnetAddresses.USDC)
+            MainnetAddresses.USDC
         );
-        assertEq(address(voltV2DaiPriceBoundPSM.surplusTarget()), address(1));
+        assertEq(address(voltV2UsdcPriceBoundPSM.surplusTarget()), address(1));
         assertEq(
             voltV2UsdcPriceBoundPSM.reservesThreshold(),
             type(uint256).max
         );
         assertEq(address(voltV2UsdcPriceBoundPSM.volt()), address(voltV2));
+        assertEq(
+            voltV2.balanceOf(address(voltV2UsdcPriceBoundPSM)),
+            voltInUsdcPSM
+        );
+        assertEq(
+            IERC20(MainnetAddresses.USDC).balanceOf(
+                address(voltV2UsdcPriceBoundPSM)
+            ),
+            usdcInUsdcPSM
+        );
 
         // New DAI PriceBoundPSM validations
         assertTrue(voltV2DaiPriceBoundPSM.doInvert());
@@ -387,8 +470,17 @@ contract vip13 is DSTest, IVIP {
         assertEq(voltV2DaiPriceBoundPSM.reservesThreshold(), type(uint256).max);
         assertEq(address(voltV2DaiPriceBoundPSM.surplusTarget()), address(1));
         assertEq(address(voltV2DaiPriceBoundPSM.volt()), address(voltV2));
+        assertEq(
+            voltV2.balanceOf(address(voltV2DaiPriceBoundPSM)),
+            voltInDaiPSM
+        );
+        assertEq(
+            IERC20(MainnetAddresses.USDC).balanceOf(
+                address(voltV2DaiPriceBoundPSM)
+            ),
+            daiInDaiPSM
+        );
 
-        // currently commented as new PSMs not deployed so will not compile
         /// assert erc20 allocator has usdc psm and pcv deposit connected
         {
             address psmAddress = allocator.pcvDepositToPSM(address(daiDeposit));

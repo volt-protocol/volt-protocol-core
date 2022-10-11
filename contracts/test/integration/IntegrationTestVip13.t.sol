@@ -27,6 +27,8 @@ contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
         OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
     function setUp() public {
+        /// We do not call mainnetSetup() here as the constructor in the simulator
+        /// call the setup mainnetSetup() function
         simulate(
             getMainnetProposal(),
             TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),
@@ -121,7 +123,7 @@ contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
 
         assertEq(
             startingUserVOLTBalance,
-            endingUserVOLTBalance + mintAmountDai
+            endingUserVOLTBalance + voltMintAmount
         );
         assertEq(
             endingUserUnderlyingBalance,

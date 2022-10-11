@@ -14,7 +14,7 @@ const vip_13: ProposalDescription = {
       target: 'voltV2',
       values: '0',
       method: 'mint(address,uint256)',
-      arguments: ['{voltMigrator}', '1000000000000'],
+      arguments: ['{voltMigrator}', '1000000000000'], // placeholder value
       description: 'Mint new volt for new VOLT to migrator contract'
     },
     {
@@ -28,21 +28,21 @@ const vip_13: ProposalDescription = {
       target: 'volt',
       values: '0',
       method: 'approve(address,uint256)',
-      arguments: ['{voltMigrator}'],
+      arguments: ['{voltMigrator}', '1000000000000'], // placeholder value
       description: 'Approve migrator to use VOLT'
     },
     {
       target: 'voltMigrator',
       values: '0',
       method: 'exchangeTo(address,uint256)',
-      arguments: ['{voltV2UsdcPriceBoundPSM}', '1000000000000'],
+      arguments: ['{voltV2UsdcPriceBoundPSM}', '1000000000000'], // placeholder value
       description: 'Exchange new volt for new USDC PSM'
     },
     {
       target: 'erc20Allocator',
       values: '0',
       method: 'exchangeTo(address,uint256)',
-      arguments: ['{voltV2DaiPriceBoundPSM}', '1000000000000'],
+      arguments: ['{voltV2DaiPriceBoundPSM}', '1000000000000'], // placeholder value
       description: 'Exchange new volt for new DAI PSM'
     },
     {

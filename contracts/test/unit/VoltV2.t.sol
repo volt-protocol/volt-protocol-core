@@ -36,8 +36,9 @@ contract UnitTestVoltV2 is DSTest {
     }
 
     function testMintSuccessMinter(uint224 voltToMint) public {
-        vm.prank(addresses.minterAddress);
-        volt.mint(address(0xFFF), voltToMint);
+        _testMintSupplyIncrease(address(0xFFF), voltToMint);
+
+        assertEq(volt.getCurrentVotes(address(0xFFF)), 0);
 
         vm.prank(address(0xFFF));
         volt.delegate(address(0xFFF));
@@ -50,14 +51,12 @@ contract UnitTestVoltV2 is DSTest {
     function testMintAfterDelegation(uint224 voltToMint) public {
         vm.assume(voltToMint < type(uint224).max / 2);
 
-        vm.prank(addresses.minterAddress);
-        volt.mint(address(0xFFF), voltToMint);
+        _testMintSupplyIncrease(address(0xFFF), voltToMint);
 
         vm.prank(address(0xFFF));
         volt.delegate(address(0xFFF));
 
-        vm.prank(addresses.minterAddress);
-        volt.mint(address(0xFFF), voltToMint);
+        _testMintSupplyIncrease(address(0xFFF), voltToMint);
 
         assertEq(volt.getCurrentVotes(address(0xFFF)), voltToMint * 2);
     }
@@ -83,15 +82,27 @@ contract UnitTestVoltV2 is DSTest {
         vm.stopPrank();
     }
 
+    function testMintFailOverflow() public {
+        vm.startPrank(addresses.minterAddress);
+        vm.expectRevert("Volt: total supply exceeds 224 bits");
+        volt.mint(address(0xFFF), type(uint256).max);
+        vm.stopPrank();
+    }
+
     function testBurn(uint224 voltToBurn) public {
-        vm.prank(addresses.minterAddress);
-        volt.mint(address(this), voltToBurn);
+        _testMintSupplyIncrease(address(this), voltToBurn);
+
+        assertEq(volt.getCurrentVotes(address(this)), 0);
         volt.delegate(address(this));
+        assertEq(volt.delegates(address(this)), address(this));
         assertEq(volt.getCurrentVotes(address(this)), voltToBurn);
 
         volt.burn(voltToBurn);
 
+        assertEq(volt.getCurrentVotes(address(this)), 0);
+
         assertEq(volt.totalSupply(), 0);
+        assertEq(volt.delegates(address(this)), address(this));
         assertEq(volt.balanceOf(address(this)), 0);
         assertEq(volt.getCurrentVotes(address(this)), 0);
     }
@@ -105,10 +116,8 @@ contract UnitTestVoltV2 is DSTest {
     }
 
     function testBurnFrom(uint224 voltToBurn) public {
-        vm.assume(voltToBurn < type(uint224).max); // to make sure we don't run into infinite approval counter example
         address from = address(0xFFF);
-        vm.prank(addresses.minterAddress);
-        volt.mint(from, voltToBurn);
+        _testMintSupplyIncrease(from, voltToBurn);
 
         vm.prank(from);
         volt.approve(address(this), voltToBurn);
@@ -123,8 +132,7 @@ contract UnitTestVoltV2 is DSTest {
 
     function testBurnFromInfiniteApproval(uint224 voltToBurn) public {
         address from = address(0xFFF);
-        vm.prank(addresses.minterAddress);
-        volt.mint(from, voltToBurn);
+        _testMintSupplyIncrease(from, voltToBurn);
 
         vm.prank(from);
         volt.approve(address(this), type(uint256).max);
@@ -161,14 +169,13 @@ contract UnitTestVoltV2 is DSTest {
         volt.burnFrom(from, 1e18);
     }
 
-    function testApprove(uint224 voltToApprove) public {
+    function testApprove(uint256 voltToApprove) public {
         assertTrue(volt.approve(address(0xFFF), voltToApprove));
         assertEq(volt.allowance(address(this), address(0xFFF)), voltToApprove);
     }
 
     function testTransfer(uint224 voltToTransfer) public {
-        vm.prank(addresses.minterAddress);
-        volt.mint(address(this), voltToTransfer);
+        _testMintSupplyIncrease(address(this), voltToTransfer);
 
         volt.transfer(address(0xFFF), voltToTransfer);
 
@@ -188,10 +195,8 @@ contract UnitTestVoltV2 is DSTest {
     }
 
     function testTransferFrom(uint224 voltToTransfer) public {
-        vm.assume(voltToTransfer < type(uint224).max); // to make sure we don't run into infinite approval counter example
         address from = address(0xFFF);
-        vm.prank(addresses.minterAddress);
-        volt.mint(from, voltToTransfer);
+        _testMintSupplyIncrease(from, voltToTransfer);
 
         vm.prank(from);
         volt.approve(address(this), voltToTransfer);
@@ -207,8 +212,7 @@ contract UnitTestVoltV2 is DSTest {
 
     function testTransferFromInfiniteApproval(uint224 voltToTransfer) public {
         address from = address(0xFFF);
-        vm.prank(addresses.minterAddress);
-        volt.mint(from, voltToTransfer);
+        _testMintSupplyIncrease(from, voltToTransfer);
 
         vm.prank(from);
         volt.approve(address(this), type(uint256).max);
@@ -224,8 +228,7 @@ contract UnitTestVoltV2 is DSTest {
 
     function testTransferFromFailInsufficientBalance() public {
         address from = address(0xFFF);
-        vm.prank(addresses.minterAddress);
-        volt.mint(from, 1e18);
+        _testMintSupplyIncrease(from, 1e18);
 
         vm.prank(from);
         volt.approve(address(this), 2e18);
@@ -236,8 +239,7 @@ contract UnitTestVoltV2 is DSTest {
 
     function testTransferFromInsufficientAllowance() public {
         address from = address(0xFFF);
-        vm.prank(addresses.minterAddress);
-        volt.mint(from, 1e18);
+        _testMintSupplyIncrease(from, 1e18);
 
         vm.prank(from);
         volt.approve(address(this), 0.9e18);
@@ -248,8 +250,7 @@ contract UnitTestVoltV2 is DSTest {
 
     function testTransferFromFailToVoltContract() public {
         address from = address(0xFFF);
-        vm.prank(addresses.minterAddress);
-        volt.mint(from, 1e18);
+        _testMintSupplyIncrease(from, 1e18);
 
         vm.prank(from);
         volt.approve(address(this), 1e18);
@@ -380,5 +381,17 @@ contract UnitTestVoltV2 is DSTest {
                 address(volt)
             )
         );
+    }
+
+    function _testMintSupplyIncrease(address account, uint256 voltToTransfer)
+        public
+    {
+        uint256 startingBalance = volt.balanceOf(account);
+        uint256 startingTotalSupply = volt.totalSupply();
+        vm.prank(addresses.minterAddress);
+        volt.mint(account, voltToTransfer);
+
+        assertEq(volt.balanceOf(account), startingBalance + voltToTransfer);
+        assertEq(volt.totalSupply(), startingTotalSupply + voltToTransfer);
     }
 }
