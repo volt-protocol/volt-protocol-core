@@ -93,9 +93,10 @@ contract vip13 is DSTest, IVIP {
             voltV2UsdcPriceBoundPSM
         );
 
-        address[] memory toWhitelist = new address[](2);
+        address[] memory toWhitelist = new address[](3);
         toWhitelist[0] = address(voltV2UsdcPriceBoundPSM);
         toWhitelist[1] = address(voltV2DaiPriceBoundPSM);
+        toWhitelist[2] = address(voltMigrator);
 
         proposal.push(
             ITimelockSimulation.action({
@@ -475,7 +476,7 @@ contract vip13 is DSTest, IVIP {
             voltInDaiPSM
         );
         assertEq(
-            IERC20(MainnetAddresses.USDC).balanceOf(
+            IERC20(MainnetAddresses.DAI).balanceOf(
                 address(voltV2DaiPriceBoundPSM)
             ),
             daiInDaiPSM
