@@ -176,19 +176,6 @@ contract vip13 is DSTest, IVIP {
         proposal.push(
             ITimelockSimulation.action({
                 value: 0,
-                target: MainnetAddresses.DAI,
-                arguments: abi.encodeWithSignature(
-                    "transfer(address,uint256)",
-                    address(voltV2DaiPriceBoundPSM),
-                    daiInDaiPSM
-                ),
-                description: "Transfer DAI to the new DAI PSM"
-            })
-        );
-
-        proposal.push(
-            ITimelockSimulation.action({
-                value: 0,
                 target: address(voltMigrator),
                 arguments: abi.encodeWithSignature(
                     "exchangeTo(address,uint256)",
@@ -196,6 +183,19 @@ contract vip13 is DSTest, IVIP {
                     voltInDaiPSM
                 ),
                 description: "Exchange new volt for new DAI PSM"
+            })
+        );
+
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: MainnetAddresses.DAI,
+                arguments: abi.encodeWithSignature(
+                    "transfer(address,uint256)",
+                    address(voltV2DaiPriceBoundPSM),
+                    daiInDaiPSM
+                ),
+                description: "Transfer DAI to the new DAI PSM"
             })
         );
 

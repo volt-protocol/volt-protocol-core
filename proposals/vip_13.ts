@@ -39,11 +39,25 @@ const vip_13: ProposalDescription = {
       description: 'Exchange new volt for new USDC PSM'
     },
     {
-      target: 'erc20Allocator',
+      target: 'usdc',
+      values: '0',
+      method: 'transfer(address,uint256)',
+      arguments: ['{voltV2UsdcPriceBoundPSM}', '1000000000000'], // placeholder value
+      description: 'Transfer USDC to the new USDC PSM'
+    },
+    {
+      target: 'voltMigrator',
       values: '0',
       method: 'exchangeTo(address,uint256)',
       arguments: ['{voltV2DaiPriceBoundPSM}', '1000000000000'], // placeholder value
       description: 'Exchange new volt for new DAI PSM'
+    },
+    {
+      target: 'dai',
+      values: '0',
+      method: 'transfer(address,uint256)',
+      arguments: ['{voltV2DaiPriceBoundPSM}', '1000000000000'], // placeholder value
+      description: 'Transfer DAI to the new DAI PSM'
     },
     {
       target: 'erc20Allocator',

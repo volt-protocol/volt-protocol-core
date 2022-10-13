@@ -46,6 +46,9 @@ const usdcDecimalsNormalizer = 12;
 let voltInUsdcPSM = 0;
 let voltInDaiPSM = 0;
 
+let usdcInUsdcPSM = 0;
+let daiInDaiPSM = 0;
+
 let oldVoltTotalSupply = 0;
 
 // Do any deployments
@@ -140,7 +143,7 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
 // This could include setting up Hardhat to impersonate accounts,
 // ensuring contracts have a specific state, etc.
 const setup: SetupUpgradeFunc = async (addresses, oldContracts, contracts, logging) => {
-  const { pcvGuardian, volt } = contracts;
+  const { pcvGuardian, volt, usdc, dai } = contracts;
 
   oldVoltTotalSupply = await volt.totalSupply();
 
@@ -149,15 +152,27 @@ const setup: SetupUpgradeFunc = async (addresses, oldContracts, contracts, loggi
   await pcvGuardian.connect(msgSigner).withdrawAllERC20ToSafeAddress(addresses.usdcPriceBoundPSM, addresses.volt);
   const governorVoltBalanceAfterUsdc = await volt.balanceOf(msgSigner.address);
 
+  const governorUsdcBalanceBeforeUsdc = await usdc.balanceOf(msgSigner.address);
+  await pcvGuardian.connect(msgSigner).withdrawAllERC20ToSafeAddress(addresses.usdcPriceBoundPSM, addresses.volt);
+  const governorUsdcBalanceAfterUsdc = await usdc.balanceOf(msgSigner.address);
+
   voltInUsdcPSM = governorVoltBalanceAfterUsdc - governorVoltBalanceBeforeUsdc;
+  usdcInUsdcPSM = governorUsdcBalanceBeforeUsdc - governorUsdcBalanceAfterUsdc;
 
   const governorVoltBalanceBeforeDai = await volt.balanceOf(msgSigner.address);
   await pcvGuardian.connect(msgSigner).withdrawAllERC20ToSafeAddress(addresses.daiPriceBoundPSM, addresses.volt);
   const governorVoltBalanceAfterDai = await volt.balanceOf(msgSigner.address);
 
+  const governorDaiBalanceBeforeDai = await volt.balanceOf(msgSigner.address);
+  await pcvGuardian.connect(msgSigner).withdrawAllERC20ToSafeAddress(addresses.daiPriceBoundPSM, addresses.volt);
+  const governorDaiBalanceAfterDai = await volt.balanceOf(msgSigner.address);
+
   voltInDaiPSM = governorVoltBalanceAfterDai - governorVoltBalanceBeforeDai;
+  daiInDaiPSM = governorDaiBalanceAfterDai - governorDaiBalanceBeforeDai;
 
   await volt.connnect(msgSigner).safeTransfer(addresses.timelockController, voltInUsdcPSM + voltInDaiPSM);
+  await usdc.connnect(msgSigner).safeTransfer(addresses.timelockController, usdcInUsdcPSM);
+  await dai.connnect(msgSigner).safeTransfer(addresses.timelockController, daiInDaiPSM);
 };
 
 // Tears down any changes made in setup() that need to be
@@ -188,6 +203,7 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
   expect(await voltV2.symbol()).to.equal('VOLT');
   expect(await voltV2.name()).to.equal('Volt');
   expect(await voltV2.totalSupply()).to.equal(oldVoltTotalSupply);
+  expect(await voltV2.core()).to.equal(addresses.core);
 
   expect(await voltMigrator.core()).to.equal(addresses.core);
   expect(await voltMigrator.oldVolt()).to.equal(addresses.volt);

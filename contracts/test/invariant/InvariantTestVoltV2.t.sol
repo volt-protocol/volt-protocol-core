@@ -36,6 +36,10 @@ contract InvariantTestVoltV2 is DSTest, DSInvariantTest {
                 volt.balanceOf(allUsers[i]),
                 balanceSum.balances(balanceSum.allUsers(i))
             );
+            assertEq(
+                volt.getVotes(allUsers[i]),
+                balanceSum.votingPower(allUsers[i])
+            );
         }
 
         for (uint256 i = 0; i < balanceSum.allUserLength(); i++) {
@@ -60,6 +64,7 @@ contract BalanceSum is DSTest {
     Vm private vm = Vm(HEVM_ADDRESS);
     mapping(address => uint256) public balances;
     mapping(address => bool) public isUser;
+    mapping(address => uint256) public votingPower;
     address[] public allUsers;
     uint256 public sum;
 
@@ -142,5 +147,8 @@ contract BalanceSum is DSTest {
             allUsers.push(user);
             isUser[user] = true;
         }
+        vm.prank(user);
+        volt.delegate(user);
+        votingPower[user] = volt.getVotes(user);
     }
 }
