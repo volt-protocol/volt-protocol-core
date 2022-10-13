@@ -204,7 +204,7 @@ contract VoltV2 is VoltCoreRef {
         bytes32 digest = keccak256(
             abi.encodePacked("\x19\x01", domainSeparator, structHash)
         );
-        (address signatory, ) = ECDSA.tryRecover(digest, v, r, s);
+        address signatory = ECDSA.recover(digest, v, r, s);
         require(signatory != address(0), "Volt: invalid signature");
         require(signatory == owner, "Volt: unauthorized");
         require(block.timestamp <= deadline, "Volt: signature expired");
@@ -280,7 +280,7 @@ contract VoltV2 is VoltCoreRef {
         bytes32 digest = keccak256(
             abi.encodePacked("\x19\x01", domainSeparator, structHash)
         );
-        (address signatory, ) = ECDSA.tryRecover(digest, v, r, s);
+        address signatory = ECDSA.recover(digest, v, r, s);
         require(signatory != address(0), "Volt: invalid signature");
         require(nonce == nonces[signatory]++, "Volt: invalid nonce");
         require(block.timestamp <= expiry, "Volt: signature expired");
