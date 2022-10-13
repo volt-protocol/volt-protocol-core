@@ -14,6 +14,7 @@ contract IntegrationTestVoltMigratorTest is TimelockSimulation, vip13 {
     ICore core = ICore(MainnetAddresses.CORE);
 
     uint224 public constant mintAmount = 100_000_000e18;
+    uint256 newVoltTotalSupply;
 
     function setUp() public {
         simulate(
@@ -32,6 +33,9 @@ contract IntegrationTestVoltMigratorTest is TimelockSimulation, vip13 {
         oldVolt.mint(address(this), mintAmount);
         voltV2.mint(address(voltMigrator), mintAmount);
         vm.stopPrank();
+
+        newVoltTotalSupply = voltV2.totalSupply();
+        oldVoltTotalSupply = oldVolt.totalSupply();
     }
 
     function testExchange(uint64 amountOldVoltToExchange) public {
@@ -53,6 +57,11 @@ contract IntegrationTestVoltMigratorTest is TimelockSimulation, vip13 {
             oldVoltBalanceAfter,
             oldVoltBalanceBefore - amountOldVoltToExchange
         );
+        assertEq(
+            oldVolt.totalSupply(),
+            oldVoltTotalSupply - amountOldVoltToExchange
+        );
+        assertEq(voltV2.totalSupply(), newVoltTotalSupply);
     }
 
     function testExchangeTo(uint64 amountOldVoltToExchange) public {
@@ -74,6 +83,11 @@ contract IntegrationTestVoltMigratorTest is TimelockSimulation, vip13 {
             oldVoltBalanceAfter,
             oldVoltBalanceBefore - amountOldVoltToExchange
         );
+        assertEq(
+            oldVolt.totalSupply(),
+            oldVoltTotalSupply - amountOldVoltToExchange
+        );
+        assertEq(voltV2.totalSupply(), newVoltTotalSupply);
     }
 
     function testExchangeAll() public {
@@ -92,6 +106,12 @@ contract IntegrationTestVoltMigratorTest is TimelockSimulation, vip13 {
             newVoltBalanceBefore + oldVoltBalanceBefore
         );
         assertEq(oldVoltBalanceAfter, 0);
+
+        assertEq(
+            oldVolt.totalSupply(),
+            oldVoltTotalSupply - oldVoltBalanceBefore
+        );
+        assertEq(voltV2.totalSupply(), newVoltTotalSupply);
     }
 
     function testExchangeAllTo() public {
@@ -110,6 +130,11 @@ contract IntegrationTestVoltMigratorTest is TimelockSimulation, vip13 {
             newVoltBalanceBefore + oldVoltBalanceBefore
         );
         assertEq(oldVoltBalanceAfter, 0);
+        assertEq(
+            oldVolt.totalSupply(),
+            oldVoltTotalSupply - oldVoltBalanceBefore
+        );
+        assertEq(voltV2.totalSupply(), newVoltTotalSupply);
     }
 
     function testExchangeFailsWhenApprovalNotGiven() public {
@@ -212,6 +237,12 @@ contract IntegrationTestVoltMigratorTest is TimelockSimulation, vip13 {
             oldVoltBalanceAfter,
             oldVoltBalanceBefore - amountOldVoltToExchange
         );
+
+        assertEq(
+            oldVolt.totalSupply(),
+            oldVoltTotalSupply - amountOldVoltToExchange
+        );
+        assertEq(voltV2.totalSupply(), newVoltTotalSupply);
     }
 
     function testExchangeAllToPartialApproval() public {
@@ -234,6 +265,11 @@ contract IntegrationTestVoltMigratorTest is TimelockSimulation, vip13 {
             oldVoltBalanceAfter,
             oldVoltBalanceBefore - amountOldVoltToExchange
         );
+        assertEq(
+            oldVolt.totalSupply(),
+            oldVoltTotalSupply - amountOldVoltToExchange
+        );
+        assertEq(voltV2.totalSupply(), newVoltTotalSupply);
     }
 
     function testSweep() public {
