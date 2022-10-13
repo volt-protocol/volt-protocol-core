@@ -45,6 +45,9 @@ contract MaplePCVDeposit is PCVDeposit {
     /// @notice reference to the underlying token
     IERC20 public immutable token;
 
+    /// @notice reference to the Maple token
+    IERC20 public immutable rewardsToken;
+
     /// @notice scaling factor for USDC
     /// @dev hardcoded to use USDC decimals as this is the only
     /// supplied asset Volt Protocol will support
@@ -67,6 +70,7 @@ contract MaplePCVDeposit is PCVDeposit {
         );
         pool = IPool(_pool);
         mplRewards = IMplRewards(_mplRewards);
+        rewardsToken = IERC20(IMplRewards(_mplRewards).rewardsToken());
     }
 
     /// @notice return the amount of funds this contract owns in USDC
@@ -179,9 +183,13 @@ contract MaplePCVDeposit is PCVDeposit {
 
     /// @notice permissionless function to harvest rewards before withdraw
     function harvest() external {
+        uint256 preHarvestBalance = rewardsToken.balanceOf(address(this));
+
         mplRewards.getReward();
 
-        emit Harvest();
+        uint256 postHarvestBalance = rewardsToken.balanceOf(address(this));
+
+        emit Harvest(postHarvestBalance - preHarvestBalance);
     }
 
     /// ---------- Sad Path APIs ----------

@@ -154,4 +154,15 @@ library MainnetAddresses {
 
     address public constant GLOBAL_RATE_LIMITED_MINTER =
         0x87945f59E008aDc9ed6210a8e061f009d6ace718;
+
+    // ---------- MAPLE ADDRESSES ----------
+
+    address public constant MPL_TOKEN =
+        0x33349B282065b0284d756F0577FB39c158F935e6;
+
+    address public constant MPL_ORTHOGONAL_POOL =
+        0xFeBd6F15Df3B73DC4307B1d7E65D46413e710C27;
+
+    address public constant MPL_ORTHOGONAL_REWARDS =
+        0x7869D7a3B074b5fa484dc04798E254c9C06A5e90;
 }

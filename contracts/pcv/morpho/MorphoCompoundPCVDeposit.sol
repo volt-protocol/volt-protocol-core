@@ -102,8 +102,9 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
         address[] memory cTokens = new address[](1);
         cTokens[0] = cToken;
 
-        MORPHO.claimRewards(cTokens, false);
+        /// set swap comp to morpho flag false to claim comp rewards
+        uint256 claimedAmount = MORPHO.claimRewards(cTokens, false);
 
-        emit Harvest();
+        emit Harvest(claimedAmount);
     }
 }

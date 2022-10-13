@@ -52,6 +52,9 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
     address public constant mapleOwner =
         0xd6d4Bcde6c816F17889f1Dd3000aF0261B03a196;
 
+    address public constant mapleToken =
+        0x33349B282065b0284d756F0577FB39c158F935e6;
+
     function setUp() public {
         usdcDeposit = new MaplePCVDeposit(address(core), maplePool, mplRewards);
 
@@ -71,6 +74,10 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
 
     function testSetup() public {
         assertEq(address(usdcDeposit.core()), address(core));
+        assertEq(
+            address(usdcDeposit.rewardsToken()),
+            MainnetAddresses.MPL_TOKEN
+        );
         assertEq(usdcDeposit.balanceReportedIn(), address(usdc));
         assertEq(address(usdcDeposit.pool()), maplePool);
         assertEq(address(usdcDeposit.mplRewards()), mplRewards);
