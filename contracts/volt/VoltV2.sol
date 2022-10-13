@@ -2,6 +2,7 @@
 pragma solidity =0.8.13;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {VoltCoreRef} from "../refs/VoltCoreRef.sol";
 
 // Forked from Uniswap's UNI
@@ -203,7 +204,7 @@ contract VoltV2 is VoltCoreRef {
         bytes32 digest = keccak256(
             abi.encodePacked("\x19\x01", domainSeparator, structHash)
         );
-        address signatory = ecrecover(digest, v, r, s);
+        (address signatory, ) = ECDSA.tryRecover(digest, v, r, s);
         require(signatory != address(0), "Volt: invalid signature");
         require(signatory == owner, "Volt: unauthorized");
         require(block.timestamp <= deadline, "Volt: signature expired");
@@ -279,7 +280,7 @@ contract VoltV2 is VoltCoreRef {
         bytes32 digest = keccak256(
             abi.encodePacked("\x19\x01", domainSeparator, structHash)
         );
-        address signatory = ecrecover(digest, v, r, s);
+        (address signatory, ) = ECDSA.tryRecover(digest, v, r, s);
         require(signatory != address(0), "Volt: invalid signature");
         require(nonce == nonces[signatory]++, "Volt: invalid nonce");
         require(block.timestamp <= expiry, "Volt: signature expired");
