@@ -39,10 +39,11 @@ contract vip14a is DSTest, IVIP {
 
     ITimelockSimulation.action[] private arbitrumProposal;
 
-    VoltSystemOracle public oracle;
+    VoltSystemOracle public oracle =
+        VoltSystemOracle(ArbitrumAddresses.VOLT_SYSTEM_ORACLE_0_BIPS);
 
-    uint256 public startTime;
-    uint256 public startPrice;
+    uint256 public constant startTime = 1665681823;
+    uint256 public startPrice = 1056672647567682146;
 
     uint256 public constant monthlyChangeRateBasisPoints = 0;
 
@@ -56,17 +57,6 @@ contract vip14a is DSTest, IVIP {
         if (block.chainid == 1) {
             return;
         }
-
-        startPrice = VoltSystemOracle(
-            ArbitrumAddresses.VOLT_SYSTEM_ORACLE_144_BIPS
-        ).getCurrentOraclePrice();
-        startTime = block.timestamp;
-
-        oracle = new VoltSystemOracle(
-            monthlyChangeRateBasisPoints,
-            block.timestamp,
-            startPrice
-        );
 
         arbitrumProposal.push(
             ITimelockSimulation.action({
