@@ -30,12 +30,10 @@ const ZERO_MONTHLY_CHANGE_BASIS_POINTS = 0;
 
 const vipNumber = '14';
 
+const currentPrice = '1056672647567682146';
+
 const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: NamedAddresses, logging: boolean) => {
   startTime = Math.floor(Date.now() / 1000).toString();
-
-  const voltSystemOracle = await ethers.getContractAt('VoltSystemOracle', addresses.arbitrumVoltSystemOracle);
-
-  const currentPrice = await voltSystemOracle.getCurrentOraclePrice();
 
   const voltSystemOracleFactory = await ethers.getContractFactory('VoltSystemOracle');
 
