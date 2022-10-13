@@ -231,6 +231,9 @@ contract MaplePCVDeposit is PCVDeposit {
         token.safeTransfer(to, amountToTransfer);
     }
 
+    /// inspired by MakerDAO Multicall:
+    /// https://github.com/makerdao/multicall/blob/master/src/Multicall.sol
+
     /// @notice struct to pack calldata and targets for an emergency action
     struct Call {
         address target;
