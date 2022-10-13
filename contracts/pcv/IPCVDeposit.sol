@@ -29,7 +29,7 @@ interface IPCVDeposit is IPCVDepositBalances {
         uint256 _amount
     );
 
-    event Harvest();
+    event Harvest(uint256 amount);
 
     // ----------- State changing api -----------
 
