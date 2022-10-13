@@ -289,7 +289,7 @@ contract VoltV2 is VoltCoreRef {
     /// @notice Gets the current votes balance for `account`
     /// @param account The address to get votes balance
     /// @return The number of current votes for `account`
-    function getCurrentVotes(address account) external view returns (uint256) {
+    function getVotes(address account) external view returns (uint256) {
         uint32 nCheckpoints = numCheckpoints[account];
         return
             nCheckpoints > 0 ? checkpoints[account][nCheckpoints - 1].votes : 0;
@@ -300,7 +300,7 @@ contract VoltV2 is VoltCoreRef {
     /// @param account The address of the account to check
     /// @param blockNumber The block number to get the vote balance at
     /// @return The number of votes the account had as of the given block
-    function getPriorVotes(address account, uint256 blockNumber)
+    function getPastVotes(address account, uint256 blockNumber)
         external
         view
         returns (uint256)

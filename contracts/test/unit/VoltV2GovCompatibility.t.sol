@@ -1,0 +1,196 @@
+//SPDX-License-Identifier: GPL-3.0-or-later
+pragma solidity =0.8.13;
+
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
+
+import {DSTest} from "../unit/utils/DSTest.sol";
+import {Vm} from "../unit/utils/Vm.sol";
+import {VoltV2} from "../../volt/VoltV2.sol";
+import {Core} from "../../core/Core.sol";
+import {getCore, getAddresses, VoltTestAddresses} from "./utils/Fixtures.sol";
+import {ICore} from "../../core/ICore.sol";
+import {stdError} from "../unit/utils/StdLib.sol";
+import {MockDAO, IVotes} from "../../mock/MockDAO.sol";
+import {MockERC20} from "../../mock/MockERC20.sol";
+
+contract UnitTestVoltV2GovCompatibility is DSTest {
+    using SafeCast for *;
+
+    VoltV2 private voltV2;
+    ICore private core;
+    MockDAO private mockDAO;
+    MockERC20 private mockToken;
+    TimelockController private timelock;
+
+    VoltTestAddresses public addresses = getAddresses();
+
+    address proposerCancellerExecutor = address(0x123);
+    address userWithVolt = address(0xFFF);
+
+    Vm private vm = Vm(HEVM_ADDRESS);
+
+    uint256 public quorum = 1_000_000e18;
+
+    function setUp() public {
+        core = getCore();
+
+        address[] memory proposerCancellerAddresses = new address[](1);
+        proposerCancellerAddresses[0] = proposerCancellerExecutor;
+
+        address[] memory executorAddresses = new address[](1);
+        executorAddresses[0] = proposerCancellerExecutor;
+
+        timelock = new TimelockController(
+            600,
+            proposerCancellerAddresses,
+            executorAddresses
+        );
+
+        voltV2 = new VoltV2(address(core));
+        mockDAO = new MockDAO(IVotes(address(voltV2)), timelock);
+
+        timelock.grantRole(timelock.PROPOSER_ROLE(), address(mockDAO));
+        timelock.grantRole(timelock.EXECUTOR_ROLE(), address(mockDAO));
+
+        mockToken = new MockERC20();
+        mockToken.mint(address(timelock), 1_000_000e18);
+    }
+
+    function testUserWithNoVoltCanPropose() public {
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas,
+            string memory description,
+
+        ) = _createDummyProposal();
+
+        uint256 noVoltProposalId = mockDAO.propose(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        assertEq(uint8(mockDAO.state(noVoltProposalId)), 0); // Pending
+        vm.roll(block.number + 1);
+
+        assertEq(uint8(mockDAO.state(noVoltProposalId)), 1); // Active
+    }
+
+    function testProposalExecutes() public {
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas,
+            string memory description,
+            bytes32 descriptionHash
+        ) = _createDummyProposal();
+
+        vm.prank(addresses.minterAddress);
+        voltV2.mint(userWithVolt, quorum);
+
+        vm.prank(userWithVolt);
+        voltV2.delegate(userWithVolt);
+
+        uint256 proposalId = mockDAO.propose(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        // Advance past the 1 voting block
+        vm.roll(block.number + 1);
+
+        // Cast a vote for the proposal, in excess of quorum
+        vm.prank(userWithVolt);
+        mockDAO.castVote(proposalId, 1);
+
+        vm.roll(block.number + 2);
+
+        vm.startPrank(proposerCancellerExecutor);
+        mockDAO.queue(targets, values, calldatas, descriptionHash);
+        vm.stopPrank();
+
+        vm.warp(block.number + timelock.getMinDelay());
+
+        vm.startPrank(proposerCancellerExecutor);
+
+        // Execute
+        mockDAO.execute(targets, values, calldatas, descriptionHash);
+
+        assertEq(mockToken.balanceOf(userWithVolt), 1_000_000e18);
+    }
+
+    function testProposalRejectsIfNotQuorum() public {
+        address userWithInsufficientVolt = address(0xFFF);
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas,
+            string memory description,
+            bytes32 descriptionHash
+        ) = _createDummyProposal();
+
+        vm.prank(userWithInsufficientVolt);
+        uint256 proposalId = mockDAO.propose(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        vm.prank(addresses.minterAddress);
+        voltV2.mint(userWithInsufficientVolt, quorum - 1);
+
+        vm.prank(userWithInsufficientVolt);
+        voltV2.delegate(userWithInsufficientVolt);
+
+        // Advance past the 1 voting block
+        vm.roll(block.number + 1);
+
+        // Cast a vote for the proposal, in excess of quorum
+        vm.prank(userWithInsufficientVolt);
+        mockDAO.castVote(proposalId, 1);
+
+        vm.roll(block.number + 2);
+
+        vm.startPrank(proposerCancellerExecutor);
+        vm.expectRevert(bytes("Governor: proposal not successful"));
+        mockDAO.queue(targets, values, calldatas, descriptionHash);
+        vm.stopPrank();
+    }
+
+    function _createDummyProposal()
+        internal
+        view
+        returns (
+            address[] memory,
+            uint256[] memory,
+            bytes[] memory,
+            string memory,
+            bytes32
+        )
+    {
+        address[] memory targets = new address[](1);
+        targets[0] = address(mockToken);
+
+        uint256[] memory values = new uint256[](1);
+        values[0] = uint256(0);
+
+        bytes[] memory calldatas = new bytes[](1);
+        bytes memory data = abi.encodeWithSignature(
+            "transfer(address,uint256)",
+            userWithVolt,
+            1_000_000e18
+        );
+        calldatas[0] = data;
+
+        string memory description = "Dummy proposal";
+        bytes32 descriptionHash = keccak256(bytes(description));
+        return (targets, values, calldatas, description, descriptionHash);
+    }
+}

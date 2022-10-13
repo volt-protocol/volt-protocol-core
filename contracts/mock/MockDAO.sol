@@ -11,22 +11,20 @@ contract MockDAO is
     Governor,
     GovernorCompatibilityBravo,
     GovernorVotes,
-    GovernorVotesQuorumFraction,
     GovernorTimelockControl
 {
     constructor(IVotes _token, TimelockController _timelock)
         Governor("MockGovernor")
         GovernorVotes(_token)
-        GovernorVotesQuorumFraction(4)
         GovernorTimelockControl(_timelock)
     {}
 
     function votingDelay() public pure override returns (uint256) {
-        return 6575; // 1 day
+        return 0; // 1 day
     }
 
     function votingPeriod() public pure override returns (uint256) {
-        return 46027; // 1 week
+        return 2;
     }
 
     function proposalThreshold() public pure override returns (uint256) {
@@ -37,11 +35,11 @@ contract MockDAO is
 
     function quorum(uint256 blockNumber)
         public
-        view
-        override(IGovernor, GovernorVotesQuorumFraction)
+        pure
+        override
         returns (uint256)
     {
-        return super.quorum(blockNumber);
+        return 1_000_000e18;
     }
 
     function getVotes(address account, uint256 blockNumber)

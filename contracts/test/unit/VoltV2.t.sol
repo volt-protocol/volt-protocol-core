@@ -38,13 +38,13 @@ contract UnitTestVoltV2 is DSTest {
     function testMintSuccessMinter(uint224 voltToMint) public {
         _testMintSupplyIncrease(address(0xFFF), voltToMint);
 
-        assertEq(volt.getCurrentVotes(address(0xFFF)), 0);
+        assertEq(volt.getVotes(address(0xFFF)), 0);
 
         vm.prank(address(0xFFF));
         volt.delegate(address(0xFFF));
 
         assertEq(volt.totalSupply(), voltToMint);
-        assertEq(volt.getCurrentVotes(address(0xFFF)), voltToMint);
+        assertEq(volt.getVotes(address(0xFFF)), voltToMint);
         assertEq(volt.balanceOf(address(0xFFF)), voltToMint);
     }
 
@@ -58,7 +58,7 @@ contract UnitTestVoltV2 is DSTest {
 
         _testMintSupplyIncrease(address(0xFFF), voltToMint);
 
-        assertEq(volt.getCurrentVotes(address(0xFFF)), voltToMint * 2);
+        assertEq(volt.getVotes(address(0xFFF)), voltToMint * 2);
     }
 
     function testMintFailureUnauthorized() public {
@@ -92,19 +92,19 @@ contract UnitTestVoltV2 is DSTest {
     function testBurn(uint224 voltToBurn) public {
         _testMintSupplyIncrease(address(this), voltToBurn);
 
-        assertEq(volt.getCurrentVotes(address(this)), 0);
+        assertEq(volt.getVotes(address(this)), 0);
         volt.delegate(address(this));
         assertEq(volt.delegates(address(this)), address(this));
-        assertEq(volt.getCurrentVotes(address(this)), voltToBurn);
+        assertEq(volt.getVotes(address(this)), voltToBurn);
 
         volt.burn(voltToBurn);
 
-        assertEq(volt.getCurrentVotes(address(this)), 0);
+        assertEq(volt.getVotes(address(this)), 0);
 
         assertEq(volt.totalSupply(), 0);
         assertEq(volt.delegates(address(this)), address(this));
         assertEq(volt.balanceOf(address(this)), 0);
-        assertEq(volt.getCurrentVotes(address(this)), 0);
+        assertEq(volt.getVotes(address(this)), 0);
     }
 
     function testBurnFail() public {
