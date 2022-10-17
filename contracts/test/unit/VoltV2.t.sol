@@ -31,8 +31,100 @@ contract UnitTestVoltV2 is DSTest {
     }
 
     function testDelegate() public {
-        volt.delegate(address(0xFFF));
-        assertEq(volt.delegates(address(this)), address(0xFFF));
+        address delegatee = address(0xFFF);
+        volt.delegate(delegatee);
+        assertEq(volt.delegates(address(this)), delegatee);
+    }
+
+    function testDelegateBySig() public {
+        uint256 privateKey = 1;
+        address delegatee = address(0xFFF);
+        address owner = vm.addr(privateKey);
+
+        assertEq(volt.nonces(owner), 0);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            privateKey,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    getDomainSeperator(),
+                    keccak256(
+                        abi.encode(
+                            volt.DELEGATION_TYPEHASH(),
+                            delegatee,
+                            0,
+                            block.timestamp
+                        )
+                    )
+                )
+            )
+        );
+
+        volt.delegateBySig(delegatee, 0, block.timestamp, v, r, s);
+
+        assertEq(volt.nonces(owner), 1);
+        assertEq(volt.delegates(owner), delegatee);
+    }
+
+    function testDelegateBySigBadNonce() public {
+        uint256 privateKey = 1;
+        address delegatee = address(0xFFF);
+        address owner = vm.addr(privateKey);
+
+        assertEq(volt.nonces(owner), 0);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            privateKey,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    getDomainSeperator(),
+                    keccak256(
+                        abi.encode(
+                            volt.DELEGATION_TYPEHASH(),
+                            delegatee,
+                            1,
+                            block.timestamp
+                        )
+                    )
+                )
+            )
+        );
+
+        vm.expectRevert("Volt: invalid nonce");
+        volt.delegateBySig(delegatee, 1, block.timestamp, v, r, s);
+    }
+
+    function testDelegateBySigPastExpiry() public {
+        uint256 privateKey = 1;
+        address delegatee = address(0xFFF);
+        address owner = vm.addr(privateKey);
+        uint256 timestamp = block.timestamp;
+
+        assertEq(volt.nonces(owner), 0);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            privateKey,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    getDomainSeperator(),
+                    keccak256(
+                        abi.encode(
+                            volt.DELEGATION_TYPEHASH(),
+                            delegatee,
+                            0,
+                            timestamp
+                        )
+                    )
+                )
+            )
+        );
+
+        vm.warp(timestamp + 1);
+        vm.expectRevert("Volt: signature expired");
+        volt.delegateBySig(delegatee, 0, timestamp, v, r, s);
     }
 
     function testMintSuccessMinter(uint224 voltToMint) public {
@@ -262,6 +354,8 @@ contract UnitTestVoltV2 is DSTest {
     function testPermit(uint224 voltToPermit) public {
         uint256 privateKey = 0xFFF;
         address owner = vm.addr(privateKey);
+
+        assertEq(volt.nonces(owner), 0);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
             privateKey,
