@@ -109,18 +109,25 @@ contract UnitTestVoltV2GovCompatibility is DSTest {
         vm.prank(userWithVolt);
         mockDAO.castVote(proposalId, 1);
 
+        (, , , , , uint256 forVotes, , , , ) = mockDAO.proposals(proposalId);
+
+        assertEq(
+            mockDAO.getReceipt(proposalId, userWithVolt).votes,
+            voltV2.getVotes(userWithVolt)
+        );
+
+        assertEq(forVotes, quorum);
+        assertEq(forVotes, voltV2.getVotes(userWithVolt));
+
         vm.roll(block.number + 2);
 
         vm.startPrank(proposerCancellerExecutor);
         mockDAO.queue(targets, values, calldatas, descriptionHash);
-        vm.stopPrank();
 
         vm.warp(block.number + timelock.getMinDelay());
 
-        vm.startPrank(proposerCancellerExecutor);
-
-        // Execute
         mockDAO.execute(targets, values, calldatas, descriptionHash);
+        vm.stopPrank();
 
         assertEq(mockToken.balanceOf(userWithVolt), 1_000_000e18);
     }
@@ -152,9 +159,18 @@ contract UnitTestVoltV2GovCompatibility is DSTest {
         // Advance past the 1 voting block
         vm.roll(block.number + 1);
 
-        // Cast a vote for the proposal, in excess of quorum
         vm.prank(userWithInsufficientVolt);
         mockDAO.castVote(proposalId, 1);
+
+        (, , , , , uint256 forVotes, , , , ) = mockDAO.proposals(proposalId);
+
+        assertEq(
+            mockDAO.getReceipt(proposalId, userWithInsufficientVolt).votes,
+            voltV2.getVotes(userWithInsufficientVolt)
+        );
+
+        assertEq(forVotes, quorum - 1);
+        assertEq(forVotes, voltV2.getVotes(userWithInsufficientVolt));
 
         vm.roll(block.number + 2);
 
