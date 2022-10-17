@@ -107,10 +107,17 @@ const vip_13: ProposalDescription = {
       method: 'addWhitelistAddresses(address[])',
       arguments: [['{voltV2UsdcPriceBoundPSM}', '{voltV2DaiPriceBoundPSM}']],
       description: 'Add new DAI, and USDC PSMs to PCV Guardian whitelist'
+    },
+    {
+      target: 'pcvGuardian',
+      values: '0',
+      method: 'removeWhitelistAddresses(address[])',
+      arguments: [['{usdcPriceBoundPSM}', '{daiPriceBoundPSM}']],
+      description: 'Remove old DAI, and USDC PSMs from PCV Guardian whitelist'
     }
   ],
   description:
-    'Mint Volt total supply to migrator contract, fund new DAI and USDC PSMs with new Volt, connect new PSMs to the ERC20 Allocator, and add new DAI, and USDC PSMs to PCV Guardian whitelist'
+    'Mint Volt total supply to migrator contract, fund new DAI and USDC PSMs with new Volt, connect new PSMs to the ERC20 Allocator, and add new DAI, and USDC PSMs to PCV Guardian whitelist, remove old PSMs from whitelist'
 };
 
 export default vip_13;

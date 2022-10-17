@@ -64,11 +64,15 @@ contract IntegrationTestVoltMigratorRouterTest is TimelockSimulation, vip13 {
         uint256 currentPegPrice = oracle.getCurrentOraclePrice() / 1e12;
         uint256 amountOut = (amountVoltIn * currentPegPrice) / 1e18;
 
-        migratorRouter.redeemUSDC(amountVoltIn, minAmountOut);
+        uint256 redeemedAmount = migratorRouter.redeemUSDC(
+            amountVoltIn,
+            minAmountOut
+        );
         uint256 endBalance = usdc.balanceOf(address(this));
 
         assertApproxEq(minAmountOut.toInt256(), amountOut.toInt256(), 0);
         assertEq(minAmountOut, endBalance - startBalance);
+        assertEq(redeemedAmount, minAmountOut);
     }
 
     function testRedeemDai(uint72 amountVoltIn) public {
@@ -82,11 +86,15 @@ contract IntegrationTestVoltMigratorRouterTest is TimelockSimulation, vip13 {
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
         uint256 amountOut = (amountVoltIn * currentPegPrice) / 1e18;
 
-        migratorRouter.redeemDai(amountVoltIn, minAmountOut);
+        uint256 redeemedAmount = migratorRouter.redeemDai(
+            amountVoltIn,
+            minAmountOut
+        );
         uint256 endBalance = dai.balanceOf(address(this));
 
         assertApproxEq(minAmountOut.toInt256(), amountOut.toInt256(), 0);
         assertEq(minAmountOut, endBalance - startBalance);
+        assertEq(redeemedAmount, minAmountOut);
     }
 
     function testRedeemDaiFailsUserNotEnoughVolt() public {

@@ -8,6 +8,11 @@ import {VoltCoreRef} from "../refs/VoltCoreRef.sol";
 // Forked from Uniswap's UNI
 // Reference: https://etherscan.io/address/0x1f9840a85d5af5bf1d1762f925bdaddc4201f984#code
 
+/// @dev Whilst `uint256` is used as the totalSupply and for balances and allowances, the maximum
+/// of these values is actually `uint224` it is kept as uint256 for compatibility with the ERC20
+/// standard. `uint224` is used as a gas optimization to keep the `Checkpoint` struct to a single storage slot.
+/// VoltCoreRef is a contract that inherits CoreRef, but updates it with the ability to point to a differnt core
+/// contract, this allows the system to be upgraded to newer versions without requiring a token migration each time.
 contract VoltV2 is VoltCoreRef {
     using SafeCast for *;
 
@@ -284,7 +289,7 @@ contract VoltV2 is VoltCoreRef {
         require(signatory != address(0), "Volt: invalid signature");
         require(nonce == nonces[signatory]++, "Volt: invalid nonce");
         require(block.timestamp <= expiry, "Volt: signature expired");
-        return _delegate(signatory, delegatee);
+        _delegate(signatory, delegatee);
     }
 
     /// @notice Gets the current votes balance for `account`

@@ -199,6 +199,9 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
   expect(await PCVGuardian.isWhitelistAddress(voltV2UsdcPriceBoundPSM.address)).to.be.true;
   expect(await PCVGuardian.isWhitelistAddress(voltV2DaiPriceBoundPSM.address)).to.be.true;
 
+  expect(await PCVGuardian.isWhitelistAddress(addresses.usdcPriceBoundPSM)).to.be.false;
+  expect(await PCVGuardian.isWhitelistAddress(addresses.daiPriceBoundPSM)).to.be.false;
+
   expect(await voltV2.decimals()).to.equal(18);
   expect(await voltV2.symbol()).to.equal('VOLT');
   expect(await voltV2.name()).to.equal('Volt');

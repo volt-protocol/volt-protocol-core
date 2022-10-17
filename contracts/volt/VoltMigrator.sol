@@ -38,12 +38,7 @@ contract VoltMigrator is IVoltMigrator, CoreRef {
     /// takes the minimum of users old VOLT balance, or the amount
     /// user has approved to the migrator contract & exchanges for new VOLT
     function exchangeAll() external {
-        uint256 amountToExchange = Math.min(
-            OLD_VOLT.balanceOf(msg.sender),
-            OLD_VOLT.allowance(msg.sender, address(this))
-        );
-        require(amountToExchange != 0, "VoltMigrator: no amount to exchange");
-
+        uint256 amountToExchange = _calculateAmountToExchange();
         _migrateVolt(msg.sender, amountToExchange);
     }
 
@@ -59,12 +54,7 @@ contract VoltMigrator is IVoltMigrator, CoreRef {
     /// user has approved to the migrator contract & exchanges for new VOLT
     /// @param to address to send the new VOLT to
     function exchangeAllTo(address to) external {
-        uint256 amountToExchange = Math.min(
-            OLD_VOLT.balanceOf(msg.sender),
-            OLD_VOLT.allowance(msg.sender, address(this))
-        );
-        require(amountToExchange != 0, "VoltMigrator: no amount to exchange");
-
+        uint256 amountToExchange = _calculateAmountToExchange();
         _migrateVolt(to, amountToExchange);
     }
 
@@ -73,6 +63,15 @@ contract VoltMigrator is IVoltMigrator, CoreRef {
         newVolt.transfer(to, amount);
 
         emit VoltMigrated(msg.sender, to, amount);
+    }
+
+    function _calculateAmountToExchange() internal view returns (uint256) {
+        uint256 amountToExchange = Math.min(
+            OLD_VOLT.balanceOf(msg.sender),
+            OLD_VOLT.allowance(msg.sender, address(this))
+        );
+        require(amountToExchange != 0, "VoltMigrator: no amount to exchange");
+        return amountToExchange;
     }
 
     /// @notice sweep target token,

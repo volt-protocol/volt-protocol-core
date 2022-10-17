@@ -98,6 +98,10 @@ contract vip13 is DSTest, IVIP {
         toWhitelist[1] = address(voltV2DaiPriceBoundPSM);
         toWhitelist[2] = address(voltMigrator);
 
+        address[] memory toRemoveFromWhitelist = new address[](2);
+        toRemoveFromWhitelist[0] = MainnetAddresses.VOLT_USDC_PSM;
+        toRemoveFromWhitelist[1] = MainnetAddresses.VOLT_DAI_PSM;
+
         proposal.push(
             ITimelockSimulation.action({
                 value: 0,
@@ -286,6 +290,18 @@ contract vip13 is DSTest, IVIP {
                     toWhitelist
                 ),
                 description: "Add new DAI, and USDC PSMs to PCV Guardian whitelist"
+            })
+        );
+
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: MainnetAddresses.PCV_GUARDIAN,
+                arguments: abi.encodeWithSignature(
+                    "removeWhitelistAddresses(address[])",
+                    toRemoveFromWhitelist
+                ),
+                description: "Remove old DAI, and USDC PSMs from PCV Guardian whitelist"
             })
         );
     }
@@ -527,6 +543,18 @@ contract vip13 is DSTest, IVIP {
         assertTrue(
             PCVGuardian(MainnetAddresses.PCV_GUARDIAN).isWhitelistAddress(
                 address(voltV2DaiPriceBoundPSM)
+            )
+        );
+
+        assertTrue(
+            !PCVGuardian(MainnetAddresses.PCV_GUARDIAN).isWhitelistAddress(
+                MainnetAddresses.VOLT_USDC_PSM
+            )
+        );
+
+        assertTrue(
+            !PCVGuardian(MainnetAddresses.PCV_GUARDIAN).isWhitelistAddress(
+                MainnetAddresses.VOLT_DAI_PSM
             )
         );
     }

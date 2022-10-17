@@ -218,7 +218,7 @@ contract IntegrationTestVoltMigratorTest is TimelockSimulation, vip13 {
     }
 
     function testExchangeAllPartialApproval() public {
-        uint256 amountOldVoltToExchange = 50_000_000e18;
+        uint256 amountOldVoltToExchange = oldVolt.balanceOf(address(this)) / 2; // exchange half of users balance
         oldVolt.approve(address(voltMigrator), amountOldVoltToExchange);
 
         uint256 oldVoltBalanceBefore = oldVolt.balanceOf(address(this));
@@ -243,10 +243,12 @@ contract IntegrationTestVoltMigratorTest is TimelockSimulation, vip13 {
             oldVoltTotalSupply - amountOldVoltToExchange
         );
         assertEq(voltV2.totalSupply(), newVoltTotalSupply);
+
+        assertEq(oldVoltBalanceAfter, oldVoltBalanceBefore / 2);
     }
 
     function testExchangeAllToPartialApproval() public {
-        uint256 amountOldVoltToExchange = 50_000_000e18;
+        uint256 amountOldVoltToExchange = oldVolt.balanceOf(address(this)) / 2; // exchange half of users balance
         oldVolt.approve(address(voltMigrator), amountOldVoltToExchange);
 
         uint256 oldVoltBalanceBefore = oldVolt.balanceOf(address(this));
@@ -270,6 +272,7 @@ contract IntegrationTestVoltMigratorTest is TimelockSimulation, vip13 {
             oldVoltTotalSupply - amountOldVoltToExchange
         );
         assertEq(voltV2.totalSupply(), newVoltTotalSupply);
+        assertEq(oldVoltBalanceAfter, oldVoltBalanceBefore / 2);
     }
 
     function testSweep() public {
