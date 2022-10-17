@@ -293,8 +293,14 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.Governance,
     network: Network.Arbitrum
   },
-  arbitrumVoltSystemOracle: {
+  deprecatedArbitrumVoltSystemOracle: {
     address: '0x5DDf983CbD5819c13661046110EfCd2E8629d40b',
+    artifactName: 'VoltSystemOracle',
+    category: AddressCategory.Deprecated,
+    network: Network.Arbitrum
+  },
+  arbitrumVoltSystemOracle0BasisPoints: {
+    address: '0xACce8F8661f7f214b94f94e3e1A09d81f0B924D6',
     artifactName: 'VoltSystemOracle',
     category: AddressCategory.Oracle,
     network: Network.Arbitrum
