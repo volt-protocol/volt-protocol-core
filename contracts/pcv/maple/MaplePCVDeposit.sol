@@ -12,7 +12,7 @@ import {IMplRewards} from "./IMplRewards.sol";
 
 /// @notice PCV Deposit for Maple
 /// Allows depositing only by privileged role to prevent lockup period being extended by griefers
-/// Can only deposit USDC in this MAPLE PCV deposit due to scalingFactor being hardcoded
+/// Can only deposit USDC in this MAPLE PCV deposit due to the scaling factor being hardcoded
 /// and underlying token is enforced as USDC.
 
 /// @notice NEVER CONNECT THIS DEPOSIT INTO THE ALLOCATOR OR OTHER AUTOMATED PCV
@@ -43,7 +43,8 @@ contract MaplePCVDeposit is PCVDeposit {
     IMplRewards public immutable mplRewards;
 
     /// @notice reference to the underlying token
-    IERC20 public immutable token;
+    IERC20 public immutable token =
+        IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
 
     /// @notice reference to the Maple token
     IERC20 public immutable rewardsToken;
@@ -51,9 +52,8 @@ contract MaplePCVDeposit is PCVDeposit {
     /// @notice scaling factor for USDC
     /// @dev hardcoded to use USDC decimals as this is the only
     /// supplied asset Volt Protocol will support
-    uint256 public constant scalingFactor = 1e12;
+    uint256 public constant SCALING_FACTOR = 1e12;
 
-    /// @notice fetch underlying asset by calling pool and getting liquidity asset
     /// @param _core reference to the Core contract
     /// @param _pool Maple Pool contract
     /// @param _mplRewards Maple Rewards contract
@@ -62,12 +62,6 @@ contract MaplePCVDeposit is PCVDeposit {
         address _pool,
         address _mplRewards
     ) CoreRef(_core) {
-        token = IERC20(IPool(_pool).liquidityAsset());
-        /// enforce underlying token is USDC
-        require(
-            address(token) == 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48,
-            "MaplePCVDeposit: Underlying not USDC"
-        );
         pool = IPool(_pool);
         mplRewards = IMplRewards(_mplRewards);
         rewardsToken = IERC20(IMplRewards(_mplRewards).rewardsToken());
@@ -80,7 +74,7 @@ contract MaplePCVDeposit is PCVDeposit {
         uint256 rawBalance = pool.balanceOf(address(this)) +
             pool.accumulativeFundsOf(address(this)) -
             pool.recognizableLossesOf(address(this));
-        return rawBalance / scalingFactor;
+        return rawBalance / SCALING_FACTOR;
     }
 
     /// @notice return the underlying token denomination for this deposit
@@ -108,7 +102,7 @@ contract MaplePCVDeposit is PCVDeposit {
         pool.deposit(amount);
 
         /// stake pool FDT for MPL rewards
-        uint256 scaledDepositAmount = amount * scalingFactor;
+        uint256 scaledDepositAmount = amount * SCALING_FACTOR;
         pool.increaseCustodyAllowance(address(mplRewards), scaledDepositAmount);
         mplRewards.stake(scaledDepositAmount);
 
@@ -139,17 +133,21 @@ contract MaplePCVDeposit is PCVDeposit {
         override
         onlyPCVController
     {
-        uint256 scaledWithdrawAmount = amount * scalingFactor;
+        /// Rewards
+
+        uint256 scaledWithdrawAmount = amount * SCALING_FACTOR;
 
         mplRewards.getReward(); /// get MPL rewards
+        mplRewards.withdraw(scaledWithdrawAmount); /// decreases allowance
+
+        /// Principal
+
+        /// withdraw from the pool
         /// this call will withdraw amount of principal requested, and then send
         /// over any accrued interest.
         /// expected behavior is that this contract
         /// receives either amount of USDC, or amount of USDC + interest accrued
         /// if lending losses were taken, receive less than amount
-        mplRewards.withdraw(scaledWithdrawAmount); /// decreases allowance
-
-        /// withdraw from the pool
         pool.withdraw(amount);
 
         /// withdraw min between balance and amount as losses could be sustained in venue
@@ -166,8 +164,14 @@ contract MaplePCVDeposit is PCVDeposit {
     /// @notice withdraw all PCV from Maple
     /// @param to destination after funds are withdrawn from venue
     function withdrawAll(address to) external onlyPCVController {
-        uint256 amount = balance();
+        /// Rewards
+
         mplRewards.exit(); /// unstakes from Maple reward contract and claims rewards
+
+        /// Principal
+
+        uint256 amount = balance();
+
         /// this call will withdraw all principal,
         /// then send over any accrued interest.
         /// expected behavior is that this contract
@@ -229,6 +233,8 @@ contract MaplePCVDeposit is PCVDeposit {
             amount
         );
         token.safeTransfer(to, amountToTransfer);
+
+        emit Withdrawal(msg.sender, to, amountToTransfer);
     }
 
     /// inspired by MakerDAO Multicall:
