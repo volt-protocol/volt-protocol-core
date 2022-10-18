@@ -78,10 +78,15 @@ contract vip14 is DSTest, IVIP {
         if (block.chainid != 1) return; /// keep ci pipeline happy
 
         mapleDeposit = new MaplePCVDeposit(core, maplePool, mplRewards);
-        daiDeposit = new MorphoCompoundPCVDeposit(core, MainnetAddresses.CDAI);
+        daiDeposit = new MorphoCompoundPCVDeposit(
+            core,
+            MainnetAddresses.CDAI,
+            MainnetAddresses.DAI
+        );
         usdcDeposit = new MorphoCompoundPCVDeposit(
             core,
-            MainnetAddresses.CUSDC
+            MainnetAddresses.CUSDC,
+            MainnetAddresses.USDC
         );
 
         router = new CompoundPCVRouter(
