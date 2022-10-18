@@ -100,7 +100,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
 
     /// @notice helper function to avoid repeated code in withdraw and withdrawAll
     function _withdraw(address to, uint256 amount) private {
-        IMorpho(MORPHO).withdraw(cToken, amount);
+        MORPHO.withdraw(cToken, amount);
         IERC20(token).safeTransfer(to, amount);
 
         emit Withdrawal(msg.sender, to, amount);

@@ -147,23 +147,6 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
         _testWithdraw(amount);
     }
 
-    function testWithdrawAll() public {
-        _setRewardsAndWarp();
-        vm.prank(MainnetAddresses.GOVERNOR);
-        usdcDeposit.signalIntentToWithdraw();
-
-        vm.warp(block.timestamp + cooldownPeriod);
-
-        vm.prank(MainnetAddresses.GOVERNOR);
-        usdcDeposit.withdrawAll(address(this));
-
-        uint256 mplBalance = maple.balanceOf(address(usdcDeposit));
-
-        assertEq(usdcDeposit.balance(), 0);
-        assertEq(usdc.balanceOf(address(this)), targetUsdcBalance);
-        assertTrue(mplBalance != 0);
-    }
-
     function testSignalWithdrawPCVControllerSucceeds() public {
         uint256 blockTimestamp = 10_000;
 
@@ -314,11 +297,6 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
     function testWithdrawFromRewardsContractgNonPCVControllerFails() public {
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
         usdcDeposit.withdrawFromRewardsContract();
-    }
-
-    function testWithdrawAllNonPCVControllerFails() public {
-        vm.expectRevert("CoreRef: Caller is not a PCV controller");
-        usdcDeposit.withdrawAll(address(this));
     }
 
     function testExitPCVControllerFails() public {
