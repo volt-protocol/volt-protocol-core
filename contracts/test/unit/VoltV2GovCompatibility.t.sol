@@ -15,8 +15,6 @@ import {stdError} from "../unit/utils/StdLib.sol";
 import {MockDAO, IVotes} from "../../mock/MockDAO.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
 
-import "hardhat/console.sol";
-
 contract UnitTestVoltV2GovCompatibility is DSTest {
     using SafeCast for *;
 
