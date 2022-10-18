@@ -15,6 +15,8 @@ import {stdError} from "../unit/utils/StdLib.sol";
 import {MockDAO, IVotes} from "../../mock/MockDAO.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
 
+import "hardhat/console.sol";
+
 contract UnitTestVoltV2GovCompatibility is DSTest {
     using SafeCast for *;
 
@@ -173,6 +175,56 @@ contract UnitTestVoltV2GovCompatibility is DSTest {
         assertEq(forVotes, voltV2.getVotes(userWithInsufficientVolt));
 
         vm.roll(block.number + 2);
+
+        vm.startPrank(proposerCancellerExecutor);
+        vm.expectRevert(bytes("Governor: proposal not successful"));
+        mockDAO.queue(targets, values, calldatas, descriptionHash);
+        vm.stopPrank();
+    }
+
+    function testMultiUserVotesNotReachQuorum(uint16[8] memory amounts) public {
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas,
+            string memory description,
+            bytes32 descriptionHash
+        ) = _createDummyProposal();
+
+        uint256 proposalId = mockDAO.propose(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        address[] memory voters = new address[](8);
+        uint256 totalVotes;
+        for (uint256 i = 0; i < 8; i++) {
+            voters[i] = vm.addr(i + 1); // populate voters array, make sure no addresses are the same
+            vm.prank(addresses.minterAddress);
+            voltV2.mint(voters[i], amounts[i]);
+            totalVotes += amounts[i];
+
+            vm.prank(voters[i]);
+            voltV2.delegate(voters[i]);
+
+            vm.roll(block.number + 1); // roll to to start voting period
+
+            vm.prank(voters[i]);
+            mockDAO.castVote(proposalId, 1);
+
+            assertEq(
+                mockDAO.getReceipt(proposalId, voters[i]).votes,
+                voltV2.getVotes(voters[i])
+            );
+            vm.roll(block.number - 1); // roll back the block number for the next voter
+        }
+
+        vm.roll(block.number + 2); // reach end of voting period
+
+        (, , , , , uint256 forVotes, , , , ) = mockDAO.proposals(proposalId);
+        assertEq(forVotes, totalVotes);
 
         vm.startPrank(proposerCancellerExecutor);
         vm.expectRevert(bytes("Governor: proposal not successful"));
