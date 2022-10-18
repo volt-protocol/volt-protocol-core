@@ -18,7 +18,12 @@ import {ICompoundOracle, ICToken} from "./ICompound.sol";
 /// @dev approves the Morpho Deposit to spend this PCV deposit's token,
 /// and then calls supply on Morpho, which pulls the underlying token to Morpho,
 /// drawing down on the approved amount to be spent,
-/// and then giving this PCV Deposit mTokens in exchange for the underlying
+/// and then giving this PCV Deposit credits on Morpho in exchange for the underlying
+/// @dev PCV Guardian functions withdrawERC20ToSafeAddress and withdrawAllERC20ToSafeAddress
+/// will not work with removing Morpho Tokens on the Morpho PCV Deposit because Morpho
+/// has no concept of mTokens. This means if the contract is paused, or an issue is
+/// surfaced in Morpho and liquidity is locked, Volt will need to rely on social
+/// coordination with the Morpho team to recover funds.
 contract MorphoCompoundPCVDeposit is PCVDeposit {
     using SafeERC20 for IERC20;
 
@@ -36,9 +41,13 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
     /// used to inform morpho about the desired market to supply liquidity
     address public immutable cToken;
 
-    constructor(address _core, address _cToken) CoreRef(_core) {
+    constructor(
+        address _core,
+        address _cToken,
+        address _underlying
+    ) CoreRef(_core) {
         cToken = _cToken;
-        token = ICToken(_cToken).underlying();
+        token = _underlying;
     }
 
     /// @notice Returns the distribution of assets supplied by this contract through Morpho-Compound.
