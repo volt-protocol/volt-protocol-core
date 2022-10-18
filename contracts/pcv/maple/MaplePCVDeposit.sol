@@ -161,30 +161,6 @@ contract MaplePCVDeposit is PCVDeposit {
         emit Withdrawal(msg.sender, to, amountToTransfer);
     }
 
-    /// @notice withdraw all PCV from Maple
-    /// @param to destination after funds are withdrawn from venue
-    function withdrawAll(address to) external onlyPCVController {
-        /// Rewards
-
-        mplRewards.exit(); /// unstakes from Maple reward contract and claims rewards
-
-        /// Principal
-
-        uint256 amount = balance();
-
-        /// this call will withdraw all principal,
-        /// then send over any accrued interest.
-        /// expected behavior is that this contract
-        /// receives balance amount of USDC, or amount of USDC + interest accrued
-        /// if lending losses were taken, receive less than amount
-        pool.withdraw(amount); /// call pool and withdraw entire balance
-
-        uint256 amountToTransfer = IERC20(token).balanceOf(address(this));
-        token.safeTransfer(to, amountToTransfer);
-
-        emit Withdrawal(msg.sender, to, amountToTransfer);
-    }
-
     /// @notice permissionless function to harvest rewards before withdraw
     function harvest() external {
         uint256 preHarvestBalance = rewardsToken.balanceOf(address(this));
