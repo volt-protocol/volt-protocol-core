@@ -67,6 +67,42 @@ contract UnitTestVoltV2 is DSTest {
         assertEq(volt.delegates(owner), delegatee);
     }
 
+    function testDelegateBySigInvalidSignature() public {
+        uint256 privateKey = 1;
+        address delegatee = address(0xFFF);
+        address owner = vm.addr(privateKey);
+
+        assertEq(volt.nonces(owner), 0);
+
+        (uint8 v, , ) = vm.sign(
+            privateKey,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    getDomainSeperator(),
+                    keccak256(
+                        abi.encode(
+                            volt.DELEGATION_TYPEHASH(),
+                            delegatee,
+                            0,
+                            block.timestamp
+                        )
+                    )
+                )
+            )
+        );
+
+        vm.expectRevert("ECDSA: invalid signature");
+        volt.delegateBySig(
+            delegatee,
+            0,
+            block.timestamp,
+            v,
+            bytes32("insertsomerandom"),
+            bytes32("insertsomerandom")
+        );
+    }
+
     function testDelegateBySigBadNonce() public {
         uint256 privateKey = 1;
         address delegatee = address(0xFFF);
@@ -389,6 +425,44 @@ contract UnitTestVoltV2 is DSTest {
 
         assertEq(volt.allowance(owner, address(this)), voltToPermit);
         assertEq(volt.nonces(owner), 1);
+    }
+
+    function testPermitInvalidSignature() public {
+        uint256 privateKey = 0xFFF;
+        address owner = vm.addr(privateKey);
+
+        assertEq(volt.nonces(owner), 0);
+
+        (uint8 v, , ) = vm.sign(
+            privateKey,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    getDomainSeperator(),
+                    keccak256(
+                        abi.encode(
+                            volt.PERMIT_TYPEHASH(),
+                            owner,
+                            address(this),
+                            1e18,
+                            0,
+                            block.timestamp
+                        )
+                    )
+                )
+            )
+        );
+
+        vm.expectRevert("ECDSA: invalid signature");
+        volt.permit(
+            owner,
+            address(this),
+            1e18,
+            block.timestamp,
+            v,
+            bytes32("insertsomerandom"),
+            bytes32("insertsomerandom")
+        );
     }
 
     function testPermitBadNonce() public {
