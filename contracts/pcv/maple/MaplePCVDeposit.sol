@@ -107,16 +107,10 @@ contract MaplePCVDeposit is PCVDeposit {
         token.approve(address(pool), amount);
         pool.deposit(amount);
 
-        /// only stake if not paused
-        if (!mplRewards.paused()) {
-            /// stake pool FDT for MPL rewards
-            uint256 scaledDepositAmount = amount * scalingFactor;
-            pool.increaseCustodyAllowance(
-                address(mplRewards),
-                scaledDepositAmount
-            );
-            mplRewards.stake(scaledDepositAmount);
-        }
+        /// stake pool FDT for MPL rewards
+        uint256 scaledDepositAmount = amount * scalingFactor;
+        pool.increaseCustodyAllowance(address(mplRewards), scaledDepositAmount);
+        mplRewards.stake(scaledDepositAmount);
 
         emit Deposit(msg.sender, amount);
     }
