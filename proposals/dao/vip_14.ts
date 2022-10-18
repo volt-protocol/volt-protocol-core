@@ -41,10 +41,18 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
   const morphoPCVDepositFactory = await ethers.getContractFactory('MorphoCompoundPCVDeposit');
   const compoundPCVRouterFactory = await ethers.getContractFactory('CompoundPCVRouter');
 
-  const daiMorphoCompoundPCVDeposit = await morphoPCVDepositFactory.deploy(addresses.core, addresses.cDai);
+  const daiMorphoCompoundPCVDeposit = await morphoPCVDepositFactory.deploy(
+    addresses.core,
+    addresses.cDai,
+    addresses.dai
+  );
   await daiMorphoCompoundPCVDeposit.deployed();
 
-  const usdcMorphoCompoundPCVDeposit = await morphoPCVDepositFactory.deploy(addresses.core, addresses.cUsdc);
+  const usdcMorphoCompoundPCVDeposit = await morphoPCVDepositFactory.deploy(
+    addresses.core,
+    addresses.cUsdc,
+    addresses.usdc
+  );
   await usdcMorphoCompoundPCVDeposit.deployed();
 
   const morphoCompoundPCVRouter = await compoundPCVRouterFactory.deploy(
