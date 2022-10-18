@@ -204,12 +204,20 @@ interface ILens {
     function getAverageSupplyRatePerBlock(address _poolToken)
         external
         view
-        returns (uint256);
+        returns (
+            uint256 avgSupplyRatePerBlock,
+            uint256 p2pSupplyAmount,
+            uint256 poolSupplyAmount
+        );
 
     function getAverageBorrowRatePerBlock(address _poolToken)
         external
         view
-        returns (uint256);
+        returns (
+            uint256 avgBorrowRatePerBlock,
+            uint256 p2pBorrowAmount,
+            uint256 poolBorrowAmount
+        );
 
     function getRatesPerBlock(address _poolToken)
         external
