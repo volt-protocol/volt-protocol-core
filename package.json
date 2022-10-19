@@ -8,6 +8,7 @@
     "compile": "forge build",
     "clean": "forge clean && rm -rf artifacts",
     "test": "forge test --match-contract UnitTest -vvv",
+    "test:invariant": "forge test --match-contract InvariantTest -vvv",
     "test:proposal:mainnet": "forge test --fork-url https://eth-mainnet.alchemyapi.io/v2/$MAINNET_ALCHEMY_API_KEY --match-test testProposalMainnet -vvv",
     "test:proposal:arbitrum": "forge test --fork-url https://arb-mainnet.g.alchemy.com/v2/$ARBITRUM_ALCHEMY_API_KEY --match-test testProposalArbitrum -vvv",
     "test:integration": "forge test --fork-url https://eth-mainnet.alchemyapi.io/v2/$MAINNET_ALCHEMY_API_KEY --match-contract IntegrationTest -vvv",
