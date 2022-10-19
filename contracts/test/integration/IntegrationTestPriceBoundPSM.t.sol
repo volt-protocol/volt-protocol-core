@@ -20,8 +20,6 @@ import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 
 import {Constants} from "../../Constants.sol";
 
-import "hardhat/console.sol";
-
 contract IntegrationTestPriceBoundPSMTest is DSTest {
     using SafeCast for *;
     PriceBoundPSM private psm;
@@ -92,13 +90,8 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
             rariVoltPCVDeposit
         );
 
-        console.log(
-            "isminter: ",
-            ICore(MainnetAddresses.FEI_CORE).isMinter(feiDaiPsm)
-        );
         vm.prank(feiDaiPsm);
         fei.mint(address(this), mintAmount);
-        console.log("here: ");
 
         vm.startPrank(MainnetAddresses.GOVERNOR);
 

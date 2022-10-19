@@ -22,8 +22,6 @@ contract IntegrationTestCompoundPCVDeposits is DSTest {
 
     ERC20CompoundPCVDeposit private daiDeposit =
         ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_DAI_PCV_DEPOSIT);
-    ERC20CompoundPCVDeposit private feiDeposit =
-        ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_FEI_PCV_DEPOSIT);
     ERC20CompoundPCVDeposit private usdcDeposit =
         ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_USDC_PCV_DEPOSIT);
 
@@ -53,32 +51,25 @@ contract IntegrationTestCompoundPCVDeposits is DSTest {
 
     function testSetup() public {
         assertEq(address(daiDeposit.core()), address(core));
-        assertEq(address(feiDeposit.core()), address(core));
         assertEq(address(usdcDeposit.core()), address(core));
 
         assertEq(address(daiDeposit.cToken()), address(MainnetAddresses.CDAI));
-        assertEq(address(feiDeposit.cToken()), address(MainnetAddresses.CFEI));
         assertEq(
             address(usdcDeposit.cToken()),
             address(MainnetAddresses.CUSDC)
         );
 
         assertEq(address(daiDeposit.token()), address(MainnetAddresses.DAI));
-        assertEq(address(feiDeposit.token()), address(MainnetAddresses.FEI));
         assertEq(address(usdcDeposit.token()), address(MainnetAddresses.USDC));
     }
 
     function testGuardianAction() public {
         uint256 startingDaiBalance = dai.balanceOf(MainnetAddresses.GOVERNOR);
-        uint256 startingFeiBalance = fei.balanceOf(MainnetAddresses.GOVERNOR);
         uint256 startingUsdcBalance = usdc.balanceOf(MainnetAddresses.GOVERNOR);
-
-        uint256 feiToWithdraw = fei.balanceOf(MainnetAddresses.CFEI);
 
         vm.startPrank(MainnetAddresses.EOA_1);
 
         pcvGuardian.withdrawAllToSafeAddress(address(daiDeposit));
-        pcvGuardian.withdrawToSafeAddress(address(feiDeposit), feiToWithdraw);
         pcvGuardian.withdrawAllToSafeAddress(address(usdcDeposit));
 
         vm.stopPrank();
@@ -87,12 +78,6 @@ contract IntegrationTestCompoundPCVDeposits is DSTest {
             (dai.balanceOf(MainnetAddresses.GOVERNOR) - startingDaiBalance)
                 .toInt256(),
             daiBalance.toInt256(),
-            0
-        );
-        assertApproxEq(
-            (fei.balanceOf(MainnetAddresses.GOVERNOR) - startingFeiBalance)
-                .toInt256(),
-            feiToWithdraw.toInt256(),
             0
         );
         assertApproxEq(
