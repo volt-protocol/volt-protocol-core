@@ -80,6 +80,9 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
             address(this), /// the address of the user you want to supply on behalf of
             amount
         );
+        
+        // increment tracked deposited amount
+        depositedAmount += amount;
 
         emit Deposit(msg.sender, amount);
     }
@@ -100,8 +103,17 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
 
     /// @notice helper function to avoid repeated code in withdraw and withdrawAll
     function _withdraw(address to, uint256 amount) private {
+        // compute profit from interests and emit an event
+        uint256 _depositedAmount = depositedAmount; // SLOAD
+        uint256 _balance = balance();
+        uint256 profit = _balance - _depositedAmount;
+        emit Harvest(address(token), int256(profit), block.timestamp);
+    
         MORPHO.withdraw(cToken, amount);
         IERC20(token).safeTransfer(to, amount);
+        
+        // update tracked deposit amount
+        depositedAmount = _balance - amount;
 
         emit Withdrawal(msg.sender, to, amount);
     }
@@ -114,6 +126,6 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
         /// set swap comp to morpho flag false to claim comp rewards
         uint256 claimedAmount = MORPHO.claimRewards(cTokens, false);
 
-        emit Harvest(claimedAmount);
+        emit Harvest(COMP, int256(claimedAmount), block.timestamp);
     }
 }
