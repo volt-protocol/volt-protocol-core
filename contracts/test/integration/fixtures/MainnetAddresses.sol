@@ -97,6 +97,8 @@ library MainnetAddresses {
 
     address public constant CUSDC = 0x39AA39c021dfbaE8faC545936693aC917d5E7563;
 
+    address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
+
     // ---------- Maker ADDRESSES ----------
 
     address public constant MAKER_DAI_USDC_PSM =
@@ -153,4 +155,15 @@ library MainnetAddresses {
 
     address public constant GLOBAL_RATE_LIMITED_MINTER =
         0x87945f59E008aDc9ed6210a8e061f009d6ace718;
+
+    // ---------- MAPLE ADDRESSES ----------
+
+    address public constant MPL_TOKEN =
+        0x33349B282065b0284d756F0577FB39c158F935e6;
+
+    address public constant MPL_ORTHOGONAL_POOL =
+        0xFeBd6F15Df3B73DC4307B1d7E65D46413e710C27;
+
+    address public constant MPL_ORTHOGONAL_REWARDS =
+        0x7869D7a3B074b5fa484dc04798E254c9C06A5e90;
 }
