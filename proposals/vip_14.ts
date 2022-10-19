@@ -1,7 +1,7 @@
 import { ProposalDescription } from '@custom-types/types';
 
 const vip_14: ProposalDescription = {
-  title: 'VIP-14: Morpho Maple PCV Deposit, Rate Update',
+  title: 'VIP-14: Morpho PCV Deposit',
   commands: [
     /// core actions
     {
@@ -52,8 +52,8 @@ const vip_14: ProposalDescription = {
       target: 'pcvGuardian',
       values: '0',
       method: 'addWhitelistAddresses(address[])',
-      arguments: [['{daiMorphoCompoundPCVDeposit}', '{usdcMorphoCompoundPCVDeposit}', '{maplePCVDeposit}']],
-      description: 'Add USDC and DAI Morpho deposits and Maple deposit to the PCV Guardian'
+      arguments: [['{daiMorphoCompoundPCVDeposit}', '{usdcMorphoCompoundPCVDeposit}']],
+      description: 'Add USDC and DAI Morpho deposits to the PCV Guardian'
     },
     {
       target: 'daiCompoundPCVDeposit',
@@ -75,7 +75,6 @@ const vip_14: ProposalDescription = {
    1. deploy morpho dai deposit
    2. deploy morpho usdc deposit
    3. deploy compound pcv router pointed to morpho dai and usdc deposits
-   4. deploy maple pcv deposit
   
   Governance Steps:
   1. Grant Morpho PCV Router PCV Controller Role
@@ -84,7 +83,7 @@ const vip_14: ProposalDescription = {
   4. Remove Compound USDC Deposit from ERC20Allocator
   5. Add Morpho DAI Deposit to ERC20Allocator
   6. Add Morpho USDC Deposit to ERC20Allocator
-  7. Add USDC and DAI Morpho deposits as well as Maple PCV deposit to the PCV Guardian
+  7. Add USDC and DAI Morpho deposits to the PCV Guardian
   8. pause dai compound pcv deposit
   9. pause usdc compound pcv deposit
   `

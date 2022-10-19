@@ -7,7 +7,6 @@ import {
 } from '@custom-types/types';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { assertApproxEq } from '@test/helpers';
 
 /*
 
@@ -19,7 +18,6 @@ Description:
 /// 1. deploy morpho dai deposit
 /// 2. deploy morpho usdc deposit
 /// 3. deploy compound pcv router pointed to morpho dai and usdc deposits
-/// 4. deploy maple usdc deposit
 
 Governance Steps:
 1. Grant Morpho PCV Router PCV Controller Role
@@ -28,7 +26,7 @@ Governance Steps:
 4. Remove Compound USDC Deposit from ERC20Allocator
 5. Add Morpho DAI Deposit to ERC20Allocator
 6. Add Morpho USDC Deposit to ERC20Allocator
-7. Add USDC and DAI Morpho, and Maple deposits to the PCV Guardian
+7. Add USDC and DAI Morpho deposits to the PCV Guardian
 8. pause dai compound pcv deposit
 9. pause usdc compound pcv deposit
 
@@ -37,7 +35,6 @@ Governance Steps:
 const vipNumber = '14';
 
 const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: NamedAddresses, logging: boolean) => {
-  const maplePCVDepositFactory = await ethers.getContractFactory('MaplePCVDeposit');
   const morphoPCVDepositFactory = await ethers.getContractFactory('MorphoCompoundPCVDeposit');
   const compoundPCVRouterFactory = await ethers.getContractFactory('CompoundPCVRouter');
 
@@ -62,10 +59,6 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
   );
   await morphoCompoundPCVRouter.deployed();
 
-  const maplePCVDeposit = await maplePCVDepositFactory.deploy(addresses.core, addresses.mplPool, addresses.mplRewards);
-  await maplePCVDeposit.deployed();
-
-  console.log(`Maple PCV Deposit deployed ${maplePCVDeposit.address}`);
   console.log(`Morpho Compound PCV Router deployed ${morphoCompoundPCVRouter.address}`);
   console.log(`Morpho Compound DAI PCV Deposit deployed ${daiMorphoCompoundPCVDeposit.address}`);
   console.log(`Morpho Compound USDC PCV Deposit deployed ${usdcMorphoCompoundPCVDeposit.address}`);
@@ -73,7 +66,6 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
   console.log(`Successfully Deployed VIP-${vipNumber}`);
 
   return {
-    maplePCVDeposit,
     daiMorphoCompoundPCVDeposit,
     usdcMorphoCompoundPCVDeposit,
     morphoCompoundPCVRouter
@@ -96,15 +88,13 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
     morphoCompoundPCVRouter,
     compoundPCVRouter,
     pcvGuardian,
-    erc20Allocator,
-    maplePCVDeposit
+    erc20Allocator
   } = contracts;
 
   /// Core address validations
   expect(await usdcMorphoCompoundPCVDeposit.core()).to.be.equal(core.address);
   expect(await daiMorphoCompoundPCVDeposit.core()).to.be.equal(core.address);
   expect(await morphoCompoundPCVRouter.core()).to.be.equal(core.address);
-  expect(await maplePCVDeposit.core()).to.be.equal(core.address);
 
   /// pcv controller validation
   expect(await core.isPCVController(compoundPCVRouter.address)).to.be.false;
@@ -131,15 +121,9 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
   expect(await daiMorphoCompoundPCVDeposit.LENS()).to.be.equal(addresses.morphoCompoundLens);
   expect(await usdcMorphoCompoundPCVDeposit.LENS()).to.be.equal(addresses.morphoCompoundLens);
 
-  expect(await maplePCVDeposit.balanceReportedIn()).to.be.equal(addresses.usdc);
-  expect(await maplePCVDeposit.mplRewards()).to.be.equal(addresses.mplRewards);
-  expect(await maplePCVDeposit.token()).to.be.equal(addresses.usdc);
-  expect(await maplePCVDeposit.pool()).to.be.equal(addresses.mplPool);
-
   /// pcv guardian validation
   expect(await pcvGuardian.isWhitelistAddress(usdcMorphoCompoundPCVDeposit.address)).to.be.true;
   expect(await pcvGuardian.isWhitelistAddress(daiMorphoCompoundPCVDeposit.address)).to.be.true;
-  expect(await pcvGuardian.isWhitelistAddress(maplePCVDeposit.address)).to.be.true;
 
   expect(await pcvGuardian.isWhitelistAddress(addresses.daiCompoundPCVDeposit)).to.be.true;
   expect(await pcvGuardian.isWhitelistAddress(addresses.usdcCompoundPCVDeposit)).to.be.true;
