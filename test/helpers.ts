@@ -142,6 +142,21 @@ async function getCore(): Promise<Core> {
   return core;
 }
 
+async function assertApproxEq(
+  actual: string | number | BigNumberish,
+  expected: string | number | BigNumberish,
+  allowableDeviation: string | number | BigNumberish
+): Promise<void> {
+  const actualBN = toBN(actual);
+  const expectedBN = toBN(expected);
+  const allowableDeviationBN = toBN(allowableDeviation);
+
+  const diff = actualBN.sub(expectedBN);
+  const diffBasisPoints = diff.mul('10000').div(actual);
+
+  expect(diffBasisPoints.lte(allowableDeviationBN)).to.be.true;
+}
+
 async function expectApprox(
   actual: string | number | BigNumberish,
   expected: string | number | BigNumberish,
@@ -159,21 +174,6 @@ async function expectApprox(
   } else {
     expect(diffAbs.div(expected).lt(magnitudeBN)).to.be.true;
   }
-}
-
-async function assertApproxEq(
-  actual: string | number | BigNumberish,
-  expected: string | number | BigNumberish,
-  allowableDeviation: string | number | BigNumberish
-): Promise<void> {
-  const actualBN = toBN(actual);
-  const expectedBN = toBN(expected);
-  const allowableDeviationBN = toBN(allowableDeviation);
-
-  const diff = actualBN.sub(expectedBN);
-  const diffBasisPoints = diff.mul('10000').div(actual);
-
-  expect(diffBasisPoints.lte(allowableDeviationBN)).to.be.true;
 }
 
 // expectApproxAbs(a, b, c) checks if b is between [a-c, a+c]
