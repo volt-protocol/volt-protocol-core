@@ -15,7 +15,6 @@ import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {IPCVDeposit} from "../../../pcv/IPCVDeposit.sol";
 import {PriceBoundPSM} from "../../../peg/PriceBoundPSM.sol";
 import {ERC20Allocator} from "../../../pcv/utils/ERC20Allocator.sol";
-import {MaplePCVDeposit} from "../../../pcv/maple/MaplePCVDeposit.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
 import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
 import {ITimelockSimulation} from "../utils/ITimelockSimulation.sol";
@@ -25,7 +24,6 @@ import {MorphoCompoundPCVDeposit} from "../../../pcv/morpho/MorphoCompoundPCVDep
 /// 1. deploy morpho dai deposit
 /// 2. deploy morpho usdc deposit
 /// 3. deploy compound pcv router pointed to morpho dai and usdc deposits
-/// 4. deploy maple usdc deposit
 
 /// Governance Steps
 /// 1. grant new PCV router PCV Controller role
@@ -37,7 +35,7 @@ import {MorphoCompoundPCVDeposit} from "../../../pcv/morpho/MorphoCompoundPCVDep
 /// 5. connect new dai morpho deposit to allocator
 /// 6. connect new usdc morpho deposit to allocator
 
-/// 7. add deposits as safe addresses
+/// 7. add morpho deposits as safe addresses
 
 /// 8. pause dai compound pcv deposit
 /// 9. pause usdc compound pcv deposit
@@ -58,7 +56,6 @@ contract vip14 is DSTest, IVIP {
     CompoundPCVRouter public router;
     MorphoCompoundPCVDeposit public daiDeposit;
     MorphoCompoundPCVDeposit public usdcDeposit;
-    MaplePCVDeposit public mapleDeposit;
 
     PCVGuardian public immutable pcvGuardian =
         PCVGuardian(MainnetAddresses.PCV_GUARDIAN);
@@ -66,18 +63,9 @@ contract vip14 is DSTest, IVIP {
     ERC20Allocator public immutable allocator =
         ERC20Allocator(MainnetAddresses.ERC20ALLOCATOR);
 
-    /// --------- Maple Addresses ---------
-
-    address public constant mplRewards =
-        0x7869D7a3B074b5fa484dc04798E254c9C06A5e90;
-
-    address public constant maplePool =
-        0xFeBd6F15Df3B73DC4307B1d7E65D46413e710C27;
-
     constructor() {
         if (block.chainid != 1) return; /// keep ci pipeline happy
 
-        mapleDeposit = new MaplePCVDeposit(core, maplePool, mplRewards);
         daiDeposit = new MorphoCompoundPCVDeposit(
             core,
             MainnetAddresses.CDAI,
@@ -95,10 +83,9 @@ contract vip14 is DSTest, IVIP {
             PCVDeposit(address(usdcDeposit))
         );
 
-        address[] memory toWhitelist = new address[](3);
+        address[] memory toWhitelist = new address[](2);
         toWhitelist[0] = address(daiDeposit);
         toWhitelist[1] = address(usdcDeposit);
-        toWhitelist[2] = address(mapleDeposit);
 
         mainnetProposal.push(
             ITimelockSimulation.action({
@@ -181,7 +168,7 @@ contract vip14 is DSTest, IVIP {
                     "addWhitelistAddresses(address[])",
                     toWhitelist
                 ),
-                description: "Add USDC and DAI Morpho deposits and Maple deposit to the PCV Guardian"
+                description: "Add USDC and DAI Morpho deposits to the PCV Guardian"
             })
         );
 
@@ -214,7 +201,6 @@ contract vip14 is DSTest, IVIP {
     }
 
     /// move all funds from compound deposits to morpho deposits
-    /// move all needed funds to Maple
     function mainnetSetup() public override {
         vm.startPrank(MainnetAddresses.GOVERNOR);
         pcvGuardian.withdrawAllToSafeAddress(
@@ -243,7 +229,6 @@ contract vip14 is DSTest, IVIP {
     /// assert pcv deposits are set correctly in allocator
     /// assert old pcv deposits are disconnected in allocator
     function mainnetValidate() public override {
-        assertEq(address(mapleDeposit.core()), core);
         assertEq(address(usdcDeposit.core()), core);
         assertEq(address(daiDeposit.core()), core);
         assertEq(address(router.core()), core);
@@ -256,7 +241,6 @@ contract vip14 is DSTest, IVIP {
         /// pcv guardian whitelist assertions
         assertTrue(pcvGuardian.isWhitelistAddress(address(daiDeposit)));
         assertTrue(pcvGuardian.isWhitelistAddress(address(usdcDeposit)));
-        assertTrue(pcvGuardian.isWhitelistAddress(address(mapleDeposit)));
 
         /// router parameter validations
         assertEq(address(router.daiPcvDeposit()), address(daiDeposit));
