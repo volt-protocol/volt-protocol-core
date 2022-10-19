@@ -80,6 +80,9 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
             address(this), /// the address of the user you want to supply on behalf of
             amount
         );
+        
+        // increment tracked deposited amount
+        depositedAmount += amount;
 
         emit Deposit(msg.sender, amount);
     }
