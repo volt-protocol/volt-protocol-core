@@ -100,8 +100,17 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
 
     /// @notice helper function to avoid repeated code in withdraw and withdrawAll
     function _withdraw(address to, uint256 amount) private {
+        // compute profit from interests and emit an event
+        uint256 _depositedAmount = depositedAmount; // SLOAD
+        uint256 _balance = balance();
+        uint256 profit = _balance - _depositedAmount;
+        emit Harvest(address(token), int256(profit), block.timestamp);
+    
         MORPHO.withdraw(cToken, amount);
         IERC20(token).safeTransfer(to, amount);
+        
+        // update tracked deposit amount
+        depositedAmount = _balance - amount;
 
         emit Withdrawal(msg.sender, to, amount);
     }
