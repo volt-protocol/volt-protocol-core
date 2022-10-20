@@ -18,6 +18,8 @@ import {getCore, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.s
 contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     using SafeCast for *;
 
+    event Deposit(address indexed _from, uint256 _amount);
+
     event Harvest(address indexed _token, int256 _profit, uint256 _timestamp);
 
     event Withdrawal(
@@ -88,7 +90,10 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
             if (depositAmount[i] != 0) {
                 /// harvest event is not emitted if deposit amount is 0
                 vm.expectEmit(true, false, false, true, address(morphoDeposit));
-                emit Harvest(address(token), 0, block.timestamp);
+                if (morphoDeposit.balance() != 0) {
+                    emit Harvest(address(token), 0, block.timestamp);
+                }
+                emit Deposit(address(this), depositAmount[i]);
             }
             morphoDeposit.deposit();
 
