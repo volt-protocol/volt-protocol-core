@@ -57,6 +57,9 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     address public immutable cToken;
 
     /// @notice track the current amount of PCV deposited in the contract
+    /// this is always out of date, except when accrue() is called
+    /// in the same block or transaction. This means the value is stale
+    /// most of the time.
     uint256 public depositedAmount;
 
     /// @param _core reference to the core contract
@@ -111,6 +114,8 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         _recordPNL();
 
         /// increment tracked deposited amount
+        /// this will be off by a hair, after a single block
+        /// delta disappears.
         depositedAmount += amount;
 
         /// ------ Interactions ------
