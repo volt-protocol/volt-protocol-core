@@ -41,14 +41,18 @@ const deploy: DeployUpgradeFunc = async (deployAddress: string, addresses: Named
   const daiMorphoCompoundPCVDeposit = await morphoPCVDepositFactory.deploy(
     addresses.core,
     addresses.cDai,
-    addresses.dai
+    addresses.dai,
+    addresses.morphoCompound,
+    addresses.morphoCompoundLens
   );
   await daiMorphoCompoundPCVDeposit.deployed();
 
   const usdcMorphoCompoundPCVDeposit = await morphoPCVDepositFactory.deploy(
     addresses.core,
     addresses.cUsdc,
-    addresses.usdc
+    addresses.usdc,
+    addresses.morphoCompound,
+    addresses.morphoCompoundLens
   );
   await usdcMorphoCompoundPCVDeposit.deployed();
 
@@ -115,11 +119,11 @@ const validate: ValidateUpgradeFunc = async (addresses, oldContracts, contracts,
   expect(await daiMorphoCompoundPCVDeposit.cToken()).to.be.equal(addresses.cDai);
   expect(await usdcMorphoCompoundPCVDeposit.cToken()).to.be.equal(addresses.cUsdc);
 
-  expect(await daiMorphoCompoundPCVDeposit.MORPHO()).to.be.equal(addresses.morphoCompound);
-  expect(await usdcMorphoCompoundPCVDeposit.MORPHO()).to.be.equal(addresses.morphoCompound);
+  expect(await daiMorphoCompoundPCVDeposit.morpho()).to.be.equal(addresses.morphoCompound);
+  expect(await usdcMorphoCompoundPCVDeposit.morpho()).to.be.equal(addresses.morphoCompound);
 
-  expect(await daiMorphoCompoundPCVDeposit.LENS()).to.be.equal(addresses.morphoCompoundLens);
-  expect(await usdcMorphoCompoundPCVDeposit.LENS()).to.be.equal(addresses.morphoCompoundLens);
+  expect(await daiMorphoCompoundPCVDeposit.lens()).to.be.equal(addresses.morphoCompoundLens);
+  expect(await usdcMorphoCompoundPCVDeposit.lens()).to.be.equal(addresses.morphoCompoundLens);
 
   /// pcv guardian validation
   expect(await pcvGuardian.isWhitelistAddress(usdcMorphoCompoundPCVDeposit.address)).to.be.true;
