@@ -19,10 +19,8 @@ contract Runner is TimelockSimulation, vip13 {
     PCVGuardian private immutable arbitrumPCVGuardian =
         PCVGuardian(ArbitrumAddresses.PCV_GUARDIAN);
 
-    /// remove all function calls inside testProposal and don't inherit the VIP
-    /// once the proposal is live and passed
     function testProposalMainnet() public {
-        // mainnetSetup();
+        // mainnet setup not called as it is called in the proposal constructor
         simulate(
             getMainnetProposal(),
             TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),

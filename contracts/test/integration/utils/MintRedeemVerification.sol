@@ -44,6 +44,10 @@ contract MintRedeemVerification {
         IERC20 volt,
         uint256 amountVoltIn
     ) private {
+        if (psm.paused() || psm.redeemPaused()) {
+            return;
+        }
+
         uint256 startingUserUnderlyingBalance = underlying.balanceOf(
             address(this)
         );
@@ -96,6 +100,16 @@ contract MintRedeemVerification {
         uint256 amountUnderlyingIn,
         bool doLogging
     ) private {
+        if (psm.paused() || psm.mintPaused()) {
+            if (doLogging) {
+                console.log(
+                    "not verifying psm minting, paused: ",
+                    address(psm)
+                );
+            }
+            return;
+        }
+
         uint256 startingUserVoltBalance = volt.balanceOf(address(this));
         uint256 startingUserDaiBalance = underlying.balanceOf(address(this));
         uint256 startingPSMVoltBalance = volt.balanceOf(address(psm));

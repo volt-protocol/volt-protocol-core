@@ -5,14 +5,18 @@ library ArbitrumAddresses {
     // ---------- VOLT ADDRESSES ----------
     address public constant CORE = 0x31A38B79fDcFBC3095E3268CAFac1b9791796736;
     address public constant VOLT = 0x6Ba6f18a290Cd55cf1B00be2bEc5c954cb29fAc5;
+
+    /// ---------- CURRENT ORACLES ----------
     address public constant ORACLE_PASS_THROUGH =
         0xcd836280e4416e08F54E5584Bcd49Ac2E3a68747;
+    address public constant VOLT_SYSTEM_ORACLE_0_BIPS =
+        0xACce8F8661f7f214b94f94e3e1A09d81f0B924D6;
+
+    /// deprecated oracles
     address public constant VOLT_SYSTEM_ORACLE =
         0x69DBf8dD98Aa40F50E4f2263c6f2d66f26f9cb5b;
     address public constant VOLT_SYSTEM_ORACLE_144_BIPS =
         0x5DDf983CbD5819c13661046110EfCd2E8629d40b;
-
-    /// deprecated oracles
     address public constant DEPRECATED_ORACLE_PASS_THROUGH =
         0x7A23eB9bf043471dE7422a9CcdB5Ef809F34CbdE;
     address public constant DEPRECATED_SCALING_PRICE_ORACLE =
@@ -40,6 +44,7 @@ library ArbitrumAddresses {
     address public constant EOA_1 = 0xB320e376Be6459421695F2b6B1E716AE4bc8129A;
     address public constant EOA_2 = 0xd90E9181B20D8D1B5034d9f5737804Da182039F6;
     address public constant EOA_3 = 0xA96D4a5c343d6fE141751399Fc230E9E8Ecb6fb6;
+    address public constant EOA_4 = 0x6ef71cA9cD708883E129559F5edBFb9d9D5C6148;
 
     /// inactive EOA's
     address public constant REVOKED_EOA_1 =
