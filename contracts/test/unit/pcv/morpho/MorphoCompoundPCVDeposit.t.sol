@@ -15,8 +15,6 @@ import {MorphoCompoundPCVDeposit} from "../../../../pcv/morpho/MorphoCompoundPCV
 import {MockMorphoMaliciousReentrancy} from "../../../../mock/MockMorphoMaliciousReentrancy.sol";
 import {getCore, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.sol";
 
-import "hardhat/console.sol";
-
 contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     using SafeCast for *;
 

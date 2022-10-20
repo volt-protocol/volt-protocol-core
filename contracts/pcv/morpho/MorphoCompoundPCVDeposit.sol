@@ -12,8 +12,6 @@ import {CoreRef} from "../../refs/CoreRef.sol";
 import {PCVDeposit} from "../PCVDeposit.sol";
 import {ICompoundOracle, ICToken} from "./ICompound.sol";
 
-import "hardhat/console.sol";
-
 /// @notice PCV Deposit for Morpho-Compound V2.
 /// Implements the PCV Deposit interface to deposit and withdraw funds in Morpho
 /// Liquidity profile of Morpho for this deposit is fully liquid for USDC and DAI
