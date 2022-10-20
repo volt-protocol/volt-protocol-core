@@ -156,6 +156,13 @@ library MainnetAddresses {
     address public constant GLOBAL_RATE_LIMITED_MINTER =
         0x87945f59E008aDc9ed6210a8e061f009d6ace718;
 
+    // ---------- MORPHO ADDRESSES ----------
+
+    address public constant MORPHO = 0x8888882f8f843896699869179fB6E4f7e3B58888;
+
+    address public constant MORPHO_LENS =
+        0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67;
+
     // ---------- MAPLE ADDRESSES ----------
 
     address public constant MPL_TOKEN =

@@ -69,12 +69,17 @@ contract vip14 is DSTest, IVIP {
         daiDeposit = new MorphoCompoundPCVDeposit(
             core,
             MainnetAddresses.CDAI,
-            MainnetAddresses.DAI
+            MainnetAddresses.DAI,
+            MainnetAddresses.MORPHO,
+            MainnetAddresses.MORPHO_LENS
         );
+
         usdcDeposit = new MorphoCompoundPCVDeposit(
             core,
             MainnetAddresses.CUSDC,
-            MainnetAddresses.USDC
+            MainnetAddresses.USDC,
+            MainnetAddresses.MORPHO,
+            MainnetAddresses.MORPHO_LENS
         );
 
         router = new CompoundPCVRouter(

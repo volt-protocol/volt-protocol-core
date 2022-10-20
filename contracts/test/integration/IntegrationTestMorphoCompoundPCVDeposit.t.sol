@@ -47,12 +47,17 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
         daiDeposit = new MorphoCompoundPCVDeposit(
             address(core),
             MainnetAddresses.CDAI,
-            MainnetAddresses.DAI
+            MainnetAddresses.DAI,
+            MainnetAddresses.MORPHO,
+            MainnetAddresses.MORPHO_LENS
         );
+
         usdcDeposit = new MorphoCompoundPCVDeposit(
             address(core),
             MainnetAddresses.CUSDC,
-            MainnetAddresses.USDC
+            MainnetAddresses.USDC,
+            MainnetAddresses.MORPHO,
+            MainnetAddresses.MORPHO_LENS
         );
 
         vm.label(address(daiDeposit), "Morpho DAI Compound PCV Deposit");
@@ -71,6 +76,8 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
 
         usdcDeposit.deposit();
         daiDeposit.deposit();
+
+        vm.roll(block.number + 3); /// fast forward 3 blocks so that profit is not negative
     }
 
     function testSetup() public {
