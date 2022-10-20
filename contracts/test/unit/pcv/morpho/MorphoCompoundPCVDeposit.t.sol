@@ -49,7 +49,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
 
         morphoDeposit = new MorphoCompoundPCVDeposit(
             address(core),
-            address(0), /// cToken is not used in mock morpho deposit
+            address(morpho),
             address(token),
             address(morpho),
             address(morpho)
@@ -66,7 +66,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         assertEq(morphoDeposit.token(), address(token));
         assertEq(morphoDeposit.lens(), address(morpho));
         assertEq(address(morphoDeposit.morpho()), address(morpho));
-        assertEq(morphoDeposit.cToken(), address(0));
+        assertEq(morphoDeposit.cToken(), address(morpho));
         assertEq(morphoDeposit.depositedAmount(), 0);
     }
 
@@ -175,13 +175,16 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
 
             vm.prank(addresses.pcvControllerAddress);
 
-            vm.expectEmit(true, true, false, true, address(morphoDeposit));
-            emit Withdrawal(
-                addresses.pcvControllerAddress,
-                to,
-                amountToWithdraw
-            );
-            emit Harvest(address(token), 0, block.timestamp); /// no profits as already accrued
+            if (amountToWithdraw != 0) {
+                vm.expectEmit(true, true, false, true, address(morphoDeposit));
+                emit Withdrawal(
+                    addresses.pcvControllerAddress,
+                    to,
+                    amountToWithdraw
+                );
+                emit Harvest(address(token), 0, block.timestamp); /// no profits as already accrued
+            }
+
             morphoDeposit.withdraw(to, amountToWithdraw);
 
             assertEq(morphoDeposit.depositedAmount(), sumDeposit);
@@ -272,7 +275,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     function _reentrantSetup() private {
         morphoDeposit = new MorphoCompoundPCVDeposit(
             address(core),
-            address(0), /// cToken is not used in mock morpho deposit
+            address(maliciousMorpho), /// cToken is not used in mock morpho deposit
             address(token),
             address(maliciousMorpho),
             address(maliciousMorpho)
@@ -298,7 +301,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         _reentrantSetup();
         vm.prank(addresses.pcvControllerAddress);
         vm.expectRevert("ReentrancyGuard: reentrant call");
-        morphoDeposit.withdraw(address(this), 0);
+        morphoDeposit.withdraw(address(this), 10);
     }
 
     function testReentrantWithdrawAllFails() public {

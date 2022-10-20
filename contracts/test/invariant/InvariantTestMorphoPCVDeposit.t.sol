@@ -12,13 +12,16 @@ import {DSInvariantTest} from "../unit/utils/DSInvariantTest.sol";
 import {MorphoCompoundPCVDeposit} from "../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {getCore, getAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
 
+/// note all variables have to be public and not immutable otherwise foundry
+/// will not run invariant tests
+
 /// @dev Modified from Solmate ERC20 Invariant Test (https://github.com/transmissions11/solmate/blob/main/src/test/ERC20.t.sol)
 contract InvariantTestMorphoCompoundPCVDeposit is DSTest, DSInvariantTest {
-    MorphoPCVDeposit public invariant;
+    MorphoPCVDepositTest public morphoTest;
     ICore public core;
-    MorphoCompoundPCVDeposit private morphoDeposit;
-    MockMorpho private morpho;
-    MockERC20 private token;
+    MorphoCompoundPCVDeposit public morphoDeposit;
+    MockMorpho public morpho;
+    MockERC20 public token;
 
     function setUp() public {
         core = getCore();
@@ -26,34 +29,36 @@ contract InvariantTestMorphoCompoundPCVDeposit is DSTest, DSInvariantTest {
         morpho = new MockMorpho(IERC20(address(token)));
         morphoDeposit = new MorphoCompoundPCVDeposit(
             address(core),
-            address(0), /// cToken is not used in mock morpho deposit
+            address(morpho),
             address(token),
             address(morpho),
             address(morpho)
         );
-        invariant = new MorphoPCVDeposit(morphoDeposit, token, morpho);
+        morphoTest = new MorphoPCVDepositTest(morphoDeposit, token, morpho);
 
-        addTargetContract(address(invariant));
+        addTargetContract(address(morphoTest));
     }
 
     function invariantDepositedAmount() public {
-        assertEq(morphoDeposit.depositedAmount(), invariant.totalDeposited());
-        assertEq(morphoDeposit.balance(), invariant.totalDeposited());
+        assertEq(morphoDeposit.depositedAmount(), morphoTest.totalDeposited());
+        assertEq(morphoDeposit.balance(), morphoTest.totalDeposited());
     }
 
     function invariantBalanceOf() public {
-        assertEq(morphoDeposit.balance(), morpho.balances(address(invariant)));
-        assertEq(morphoDeposit.balance(), token.balanceOf(address(morpho)));
+        assertEq(
+            morphoDeposit.balance(),
+            morpho.balances(address(morphoDeposit))
+        );
     }
 }
 
-contract MorphoPCVDeposit is DSTest {
+contract MorphoPCVDepositTest is DSTest {
     VoltTestAddresses public addresses = getAddresses();
     Vm private vm = Vm(HEVM_ADDRESS);
     uint256 public totalDeposited;
-    MorphoCompoundPCVDeposit public immutable morphoDeposit;
-    MockERC20 private immutable token;
-    MockMorpho private immutable morpho;
+    MorphoCompoundPCVDeposit public morphoDeposit;
+    MockERC20 public token;
+    MockMorpho public morpho;
 
     constructor(
         MorphoCompoundPCVDeposit _morphoDeposit,

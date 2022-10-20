@@ -9,6 +9,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ILens} from "./ILens.sol";
 import {IMorpho} from "./IMorpho.sol";
 import {CoreRef} from "../../refs/CoreRef.sol";
+import {Constants} from "../../Constants.sol";
 import {PCVDeposit} from "../PCVDeposit.sol";
 import {ICompoundOracle, ICToken} from "./ICompound.sol";
 
@@ -74,6 +75,12 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         address _morpho,
         address _lens
     ) CoreRef(_core) ReentrancyGuard() {
+        if (_underlying != address(Constants.WETH)) {
+            require(
+                ICToken(_cToken).underlying() == _underlying,
+                "MorphoCompoundPCVDeposit: Underlying mismatch"
+            );
+        }
         cToken = _cToken;
         token = _underlying;
         morpho = IMorpho(_morpho);
@@ -170,6 +177,13 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         uint256 amount,
         bool recordPnl
     ) private {
+        /// ------ Check ------
+
+        /// no op if amount to withdraw is 0
+        if (amount == 0) {
+            return;
+        }
+
         /// ------ Effects ------
 
         if (recordPnl) {
@@ -195,12 +209,21 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         /// first accrue interest in Compound and Morpho
         morpho.updateP2PIndexes(cToken);
 
+        /// ------ Check ------
+
         /// then get the current balance from the market
         uint256 currentBalance = balance();
+
+        /// save gas if contract has no balance
+        if (currentBalance == 0) {
+            return;
+        }
 
         /// currentBalance should always be greater than or equal to
         /// the deposited amount
         int256 profit = currentBalance.toInt256() - depositedAmount.toInt256();
+
+        /// ------ Effects ------
 
         /// record new deposited amount
         depositedAmount = currentBalance;

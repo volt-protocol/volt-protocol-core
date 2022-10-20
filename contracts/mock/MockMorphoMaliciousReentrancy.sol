@@ -12,6 +12,10 @@ contract MockMorphoMaliciousReentrancy {
         token = _token;
     }
 
+    function underlying() external view returns (address) {
+        return address(token);
+    }
+
     function setMorphoCompoundPCVDeposit(address deposit) external {
         morphoCompoundPCVDeposit = MorphoCompoundPCVDeposit(deposit);
     }
