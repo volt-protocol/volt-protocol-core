@@ -6,6 +6,7 @@ import {Vm} from "./../../utils/Vm.sol";
 import {ICore} from "../../../../core/ICore.sol";
 import {DSTest} from "./../../utils/DSTest.sol";
 import {MockERC20} from "../../../../mock/MockERC20.sol";
+import {MockCToken} from "../../../../mock/MockCToken.sol";
 import {MockMorpho} from "../../../../mock/MockMorpho.sol";
 import {TribeRoles} from "../../../../core/TribeRoles.sol";
 import {IPCVDeposit} from "../../../../pcv/IPCVDeposit.sol";
@@ -70,6 +71,19 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         assertEq(address(morphoDeposit.morpho()), address(morpho));
         assertEq(morphoDeposit.cToken(), address(morpho));
         assertEq(morphoDeposit.depositedAmount(), 0);
+    }
+
+    function testUnderlyingMismatchConstructionFails() public {
+        MockCToken cToken = new MockCToken(address(1));
+
+        vm.expectRevert("MorphoCompoundPCVDeposit: Underlying mismatch");
+        new MorphoCompoundPCVDeposit(
+            address(core),
+            address(cToken),
+            address(token),
+            address(morpho),
+            address(morpho)
+        );
     }
 
     function testDeposit(uint256 depositAmount) public {
