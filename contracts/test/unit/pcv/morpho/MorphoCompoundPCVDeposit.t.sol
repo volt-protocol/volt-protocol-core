@@ -113,6 +113,12 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         assertEq(token.balanceOf(address(this)), 0);
 
         vm.prank(addresses.pcvControllerAddress);
+        vm.expectEmit(true, true, false, true, address(morphoDeposit));
+        emit Withdrawal(
+            addresses.pcvControllerAddress,
+            address(this),
+            sumDeposit
+        );
         morphoDeposit.withdrawAll(address(this));
 
         assertEq(token.balanceOf(address(this)), sumDeposit);
@@ -157,6 +163,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
             uint256(depositAmount[2]) +
             uint256(depositAmount[3]) +
             uint256(profitAccrued);
+
         for (uint256 i = 0; i < 10; i++) {
             uint256 amountToWithdraw = withdrawAmount[i];
             if (amountToWithdraw > sumDeposit) {
@@ -168,11 +175,12 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
 
             vm.prank(addresses.pcvControllerAddress);
 
-            /// TODO finalize this later
-            // vm.expectEmit(true, true, false, true, address(morphoDeposit));
-            // emit Withdrawal(addresses.pcvControllerAddress, to, amountToWithdraw);
-
-            vm.expectEmit(true, false, false, true, address(morphoDeposit));
+            vm.expectEmit(true, true, false, true, address(morphoDeposit));
+            emit Withdrawal(
+                addresses.pcvControllerAddress,
+                to,
+                amountToWithdraw
+            );
             emit Harvest(address(token), 0, block.timestamp); /// no profits as already accrued
             morphoDeposit.withdraw(to, amountToWithdraw);
 
@@ -229,11 +237,6 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         vm.prank(addresses.governorAddress);
         morphoDeposit.emergencyAction(calls);
 
-        console.log(
-            "morphoDeposit.depositedAmount(): ",
-            morphoDeposit.depositedAmount()
-        );
-        console.log("morphoDeposit.balance(): ", morphoDeposit.balance());
         assertEq(morphoDeposit.depositedAmount(), 0);
         assertEq(morphoDeposit.balance(), amount);
     }

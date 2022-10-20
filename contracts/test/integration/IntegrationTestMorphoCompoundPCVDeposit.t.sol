@@ -77,7 +77,7 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
         usdcDeposit.deposit();
         daiDeposit.deposit();
 
-        vm.roll(block.number + 3); /// fast forward 3 blocks so that profit is not negative
+        vm.roll(block.number + 1); /// fast forward 1 block so that profit is positive
     }
 
     function testSetup() public {
