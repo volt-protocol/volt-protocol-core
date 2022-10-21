@@ -118,11 +118,12 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         /// ------ Effects ------
 
         /// compute profit from interest accrued and emit an event
+        /// if any profits or losses are realized
         _recordPNL();
 
-        /// increment tracked deposited amount
+        /// increment tracked recorded amount
         /// this will be off by a hair, after a single block
-        /// delta disappears.
+        /// negative delta turns to positive delta (assuming no loss).
         lastRecordedBalance += amount;
 
         /// ------ Interactions ------
@@ -156,16 +157,17 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         /// compute profit from interest accrued and emit an event
         _recordPNL();
 
-        /// withdraw deposited amount as this was updated in record pnl
+        /// withdraw last recorded amount as this was updated in record pnl
         _withdraw(to, lastRecordedBalance, false);
     }
 
     /// @notice helper function to avoid repeated code in withdraw and withdrawAll
     /// anytime this function is called it is by an external function in this smart contract
-    /// with a reentrancy guard. this ensures lastRecordedBalance never desynchronizes
+    /// with a reentrancy guard. This ensures lastRecordedBalance never desynchronizes.
     /// Morpho is assumed to be a loss-less venue. over the course of less than 1 block,
     /// it is possible to lose funds. However, after 1 block, deposits are expected to always
-    /// be in profit at least with current interest rates around 0.8% natively on Compound, ignoring all COMP rewards.
+    /// be in profit at least with current interest rates around 0.8% natively on Compound,
+    /// ignoring all COMP and Morpho rewards.
     /// @param to recipient of withdraw funds
     /// @param amount to withdraw
     /// @param recordPnl whether or not to record PnL. Set to false in withdrawAll
@@ -189,7 +191,9 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
             _recordPNL();
         }
 
-        /// update tracked deposit amount
+        /// update last recorded balance amount
+        /// if more than is owned is withdrawn, this line will revert
+        /// this line of code is both a check, and an effect
         lastRecordedBalance -= amount;
 
         /// ------ Interactions ------
