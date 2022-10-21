@@ -5,6 +5,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Vm} from "./../../utils/Vm.sol";
 import {ICore} from "../../../../core/ICore.sol";
 import {DSTest} from "./../../utils/DSTest.sol";
+import {stdError} from "../../../unit/utils/StdLib.sol";
 import {MockERC20} from "../../../../mock/MockERC20.sol";
 import {MockCToken} from "../../../../mock/MockCToken.sol";
 import {MockMorpho} from "../../../../mock/MockMorpho.sol";
@@ -261,6 +262,12 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
 
         assertEq(morphoDeposit.lastRecordedBalance(), 0);
         assertEq(morphoDeposit.balance(), amount);
+    }
+
+    function testWithdrawFailsOverAmountHeld() public {
+        vm.prank(addresses.pcvControllerAddress);
+        vm.expectRevert(stdError.arithmeticError); /// reverts with underflow when trying to withdraw more than balance
+        morphoDeposit.withdraw(address(this), 1);
     }
 
     //// paused
