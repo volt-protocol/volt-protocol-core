@@ -215,7 +215,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         uint256 currentBalance = balance();
 
         /// save gas if contract has no balance
-        if (currentBalance == 0) {
+        if (currentBalance == 0 && depositedAmount == 0) {
             return;
         }
 
