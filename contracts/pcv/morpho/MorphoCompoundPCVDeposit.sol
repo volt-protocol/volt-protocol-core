@@ -40,6 +40,10 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeCast for *;
 
+    /// ------------------------------------------
+    /// ---------- Immutables/Constant -----------
+    /// ------------------------------------------
+
     /// @notice reference to the COMP governance token
     /// used for recording COMP rewards type in Harvest event
     address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
@@ -56,6 +60,10 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     /// @notice cToken in compound this deposit tracks
     /// used to inform morpho about the desired market to supply liquidity
     address public immutable cToken;
+
+    /// ------------------------------------------
+    /// ------------- State Variable -------------
+    /// ------------------------------------------
 
     /// @notice track the last amount of PCV recorded in the contract
     /// this is always out of date, except when accrue() is called
@@ -87,6 +95,10 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         lens = _lens;
     }
 
+    /// ------------------------------------------
+    /// ------------------ Views -----------------
+    /// ------------------------------------------
+
     /// @notice Returns the distribution of assets supplied by this contract through Morpho-Compound.
     /// @return sum of suppliedP2P and suppliedOnPool for the given CToken
     function balance() public view override returns (uint256) {
@@ -102,6 +114,10 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     function balanceReportedIn() external view returns (address) {
         return token;
     }
+
+    /// ------------------------------------------
+    /// ----------- Permissionless API -----------
+    /// ------------------------------------------
 
     /// @notice deposit ERC-20 tokens to Morpho-Compound
     /// non-reentrant to block malicious reentrant state changes
@@ -138,6 +154,34 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         emit Deposit(msg.sender, amount);
     }
 
+    /// @notice claim COMP rewards for supplying to Morpho.
+    /// Does not require reentrancy lock as no smart contract state is mutated
+    /// in this function.
+    function harvest() external {
+        address[] memory cTokens = new address[](1);
+        cTokens[0] = cToken;
+
+        /// set swap comp to morpho flag false to claim comp rewards
+        uint256 claimedAmount = IMorpho(morpho).claimRewards(cTokens, false);
+
+        emit Harvest(COMP, int256(claimedAmount), block.timestamp);
+    }
+
+    /// @notice function that emits an event tracking profits and losses
+    /// since the last contract interaction
+    /// then writes the current amount of PCV tracked in this contract
+    /// to lastRecordedBalance
+    /// @return the amount deposited after adding accrued interest or realizing losses
+    function accrue() external nonReentrant whenNotPaused returns (uint256) {
+        _recordPNL(); /// update deposit amount and fire harvest event
+
+        return lastRecordedBalance; /// return updated pcv amount
+    }
+
+    /// ------------------------------------------
+    /// ------------ Permissioned API ------------
+    /// ------------------------------------------
+
     /// @notice withdraw tokens from the PCV allocation
     /// non-reentrant as state changes and external calls are made
     /// @param to the address PCV will be sent to
@@ -160,6 +204,10 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         /// withdraw last recorded amount as this was updated in record pnl
         _withdraw(to, lastRecordedBalance, false);
     }
+
+    /// ------------------------------------------
+    /// ------------- Helper Methods -------------
+    /// ------------------------------------------
 
     /// @notice helper function to avoid repeated code in withdraw and withdrawAll
     /// anytime this function is called it is by an external function in this smart contract
@@ -204,9 +252,9 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         emit Withdrawal(msg.sender, to, amount);
     }
 
-    /// @notice function that records how much profit has been accrued
-    /// since the last call and emits an event with all profit received
-    /// updates the amount deposited to include all interest earned
+    /// @notice records how much profit or loss has been accrued
+    /// since the last call and emits an event with all profit or loss received.
+    /// Updates the lastRecordedBalance to include all realized profits or losses.
     function _recordPNL() private {
         /// first accrue interest in Compound and Morpho
         IMorpho(morpho).updateP2PIndexes(cToken);
@@ -238,31 +286,9 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         emit Harvest(token, profit, block.timestamp);
     }
 
-    /// @notice claim COMP rewards for supplying to Morpho
-    /// no need for reentrancy lock as no smart contract state is mutated
-    /// in this function.
-    function harvest() external {
-        address[] memory cTokens = new address[](1);
-        cTokens[0] = cToken;
-
-        /// set swap comp to morpho flag false to claim comp rewards
-        uint256 claimedAmount = IMorpho(morpho).claimRewards(cTokens, false);
-
-        emit Harvest(COMP, int256(claimedAmount), block.timestamp);
-    }
-
-    /// @notice function that emits an event tracking profits and losses
-    /// since the last contract interaction
-    /// then writes the current amount of PCV tracked in this contract
-    /// to lastRecordedBalance
-    /// @return the amount deposited after adding accrued interest
-    function accrue() external nonReentrant whenNotPaused returns (uint256) {
-        _recordPNL(); /// update deposit amount and fire harvest event
-
-        return lastRecordedBalance; /// return updated pcv amount
-    }
-
-    // ---------- Emergency Action ----------
+    /// ------------------------------------------
+    /// ------------ Emergency Action ------------
+    /// ------------------------------------------
 
     /// inspired by MakerDAO Multicall:
     /// https://github.com/makerdao/multicall/blob/master/src/Multicall.sol
