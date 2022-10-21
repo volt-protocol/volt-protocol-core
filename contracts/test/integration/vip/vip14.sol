@@ -238,6 +238,11 @@ contract vip14 is DSTest, IVIP {
         assertEq(address(daiDeposit.core()), core);
         assertEq(address(router.core()), core);
 
+        assertEq(daiDeposit.morpho(), MainnetAddresses.MORPHO);
+        assertEq(usdcDeposit.morpho(), MainnetAddresses.MORPHO);
+        assertEq(daiDeposit.lens(), MainnetAddresses.MORPHO_LENS);
+        assertEq(usdcDeposit.lens(), MainnetAddresses.MORPHO_LENS);
+
         assertTrue(Core(core).isPCVController(address(router)));
         assertTrue(
             !Core(core).isPCVController(MainnetAddresses.COMPOUND_PCV_ROUTER)

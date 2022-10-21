@@ -83,6 +83,10 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     function testSetup() public {
         assertEq(address(daiDeposit.core()), address(core));
         assertEq(address(usdcDeposit.core()), address(core));
+        assertEq(daiDeposit.morpho(), MainnetAddresses.MORPHO);
+        assertEq(usdcDeposit.morpho(), MainnetAddresses.MORPHO);
+        assertEq(daiDeposit.lens(), MainnetAddresses.MORPHO_LENS);
+        assertEq(usdcDeposit.lens(), MainnetAddresses.MORPHO_LENS);
 
         assertEq(daiDeposit.balanceReportedIn(), address(dai));
         assertEq(usdcDeposit.balanceReportedIn(), address(usdc));
@@ -95,6 +99,9 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
 
         assertEq(address(daiDeposit.token()), address(MainnetAddresses.DAI));
         assertEq(address(usdcDeposit.token()), address(MainnetAddresses.USDC));
+
+        assertEq(daiDeposit.lastRecordedBalance(), targetDaiBalance);
+        assertEq(usdcDeposit.lastRecordedBalance(), targetUsdcBalance);
 
         assertApproxEq(
             daiDeposit.balance().toInt256(),

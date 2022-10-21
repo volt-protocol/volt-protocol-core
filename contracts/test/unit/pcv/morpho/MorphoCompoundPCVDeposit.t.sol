@@ -70,7 +70,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         assertEq(morphoDeposit.lens(), address(morpho));
         assertEq(address(morphoDeposit.morpho()), address(morpho));
         assertEq(morphoDeposit.cToken(), address(morpho));
-        assertEq(morphoDeposit.depositedAmount(), 0);
+        assertEq(morphoDeposit.lastRecordedBalance(), 0);
     }
 
     function testUnderlyingMismatchConstructionFails() public {
@@ -87,12 +87,12 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     }
 
     function testDeposit(uint256 depositAmount) public {
-        assertEq(morphoDeposit.depositedAmount(), 0);
+        assertEq(morphoDeposit.lastRecordedBalance(), 0);
         token.mint(address(morphoDeposit), depositAmount);
 
         morphoDeposit.deposit();
 
-        assertEq(morphoDeposit.depositedAmount(), depositAmount);
+        assertEq(morphoDeposit.lastRecordedBalance(), depositAmount);
     }
 
     function testDeposits(uint248[4] calldata depositAmount) public {
@@ -112,11 +112,11 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
             morphoDeposit.deposit();
 
             sumDeposit += depositAmount[i];
-            assertEq(morphoDeposit.depositedAmount(), sumDeposit);
+            assertEq(morphoDeposit.lastRecordedBalance(), sumDeposit);
         }
 
         assertEq(
-            morphoDeposit.depositedAmount(),
+            morphoDeposit.lastRecordedBalance(),
             morpho.balances(address(morphoDeposit))
         );
     }
@@ -142,7 +142,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
 
         assertEq(token.balanceOf(address(this)), sumDeposit);
         assertEq(morphoDeposit.balance(), 0);
-        assertEq(morphoDeposit.depositedAmount(), 0);
+        assertEq(morphoDeposit.lastRecordedBalance(), 0);
     }
 
     function testAccrue(
@@ -206,9 +206,9 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
 
             morphoDeposit.withdraw(to, amountToWithdraw);
 
-            assertEq(morphoDeposit.depositedAmount(), sumDeposit);
+            assertEq(morphoDeposit.lastRecordedBalance(), sumDeposit);
             assertEq(
-                morphoDeposit.depositedAmount(),
+                morphoDeposit.lastRecordedBalance(),
                 morpho.balances(address(morphoDeposit))
             );
         }
@@ -232,7 +232,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         vm.prank(addresses.governorAddress);
         morphoDeposit.emergencyAction(calls);
 
-        assertEq(morphoDeposit.depositedAmount(), amount);
+        assertEq(morphoDeposit.lastRecordedBalance(), amount);
         assertEq(morphoDeposit.balance(), 0);
     }
 
@@ -259,7 +259,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         vm.prank(addresses.governorAddress);
         morphoDeposit.emergencyAction(calls);
 
-        assertEq(morphoDeposit.depositedAmount(), 0);
+        assertEq(morphoDeposit.lastRecordedBalance(), 0);
         assertEq(morphoDeposit.balance(), amount);
     }
 

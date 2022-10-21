@@ -39,8 +39,11 @@ contract InvariantTestMorphoCompoundPCVDeposit is DSTest, DSInvariantTest {
         addTargetContract(address(morphoTest));
     }
 
-    function invariantDepositedAmount() public {
-        assertEq(morphoDeposit.depositedAmount(), morphoTest.totalDeposited());
+    function invariantLastRecordedBalance() public {
+        assertEq(
+            morphoDeposit.lastRecordedBalance(),
+            morphoTest.totalDeposited()
+        );
         assertEq(morphoDeposit.balance(), morphoTest.totalDeposited());
     }
 

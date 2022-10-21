@@ -57,11 +57,11 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     /// used to inform morpho about the desired market to supply liquidity
     address public immutable cToken;
 
-    /// @notice track the current amount of PCV deposited in the contract
+    /// @notice track the last amount of PCV recorded in the contract
     /// this is always out of date, except when accrue() is called
     /// in the same block or transaction. This means the value is stale
     /// most of the time.
-    uint256 public depositedAmount;
+    uint256 public lastRecordedBalance;
 
     /// @param _core reference to the core contract
     /// @param _cToken cToken this deposit references
@@ -105,7 +105,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
 
     /// @notice deposit ERC-20 tokens to Morpho-Compound
     /// non-reentrant to block malicious reentrant state changes
-    /// to the depositedAmount variable
+    /// to the lastRecordedBalance variable
     function deposit() public whenNotPaused nonReentrant {
         /// ------ Check ------
 
@@ -123,7 +123,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         /// increment tracked deposited amount
         /// this will be off by a hair, after a single block
         /// delta disappears.
-        depositedAmount += amount;
+        lastRecordedBalance += amount;
 
         /// ------ Interactions ------
 
@@ -157,12 +157,12 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         _recordPNL();
 
         /// withdraw deposited amount as this was updated in record pnl
-        _withdraw(to, depositedAmount, false);
+        _withdraw(to, lastRecordedBalance, false);
     }
 
     /// @notice helper function to avoid repeated code in withdraw and withdrawAll
     /// anytime this function is called it is by an external function in this smart contract
-    /// with a reentrancy guard. this ensures depositedAmount never desynchronizes
+    /// with a reentrancy guard. this ensures lastRecordedBalance never desynchronizes
     /// Morpho is assumed to be a loss-less venue. over the course of less than 1 block,
     /// it is possible to lose funds. However, after 1 block, deposits are expected to always
     /// be in profit at least with current interest rates around 0.8% natively on Compound, ignoring all COMP rewards.
@@ -190,7 +190,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         }
 
         /// update tracked deposit amount
-        depositedAmount -= amount;
+        lastRecordedBalance -= amount;
 
         /// ------ Interactions ------
 
@@ -213,18 +213,22 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         uint256 currentBalance = balance();
 
         /// save gas if contract has no balance
-        if (currentBalance == 0 && depositedAmount == 0) {
+        /// if cost basis is 0 and last recorded balance is 0
+        /// there is no profit or loss to record and no reason
+        /// to update lastRecordedBalance
+        if (currentBalance == 0 && lastRecordedBalance == 0) {
             return;
         }
 
         /// currentBalance should always be greater than or equal to
-        /// the deposited amount
-        int256 profit = currentBalance.toInt256() - depositedAmount.toInt256();
+        /// the deposited amount, except on the same block a deposit occurs, or a loss event in morpho
+        int256 profit = currentBalance.toInt256() -
+            lastRecordedBalance.toInt256();
 
         /// ------ Effects ------
 
         /// record new deposited amount
-        depositedAmount = currentBalance;
+        lastRecordedBalance = currentBalance;
 
         /// profit is in underlying token
         emit Harvest(token, profit, block.timestamp);
@@ -246,12 +250,12 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     /// @notice function that emits an event tracking profits and losses
     /// since the last contract interaction
     /// then writes the current amount of PCV tracked in this contract
-    /// to depositedAmount
+    /// to lastRecordedBalance
     /// @return the amount deposited after adding accrued interest
     function accrue() external nonReentrant whenNotPaused returns (uint256) {
         _recordPNL(); /// update deposit amount and fire harvest event
 
-        return depositedAmount; /// return updated deposit amount
+        return lastRecordedBalance; /// return updated pcv amount
     }
 
     // ---------- Emergency Action ----------
