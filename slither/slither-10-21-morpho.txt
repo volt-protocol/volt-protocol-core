@@ -1,0 +1,113 @@
+MorphoCompoundPCVDeposit.deposit() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#109-138) uses a dangerous strict equality:
+	- amount == 0 (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#113)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#dangerous-strict-equalities
+Response: Strict equalities can be dangerous in the way described in the slither detector documentation. 
+However, if amount is 0 in either Maple or Morpho PCV Deposit, it is better to save gas and not execute further opcodes.
+There is no unsafe behavior that is possible as a result of doing this strict equality that amount is 0.
+
+Reentrancy in MorphoCompoundPCVDeposit._withdraw(address,uint256,bool) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#175-203):
+	External calls:
+	- _recordPNL() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#191)
+		- morpho.updateP2PIndexes(cToken) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#210)
+	State variables written after the call(s):
+	- depositedAmount -= amount (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#195)
+Reentrancy in MorphoCompoundPCVDeposit.deposit() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#109-138):
+	External calls:
+	- _recordPNL() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#121)
+		- morpho.updateP2PIndexes(cToken) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#210)
+	State variables written after the call(s):
+	- depositedAmount += amount (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#126)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-1
+Response: Anytime that function _recordPNL is called, it is from a function with a reentrancy
+lock. This means that reentrancy into this contract is not possible while a previous call has not
+completed. Additionally, there is no way to make this contract in a way that conforms to CEI because
+updateP2PIndexes must be called before getCurrentSupplyBalanceInOf is called.
+All of these functions call _recordPNL(), however, they all have a non reentrant modifier so that they won't
+allow depositedAmount to be manipulated through a reentrancy attack.
+ - withdraw
+ - withdrawAll
+ - accrue
+ - deposit
+
+MorphoCompoundPCVDeposit.deposit() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#109-138) ignores return value by IERC20(token).approve(address(morpho),amount) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#130)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unused-return
+Response: USDC returns true and does some validation that the addresses are incorrect.
+As long as the validations succeed, the function will return true. If the validations fail,
+the call will revert.
+DAI returns true and has no validation checks, which means the only way the approve call can fail
+is if it is out of gas.
+
+MorphoCompoundPCVDeposit.constructor(address,address,address,address,address)._core (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#72) shadows:
+	- CoreRef._core (contracts/refs/CoreRef.sol#11) (state variable)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#local-variable-shadowing
+Response: Author acknowledges the issue, will not fix.
+
+MorphoCompoundPCVDeposit.constructor(address,address,address,address,address)._lens (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#76) lacks a zero-check on :
+		- lens = _lens (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#87)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-zero-address-validation
+Response: Author acknowledges the issue, will not fix because integration tests will validate the parameter is set correctly.
+
+MorphoCompoundPCVDeposit.emergencyAction(MorphoCompoundPCVDeposit.Call[]) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#274-287) has external calls inside a loop: (success,returned) = calls[i].target.call(calls[i].callData) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#281-283)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation/#calls-inside-a-loop
+Response: DoS attacks are not a valid vector when sender is a trusted governor and the function mutates no internal contract state.
+
+Reentrancy in MorphoCompoundPCVDeposit._recordPNL() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#208-233):
+	External calls:
+	- morpho.updateP2PIndexes(cToken) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#210)
+	State variables written after the call(s):
+	- depositedAmount = currentBalance (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#229)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-2
+Response: Anytime that function _recordPNL is called, it is from a function with a reentrancy
+lock. This means that reentrancy into this contract is not possible while a previous call has not
+completed. Additionally, there is no way to make this contract in a way that conforms to CEI because
+updateP2PIndexes must be called before getCurrentSupplyBalanceInOf is called.
+
+Reentrancy in MorphoCompoundPCVDeposit._recordPNL() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#208-233):
+	External calls:
+	- morpho.updateP2PIndexes(cToken) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#210)
+	Event emitted after the call(s):
+	- Harvest(token,profit,block.timestamp) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#232)
+Reentrancy in ERC20Allocator._skim(address,address) (contracts/pcv/utils/ERC20Allocator.sol#194-223):
+	External calls:
+	- PCVDeposit(psm).withdraw(pcvDeposit,amountToSkim) (contracts/pcv/utils/ERC20Allocator.sol#217)
+	- PCVDeposit(pcvDeposit).deposit() (contracts/pcv/utils/ERC20Allocator.sol#220)
+	Event emitted after the call(s):
+	- Skimmed(amountToSkim,pcvDeposit) (contracts/pcv/utils/ERC20Allocator.sol#222)
+Reentrancy in MorphoCompoundPCVDeposit._withdraw(address,uint256,bool) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#175-203):
+	External calls:
+	- _recordPNL() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#191)
+		- morpho.updateP2PIndexes(cToken) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#210)
+	- morpho.withdraw(cToken,amount) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#199)
+	- IERC20(token).safeTransfer(to,amount) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#200)
+	Event emitted after the call(s):
+	- Withdrawal(msg.sender,to,amount) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#202)
+Reentrancy in MorphoCompoundPCVDeposit.deposit() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#109-138):
+	External calls:
+	- _recordPNL() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#121)
+		- morpho.updateP2PIndexes(cToken) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#210)
+	- IERC20(token).approve(address(morpho),amount) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#130)
+	- morpho.supply(cToken,address(this),amount) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#131-135)
+	Event emitted after the call(s):
+	- Deposit(msg.sender,amount) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#137)
+Reentrancy in MorphoCompoundPCVDeposit.harvest() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#238-246):
+	External calls:
+	- claimedAmount = morpho.claimRewards(cTokens,false) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#243)
+	Event emitted after the call(s):
+	- Harvest(COMP,int256(claimedAmount),block.timestamp) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#245)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-3
+Response: Reentrancy is only an issue if it allows theft of funds and updating of state incorrectly in an intermediate state.
+None of the listed functions mutate any state internal to the contract. If there was a collateralization oracle in the system,
+then these issues would be worth investigating further and ensuring state could not get mixed up in a way that allowed an 
+attacker to manipulate the target price of Volt.
+
+Pragma version=0.8.13 (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#2) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+solc-0.8.13 is not recommended for deployment
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#incorrect-versions-of-solidity
+Response: Author has reviewed the solidity 0.8.13 list of known bugs https://docs.soliditylang.org/en/v0.8.13/bugs.html
+and not found any high issues that would lead to incorrect functioning of the smart contracts.
+
+Low level call in MorphoCompoundPCVDeposit.emergencyAction(MorphoCompoundPCVDeposit.Call[]) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#274-287):
+	- (success,returned) = calls[i].target.call(calls[i].callData) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#281-283)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#low-level-calls
+Response: This low level call is intentional and can be used during an emergency action if funds need to be moved
+out of Maple in a way the author has not yet conceived of.
