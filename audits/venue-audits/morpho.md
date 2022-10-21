@@ -59,8 +59,8 @@ Morpho Protocol has the ability to charge fees in their markets. Currently, fees
 ### Smart Contract Dependencies
 The Morpho codebase leverages the Openzeppelin library. The Morpho team has locked all dependency versions in their package.json. This ensures that a malicious upgrade to one of their projects dependencies does not impact their protocol. Locking dependency versions is a high quality signal that the Morpho team takes security very seriously.
 
-## Protocol Monitoring
-Because Morpho uses proxies, and can upgrade the smart contract implementation at any point in time through a multisig, the Volt Protocol team has created a custom script that monitors the Morpho storage contract and sends the team a notification if Morpho ever upgrades the logic contract. This script is a last line of defense because the Volt team is in communication with Morpho and monitors communication channels such as their governance forum and twitter account. The Morpho team is highly credible, and unlikely to make major unannounced changes.
+### mTokens
+Initially, the Volt Protocol team assumed that Morpho issued an ERC20 that represented a tokenized receipt of deposit into Morpho. After reviewing the code and documentation, it was discovered that there was no concept of an mToken. This means that PCV Guardian functions withdrawERC20ToSafeAddress and withdrawAllERC20ToSafeAddress will not work with removing Morpho Tokens on the Morpho PCV Deposit because Morpho has no concept of mTokens. This does not impact security, but means that if the Morpho deposit were to become illiquid or take on bad debt, it would not be so easy to do things like distribute shares pro rata to VOLT holders, or auction off shares for price discovery in the event of loss.
 
 ## Governance
 The Morpho governance system leverages a novel governance model called Zodiac, which is a library built on top of Gnosis. This design was likely used so that instead of rolling their own ACL system, a pre-existing and battle tested protocol could be used. Morpho plans for progressive decentralization, with the next step on their governance roadmap being token voting through Reality, an oracle framework within Gnosis Safe that allows the outcomes of an event outside the blockchain to be reported and executed on chain.
@@ -71,10 +71,12 @@ The Morpho documentation describes a roadmap of progressive decentralization ove
 
 Changes introduced by governance, either in the underlying venues or in Morpho itself, are one of the most likely sources of risk to Morpho. Volt Protocol is working to set up monitoring infrastructure for governance in all integrated venues, and will conduct review of governance proposals, or withdraw funds if this is not possible in a timely manner and wait to re-integrate until review is completed.
 
-### mTokens
-Initially, the Volt Protocol team assumed that Morpho issued an ERC20 that represented a tokenized receipt of deposit into Morpho. After reviewing the code and documentation, it was discovered that there was no concept of an mToken. This means that PCV Guardian functions withdrawERC20ToSafeAddress and withdrawAllERC20ToSafeAddress will not work with removing Morpho Tokens on the Morpho PCV Deposit because Morpho has no concept of mTokens. This does not impact security, but means that if the Morpho deposit were to become illiquid or take on bad debt, it would not be so easy to do things like distribute shares pro rata to VOLT holders, or auction off shares for price discovery in the event of loss.
+## Risk and Mitigations
 
-## Liquidity Risks
+### Protocol Monitoring
+Because Morpho uses proxies, and can upgrade the smart contract implementation at any point in time through a multisig, the Volt Protocol team has created a custom script that monitors the Morpho storage contract and sends the team a notification if Morpho ever upgrades the logic contract. This script is a last line of defense because the Volt team is in communication with Morpho and monitors communication channels such as their governance forum and twitter account. The Morpho team is highly credible, and unlikely to make major unannounced changes.
+
+### Liquidity Risks
 Depositing into Morpho presents the same liquidity risks as Compound. That is, if the Compound market Volt Protocol enters becomes illiquid, Volt will be unable to process redemptions beyond the liquidity that is currently in PSM’s for redemptions. Bad debt being created on Compound from an oracle manipulation attack as described in the Volt Compound audit would create a race for the exit situation that could impact Morpho the same way it would any other Compound users. If this type of liquidity crisis occured due to bad debt in Compound, Volt Protocol would act quickly to preserve PCV by utilizing the PCV Guards to withdraw funds to safety. In a future version of the Volt Protocol, an automated sentinel will allow any user to present evidence of bad debt in an underlying venue and immediately pull funds to safety and pause the corresponding PCV deposit.
 
 # Conclusion
