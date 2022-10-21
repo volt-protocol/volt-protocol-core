@@ -263,6 +263,22 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         assertEq(morphoDeposit.balance(), amount);
     }
 
+    //// paused
+
+    function testDepositWhenPausedFails() public {
+        vm.prank(addresses.governorAddress);
+        morphoDeposit.pause();
+        vm.expectRevert("Pausable: paused");
+        morphoDeposit.deposit();
+    }
+
+    function testAccrueWhenPausedFails() public {
+        vm.prank(addresses.governorAddress);
+        morphoDeposit.pause();
+        vm.expectRevert("Pausable: paused");
+        morphoDeposit.accrue();
+    }
+
     //// access controls
 
     function testEmergencyActionFailsNonGovernor() public {

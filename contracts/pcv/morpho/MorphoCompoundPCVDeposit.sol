@@ -48,7 +48,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     address public immutable lens;
 
     /// @notice reference to the morpho-compound v2 market
-    IMorpho public immutable morpho;
+    address public immutable morpho;
 
     /// @notice reference to underlying token
     address public immutable token;
@@ -83,7 +83,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         }
         cToken = _cToken;
         token = _underlying;
-        morpho = IMorpho(_morpho);
+        morpho = _morpho;
         lens = _lens;
     }
 
@@ -128,7 +128,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         /// ------ Interactions ------
 
         IERC20(token).approve(address(morpho), amount);
-        morpho.supply(
+        IMorpho(morpho).supply(
             cToken, /// cToken to supply liquidity to
             address(this), /// the address of the user you want to supply on behalf of
             amount
@@ -166,8 +166,6 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     /// Morpho is assumed to be a loss-less venue. over the course of less than 1 block,
     /// it is possible to lose funds. However, after 1 block, deposits are expected to always
     /// be in profit at least with current interest rates around 0.8% natively on Compound, ignoring all COMP rewards.
-    /// if losses are ever sustained, subtracting amount from depositedAmount will mean
-    /// that this function always reverts, meaning emergencyAction will need to be called
     /// @param to recipient of withdraw funds
     /// @param amount to withdraw
     /// @param recordPnl whether or not to record PnL. Set to false in withdrawAll
@@ -196,7 +194,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
 
         /// ------ Interactions ------
 
-        morpho.withdraw(cToken, amount);
+        IMorpho(morpho).withdraw(cToken, amount);
         IERC20(token).safeTransfer(to, amount);
 
         emit Withdrawal(msg.sender, to, amount);
@@ -207,7 +205,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     /// updates the amount deposited to include all interest earned
     function _recordPNL() private {
         /// first accrue interest in Compound and Morpho
-        morpho.updateP2PIndexes(cToken);
+        IMorpho(morpho).updateP2PIndexes(cToken);
 
         /// ------ Check ------
 
@@ -240,7 +238,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         cTokens[0] = cToken;
 
         /// set swap comp to morpho flag false to claim comp rewards
-        uint256 claimedAmount = morpho.claimRewards(cTokens, false);
+        uint256 claimedAmount = IMorpho(morpho).claimRewards(cTokens, false);
 
         emit Harvest(COMP, int256(claimedAmount), block.timestamp);
     }
@@ -250,7 +248,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     /// then writes the current amount of PCV tracked in this contract
     /// to depositedAmount
     /// @return the amount deposited after adding accrued interest
-    function accrue() external nonReentrant returns (uint256) {
+    function accrue() external nonReentrant whenNotPaused returns (uint256) {
         _recordPNL(); /// update deposit amount and fire harvest event
 
         return depositedAmount; /// return updated deposit amount
