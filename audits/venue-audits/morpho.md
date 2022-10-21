@@ -4,7 +4,7 @@ The Volt Protocol team conducted a security review of the Morpho protocol. Morph
 
 ## Underlying Venue Risk
 
-There are currently two Morpho markets, Morpho-Aavev2 and Morpho-Compoundv2. While on the Morpho side they work the same (identical function interface, and they use the same peer to peer matching mechanism), their risk is greatly influenced by the underlying markets. Volt Protocol has previously conducted a security review of Compoundv2, available here. The issues discovered in that report have a pending mitigation in governance. A separate Aave security review will need to be completed before Morpho-Aavev2 integration can proceed.
+There are currently two Morpho markets, Morpho-Aavev2 and Morpho-Compoundv2. While on the Morpho side they have the same peer to peer matching mechanism, the two implementations differ largely, and their risk is greatly influenced by the underlying markets. Volt Protocol has previously conducted a security review of Compoundv2, available here. The issues discovered in that report have a pending mitigation in governance. A separate Aave security review will need to be completed before Morpho-Aavev2 integration can proceed.
 
 ## Team Security Posture
 
