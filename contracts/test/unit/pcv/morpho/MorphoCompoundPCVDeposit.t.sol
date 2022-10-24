@@ -165,8 +165,9 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
             uint256(profitAccrued).toInt256(),
             block.timestamp
         );
-
-        assertEq(morphoDeposit.accrue(), sumDeposit + profitAccrued);
+        uint256 lastRecordedBalance = morphoDeposit.accrue();
+        assertEq(lastRecordedBalance, sumDeposit + profitAccrued);
+        assertEq(lastRecordedBalance, morphoDeposit.lastRecordedBalance());
     }
 
     function testWithdraw(
@@ -214,6 +215,69 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
                 morpho.balances(address(morphoDeposit))
             );
         }
+    }
+
+    function testSetPCVOracleSucceedsAndHookCalledSuccessfully(
+        uint120[4] calldata depositAmount,
+        uint248[10] calldata withdrawAmount,
+        uint120 profitAccrued,
+        address to
+    ) public {
+        MockPCVOracle oracle = new MockPCVOracle();
+
+        vm.prank(addresses.governorAddress);
+        morphoDeposit.setPCVOracle(address(oracle));
+
+        assertEq(morphoDeposit.pcvOracle(), address(oracle));
+
+        vm.assume(to != address(0));
+        testWithdraw(depositAmount, withdrawAmount, profitAccrued, to);
+
+        uint256 sumDeposit = uint256(depositAmount[0]) +
+            uint256(depositAmount[1]) +
+            uint256(depositAmount[2]) +
+            uint256(depositAmount[3]) +
+            uint256(profitAccrued);
+
+        for (uint256 i = 0; i < 10; i++) {
+            if (withdrawAmount[i] > sumDeposit) {
+                continue;
+            }
+            sumDeposit -= withdrawAmount[i];
+        }
+        morphoDeposit.accrue();
+
+        assertEq(oracle.pcvAmount(), sumDeposit.toInt256());
+    }
+
+    function testSetPCVOracleSucceedsAndHookCalledSuccessfullyAfterDeposit(
+        uint120[4] calldata depositAmount,
+        uint248[10] calldata withdrawAmount,
+        uint120 profitAccrued,
+        address to
+    ) public {
+        vm.assume(to != address(0));
+        testWithdraw(depositAmount, withdrawAmount, profitAccrued, to);
+
+        uint256 sumDeposit = uint256(depositAmount[0]) +
+            uint256(depositAmount[1]) +
+            uint256(depositAmount[2]) +
+            uint256(depositAmount[3]) +
+            uint256(profitAccrued);
+
+        for (uint256 i = 0; i < 10; i++) {
+            if (withdrawAmount[i] > sumDeposit) {
+                continue;
+            }
+            sumDeposit -= withdrawAmount[i];
+        }
+
+        MockPCVOracle oracle = new MockPCVOracle();
+        vm.prank(addresses.governorAddress);
+        morphoDeposit.setPCVOracle(address(oracle));
+        assertEq(morphoDeposit.pcvOracle(), address(oracle));
+
+        assertEq(oracle.pcvAmount(), sumDeposit.toInt256());
     }
 
     function testEmergencyActionWithdrawSucceedsGovernor(uint120 amount)
@@ -288,39 +352,10 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     }
 
     function testSetPCVOracleSucceedsGovernor() public {
-        vm.prank(addresses.governorAddress);
-        morphoDeposit.setPCVOracle(address(this));
-        assertEq(morphoDeposit.pcvOracle(), address(this));
-    }
-
-    function testSetPCVOracleSucceedsAndHookCalledSuccessfully(
-        uint120[4] calldata depositAmount,
-        uint248[10] calldata withdrawAmount,
-        uint120 profitAccrued,
-        address to
-    ) public {
         MockPCVOracle oracle = new MockPCVOracle();
         vm.prank(addresses.governorAddress);
         morphoDeposit.setPCVOracle(address(oracle));
         assertEq(morphoDeposit.pcvOracle(), address(oracle));
-
-        vm.assume(to != address(0));
-        testWithdraw(depositAmount, withdrawAmount, profitAccrued, to);
-
-        uint256 sumDeposit = uint256(depositAmount[0]) +
-            uint256(depositAmount[1]) +
-            uint256(depositAmount[2]) +
-            uint256(depositAmount[3]) +
-            uint256(profitAccrued);
-
-        for (uint256 i = 0; i < 10; i++) {
-            if (withdrawAmount[i] > sumDeposit) {
-                continue;
-            }
-            sumDeposit -= withdrawAmount[i];
-        }
-
-        assertEq(oracle.pcvAmount(), sumDeposit.toInt256());
     }
 
     //// access controls
