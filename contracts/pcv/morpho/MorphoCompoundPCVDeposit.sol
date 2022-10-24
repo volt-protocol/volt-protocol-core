@@ -158,7 +158,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         /// negative delta turns to positive delta (assuming no loss).
         lastRecordedBalance += amount;
 
-        int256 endingRecordedBalance = lastRecordedBalance.toInt256();
+        int256 endingRecordedBalance = balance().toInt256();
 
         /// ------ Interactions ------
 
