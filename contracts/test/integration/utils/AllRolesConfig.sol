@@ -35,7 +35,7 @@ contract AllRolesConfig {
     uint256 public constant numMinters = 0;
 
     /// EOA1, EOA2 & EOA3
-    uint256 public constant numPCVGuards = 3;
+    uint256 public constant numPCVGuards = 4;
 
     /// PCV Guard Admin
     uint256 public constant numPCVGuardAdmins = 1;

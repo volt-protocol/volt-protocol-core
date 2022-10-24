@@ -37,6 +37,7 @@ contract IntegrationTestAllMainnetRoles is RoleTesting, AllRolesConfig {
         allAddresses[4].push(MainnetAddresses.EOA_1);
         allAddresses[4].push(MainnetAddresses.EOA_2);
         allAddresses[4].push(MainnetAddresses.EOA_3);
+        allAddresses[4].push(MainnetAddresses.EOA_4);
 
         /// pcv guard admin
         allAddresses[5].push(MainnetAddresses.PCV_GUARD_ADMIN);
