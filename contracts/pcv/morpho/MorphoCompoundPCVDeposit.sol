@@ -158,8 +158,6 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         /// negative delta turns to positive delta (assuming no loss).
         lastRecordedBalance += amount;
 
-        int256 endingRecordedBalance = balance().toInt256();
-
         /// ------ Interactions ------
 
         IERC20(token).approve(address(morpho), amount);
@@ -168,6 +166,8 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
             address(this), /// the address of the user you want to supply on behalf of
             amount
         );
+
+        int256 endingRecordedBalance = balance().toInt256();
 
         if (pcvOracle != address(0)) {
             IPCVOracle(pcvOracle).updateLiquidBalance(
@@ -267,6 +267,12 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         address oldOracle = pcvOracle;
         pcvOracle = _pcvOracle;
 
+        _recordPNL();
+
+        IPCVOracle(pcvOracle).updateLiquidBalance(
+            lastRecordedBalance.toInt256()
+        );
+
         emit PCVOracleUpdated(oldOracle, _pcvOracle);
     }
 
@@ -290,13 +296,6 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         uint256 amount,
         bool recordPnl
     ) private {
-        /// ------ Check ------
-
-        /// no op if amount to withdraw is 0
-        if (amount == 0) {
-            return;
-        }
-
         /// ------ Effects ------
 
         if (recordPnl) {
