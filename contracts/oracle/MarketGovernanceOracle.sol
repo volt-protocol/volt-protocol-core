@@ -4,6 +4,7 @@ pragma solidity ^0.8.4;
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
+import {PCVOracle} from "./PCVOracle.sol";
 import {CoreRefV2} from "./../refs/CoreRefV2.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {IVoltSystemOracle} from "./IVoltSystemOracle.sol";
@@ -242,8 +243,22 @@ contract MarketGovernanceOracle is CoreRefV2 {
         _compoundInterest();
 
         baseChangeRate = _baseChangeRate;
-        /// todo also set actual change rate basis points based on current liquidity profile
-        /// todo add an event here
+        /// if too illiquid, adjust rate up
+        /// find amount off target, figure out how much actual rate should be
+        /// set actual rate
+        uint256 newChangeRate = calculateRate(
+            PCVOracle(pcvOracle).getLiquidVenuePercentage()
+        );
+        uint256 previousActualRate = actualChangeRate;
+
+        /// sanity check that new rate is lte max change rate
+        require(
+            newChangeRate <= maximumChangeRate,
+            "MGO: new change rate above max"
+        );
+        actualChangeRate = newChangeRate;
+
+        emit ActualRateUpdated(previousActualRate, newChangeRate);
     }
 
     /// @notice function to set the reference to the PCV oracle
@@ -284,7 +299,7 @@ contract MarketGovernanceOracle is CoreRefV2 {
         emit ActualRateUpdated(previousActualRate, newChangeRate);
     }
 
-    /// ------------- Helper Method -------------
+    /// ------------- Helper Methods -------------
 
     /// todo verify abs is fine here
     /// Linear Interpolation Formula

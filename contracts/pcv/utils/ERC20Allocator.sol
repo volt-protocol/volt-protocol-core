@@ -7,7 +7,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {Timed} from "./../../utils/Timed.sol";
-import {CoreRef} from "./../../refs/CoreRef.sol";
+import {CoreRefV2} from "./../../refs/CoreRefV2.sol";
 import {PCVDeposit} from "./../PCVDeposit.sol";
 import {RateLimitedV2} from "./../../utils/RateLimitedV2.sol";
 import {IERC20Allocator} from "./IERC20Allocator.sol";
@@ -29,7 +29,7 @@ import {IERC20Allocator} from "./IERC20Allocator.sol";
 /// connect deposit function.
 
 /// @author Elliot Friedman
-contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
+contract ERC20Allocator is IERC20Allocator, CoreRefV2, RateLimitedV2 {
     using Address for address payable;
     using SafeERC20 for IERC20;
     using SafeCast for *;
@@ -64,7 +64,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         uint128 _rateLimitPerSecond,
         uint128 _bufferCap
     )
-        CoreRef(_core)
+        CoreRefV2(_core)
         RateLimitedV2(_maxRateLimitPerSecond, _rateLimitPerSecond, _bufferCap)
     {}
 
@@ -171,7 +171,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         address token,
         address to,
         uint256 amount
-    ) external onlyGovernor {
+    ) external override onlyGovernor {
         IERC20(token).safeTransfer(to, amount);
     }
 

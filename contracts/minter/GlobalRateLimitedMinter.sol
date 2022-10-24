@@ -2,9 +2,9 @@ pragma solidity =0.8.13;
 
 import {IGRLM} from "./IGRLM.sol";
 import {CoreRefV2} from "../refs/CoreRefV2.sol";
-import {RateLimitedV3} from "../utils/RateLimitedV3.sol";
+import {RateLimitedV2} from "../utils/RateLimitedV2.sol";
 
-contract GlobalRateLimitedMinter is IGRLM, RateLimitedV3 {
+contract GlobalRateLimitedMinter is IGRLM, RateLimitedV2 {
     /// @param _core reference to the core smart contract
     /// @param _maxRateLimitPerSecond maximum rate limit per second that governance can set
     /// @param _rateLimitPerSecond starting rate limit per second for Volt minting
@@ -16,7 +16,7 @@ contract GlobalRateLimitedMinter is IGRLM, RateLimitedV3 {
         uint128 _bufferCap
     )
         CoreRefV2(_core)
-        RateLimitedV3(_maxRateLimitPerSecond, _rateLimitPerSecond, _bufferCap)
+        RateLimitedV2(_maxRateLimitPerSecond, _rateLimitPerSecond, _bufferCap)
     {}
 
     /// @notice all VOLT minters can call to mint VOLT

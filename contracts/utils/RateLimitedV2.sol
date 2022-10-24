@@ -1,13 +1,13 @@
 pragma solidity =0.8.13;
 
-import {CoreRef} from "../refs/CoreRef.sol";
+import {CoreRefV2} from "../refs/CoreRefV2.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /// @title abstract contract for putting a rate limit on how fast a contrac
 /// can perform an action e.g. Minting
 /// @author Elliot Friedman
-abstract contract RateLimitedV2 is CoreRef {
+abstract contract RateLimitedV2 is CoreRefV2 {
     using SafeCast for *;
 
     /// @notice maximum rate limit per second governance can set for this contract

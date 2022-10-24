@@ -5,15 +5,15 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {Vm} from "./Vm.sol";
-import {ICore} from "../../../core/ICore.sol";
 import {DSTest} from "./DSTest.sol";
+import {ICoreV2} from "../../../core/ICoreV2.sol";
 import {PCVDeposit} from "../../../pcv/PCVDeposit.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {PCVGuardAdmin} from "../../../pcv/PCVGuardAdmin.sol";
 import {ERC20Allocator} from "../../../pcv/utils/ERC20Allocator.sol";
 import {MockRateLimitedV2} from "../../../mock/MockRateLimitedV2.sol";
 import {ERC20HoldingPCVDeposit} from "../../../pcv/ERC20HoldingPCVDeposit.sol";
-import {getCore, getAddresses, VoltTestAddresses} from "./Fixtures.sol";
+import {getCoreV2, getAddresses, VoltTestAddresses} from "./Fixtures.sol";
 
 contract UnitTestRateLimitedV2 is DSTest {
     using SafeCast for *;
@@ -43,7 +43,7 @@ contract UnitTestRateLimitedV2 is DSTest {
     MockRateLimitedV2 rlm;
 
     /// @notice reference to core
-    ICore private core;
+    ICoreV2 private core;
 
     /// @notice maximum rate limit per second in RateLimitedV2
     uint256 private constant maxRateLimitPerSecond = 1_000_000e18;
@@ -55,7 +55,7 @@ contract UnitTestRateLimitedV2 is DSTest {
     uint128 private constant bufferCap = 10_000_000e18;
 
     function setUp() public {
-        core = getCore();
+        core = getCoreV2();
         rlm = new MockRateLimitedV2(
             address(core),
             maxRateLimitPerSecond,
