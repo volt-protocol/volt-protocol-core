@@ -33,10 +33,13 @@ contract PCVOracle is CoreRefV2 {
     ///@notice set of whitelisted pcvDeposit addresses for withdrawal
     EnumerableSet.AddressSet private illiquidVenues;
 
+    /// @notice last illiquid balance
     uint256 public lastIlliquidBalance;
 
+    /// @notice last liquid balance
     uint256 public lastLiquidBalance;
 
+    /// @notice scale
     uint256 public constant scale = 1e18;
 
     /// @param _core reference to the core smart contract
@@ -170,29 +173,17 @@ contract PCVOracle is CoreRefV2 {
         }
     }
 
+    /// @notice check if a venue is in the list of illiquid venues
+    /// @param illiquidVenue address to check
+    /// @return boolean whether or not the illiquidVenue is in the illiquid venue list
     function isIlliquidVenue(address illiquidVenue) public view returns (bool) {
         return illiquidVenues.contains(illiquidVenue);
     }
 
+    /// @notice check if a venue is in the list of illiquid venues
+    /// @param liquidVenue address to check
+    /// @return boolean whether or not the liquidVenue is in the illiquid venue list
     function isLiquidVenue(address liquidVenue) public view returns (bool) {
         return liquidVenues.contains(liquidVenue);
-    }
-
-    /**
-     * @dev Returns the downcasted uint112 from uint256, reverting on
-     * overflow (when the input is greater than largest uint112).
-     *
-     * Counterpart to Solidity's `uint112` operator.
-     *
-     * Requirements:
-     *
-     * - input must fit into 112 bits
-     */
-    function toUint112(uint256 value) internal pure returns (uint112) {
-        require(
-            value <= type(uint112).max,
-            "SafeCast: value doesn't fit in 112 bits"
-        );
-        return uint112(value);
     }
 }

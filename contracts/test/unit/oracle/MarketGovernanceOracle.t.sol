@@ -89,7 +89,6 @@ contract MarketGovernanceOracleUnitTest is DSTest {
         );
     }
 
-    //// hmmmm figure this out
     function testJumpRateLerpShouldFail() public {
         uint256 liquidPercentageAmount = liquidityJumpTarget - 1;
         assertEq(
@@ -100,12 +99,18 @@ contract MarketGovernanceOracleUnitTest is DSTest {
 
     function testJumpRateLerp() public {
         uint256 liquidPercentageAmount = 0;
-        mgovOracle.calculateRateLerp(liquidPercentageAmount);
+        assertEq(
+            mgovOracle.calculateRateLerp(liquidPercentageAmount),
+            mgovOracle.maximumChangeRate()
+        );
     }
 
     function testJumpRateNoLerp() public {
         uint256 liquidPercentageAmount = 0;
-        mgovOracle.calculateRate(liquidPercentageAmount);
+        assertEq(
+            mgovOracle.calculateRate(liquidPercentageAmount),
+            mgovOracle.maximumChangeRate()
+        );
     }
 
     function testCalculateRate(uint64 liquidPercentageAmount) public {

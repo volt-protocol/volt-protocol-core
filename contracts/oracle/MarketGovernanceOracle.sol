@@ -8,8 +8,6 @@ import {CoreRefV2} from "./../refs/CoreRefV2.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {IVoltSystemOracle} from "./IVoltSystemOracle.sol";
 
-import "hardhat/console.sol";
-
 /// @notice contract that receives a fixed interest rate upon construction,
 /// and then linearly interpolates that rate over a 30.42 day period into the VOLT price
 /// after the oracle start time.
@@ -173,6 +171,7 @@ contract MarketGovernanceOracle is CoreRefV2 {
         /// liquidity jump target is the lowest percentage liquid before Volt rate spikes
         /// if more liquid than jump target, just use base rate
         /// if less liquid than jump target, boost Volt rate
+        /// max change rate is base rate, return base rate
         if (
             liquidPercentage >= liquidityJumpTarget ||
             maximumChangeRate == baseChangeRate
@@ -198,7 +197,7 @@ contract MarketGovernanceOracle is CoreRefV2 {
         /// liquidityJumpTarget, then this function returns the base rate and stops execution
         uint256 jumpRateDelta = _liquidityJumpTarget - liquidPercentage;
 
-        /// amount of PCM to add atop the base Volt rate
+        /// amount of percentage points to add atop the base Volt rate
         uint256 pcmBoost = (jumpRateDelta * totalPossibleBoost) /
             _liquidityJumpTarget;
 
@@ -212,12 +211,14 @@ contract MarketGovernanceOracle is CoreRefV2 {
     /// @return the new actual rate based on liquidity profile in the Volt system
     function calculateRateLerp(uint256 liquidPercentage)
         public
+        view
         returns (uint256)
     {
         uint256 _liquidityJumpTarget = liquidityJumpTarget; /// save 2 warm SLOADs
         /// liquidity jump target is the lowest percentage liquid before Volt rate spikes
         /// if more liquid than jump target, just use base rate
         /// if less liquid than jump target, boost Volt rate
+        /// max change rate is base rate, return base rate
         if (
             liquidPercentage >= liquidityJumpTarget ||
             maximumChangeRate == baseChangeRate
@@ -225,30 +226,43 @@ contract MarketGovernanceOracle is CoreRefV2 {
             return baseChangeRate;
         }
 
-        /// use LERP to discover PCM delta on top of base rate
-        uint256 totalPossibleBoost = maximumChangeRate - baseChangeRate;
+        /// total possible boost
+        ///                           how far below min are we?
+        ///                                                         divide by jump target
+        /// (max yield - base yield) * (jump target - current percent) / jump target
 
-        /// example figures
+        /// variables ///
 
-        /// pcm boost can be between 0 and 1000,
-        /// with 1000 being 100 basis points or 1% on top of the base rate
-        /// totalPossibleBoost = 1e17
+        // /// delta below target = (jump target - current percent)
 
-        /// liquidPercentage = 1e17 = 10% liquid
-        /// liquidityJumpTarget = 3e17
-        /// jumpRateDelta = 2e17
-        /// 2e17 * 1000 / 3e17
+        /// max yield = 10%
+        /// base yield/rate = 1%
+        /// total possible yield boost = 9%
+        /// target utilization = 30%
+        /// current utilization = 10%
 
-        /// amount of PCM to add atop the base Volt rate
-        uint256 rateBoost = _calculateLinearInterpolation(
-            _liquidityJumpTarget - liquidPercentage, /// invert x
-            0, /// x1, start at 0 boost
-            totalPossibleBoost, /// x2, max boost is endpoint for x
-            _liquidityJumpTarget, /// y1 jump target is very high
-            0 /// y2 at 0, y should
+        /// yield at target = base rate, x1
+        /// total possible boost = max yield - base yield, x2
+        /// target utilization = 30% liquid, y1
+        /// lowest utilization = 0% liquid, y2
+        /// current utilization = 10% liquid, y value
+
+        /// yield at target = base jump rate, y1 = 1%
+        /// total possible boost = max yield - base yield, y2 = 9%
+        /// target utilization = 30% liquid, x1 = 30%
+        /// lowest utilization = 0% liquid, x2 = 0%
+        /// current utilization = 10% liquid, x value
+
+        /// calculate actual Volt rate
+        uint256 finalRate = _calculateLinearInterpolation(
+            liquidPercentage,
+            _liquidityJumpTarget,
+            0,
+            baseChangeRate,
+            maximumChangeRate
         );
 
-        return rateBoost + baseChangeRate;
+        return finalRate;
     }
 
     /// ------------- Helper Method -------------
@@ -267,28 +281,13 @@ contract MarketGovernanceOracle is CoreRefV2 {
         uint256 x2,
         uint256 y1,
         uint256 y2
-    ) internal returns (uint256 y) {
-        console.log("x: ", x);
-        console.log("x1: ", x1);
-        console.log("x2: ", x2);
-        console.log("y1: ", y1);
-        console.log("y2: ", y2);
-        if (x == 0) {
-            console.log("x == 0, returning y1");
-            return y = y1;
-        }
-
-        uint256 firstDeltaX = x - x1; /// will not overflow because x should always be gte x1
-        console.log("firstDeltaX: ", firstDeltaX);
-        uint256 secondDeltaX = x2 - x1; /// will not overflow because x2 should always be gt x1
-        console.log("secondDeltaX: ", secondDeltaX);
-        uint256 deltaY = y2 > y1 ? y2 - y1 : y1 - y2; /// will not overflow because y2 should always be gt y1
-        console.log("deltaY: ", deltaY);
-
+    ) internal pure returns (uint256 y) {
+        uint256 firstDeltaX = x1 > x ? x1 - x : x - x1;
+        uint256 secondDeltaX = x2 > x1 ? x2 - x1 : x1 - x2;
+        uint256 deltaY = y2 > y1 ? y2 - y1 : y1 - y2;
         uint256 product = (firstDeltaX * deltaY) / secondDeltaX;
-        console.log("product: ", product);
+
         y = (product + y1);
-        console.log("y: ", y);
     }
 
     function _compoundInterest() private {
