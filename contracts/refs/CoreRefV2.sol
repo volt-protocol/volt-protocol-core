@@ -67,6 +67,22 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         _;
     }
 
+    modifier onlyLiquidPCVDeposit() {
+        require(
+            _core.hasRole(VoltRoles.LIQUID_PCV_DEPOSIT, msg.sender),
+            "CoreRef: Caller is not a Liquid PCV Deposit"
+        );
+        _;
+    }
+
+    modifier onlyIlliquidPCVDeposit() {
+        require(
+            _core.hasRole(VoltRoles.ILLIQUID_PCV_DEPOSIT, msg.sender),
+            "CoreRef: Caller is not an Illiquid PCV Deposit"
+        );
+        _;
+    }
+
     modifier onlyGuardianOrGovernor() {
         require(
             _core.isGovernor(msg.sender) || _core.isGuardian(msg.sender),

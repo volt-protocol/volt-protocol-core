@@ -3,6 +3,7 @@ pragma solidity ^0.8.4;
 
 import {MockERC20} from "./../../../mock/MockERC20.sol";
 import {Core, Vcon, Volt, IERC20, IVolt} from "../../../core/Core.sol";
+import {CoreV2} from "../../../core/CoreV2.sol";
 import {L2Core} from "../../../core/L2Core.sol";
 import {DSTest} from "./DSTest.sol";
 import {Vm} from "./Vm.sol";
@@ -100,6 +101,29 @@ function getCore() returns (Core) {
     core.setVcon(IERC20(address(vcon)));
     core.grantMinter(addresses.minterAddress);
     core.grantBurner(addresses.burnerAddress);
+    core.grantPCVController(addresses.pcvControllerAddress);
+    core.grantGuardian(addresses.guardianAddress);
+
+    vm.stopPrank();
+    return core;
+}
+
+/// @dev Deploy and configure Core
+function getCoreV2() returns (CoreV2) {
+    address HEVM_ADDRESS = address(
+        bytes20(uint160(uint256(keccak256("hevm cheat code"))))
+    );
+    Vm vm = Vm(HEVM_ADDRESS);
+    VoltTestAddresses memory addresses = getAddresses();
+
+    MockERC20 volt = new MockERC20();
+    // Deploy Core from Governor address
+    vm.startPrank(addresses.governorAddress);
+    CoreV2 core = new CoreV2(address(volt), address(0));
+    Vcon vcon = new Vcon(addresses.governorAddress, addresses.governorAddress);
+
+    core.setVcon(IERC20(address(vcon)));
+    core.grantMinter(addresses.minterAddress);
     core.grantPCVController(addresses.pcvControllerAddress);
     core.grantGuardian(addresses.guardianAddress);
 

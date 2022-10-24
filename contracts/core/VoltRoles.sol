@@ -29,8 +29,18 @@ library VoltRoles {
     /// @notice can mint VOLT through GlobalRateLimitedMinter on a rate limit
     bytes32 internal constant VOLT_MINTER_ROLE = keccak256("VOLT_MINTER_ROLE");
 
-    ///@notice is able to withdraw whitelisted PCV deposits to a safe address
+    /// @notice is able to withdraw whitelisted PCV deposits to a safe address
     bytes32 internal constant PCV_GUARD = keccak256("PCV_GUARD_ROLE");
+
+    /// @notice role granted to all liquid PCV deposits so they are allowed
+    ///  to call into the PCV oracle
+    bytes32 internal constant LIQUID_PCV_DEPOSIT =
+        keccak256("LIQUID_PCV_DEPOSIT_ROLE");
+
+    /// @notice role granted to all illiquid PCV deposits so they are allowed
+    /// to call into the PCV oracle
+    bytes32 internal constant ILLIQUID_PCV_DEPOSIT =
+        keccak256("ILLIQUID_PCV_DEPOSIT_ROLE");
 
     /*///////////////////////////////////////////////////////////////
                                  Admin Roles
