@@ -23,6 +23,12 @@ contract MarketGovernanceOracle is CoreRefV2 {
     /// emits the end time of the period that completed and the new oracle price
     event InterestCompounded(uint256 periodStart, uint256 newOraclePrice);
 
+    /// @notice event emitted when the Volt system oracle actual rate updates
+    event ActualRateUpdated(uint256 oldRate, uint256 newRate);
+
+    /// @notice event emitted when reference to the PCV Oracle updates
+    event PCVOracleUpdated(address oldOracle, address newOracle);
+
     /// ---------- Mutable Variables ----------
 
     /// @notice acts as an accumulator for interest earned in previous periods
@@ -136,13 +142,17 @@ contract MarketGovernanceOracle is CoreRefV2 {
     }
 
     /// @notice function to set the reference to the PCV oracle
+    /// callable only by governor
+    /// @param _pcvOracle address of the new pcv oracle
     function setPcvOracle(address _pcvOracle) external onlyGovernor {
+        address oldOracle = pcvOracle;
         pcvOracle = _pcvOracle;
 
-        /// todo emit an event here
+        emit PCVOracleUpdated(oldOracle, _pcvOracle);
     }
 
-    /// TODO add modifier so that only PCV Oracle can call this function
+    /// @notice only callable by the pcv oracle, updates the actual rate
+    /// @param liquidPercentage the percentage of PCV that is liquid
     function updateActualRate(uint256 liquidPercentage) external onlyPCVOracle {
         /// if liquidity is fine, no-op
         if (liquidPercentage >= liquidityJumpTarget) {
@@ -150,12 +160,21 @@ contract MarketGovernanceOracle is CoreRefV2 {
         }
         /// first compound interest
         _compoundInterest();
+
         /// if too illiquid, adjust rate up
         /// find amount off target, figure out how much actual rate should be
         /// set actual rate
-        actualChangeRate = calculateRate(liquidPercentage);
+        uint256 newChangeRate = calculateRate(liquidPercentage);
+        uint256 previousActualRate = actualChangeRate;
 
-        /// todo emit an event
+        /// sanity check that new rate is lte max change rate
+        require(
+            newChangeRate <= maximumChangeRate,
+            "MGO: new change rate above max"
+        );
+        actualChangeRate = newChangeRate;
+
+        emit ActualRateUpdated(previousActualRate, newChangeRate);
     }
 
     /// TODO verify this calculation with an invariant test, a differential test, a unit test, and a fuzz test
@@ -198,10 +217,10 @@ contract MarketGovernanceOracle is CoreRefV2 {
         uint256 jumpRateDelta = _liquidityJumpTarget - liquidPercentage;
 
         /// amount of percentage points to add atop the base Volt rate
-        uint256 pcmBoost = (jumpRateDelta * totalPossibleBoost) /
+        uint256 scaledBoost = (jumpRateDelta * totalPossibleBoost) /
             _liquidityJumpTarget;
 
-        return pcmBoost + baseChangeRate;
+        return scaledBoost + baseChangeRate;
     }
 
     /// TODO verify this calculation with an invariant test, a differential test, a unit test, and a fuzz test
@@ -267,8 +286,9 @@ contract MarketGovernanceOracle is CoreRefV2 {
 
     /// ------------- Helper Method -------------
 
+    /// todo verify abs is fine here
     /// Linear Interpolation Formula
-    /// (y) = y1 + (x − x1) * ((y2 − y1) / (x2 − x1))
+    /// (y) = y1 + abs(x − x1) * (abs(y2 − y1) / abs(x2 − x1))
     /// @notice calculate linear interpolation and return ending price
     /// @param x is time value to calculate interpolation on
     /// @param x1 is starting time to calculate interpolation from
