@@ -11,11 +11,9 @@ import {IVoltSystemOracle} from "./IVoltSystemOracle.sol";
 /// @notice contract that receives a fixed interest rate upon construction,
 /// and then linearly interpolates that rate over a 30.42 day period into the VOLT price
 /// after the oracle start time.
-/// Interest can compound annually. Assumption is that this oracle will only be used until
-/// Volt 2.0 ships. Maximum amount of compounding periods on this contract at 2% APR
-/// is 6192 years, which is more than enough for this use case.
+/// interest can be compounded at any point in time if the Volt rate changes due to
+/// excessive illiquid composition of PCV.
 /// @author Elliot Friedman
-/// TODO need to track TWAP of surplus buffer to PCV to determine the actual volt rate
 contract MarketGovernanceOracle is CoreRefV2 {
     using SafeCast for *;
 
@@ -96,7 +94,7 @@ contract MarketGovernanceOracle is CoreRefV2 {
         _;
     }
 
-    // ----------- Getter -----------
+    // ----------- Getters -----------
 
     /// @notice get the current scaled oracle price
     /// applies the change rate smoothly over a 30.42 day period
@@ -115,66 +113,6 @@ contract MarketGovernanceOracle is CoreRefV2 {
         uint256 priceDelta = periodPriceChange * timeDelta / TIMEFRAME / SCALE;
 
         return cachedOraclePrice + priceDelta;
-    }
-
-    /// ------------- Public State Changing API -------------
-
-    /// @notice public function that allows compounding of interest after duration has passed
-    /// Sets accumulator to the current accrued interest, and then resets the timer.
-    function compoundInterest() external {
-        uint256 periodEndTime = periodStartTime + TIMEFRAME; /// save a single warm SLOAD when writing to periodStartTime
-        require(
-            block.timestamp >= periodEndTime,
-            "VoltSystemOracle: not past end time"
-        );
-
-        _compoundInterest();
-    }
-
-    /// ------------- Governor Only API -------------
-
-    function updateBaseRate(uint256 _baseChangeRate) external onlyGovernor {
-        _compoundInterest();
-
-        baseChangeRate = _baseChangeRate;
-        /// todo also set actual change rate basis points based on current liquidity profile
-        /// todo add an event here
-    }
-
-    /// @notice function to set the reference to the PCV oracle
-    /// callable only by governor
-    /// @param _pcvOracle address of the new pcv oracle
-    function setPcvOracle(address _pcvOracle) external onlyGovernor {
-        address oldOracle = pcvOracle;
-        pcvOracle = _pcvOracle;
-
-        emit PCVOracleUpdated(oldOracle, _pcvOracle);
-    }
-
-    /// @notice only callable by the pcv oracle, updates the actual rate
-    /// @param liquidPercentage the percentage of PCV that is liquid
-    function updateActualRate(uint256 liquidPercentage) external onlyPCVOracle {
-        /// if liquidity is fine, no-op
-        if (liquidPercentage >= liquidityJumpTarget) {
-            return;
-        }
-        /// first compound interest
-        _compoundInterest();
-
-        /// if too illiquid, adjust rate up
-        /// find amount off target, figure out how much actual rate should be
-        /// set actual rate
-        uint256 newChangeRate = calculateRate(liquidPercentage);
-        uint256 previousActualRate = actualChangeRate;
-
-        /// sanity check that new rate is lte max change rate
-        require(
-            newChangeRate <= maximumChangeRate,
-            "MGO: new change rate above max"
-        );
-        actualChangeRate = newChangeRate;
-
-        emit ActualRateUpdated(previousActualRate, newChangeRate);
     }
 
     /// TODO verify this calculation with an invariant test, a differential test, a unit test, and a fuzz test
@@ -282,6 +220,68 @@ contract MarketGovernanceOracle is CoreRefV2 {
         );
 
         return finalRate;
+    }
+
+    /// ------------- Public State Changing API -------------
+
+    /// @notice public function that allows compounding of interest after duration has passed
+    /// Sets accumulator to the current accrued interest, and then resets the timer.
+    function compoundInterest() external {
+        uint256 periodEndTime = periodStartTime + TIMEFRAME; /// save a single warm SLOAD when writing to periodStartTime
+        require(
+            block.timestamp >= periodEndTime,
+            "VoltSystemOracle: not past end time"
+        );
+
+        _compoundInterest();
+    }
+
+    /// ------------- Governor Only API -------------
+
+    function updateBaseRate(uint256 _baseChangeRate) external onlyGovernor {
+        _compoundInterest();
+
+        baseChangeRate = _baseChangeRate;
+        /// todo also set actual change rate basis points based on current liquidity profile
+        /// todo add an event here
+    }
+
+    /// @notice function to set the reference to the PCV oracle
+    /// callable only by governor
+    /// @param _pcvOracle address of the new pcv oracle
+    function setPcvOracle(address _pcvOracle) external onlyGovernor {
+        address oldOracle = pcvOracle;
+        pcvOracle = _pcvOracle;
+
+        emit PCVOracleUpdated(oldOracle, _pcvOracle);
+    }
+
+    /// ------------- Oracle Only API -------------
+
+    /// @notice only callable by the pcv oracle, updates the actual rate
+    /// @param liquidPercentage the percentage of PCV that is liquid
+    function updateActualRate(uint256 liquidPercentage) external onlyPCVOracle {
+        /// if liquidity is fine, no-op
+        if (liquidPercentage >= liquidityJumpTarget) {
+            return;
+        }
+        /// first compound interest
+        _compoundInterest();
+
+        /// if too illiquid, adjust rate up
+        /// find amount off target, figure out how much actual rate should be
+        /// set actual rate
+        uint256 newChangeRate = calculateRate(liquidPercentage);
+        uint256 previousActualRate = actualChangeRate;
+
+        /// sanity check that new rate is lte max change rate
+        require(
+            newChangeRate <= maximumChangeRate,
+            "MGO: new change rate above max"
+        );
+        actualChangeRate = newChangeRate;
+
+        emit ActualRateUpdated(previousActualRate, newChangeRate);
     }
 
     /// ------------- Helper Method -------------
