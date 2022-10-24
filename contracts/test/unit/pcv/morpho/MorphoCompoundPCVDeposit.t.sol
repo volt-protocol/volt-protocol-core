@@ -11,6 +11,7 @@ import {MockCToken} from "../../../../mock/MockCToken.sol";
 import {MockMorpho} from "../../../../mock/MockMorpho.sol";
 import {TribeRoles} from "../../../../core/TribeRoles.sol";
 import {IPCVDeposit} from "../../../../pcv/IPCVDeposit.sol";
+import {MockPCVOracle} from "../../../../mock/MockPCVOracle.sol";
 import {PCVGuardAdmin} from "../../../../pcv/PCVGuardAdmin.sol";
 import {MockERC20, IERC20} from "../../../../mock/MockERC20.sol";
 import {MorphoCompoundPCVDeposit} from "../../../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
@@ -87,7 +88,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         );
     }
 
-    function testDeposit(uint256 depositAmount) public {
+    function testDeposit(uint120 depositAmount) public {
         assertEq(morphoDeposit.lastRecordedBalance(), 0);
         token.mint(address(morphoDeposit), depositAmount);
 
@@ -96,7 +97,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         assertEq(morphoDeposit.lastRecordedBalance(), depositAmount);
     }
 
-    function testDeposits(uint248[4] calldata depositAmount) public {
+    function testDeposits(uint120[4] calldata depositAmount) public {
         uint256 sumDeposit;
 
         for (uint256 i = 0; i < 4; i++) {
@@ -122,7 +123,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         );
     }
 
-    function testWithdrawAll(uint248[4] calldata depositAmount) public {
+    function testWithdrawAll(uint120[4] calldata depositAmount) public {
         testDeposits(depositAmount);
 
         uint256 sumDeposit;
@@ -147,7 +148,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     }
 
     function testAccrue(
-        uint248[4] calldata depositAmount,
+        uint120[4] calldata depositAmount,
         uint120 profitAccrued
     ) public {
         testDeposits(depositAmount);
@@ -169,7 +170,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     }
 
     function testWithdraw(
-        uint248[4] calldata depositAmount,
+        uint120[4] calldata depositAmount,
         uint248[10] calldata withdrawAmount,
         uint120 profitAccrued,
         address to
@@ -215,7 +216,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         }
     }
 
-    function testEmergencyActionWithdrawSucceedsGovernor(uint256 amount)
+    function testEmergencyActionWithdrawSucceedsGovernor(uint120 amount)
         public
     {
         token.mint(address(morphoDeposit), amount);
@@ -237,7 +238,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         assertEq(morphoDeposit.balance(), 0);
     }
 
-    function testEmergencyActionSucceedsGovernorDeposit(uint256 amount) public {
+    function testEmergencyActionSucceedsGovernorDeposit(uint120 amount) public {
         vm.assume(amount != 0);
         token.mint(address(morphoDeposit), amount);
 
@@ -286,6 +287,42 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         morphoDeposit.accrue();
     }
 
+    function testSetPCVOracleSucceedsGovernor() public {
+        vm.prank(addresses.governorAddress);
+        morphoDeposit.setPCVOracle(address(this));
+        assertEq(morphoDeposit.pcvOracle(), address(this));
+    }
+
+    function testSetPCVOracleSucceedsAndHookCalledSuccessfully(
+        uint120[4] calldata depositAmount,
+        uint248[10] calldata withdrawAmount,
+        uint120 profitAccrued,
+        address to
+    ) public {
+        MockPCVOracle oracle = new MockPCVOracle();
+        vm.prank(addresses.governorAddress);
+        morphoDeposit.setPCVOracle(address(oracle));
+        assertEq(morphoDeposit.pcvOracle(), address(oracle));
+
+        vm.assume(to != address(0));
+        testWithdraw(depositAmount, withdrawAmount, profitAccrued, to);
+
+        uint256 sumDeposit = uint256(depositAmount[0]) +
+            uint256(depositAmount[1]) +
+            uint256(depositAmount[2]) +
+            uint256(depositAmount[3]) +
+            uint256(profitAccrued);
+
+        for (uint256 i = 0; i < 10; i++) {
+            if (withdrawAmount[i] > sumDeposit) {
+                continue;
+            }
+            sumDeposit -= withdrawAmount[i];
+        }
+
+        assertEq(oracle.pcvAmount(), sumDeposit.toInt256());
+    }
+
     //// access controls
 
     function testEmergencyActionFailsNonGovernor() public {
@@ -310,6 +347,11 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     function testWithdrawAllFailsNonGovernor() public {
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
         morphoDeposit.withdrawAll(address(this));
+    }
+
+    function testSetPCVOracleFailsNonGovernor() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        morphoDeposit.setPCVOracle(address(this));
     }
 
     //// reentrancy
