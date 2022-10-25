@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {PCVOracle} from "./PCVOracle.sol";
 import {CoreRefV2} from "./../refs/CoreRefV2.sol";
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {IVoltSystemOracle} from "./IVoltSystemOracle.sol";
 
 /// @notice contract that receives a fixed interest rate upon construction,
