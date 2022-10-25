@@ -26,9 +26,8 @@ contract PCVGuardVerification is DSTest {
         MainnetAddresses.VOLT_DAI_PSM,
         MainnetAddresses.VOLT_FEI_PSM,
         MainnetAddresses.VOLT_USDC_PSM,
-        MainnetAddresses.COMPOUND_DAI_PCV_DEPOSIT,
-        MainnetAddresses.COMPOUND_FEI_PCV_DEPOSIT,
-        MainnetAddresses.COMPOUND_USDC_PCV_DEPOSIT
+        MainnetAddresses.MORPHO_COMPOUND_DAI_PCV_DEPOSIT,
+        MainnetAddresses.MORPHO_COMPOUND_USDC_PCV_DEPOSIT
     ];
 
     /// @notice all PSM's on arbitrum
@@ -204,13 +203,6 @@ contract PCVGuardVerification is DSTest {
             : allArbitrumPCVDeposits;
 
         for (uint256 i = 0; i < allDeposits.length; i++) {
-            /// currently there is no fei liquidity, so this withdraw all action will fail
-            if (
-                MainnetAddresses.COMPOUND_FEI_PCV_DEPOSIT ==
-                address(allDeposits[i])
-            ) {
-                continue;
-            }
             vm.prank(MainnetAddresses.EOA_1);
             address pcvGuardian = block.chainid == 1
                 ? MainnetAddresses.PCV_GUARDIAN
