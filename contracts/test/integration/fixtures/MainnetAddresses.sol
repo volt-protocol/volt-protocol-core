@@ -34,6 +34,16 @@ library MainnetAddresses {
     address public constant COMPOUND_PCV_ROUTER =
         0x6338Ec144279b1f05AF8C90216d90C5b54Fa4D8F;
 
+    // ---------- MORPHO ADDRESSES ----------
+    address public constant MORPHO_COMPOUND_PCV_ROUTER =
+        0x579C400eaCA4b1D84956E7bD284d97611f78BA4E;
+
+    address public constant MORPHO_COMPOUND_DAI_PCV_DEPOSIT =
+        0x7aB2f4A29048392EfE0B57FD17a3BedBcD0891DC;
+
+    address public constant MORPHO_COMPOUND_USDC_PCV_DEPOSIT =
+        0xF10d810De7F0Fbd455De30f8c43AbA56F253B73B;
+
     // ---------- ORACLE ADDRESSES ----------
     address public constant ORACLE_PASS_THROUGH =
         0xe733985a92Bfd5BC676095561BacE90E04606E4a;

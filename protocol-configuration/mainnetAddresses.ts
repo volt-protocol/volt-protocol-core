@@ -88,22 +88,54 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.Core,
     network: Network.Mainnet
   },
+
+  daiMorphoCompoundPCVDeposit: {
+    address: '0x7aB2f4A29048392EfE0B57FD17a3BedBcD0891DC',
+    artifactName: 'MorphoCompoundPCVDeposit',
+    category: AddressCategory.PCV,
+    network: Network.Mainnet
+  },
+  usdcMorphoCompoundPCVDeposit: {
+    address: '0xF10d810De7F0Fbd455De30f8c43AbA56F253B73B',
+    artifactName: 'MorphoCompoundPCVDeposit',
+    category: AddressCategory.PCV,
+    network: Network.Mainnet
+  },
+  morphoCompoundPCVRouter: {
+    address: '0x579C400eaCA4b1D84956E7bD284d97611f78BA4E',
+    artifactName: 'CompoundPCVRouter',
+    category: AddressCategory.PCV,
+    network: Network.Mainnet
+  },
+  morphoCompound: {
+    address: '0x8888882f8f843896699869179fB6E4f7e3B58888',
+    artifactName: 'unknown',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+  morphoCompoundLens: {
+    address: '0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67',
+    artifactName: 'unknown',
+    category: AddressCategory.External,
+    network: Network.Mainnet
+  },
+
   daiCompoundPCVDeposit: {
     address: '0xE3cbfd618463B7198fa0743AbFA56170557cc880',
     artifactName: 'ERC20CompoundPCVDeposit',
-    category: AddressCategory.PCV,
+    category: AddressCategory.Deprecated,
     network: Network.Mainnet
   },
   feiCompoundPCVDeposit: {
     address: '0x604556Bbc4aB70B3c73d7bb6c4867B6239511301',
     artifactName: 'ERC20CompoundPCVDeposit',
-    category: AddressCategory.PCV,
+    category: AddressCategory.Deprecated,
     network: Network.Mainnet
   },
   usdcCompoundPCVDeposit: {
     address: '0x3B69e3073cf86099a9bbB650e8682D6FdCfb29db',
     artifactName: 'ERC20CompoundPCVDeposit',
-    category: AddressCategory.PCV,
+    category: AddressCategory.Deprecated,
     network: Network.Mainnet
   },
   feiPriceBoundPSM: {
@@ -130,22 +162,10 @@ const MainnetAddresses: MainnetAddresses = {
     category: AddressCategory.PCV,
     network: Network.Mainnet
   },
-  morphoCompound: {
-    address: '0x8888882f8f843896699869179fB6E4f7e3B58888',
-    artifactName: 'unknown',
-    category: AddressCategory.External,
-    network: Network.Mainnet
-  },
-  morphoCompoundLens: {
-    address: '0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67',
-    artifactName: 'unknown',
-    category: AddressCategory.External,
-    network: Network.Mainnet
-  },
   compoundPCVRouter: {
     address: '0x6338Ec144279b1f05AF8C90216d90C5b54Fa4D8F',
     artifactName: 'CompoundPCVRouter',
-    category: AddressCategory.PCV,
+    category: AddressCategory.Deprecated,
     network: Network.Mainnet
   },
   erc20Allocator: {

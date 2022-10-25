@@ -53,9 +53,16 @@ contract vip14 is DSTest, IVIP {
     ITimelockSimulation.action[] private mainnetProposal;
     ITimelockSimulation.action[] private arbitrumProposal;
 
-    CompoundPCVRouter public router;
-    MorphoCompoundPCVDeposit public daiDeposit;
-    MorphoCompoundPCVDeposit public usdcDeposit;
+    CompoundPCVRouter public router =
+        CompoundPCVRouter(MainnetAddresses.MORPHO_COMPOUND_PCV_ROUTER);
+    MorphoCompoundPCVDeposit public daiDeposit =
+        MorphoCompoundPCVDeposit(
+            MainnetAddresses.MORPHO_COMPOUND_DAI_PCV_DEPOSIT
+        );
+    MorphoCompoundPCVDeposit public usdcDeposit =
+        MorphoCompoundPCVDeposit(
+            MainnetAddresses.MORPHO_COMPOUND_USDC_PCV_DEPOSIT
+        );
 
     PCVGuardian public immutable pcvGuardian =
         PCVGuardian(MainnetAddresses.PCV_GUARDIAN);
@@ -65,28 +72,6 @@ contract vip14 is DSTest, IVIP {
 
     constructor() {
         if (block.chainid != 1) return; /// keep ci pipeline happy
-
-        daiDeposit = new MorphoCompoundPCVDeposit(
-            core,
-            MainnetAddresses.CDAI,
-            MainnetAddresses.DAI,
-            MainnetAddresses.MORPHO,
-            MainnetAddresses.MORPHO_LENS
-        );
-
-        usdcDeposit = new MorphoCompoundPCVDeposit(
-            core,
-            MainnetAddresses.CUSDC,
-            MainnetAddresses.USDC,
-            MainnetAddresses.MORPHO,
-            MainnetAddresses.MORPHO_LENS
-        );
-
-        router = new CompoundPCVRouter(
-            core,
-            PCVDeposit(address(daiDeposit)),
-            PCVDeposit(address(usdcDeposit))
-        );
 
         address[] memory toWhitelist = new address[](2);
         toWhitelist[0] = address(daiDeposit);
