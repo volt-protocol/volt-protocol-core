@@ -10,23 +10,24 @@ contract PCVOracle is CoreRefV2 {
     using SafeCast for *;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    /// @notice emitted when a new illiquid venue is added
-    event IlliquidVenueAdded(address illiquidVenue);
+    /// @notice emitted when a new venue is added
+    event VenueAdded(address indexed venue, bool isIliquid, uint256 timestamp);
 
-    /// @notice emitted when a new liquid venue is added
-    event LiquidVenueAdded(address liquidVenue);
+    /// @notice emitted when a venue is removed
+    event VenueRemoved(
+        address indexed venue,
+        bool isIliquid,
+        uint256 timestamp
+    );
 
-    /// @notice emitted when a illiquid venue is removed
-    event IlliquidVenueRemoved(address illiquidVenue);
-
-    /// @notice emitted when a liquid venue is removed
-    event LiquidVenueRemoved(address liquidVenue);
-
-    /// @notice emitted when total liquid venue PCV changes
-    event LiquidVenuePCVUpdated(uint256 oldLiquidity, uint256 newLiquidity);
-
-    /// @notice emitted when total illiquid venue PCV changes
-    event IlliquidVenuePCVUpdated(uint256 oldLiquidity, uint256 newLiquidity);
+    /// @notice emitted when total venue PCV changes
+    event PCVUpdated(
+        address indexed venue,
+        bool isIliquid,
+        uint256 timestamp,
+        uint256 oldLiquidity,
+        uint256 newLiquidity
+    );
 
     /// @notice emitted when market governance oracle is updated
     event MarketGovernanceOracleUpdated(
@@ -197,7 +198,13 @@ contract PCVOracle is CoreRefV2 {
             lastIlliquidBalance += pcvDelta.toUint256();
         }
 
-        emit IlliquidVenuePCVUpdated(oldLiquidity, lastIlliquidBalance);
+        emit PCVUpdated(
+            msg.sender,
+            true,
+            block.timestamp,
+            oldLiquidity,
+            lastIlliquidBalance
+        );
     }
 
     function _updateLiquidBalance(int256 pcvDelta) private {
@@ -209,18 +216,24 @@ contract PCVOracle is CoreRefV2 {
             lastLiquidBalance += pcvDelta.toUint256();
         }
 
-        emit IlliquidVenuePCVUpdated(oldLiquidity, lastLiquidBalance);
+        emit PCVUpdated(
+            msg.sender,
+            false,
+            block.timestamp,
+            oldLiquidity,
+            lastLiquidBalance
+        );
     }
 
     function _addIlliquidVenue(address illiquidVenue) private {
         illiquidVenues.add(illiquidVenue);
 
-        emit IlliquidVenueAdded(illiquidVenue);
+        emit VenueAdded(illiquidVenue, true, block.timestamp);
     }
 
     function _addLiquidVenue(address liquidVenue) private {
         liquidVenues.add(liquidVenue);
 
-        emit LiquidVenueAdded(liquidVenue);
+        emit VenueAdded(liquidVenue, false, block.timestamp);
     }
 }
