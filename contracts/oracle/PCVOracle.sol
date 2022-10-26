@@ -50,20 +50,11 @@ contract PCVOracle is CoreRefV2 {
     /// @notice last liquid balance
     uint256 public lastLiquidBalance;
 
-    /// @notice scale
-    uint256 public constant scale = 1e18;
+    /// @notice scale for percentage of liquid reserves
+    uint256 public constant SCALE = 1e18;
 
     /// @param _core reference to the core smart contract
-    /// @param _lastLiquidBalance last liquid balance
-    /// @param _lastIlliquidBalance last illiquid balance
-    constructor(
-        address _core,
-        uint112 _lastLiquidBalance,
-        uint112 _lastIlliquidBalance
-    ) CoreRefV2(_core) {
-        lastLiquidBalance = _lastLiquidBalance;
-        lastIlliquidBalance = _lastIlliquidBalance;
-    }
+    constructor(address _core) CoreRefV2(_core) {}
 
     // ----------- Getters -----------
 
@@ -77,13 +68,39 @@ contract PCVOracle is CoreRefV2 {
         return illiquidVenues.values();
     }
 
+    /// @notice return all addresses that are liquid or illiquid venues
+    function getAllVenues() public view returns (address[] memory) {
+        uint256 liquidVenueLength = liquidVenues.length();
+        uint256 illiquidVenueLength = illiquidVenues.length();
+        address[] memory allVenues = new address[](
+            liquidVenueLength + illiquidVenueLength
+        );
+        uint256 j = 0;
+
+        /// there will never be more than 100 total venues
+        /// so keep the math unchecked to save on gas
+        unchecked {
+            for (uint256 i = 0; i < liquidVenueLength; i++) {
+                allVenues[j] = liquidVenues.at(i);
+                j++;
+            }
+
+            for (uint256 i = 0; i < illiquidVenueLength; i++) {
+                allVenues[j] = illiquidVenues.at(i);
+                j++;
+            }
+        }
+
+        return allVenues;
+    }
+
     /// @return the ratio of liquid to illiquid assets in the Volt system
     /// using stale values and not factoring any interest or losses sustained
     /// but not realized within the system
     /// value is scaled up by 18 decimal places
     function getLiquidVenuePercentage() public view returns (uint256) {
         return
-            (scale * lastLiquidBalance) /
+            (SCALE * lastLiquidBalance) /
             (lastIlliquidBalance + lastLiquidBalance);
     }
 
@@ -99,6 +116,13 @@ contract PCVOracle is CoreRefV2 {
     /// @return boolean whether or not the liquidVenue is in the illiquid venue list
     function isLiquidVenue(address liquidVenue) public view returns (bool) {
         return liquidVenues.contains(liquidVenue);
+    }
+
+    /// @notice check if a venue is in the list of liquid or illiquid venues
+    /// @param venue address to check
+    /// @return boolean whether or not the venue is part of the liquid or illiquid venue list
+    function isVenue(address venue) public view returns (bool) {
+        return liquidVenues.contains(venue) || illiquidVenues.contains(venue);
     }
 
     /// ------------- PCV Deposit Only API -------------
@@ -184,9 +208,11 @@ contract PCVOracle is CoreRefV2 {
     /// ------------- Helper Methods -------------
 
     function _afterActionHook() private {
-        MarketGovernanceOracle(marketGovernanceOracle).updateActualRate(
-            getLiquidVenuePercentage()
-        );
+        if (marketGovernanceOracle != address(0)) {
+            MarketGovernanceOracle(marketGovernanceOracle).updateActualRate(
+                getLiquidVenuePercentage()
+            );
+        }
     }
 
     function _updateIlliquidBalance(int256 pcvDelta) private {

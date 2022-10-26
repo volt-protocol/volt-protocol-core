@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 import {AccessControlEnumerable} from "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import {IPermissionsV2} from "./IPermissionsV2.sol";
@@ -7,11 +7,15 @@ import {IPermissionsV2} from "./IPermissionsV2.sol";
 /// @title Access control module for Core
 /// @author Volt Protocol
 contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
+    /// @notice main roles in the Volt system
     bytes32 public constant override MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant override PCV_CONTROLLER_ROLE =
         keccak256("PCV_CONTROLLER_ROLE");
     bytes32 public constant override GOVERN_ROLE = keccak256("GOVERN_ROLE");
     bytes32 public constant override GUARDIAN_ROLE = keccak256("GUARDIAN_ROLE");
+
+    /// @notice role that allows user to modify the global reentrant state
+    bytes32 public constant SYSTEM_STATE_ROLE = keccak256("SYSTEM_STATE_ROLE");
 
     constructor() {
         // Appointed as a governor so guardian can have indirect access to revoke ability
@@ -21,6 +25,7 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         _setRoleAdmin(PCV_CONTROLLER_ROLE, GOVERN_ROLE);
         _setRoleAdmin(GOVERN_ROLE, GOVERN_ROLE);
         _setRoleAdmin(GUARDIAN_ROLE, GOVERN_ROLE);
+        _setRoleAdmin(SYSTEM_STATE_ROLE, GOVERN_ROLE);
     }
 
     modifier onlyGovernor() {

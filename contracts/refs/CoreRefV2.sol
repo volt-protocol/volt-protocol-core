@@ -25,25 +25,21 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     /// @notice reference to Vcon
     IERC20 private immutable _vcon;
 
-    /// @notice reference to global reentrancy lock smart contract
-    address public immutable globalReentrantLock;
-
     constructor(address coreAddress) {
         _core = ICoreV2(coreAddress);
 
         _volt = ICoreV2(coreAddress).volt();
         _vcon = ICoreV2(coreAddress).vcon();
-        globalReentrantLock = ICoreV2(coreAddress).globalReentrantLock();
     }
 
     /// TODO
-    /// 1. call globalReentrantLock and lock the lock
+    /// 1. call core and lock the lock
     /// 2. execute the code
-    /// 3. call globalReentrantLock and unlock the lock
+    /// 3. call core and unlock the lock
     modifier globalReentrancyLock() {
-        ///globalReentrantLock.lock();
+        core.lock();
         _;
-        ///globalReentrantLock.unlock();
+        core.unlock();
     }
 
     modifier onlyMinter() {

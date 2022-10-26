@@ -1,15 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
-import {IPermissionsV2} from "./IPermissionsV2.sol";
 import {IVolt, IERC20} from "../volt/IVolt.sol";
+import {IPermissionsV2} from "./IPermissionsV2.sol";
+import {IGlobalReentrancyLock} from "./IGlobalReentrancyLock.sol";
 
 /// @title Core Interface
 /// @author (s) Volt and Fei Protocol
-interface ICoreV2 is IPermissionsV2 {
+interface ICoreV2 is IPermissionsV2, IGlobalReentrancyLock {
     // ----------- Events -----------
-    event VoltUpdate(IERC20 indexed _volt);
-    event VconUpdate(IERC20 indexed _vcon);
+
+    /// @notice emitted with new reference to the VOLT token
+    event VoltUpdate(address indexed _volt);
+
+    /// @notice emitted with new reference to the VCON token
+    event VconUpdate(address indexed _vcon);
 
     // ----------- Getters -----------
 
@@ -18,7 +23,4 @@ interface ICoreV2 is IPermissionsV2 {
 
     /// @notice returns reference to the VCON token contract
     function vcon() external view returns (IERC20);
-
-    /// @notice returns reference to the global reentrancy lock contract
-    function globalReentrantLock() external view returns (address);
 }
