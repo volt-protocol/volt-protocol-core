@@ -102,11 +102,5 @@ contract vip6 is DSTest, IVIP {
     /// no-op
     function arbitrumSetup() public override {}
 
-    function arbitrumValidate() public override {
-        assertEq(usdcPSM.mintFeeBasisPoints(), 0);
-        assertEq(usdcPSM.redeemFeeBasisPoints(), 0);
-
-        assertEq(daiPSM.mintFeeBasisPoints(), 0);
-        assertEq(daiPSM.redeemFeeBasisPoints(), 0);
-    }
+    function arbitrumValidate() public override {}
 }

@@ -119,7 +119,7 @@ function getCoreV2() returns (CoreV2) {
     MockERC20 volt = new MockERC20();
     // Deploy Core from Governor address
     vm.startPrank(addresses.governorAddress);
-    CoreV2 core = new CoreV2(address(volt), address(0));
+    CoreV2 core = new CoreV2(address(volt));
     Vcon vcon = new Vcon(addresses.governorAddress, addresses.governorAddress);
 
     core.setVcon(IERC20(address(vcon)));

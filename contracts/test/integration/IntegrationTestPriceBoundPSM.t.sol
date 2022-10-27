@@ -81,13 +81,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
             voltFloorPrice,
             voltCeilingPrice,
             oracleParams,
-            30,
-            0,
-            10_000_000_000e18,
-            10_000e18,
-            10_000_000e18,
-            IERC20(address(fei)),
-            rariVoltPCVDeposit
+            IERC20(address(fei))
         );
 
         vm.prank(feiDaiPsm);
@@ -114,8 +108,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     /// @notice PSM is set up correctly and view functions are working
     function testGetRedeemAmountOut() public {
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
-        uint256 fee = (mintAmount * psm.redeemFeeBasisPoints()) /
-            Constants.BASIS_POINTS_GRANULARITY;
+        uint256 fee = 0;
 
         uint256 amountOut = ((mintAmount * currentPegPrice) / 1e18) - fee;
 
@@ -145,10 +138,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     function testGetMintAmountOut() public {
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
 
-        uint256 fee = (mintAmount * psm.mintFeeBasisPoints()) /
-            Constants.BASIS_POINTS_GRANULARITY;
-
-        uint256 amountOut = (((mintAmount * 1e18) / currentPegPrice)) - fee;
+        uint256 amountOut = (mintAmount * 1e18) / currentPegPrice;
 
         assertApproxEq(
             psm.getMintAmountOut(mintAmount).toInt256(),
@@ -263,78 +253,6 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
         uint256 endingBalance = underlyingToken.balanceOf(address(this));
 
         assertEq(endingBalance - startingBalance, mintAmount);
-    }
-
-    /// @notice set global rate limited minter fails when caller is governor and new address is 0
-    function testSetPCVDepositFailureZeroAddress() public {
-        vm.startPrank(MainnetAddresses.GOVERNOR);
-
-        vm.expectRevert(
-            bytes("PegStabilityModule: Invalid new surplus target")
-        );
-        psm.setSurplusTarget(IPCVDeposit(address(0)));
-
-        vm.stopPrank();
-    }
-
-    /// @notice set PCV deposit fails when caller is governor and new address is 0
-    function testSetPCVDepositFailureNonGovernor() public {
-        vm.expectRevert(
-            bytes("CoreRef: Caller is not a governor or contract admin")
-        );
-        psm.setSurplusTarget(IPCVDeposit(address(0)));
-    }
-
-    /// @notice set PCV Deposit succeeds when caller is governor and underlying tokens match
-    function testSetPCVDepositSuccess() public {
-        vm.startPrank(MainnetAddresses.GOVERNOR);
-
-        MockPCVDepositV2 newPCVDeposit = new MockPCVDepositV2(
-            address(core),
-            address(underlyingToken),
-            0,
-            0
-        );
-
-        psm.setSurplusTarget(IPCVDeposit(address(newPCVDeposit)));
-
-        vm.stopPrank();
-
-        assertEq(address(newPCVDeposit), address(psm.surplusTarget()));
-    }
-
-    /// @notice set mint fee succeeds
-    function testSetMintFeeSuccess() public {
-        vm.prank(MainnetAddresses.GOVERNOR);
-        psm.setMintFee(100);
-
-        assertEq(psm.mintFeeBasisPoints(), 100);
-    }
-
-    /// @notice set mint fee fails unauthorized
-    function testSetMintFeeFailsWithoutCorrectRoles() public {
-        vm.expectRevert(
-            bytes("CoreRef: Caller is not a governor or contract admin")
-        );
-
-        psm.setMintFee(100);
-    }
-
-    /// @notice set redeem fee succeeds
-    function testSetRedeemFeeSuccess() public {
-        vm.prank(MainnetAddresses.GOVERNOR);
-        psm.setRedeemFee(100);
-
-        assertEq(psm.redeemFeeBasisPoints(), 100);
-    }
-
-    /// @notice set redeem fee fails unauthorized
-    function testSetRedeemFeeFailsWithoutCorrectRoles() public {
-        vm.expectRevert(
-            bytes("CoreRef: Caller is not a governor or contract admin")
-        );
-
-        psm.setRedeemFee(100);
     }
 
     /// @notice redeem fails when paused

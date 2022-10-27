@@ -116,30 +116,11 @@ contract vip7 is DSTest, IVIP, AllRoles {
             0
         );
         assertEq(
-            PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).mintFeeBasisPoints(),
-            0
-        );
-        assertEq(
-            PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).redeemFeeBasisPoints(),
-            0
-        );
-        assertEq(
             address(
                 PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).underlyingToken()
             ),
             address(MainnetAddresses.DAI)
         );
-        assertEq(
-            PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).reservesThreshold(),
-            type(uint256).max
-        );
-        assertEq(
-            address(
-                PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).surplusTarget()
-            ),
-            address(1)
-        );
-
         assertEq(
             address(MakerRouter(MainnetAddresses.MAKER_ROUTER).DAI()),
             MainnetAddresses.DAI

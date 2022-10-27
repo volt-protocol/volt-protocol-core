@@ -100,8 +100,6 @@ contract vip2 is DSTest, IVIP {
             mainnetEndingPrice.toInt256(),
             allowedDeviation
         );
-        assertEq(mainnetFeiPSM.mintFeeBasisPoints(), 0);
-        assertEq(mainnetUsdcPSM.mintFeeBasisPoints(), 0);
         assertEq(address(mainnetFeiPSM.oracle()), oraclePassThroughMainnet);
         assertEq(address(mainnetUsdcPSM.oracle()), oraclePassThroughMainnet);
     }
@@ -177,9 +175,6 @@ contract vip2 is DSTest, IVIP {
             arbitrumEndingPrice.toInt256(),
             allowedDeviationArbitrum
         );
-
-        assertEq(usdcPSM.mintFeeBasisPoints(), 5);
-        assertEq(daiPSM.mintFeeBasisPoints(), 5);
 
         assertEq(address(daiPSM.oracle()), oraclePassThroughArbitrum);
         assertEq(address(usdcPSM.oracle()), oraclePassThroughArbitrum);
