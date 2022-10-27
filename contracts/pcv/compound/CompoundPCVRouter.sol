@@ -18,10 +18,10 @@ import {IPegStabilityModule} from "../../peg/IPegStabilityModule.sol";
 contract CompoundPCVRouter is CoreRef {
     using SafeERC20 for IERC20;
 
-    /// @notice reference to the Compound PCV deposit for USDC
+    /// @notice reference to the Compound PCV deposit for DAI
     PCVDeposit public immutable daiPcvDeposit;
 
-    /// @notice reference to the Compound PCV deposit for DAI
+    /// @notice reference to the Compound PCV deposit for USDC
     PCVDeposit public immutable usdcPcvDeposit;
 
     /// @notice reference to the Maker DAI-USDC PSM that this router interacts with

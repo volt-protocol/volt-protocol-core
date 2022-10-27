@@ -17,9 +17,7 @@ import {ERC20Allocator} from "../../pcv/utils/ERC20Allocator.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
-import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
-
-import "hardhat/console.sol";
+import {MorphoCompoundPCVDeposit} from "../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
 
 contract IntegrationTestERC20Allocator is DSTest {
     using SafeCast for *;
@@ -28,10 +26,14 @@ contract IntegrationTestERC20Allocator is DSTest {
 
     PCVGuardian private immutable mainnetPCVGuardian =
         PCVGuardian(MainnetAddresses.PCV_GUARDIAN);
-    ERC20CompoundPCVDeposit private daiDeposit =
-        ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_DAI_PCV_DEPOSIT);
-    ERC20CompoundPCVDeposit private usdcDeposit =
-        ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_USDC_PCV_DEPOSIT);
+    MorphoCompoundPCVDeposit private daiDeposit =
+        MorphoCompoundPCVDeposit(
+            MainnetAddresses.MORPHO_COMPOUND_DAI_PCV_DEPOSIT
+        );
+    MorphoCompoundPCVDeposit private usdcDeposit =
+        MorphoCompoundPCVDeposit(
+            MainnetAddresses.MORPHO_COMPOUND_USDC_PCV_DEPOSIT
+        );
 
     PCVGuardian private immutable pcvGuardian =
         PCVGuardian(MainnetAddresses.PCV_GUARDIAN);

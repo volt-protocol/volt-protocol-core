@@ -7,6 +7,7 @@ import {IPCVDepositBalances} from "./IPCVDepositBalances.sol";
 /// @author Fei Protocol
 interface IPCVDeposit is IPCVDepositBalances {
     // ----------- Events -----------
+
     event Deposit(address indexed _from, uint256 _amount);
 
     event Withdrawal(
@@ -27,6 +28,8 @@ interface IPCVDeposit is IPCVDepositBalances {
         address indexed _to,
         uint256 _amount
     );
+
+    event Harvest(address indexed _token, int256 _profit, uint256 _timestamp);
 
     // ----------- State changing api -----------
 
