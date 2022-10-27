@@ -48,10 +48,14 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
         _;
     }
 
+    /// @notice returns whether or not the contract is currently not entered
+    function isUnlocked() public view returns (bool) {
+        return _status == _NOT_ENTERED;
+    }
+
     /// @notice returns whether or not the contract is currently entered
     function isLocked() public view override returns (bool) {
-        return (_status == _NOT_ENTERED ||
-            (_status == _ENTERED && _lastBlockEntered < block.number));
+        return _status == _ENTERED;
     }
 
     /// @notice set the status to entered

@@ -43,12 +43,17 @@ contract UnitTestCoreV2 is DSTest {
         assertEq(core.getRoleAdmin(core.MINTER_ROLE()), governRole);
         assertEq(core.getRoleAdmin(core.GUARDIAN_ROLE()), governRole);
         assertEq(core.getRoleAdmin(core.PCV_CONTROLLER_ROLE()), governRole);
+        assertEq(core.getRoleAdmin(core.SYSTEM_STATE_ROLE()), governRole);
 
         /// assert there is only 1 of each role
         assertEq(core.getRoleMemberCount(governRole), 2); /// msg.sender of contract and core is governor
         assertEq(core.getRoleMemberCount(core.MINTER_ROLE()), 0); /// this role has not been granted
         assertEq(core.getRoleMemberCount(core.GUARDIAN_ROLE()), 0); /// this role has not been granted
         assertEq(core.getRoleMemberCount(core.PCV_CONTROLLER_ROLE()), 0); /// this role has not been granted
+        assertEq(core.getRoleMemberCount(core.SYSTEM_STATE_ROLE()), 0); /// this role has not been granted
+
+        assertTrue(core.isUnlocked()); /// core starts out unlocked
+        assertTrue(!core.isLocked()); /// core starts out not locked
     }
 
     function testGovernorSetsVolt() public {

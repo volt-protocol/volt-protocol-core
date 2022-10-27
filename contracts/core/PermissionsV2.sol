@@ -13,9 +13,8 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         keccak256("PCV_CONTROLLER_ROLE");
     bytes32 public constant override GOVERN_ROLE = keccak256("GOVERN_ROLE");
     bytes32 public constant override GUARDIAN_ROLE = keccak256("GUARDIAN_ROLE");
-
-    /// @notice role that allows user to modify the global reentrant state
-    bytes32 public constant SYSTEM_STATE_ROLE = keccak256("SYSTEM_STATE_ROLE");
+    bytes32 public constant override SYSTEM_STATE_ROLE =
+        keccak256("SYSTEM_STATE_ROLE");
 
     constructor() {
         // Appointed as a governor so guardian can have indirect access to revoke ability

@@ -33,11 +33,24 @@ interface IPermissionsV2 is IPermissionsReadV2, IAccessControl {
 
     // ----------- Getters -----------
 
+    /// @notice guardian is able to pause and unpause smart contracts
+    /// and revoke non governor roles
     function GUARDIAN_ROLE() external view returns (bytes32);
 
+    /// @notice governor role is the highest power in the system.
+    /// it is able to pause and unpause smart contracts,
+    /// grant any role to any address, create and then grant new roles,
+    /// and revoke roles
     function GOVERN_ROLE() external view returns (bytes32);
 
+    /// @notice minter role is allowed to mint Volt tokens
     function MINTER_ROLE() external view returns (bytes32);
 
+    /// @notice pcv controller role controls PCV in the system
+    /// and can arbitrarily move funds between deposits and addresses
     function PCV_CONTROLLER_ROLE() external view returns (bytes32);
+
+    /// @notice system state role can lock and unlock the global reentrancy
+    /// lock. this allows for a system wide reentrancy lock.
+    function SYSTEM_STATE_ROLE() external view returns (bytes32);
 }
