@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title Volt stablecoin interface
 /// @author Volt, Fei Protocol
@@ -18,11 +18,6 @@ interface IVolt is IERC20 {
         address indexed _to,
         address indexed _burner,
         uint256 _amount
-    );
-
-    event IncentiveContractUpdate(
-        address indexed _incentivized,
-        address indexed _incentiveContract
     );
 
     // ----------- State changing api -----------
