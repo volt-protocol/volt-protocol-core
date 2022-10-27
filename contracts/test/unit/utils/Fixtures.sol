@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 import {MockERC20} from "./../../../mock/MockERC20.sol";
 import {Core, Vcon, Volt, IERC20, IVolt} from "../../../core/Core.sol";
