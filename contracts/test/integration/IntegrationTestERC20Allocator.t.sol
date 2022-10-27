@@ -19,8 +19,6 @@ import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 
-import "hardhat/console.sol";
-
 contract IntegrationTestERC20Allocator is DSTest {
     using SafeCast for *;
 
