@@ -36,19 +36,6 @@ contract IntegrationTestCompoundPCVDeposits is DSTest {
     IVolt private fei = IVolt(MainnetAddresses.FEI);
     IERC20 private usdc = IERC20(MainnetAddresses.USDC);
 
-    uint256 public daiBalance;
-    uint256 public usdcBalance;
-
-    function setUp() public {
-        daiBalance = daiDeposit.balance();
-
-        vm.prank(MainnetAddresses.CUSDC);
-        usdc.transfer(address(usdcDeposit), usdcBalance);
-        usdcDeposit.deposit();
-
-        usdcBalance = usdcDeposit.balance();
-    }
-
     function testSetup() public {
         assertEq(address(daiDeposit.core()), address(core));
         assertEq(address(usdcDeposit.core()), address(core));
@@ -61,33 +48,5 @@ contract IntegrationTestCompoundPCVDeposits is DSTest {
 
         assertEq(address(daiDeposit.token()), address(MainnetAddresses.DAI));
         assertEq(address(usdcDeposit.token()), address(MainnetAddresses.USDC));
-    }
-
-    function testGuardianAction() public {
-        uint256 startingDaiBalance = dai.balanceOf(MainnetAddresses.GOVERNOR);
-        uint256 startingUsdcBalance = usdc.balanceOf(MainnetAddresses.GOVERNOR);
-
-        vm.startPrank(MainnetAddresses.EOA_1);
-
-        pcvGuardian.withdrawAllToSafeAddress(address(daiDeposit));
-        pcvGuardian.withdrawAllToSafeAddress(address(usdcDeposit));
-
-        vm.stopPrank();
-
-        assertApproxEq(
-            (dai.balanceOf(MainnetAddresses.GOVERNOR) - startingDaiBalance)
-                .toInt256(),
-            daiBalance.toInt256(),
-            0
-        );
-        assertApproxEq(
-            (usdc.balanceOf(MainnetAddresses.GOVERNOR) - startingUsdcBalance)
-                .toInt256(),
-            usdcBalance.toInt256(),
-            0
-        );
-
-        assertTrue(daiDeposit.balance().toInt256() <= 1e20); /// only dust remains, lte 100 dai
-        assertTrue(usdcDeposit.balance().toInt256() <= 1e3); /// only dust remains, lte .001 usdc
     }
 }
