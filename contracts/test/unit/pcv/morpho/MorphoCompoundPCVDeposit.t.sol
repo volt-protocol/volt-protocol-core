@@ -9,7 +9,6 @@ import {stdError} from "../../../unit/utils/StdLib.sol";
 import {MockERC20} from "../../../../mock/MockERC20.sol";
 import {MockCToken} from "../../../../mock/MockCToken.sol";
 import {MockMorpho} from "../../../../mock/MockMorpho.sol";
-import {TribeRoles} from "../../../../core/TribeRoles.sol";
 import {IPCVDeposit} from "../../../../pcv/IPCVDeposit.sol";
 import {MockPCVOracle} from "../../../../mock/MockPCVOracle.sol";
 import {PCVGuardAdmin} from "../../../../pcv/PCVGuardAdmin.sol";

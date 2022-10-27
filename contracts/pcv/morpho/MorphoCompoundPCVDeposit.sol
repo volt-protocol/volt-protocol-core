@@ -8,7 +8,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {ILens} from "./ILens.sol";
 import {IMorpho} from "./IMorpho.sol";
-import {CoreRef} from "../../refs/CoreRef.sol";
+import {CoreRefV2} from "../../refs/CoreRefV2.sol";
 import {Constants} from "../../Constants.sol";
 import {IPCVOracle} from "./IPCVOracle.sol";
 import {PCVDeposit} from "../PCVDeposit.sol";
@@ -96,7 +96,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         address _underlying,
         address _morpho,
         address _lens
-    ) CoreRef(_core) ReentrancyGuard() {
+    ) CoreRefV2(_core) ReentrancyGuard() {
         if (_underlying != address(Constants.WETH)) {
             require(
                 ICToken(_cToken).underlying() == _underlying,
@@ -348,37 +348,5 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
 
         /// profit is in underlying token
         emit Harvest(token, profit, block.timestamp);
-    }
-
-    /// ------------------------------------------
-    /// ------------ Emergency Action ------------
-    /// ------------------------------------------
-
-    /// inspired by MakerDAO Multicall:
-    /// https://github.com/makerdao/multicall/blob/master/src/Multicall.sol
-
-    /// @notice struct to pack calldata and targets for an emergency action
-    struct Call {
-        address target;
-        bytes callData;
-    }
-
-    /// @notice due to non transferability of Morpho positions,
-    /// add this ability to be able to execute arbitrary calldata
-    /// against arbitrary addresses.
-    /// only callable by governor
-    function emergencyAction(Call[] memory calls)
-        external
-        onlyGovernor
-        returns (bytes[] memory returnData)
-    {
-        returnData = new bytes[](calls.length);
-        for (uint256 i = 0; i < calls.length; i++) {
-            (bool success, bytes memory returned) = calls[i].target.call(
-                calls[i].callData
-            );
-            require(success);
-            returnData[i] = returned;
-        }
     }
 }
