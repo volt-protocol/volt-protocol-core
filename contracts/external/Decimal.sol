@@ -12,7 +12,7 @@
     limitations under the License.
 */
 
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 

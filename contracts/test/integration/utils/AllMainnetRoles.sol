@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
 import {TribeRoles} from "../../../core/TribeRoles.sol";
@@ -31,7 +31,7 @@ contract IntegrationTestAllMainnetRoles is RoleTesting, AllRolesConfig {
         allAddresses[2].push(MainnetAddresses.GOVERNOR);
         allAddresses[2].push(MainnetAddresses.PCV_GUARDIAN);
         allAddresses[2].push(MainnetAddresses.ERC20ALLOCATOR);
-        allAddresses[2].push(MainnetAddresses.COMPOUND_PCV_ROUTER);
+        allAddresses[2].push(MainnetAddresses.MORPHO_COMPOUND_PCV_ROUTER);
 
         /// pcv guards
         allAddresses[4].push(MainnetAddresses.EOA_1);

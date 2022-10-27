@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 import {PegStabilityModule, Decimal, SafeERC20, SafeCast, IERC20, IPCVDeposit, Constants} from "./PegStabilityModule.sol";
 import {IPriceBound} from "./IPriceBound.sol";
