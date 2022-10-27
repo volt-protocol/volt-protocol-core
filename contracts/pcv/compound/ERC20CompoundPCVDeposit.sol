@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.0;
+pragma solidity 0.8.13;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {CompoundPCVDepositBase} from "./CompoundPCVDepositBase.sol";
-import {CErc20} from "./CErc20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+import {CErc20} from "./CErc20.sol";
+import {CompoundPCVDepositBase} from "./CompoundPCVDepositBase.sol";
 
 /// @title ERC-20 implementation for a Compound PCV Deposit
 /// @author Fei Protocol

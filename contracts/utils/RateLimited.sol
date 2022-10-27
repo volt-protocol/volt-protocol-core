@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
-import "../refs/CoreRef.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {CoreRefV2} from "../refs/CoreRefV2.sol";
 
 /// @title abstract contract for putting a rate limit on how fast a contract can perform an action e.g. Minting
 /// @author Fei Protocol
-abstract contract RateLimited is CoreRef {
+abstract contract RateLimited is CoreRefV2 {
     /// @notice maximum rate limit per second governance can set for this contract
     uint256 public immutable MAX_RATE_LIMIT_PER_SECOND;
 
@@ -57,7 +57,7 @@ abstract contract RateLimited is CoreRef {
     function setRateLimitPerSecond(uint256 newRateLimitPerSecond)
         external
         virtual
-        onlyGovernorOrAdmin
+        onlyGovernor
     {
         require(
             newRateLimitPerSecond <= MAX_RATE_LIMIT_PER_SECOND,
@@ -69,11 +69,7 @@ abstract contract RateLimited is CoreRef {
     }
 
     /// @notice set the buffer cap
-    function setBufferCap(uint256 newBufferCap)
-        external
-        virtual
-        onlyGovernorOrAdmin
-    {
+    function setBufferCap(uint256 newBufferCap) external virtual onlyGovernor {
         _setBufferCap(newBufferCap);
     }
 

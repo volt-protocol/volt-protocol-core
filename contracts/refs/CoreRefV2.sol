@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
@@ -7,8 +7,9 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IVolt} from "./../volt/IVolt.sol";
 import {ICoreV2} from "./../core/ICoreV2.sol";
-import {ICoreRefV2} from "./ICoreRefV2.sol";
 import {VoltRoles} from "./../core/VoltRoles.sol";
+import {ICoreRefV2} from "./ICoreRefV2.sol";
+import {IGlobalReentrancyLock} from "./../core/IGlobalReentrancyLock.sol";
 
 /// @title A Reference to Core
 /// @author Volt & Fei Protocol
@@ -32,14 +33,14 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         _vcon = ICoreV2(coreAddress).vcon();
     }
 
-    /// TODO
+    /// TODO unit, fuzz, integration and invariant testing
     /// 1. call core and lock the lock
     /// 2. execute the code
     /// 3. call core and unlock the lock
     modifier globalReentrancyLock() {
-        core.lock();
+        IGlobalReentrancyLock(address(_core)).lock();
         _;
-        core.unlock();
+        IGlobalReentrancyLock(address(_core)).unlock();
     }
 
     modifier onlyMinter() {
@@ -215,5 +216,45 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         uint256 amount
     ) external virtual onlyPCVController {
         IERC20(token).safeTransfer(to, amount);
+    }
+
+    /// ------------------------------------------
+    /// ------------ Emergency Action ------------
+    /// ------------------------------------------
+
+    /// inspired by MakerDAO Multicall:
+    /// https://github.com/makerdao/multicall/blob/master/src/Multicall.sol
+
+    /// @notice struct to pack calldata and targets for an emergency action
+    struct Call {
+        address target;
+        uint256 value;
+        bytes callData;
+    }
+
+    /// TODO add testing here that both sends and does not send eth
+
+    /// @notice due to inflexibility of current smart contracts,
+    /// add this ability to be able to execute arbitrary calldata
+    /// against arbitrary addresses.
+    /// callable only by governor
+    function emergencyAction(Call[] calldata calls)
+        external
+        payable
+        onlyGovernor
+        returns (bytes[] memory returnData)
+    {
+        returnData = new bytes[](calls.length);
+        for (uint256 i = 0; i < calls.length; i++) {
+            address payable target = payable(calls[i].target);
+            uint256 value = calls[i].value;
+            bytes calldata callData = calls[i].callData;
+
+            (bool success, bytes memory returned) = target.call{value: value}(
+                callData
+            );
+            require(success);
+            returnData[i] = returned;
+        }
     }
 }

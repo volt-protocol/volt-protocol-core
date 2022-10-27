@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 import {PegStabilityModule, Decimal, SafeERC20, SafeCast, IERC20, IPCVDeposit, Constants} from "./PegStabilityModule.sol";
 import {IPriceBound} from "./IPriceBound.sol";
@@ -27,25 +27,8 @@ contract PriceBoundPSM is PegStabilityModule, IPriceBound {
         uint256 _floor,
         uint256 _ceiling,
         OracleParams memory _params,
-        uint256 _mintFeeBasisPoints,
-        uint256 _redeemFeeBasisPoints,
-        uint256 _reservesThreshold,
-        uint256 _feiLimitPerSecond,
-        uint256 _mintingBufferCap,
-        IERC20 _underlyingToken,
-        IPCVDeposit _surplusTarget
-    )
-        PegStabilityModule(
-            _params,
-            _mintFeeBasisPoints,
-            _redeemFeeBasisPoints,
-            _reservesThreshold,
-            _feiLimitPerSecond,
-            _mintingBufferCap,
-            _underlyingToken,
-            _surplusTarget
-        )
-    {
+        IERC20 _underlyingToken
+    ) PegStabilityModule(_params, _underlyingToken) {
         _setCeilingBasisPoints(_ceiling);
         _setFloorBasisPoints(_floor);
     }
@@ -54,7 +37,7 @@ contract PriceBoundPSM is PegStabilityModule, IPriceBound {
     function setOracleFloorBasisPoints(uint256 newFloorBasisPoints)
         external
         override
-        onlyGovernorOrAdmin
+        onlyGovernor
     {
         _setFloorBasisPoints(newFloorBasisPoints);
     }
@@ -63,20 +46,13 @@ contract PriceBoundPSM is PegStabilityModule, IPriceBound {
     function setOracleCeilingBasisPoints(uint256 newCeilingBasisPoints)
         external
         override
-        onlyGovernorOrAdmin
+        onlyGovernor
     {
         _setCeilingBasisPoints(newCeilingBasisPoints);
     }
 
     function isPriceValid() external view override returns (bool) {
         return _validPrice(readOracle());
-    }
-
-    /// @notice Allocates a portion of escrowed PCV to a target PCV deposit
-    function _allocate(uint256 amount) internal override {
-        _transfer(address(surplusTarget), amount);
-
-        emit AllocateSurplus(msg.sender, amount);
     }
 
     /// @notice helper function to set the ceiling in basis points

@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
-import "./IOracleRef.sol";
-import "./CoreRef.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+
+import {IOracle} from "../oracle/IOracle.sol";
+import {Decimal} from "../external/Decimal.sol";
+import {CoreRefV2} from "./CoreRefV2.sol";
+import {IOracleRef} from "./IOracleRef.sol";
 
 /// @title Reference to an Oracle
-/// @author Fei Protocol
+/// @author Volt & Fei Protocol
 /// @notice defines some utilities around interacting with the referenced oracle
-abstract contract OracleRef is IOracleRef, CoreRef {
+abstract contract OracleRef is IOracleRef, CoreRefV2 {
     using Decimal for Decimal.D256;
     using SafeCast for int256;
 
@@ -36,11 +39,9 @@ abstract contract OracleRef is IOracleRef, CoreRef {
         address _backupOracle,
         int256 _decimalsNormalizer,
         bool _doInvert
-    ) CoreRef(_core) {
+    ) CoreRefV2(_core) {
         _setOracle(_oracle);
-        if (_backupOracle != address(0) && _backupOracle != _oracle) {
-            _setBackupOracle(_backupOracle);
-        }
+        _setBackupOracle(_backupOracle);
         _setDoInvert(_doInvert);
         _setDecimalsNormalizer(_decimalsNormalizer);
     }
@@ -72,7 +73,7 @@ abstract contract OracleRef is IOracleRef, CoreRef {
     function setBackupOracle(address newBackupOracle)
         external
         override
-        onlyGovernorOrAdmin
+        onlyGovernor
     {
         _setBackupOracle(newBackupOracle);
     }
@@ -130,7 +131,7 @@ abstract contract OracleRef is IOracleRef, CoreRef {
         emit OracleUpdate(oldOracle, newOracle);
     }
 
-    // Supports zero address if no backup
+    /// Supports zero address if no backup
     function _setBackupOracle(address newBackupOracle) internal {
         address oldBackupOracle = address(backupOracle);
         backupOracle = IOracle(newBackupOracle);
@@ -140,10 +141,6 @@ abstract contract OracleRef is IOracleRef, CoreRef {
     function _setDoInvert(bool newDoInvert) internal {
         bool oldDoInvert = doInvert;
         doInvert = newDoInvert;
-
-        if (oldDoInvert != newDoInvert) {
-            _setDecimalsNormalizer(-1 * decimalsNormalizer);
-        }
 
         emit InvertUpdate(oldDoInvert, newDoInvert);
     }
@@ -155,17 +152,5 @@ abstract contract OracleRef is IOracleRef, CoreRef {
             oldDecimalsNormalizer,
             newDecimalsNormalizer
         );
-    }
-
-    function _setDecimalsNormalizerFromToken(address token) internal {
-        int256 feiDecimals = 18;
-        int256 _decimalsNormalizer = feiDecimals -
-            int256(uint256(IERC20Metadata(token).decimals()));
-
-        if (doInvert) {
-            _decimalsNormalizer = -1 * _decimalsNormalizer;
-        }
-
-        _setDecimalsNormalizer(_decimalsNormalizer);
     }
 }

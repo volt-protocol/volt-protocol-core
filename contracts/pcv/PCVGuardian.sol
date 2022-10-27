@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {CoreRef} from "../refs/CoreRef.sol";
-import {IPCVGuardian} from "./IPCVGuardian.sol";
-import {IPCVDeposit} from "./IPCVDeposit.sol";
-import {CoreRefPausableLib} from "../libs/CoreRefPausableLib.sol";
+
+import {CoreRefV2} from "../refs/CoreRefV2.sol";
 import {VoltRoles} from "../core/VoltRoles.sol";
+import {IPCVDeposit} from "./IPCVDeposit.sol";
+import {IPCVGuardian} from "./IPCVGuardian.sol";
+import {CoreRefPausableLib} from "../libs/CoreRefPausableLib.sol";
 
 /// @notice PCV Guardian is a contract to safeguard protocol funds
 /// by being able to withdraw whitelisted PCV deposits to an immutable safe address
-contract PCVGuardian is IPCVGuardian, CoreRef {
+contract PCVGuardian is IPCVGuardian, CoreRefV2 {
     using CoreRefPausableLib for address;
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -25,7 +26,7 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         address _core,
         address _safeAddress,
         address[] memory _whitelistAddresses
-    ) CoreRef(_core) {
+    ) CoreRefV2(_core) {
         safeAddress = _safeAddress;
 
         // improbable to ever overflow
