@@ -49,7 +49,7 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     }
 
     /// @notice returns whether or not the contract is currently entered
-    function isLocked() public view returns (bool) {
+    function isLocked() public view override returns (bool) {
         return (_status == _NOT_ENTERED ||
             (_status == _ENTERED && _lastBlockEntered < block.number));
     }
@@ -57,7 +57,7 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// @notice set the status to entered
     /// only available if not entered
     /// callable only by state role
-    function lock() external onlyStateRole {
+    function lock() external override onlyStateRole {
         require(
             _status == _NOT_ENTERED,
             "GlobalReentrancyLock: system already entered"
@@ -71,7 +71,7 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// only available if entered and entered in same block
     /// otherwise, system is in an indeterminate state and no execution should be allowed
     /// callable only by state role
-    function unlock() external onlyStateRole {
+    function unlock() external override onlyStateRole {
         require(
             block.timestamp == _lastBlockEntered && _status == _ENTERED,
             "GlobalReentrancyLock: system not entered"
@@ -83,7 +83,7 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// @notice function to recover the system from an incorrect state
     /// in case of emergency by setting status to not entered
     /// only callable if system is entered
-    function governanceEmergencyRecover() external onlyGovernor {
+    function governanceEmergencyRecover() external override onlyGovernor {
         require(
             _status == _ENTERED,
             "GlobalReentrancyLock: governor recovery, system not entered"
