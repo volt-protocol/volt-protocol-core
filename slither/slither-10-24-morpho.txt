@@ -1,0 +1,41 @@
+Reentrancy in MorphoCompoundPCVDeposit._recordPNL() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#322-351):
+	External calls:
+	- IMorpho(morpho).updateP2PIndexes(cToken) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#324)
+	Event emitted after the call(s):
+	- Harvest(token,profit,block.timestamp) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#350)
+Reentrancy in MorphoCompoundPCVDeposit._withdraw(address,uint256,bool) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#294-317):
+	External calls:
+	- _recordPNL() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#303)
+		- IMorpho(morpho).updateP2PIndexes(cToken) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#324)
+	- IMorpho(morpho).withdraw(cToken,amount) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#313)
+	- IERC20(token).safeTransfer(to,amount) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#314)
+	Event emitted after the call(s):
+	- Withdrawal(msg.sender,to,amount) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#316)
+Reentrancy in MorphoCompoundPCVDeposit.deposit() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#139-179):
+	External calls:
+	- _recordPNL() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#154)
+		- IMorpho(morpho).updateP2PIndexes(cToken) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#324)
+	- IERC20(token).approve(address(morpho),amount) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#163)
+	- IMorpho(morpho).supply(cToken,address(this),amount) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#164-168)
+	- IPCVOracle(pcvOracle).updateLiquidBalance(endingRecordedBalance - startingRecordedBalance) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#173-175)
+	Event emitted after the call(s):
+	- Deposit(msg.sender,amount) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#178)
+Reentrancy in MorphoCompoundPCVDeposit.harvest() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#184-192):
+	External calls:
+	- claimedAmount = IMorpho(morpho).claimRewards(cTokens,false) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#189)
+	Event emitted after the call(s):
+	- Harvest(COMP,int256(claimedAmount),block.timestamp) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#191)
+Reentrancy in MorphoCompoundPCVDeposit.setPCVOracle(address) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#266-277):
+	External calls:
+	- _recordPNL() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#270)
+		- IMorpho(morpho).updateP2PIndexes(cToken) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#324)
+	- IPCVOracle(pcvOracle).updateLiquidBalance(lastRecordedBalance.toInt256()) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#272-274)
+	Event emitted after the call(s):
+	- PCVOracleUpdated(oldOracle,_pcvOracle) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#276)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-3
+Response: Author acknowledges that events are emitted after the calls.
+However, this is not an issue as reentrancy locks are used anytime _recordPNL or updateLiquidBalance is called.
+
+Parameter MorphoCompoundPCVDeposit.setPCVOracle(address)._pcvOracle (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#266) is not in mixedCase
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#conformance-to-solidity-naming-conventions
+Response: Author acknowledges the issue and will not fix.

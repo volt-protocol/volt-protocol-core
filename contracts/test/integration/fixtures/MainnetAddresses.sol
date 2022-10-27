@@ -34,6 +34,16 @@ library MainnetAddresses {
     address public constant COMPOUND_PCV_ROUTER =
         0x6338Ec144279b1f05AF8C90216d90C5b54Fa4D8F;
 
+    // ---------- MORPHO ADDRESSES ----------
+    address public constant MORPHO_COMPOUND_PCV_ROUTER =
+        0x579C400eaCA4b1D84956E7bD284d97611f78BA4E;
+
+    address public constant MORPHO_COMPOUND_DAI_PCV_DEPOSIT =
+        0x7aB2f4A29048392EfE0B57FD17a3BedBcD0891DC;
+
+    address public constant MORPHO_COMPOUND_USDC_PCV_DEPOSIT =
+        0xF10d810De7F0Fbd455De30f8c43AbA56F253B73B;
+
     // ---------- ORACLE ADDRESSES ----------
     address public constant ORACLE_PASS_THROUGH =
         0xe733985a92Bfd5BC676095561BacE90E04606E4a;
@@ -97,6 +107,8 @@ library MainnetAddresses {
 
     address public constant CUSDC = 0x39AA39c021dfbaE8faC545936693aC917d5E7563;
 
+    address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
+
     // ---------- Maker ADDRESSES ----------
 
     address public constant MAKER_DAI_USDC_PSM =
@@ -153,4 +165,22 @@ library MainnetAddresses {
 
     address public constant GLOBAL_RATE_LIMITED_MINTER =
         0x87945f59E008aDc9ed6210a8e061f009d6ace718;
+
+    // ---------- MORPHO ADDRESSES ----------
+
+    address public constant MORPHO = 0x8888882f8f843896699869179fB6E4f7e3B58888;
+
+    address public constant MORPHO_LENS =
+        0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67;
+
+    // ---------- MAPLE ADDRESSES ----------
+
+    address public constant MPL_TOKEN =
+        0x33349B282065b0284d756F0577FB39c158F935e6;
+
+    address public constant MPL_ORTHOGONAL_POOL =
+        0xFeBd6F15Df3B73DC4307B1d7E65D46413e710C27;
+
+    address public constant MPL_ORTHOGONAL_REWARDS =
+        0x7869D7a3B074b5fa484dc04798E254c9C06A5e90;
 }
