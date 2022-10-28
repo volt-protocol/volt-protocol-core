@@ -315,4 +315,17 @@ contract IntegrationTestVoltMigratorTest is TimelockSimulation, vip13 {
             amountToTransfer
         );
     }
+
+    function testSweepNewVoltFails() public {
+        uint256 amountToSweep = voltV2.balanceOf(address(voltMigrator));
+
+        vm.startPrank(MainnetAddresses.GOVERNOR);
+        vm.expectRevert("VoltMigrator: cannot sweep new Volt");
+        voltMigrator.sweep(
+            address(voltV2),
+            MainnetAddresses.TIMELOCK_CONTROLLER,
+            amountToSweep
+        );
+        vm.stopPrank();
+    }
 }

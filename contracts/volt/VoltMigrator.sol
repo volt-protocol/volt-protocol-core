@@ -83,6 +83,10 @@ contract VoltMigrator is IVoltMigrator, CoreRef {
         address to,
         uint256 amount
     ) external onlyGovernor {
+        require(
+            token != address(newVolt),
+            "VoltMigrator: cannot sweep new Volt"
+        );
         IERC20(token).safeTransfer(to, amount);
     }
 }
