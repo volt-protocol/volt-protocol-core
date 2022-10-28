@@ -13,11 +13,6 @@ interface ICoreRefV2 {
 
     event CoreUpdate(address indexed oldCore, address indexed newCore);
 
-    event ContractAdminRoleUpdate(
-        bytes32 indexed oldContractAdminRole,
-        bytes32 indexed newContractAdminRole
-    );
-
     // ----------- Governor or Guardian only state changing api -----------
 
     function pause() external;
