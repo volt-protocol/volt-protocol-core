@@ -10,6 +10,9 @@ import {IGlobalReentrancyLock} from "./IGlobalReentrancyLock.sol";
 contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     using SafeCast for *;
 
+    /// @notice emitted when governor does an emergency unlock
+    event EmergencyUnlock(address indexed sender, uint256 timestamp);
+
     // Booleans are more expensive than uint256 or any type that takes up a full
     // word because each write operation emits an extra SLOAD to first read the
     // slot's contents, replace the bits taken up by the boolean, and then write
@@ -30,7 +33,6 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// @notice store the last block entered
     /// if last block entered was in the past and status is entered, the system is in an invalid state
     /// which means that actions should be allowed
-
     uint32 private _lastBlockEntered;
 
     /// @notice construct permissions v2
@@ -49,11 +51,13 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     }
 
     /// @notice returns whether or not the contract is currently not entered
+    /// if true, it is possible to lock
     function isUnlocked() public view returns (bool) {
         return _status == _NOT_ENTERED;
     }
 
     /// @notice returns whether or not the contract is currently entered
+    /// if true, and locked in the same block, it is possible to unlock
     function isLocked() public view override returns (bool) {
         return _status == _ENTERED;
     }
@@ -77,7 +81,7 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// callable only by state role
     function unlock() external override onlyStateRole {
         require(
-            block.timestamp == _lastBlockEntered && _status == _ENTERED,
+            block.number == _lastBlockEntered && _status == _ENTERED,
             "GlobalReentrancyLock: system not entered"
         );
 
@@ -86,13 +90,20 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
 
     /// @notice function to recover the system from an incorrect state
     /// in case of emergency by setting status to not entered
-    /// only callable if system is entered
+    /// only callable if system is entered in a previous block
     function governanceEmergencyRecover() external override onlyGovernor {
         require(
             _status == _ENTERED,
             "GlobalReentrancyLock: governor recovery, system not entered"
         );
+        /// we know status == entered at this point
+        require(
+            block.number > _lastBlockEntered,
+            "GlobalReentrancyLock: cannot unlock in same block as lock"
+        );
 
         _status = _NOT_ENTERED;
+
+        emit EmergencyUnlock(msg.sender, block.timestamp);
     }
 }
