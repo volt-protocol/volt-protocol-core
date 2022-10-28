@@ -16,8 +16,6 @@ import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 
-import "hardhat/console.sol";
-
 contract IntegrationTestCleanPriceBoundPSM is DSTest {
     using SafeCast for *;
 
@@ -191,31 +189,16 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
         uint256 endingPSMUnderlyingBalancePriceBound = underlyingToken
             .balanceOf(address(priceBoundPsm));
 
-        console.log("amountVoltOut: ", amountVoltOut);
-        console.log("endingUserVoltBalance1: ", endingUserVoltBalance1);
-        console.log("startingUserVoltBalance: ", startingUserVoltBalance);
-
         assertEq(
             endingUserVoltBalance1,
             startingUserVoltBalance + amountVoltOut
         );
 
-        console.log("endingPSMUnderlyingBalance: ", endingPSMUnderlyingBalance);
-        console.log(
-            "endingPSMUnderlyingBalancePriceBound: ",
-            endingPSMUnderlyingBalancePriceBound
-        );
         assertEq(
             endingPSMUnderlyingBalance,
             endingPSMUnderlyingBalancePriceBound
         );
 
-        console.log("endingUserVoltBalance1: ", endingUserVoltBalance1);
-        console.log("endingUserVoltBalance2: ", endingUserVoltBalance2);
-        console.log(
-            "endingUserVoltBalance2 - endingUserVoltBalance1: ",
-            endingUserVoltBalance2 - endingUserVoltBalance1
-        );
         assertEq(
             endingUserVoltBalance2 - endingUserVoltBalance1,
             amountVoltOut
