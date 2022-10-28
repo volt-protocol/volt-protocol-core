@@ -50,6 +50,11 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
         _;
     }
 
+    /// @notice view only function to return the last block entered
+    function lastBlockEntered() public view returns (uint32) {
+        return _lastBlockEntered;
+    }
+
     /// @notice returns whether or not the contract is currently not entered
     /// if true, it is possible to lock
     function isUnlocked() public view returns (bool) {
