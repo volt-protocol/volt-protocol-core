@@ -18,19 +18,10 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     using SafeERC20 for IERC20;
 
     /// @notice reference to Core
-    ICoreV2 private immutable _core;
-
-    /// @notice reference to Volt
-    IVolt private immutable _volt;
-
-    /// @notice reference to Vcon
-    IERC20 private immutable _vcon;
+    ICoreV2 private _core;
 
     constructor(address coreAddress) {
         _core = ICoreV2(coreAddress);
-
-        _volt = ICoreV2(coreAddress).volt();
-        _vcon = ICoreV2(coreAddress).vcon();
     }
 
     /// TODO unit, fuzz, integration and invariant testing
@@ -64,22 +55,6 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         _;
     }
 
-    modifier onlyLiquidPCVDeposit() {
-        require(
-            _core.hasRole(VoltRoles.LIQUID_PCV_DEPOSIT, msg.sender),
-            "CoreRef: Caller is not a Liquid PCV Deposit"
-        );
-        _;
-    }
-
-    modifier onlyIlliquidPCVDeposit() {
-        require(
-            _core.hasRole(VoltRoles.ILLIQUID_PCV_DEPOSIT, msg.sender),
-            "CoreRef: Caller is not an Illiquid PCV Deposit"
-        );
-        _;
-    }
-
     modifier onlyGuardianOrGovernor() {
         require(
             _core.isGovernor(msg.sender) || _core.isGuardian(msg.sender),
@@ -88,13 +63,13 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         _;
     }
 
-    // Named onlyTribeRole to prevent collision with OZ onlyRole modifier
-    modifier onlyTribeRole(bytes32 role) {
+    /// Named onlyVoltRole to prevent collision with OZ onlyRole modifier
+    modifier onlyVoltRole(bytes32 role) {
         require(_core.hasRole(role, msg.sender), "UNAUTHORIZED");
         _;
     }
 
-    // Named onlyTribeRole to prevent collision with OZ onlyRole modifier
+    /// Named onlyVoltRole to prevent collision with OZ onlyRole modifier
     modifier onlyVoltMinter() {
         require(
             _core.hasRole(VoltRoles.VOLT_MINTER_ROLE, msg.sender),
@@ -103,61 +78,20 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         _;
     }
 
-    // Modifiers to allow any combination of roles
-    modifier hasAnyOfTwoRoles(bytes32 role1, bytes32 role2) {
-        require(
-            _core.hasRole(role1, msg.sender) ||
-                _core.hasRole(role2, msg.sender),
-            "UNAUTHORIZED"
-        );
-        _;
-    }
+    /// Modifier to allow an address to be checked for any number of roles
+    modifier onlyVoltRoles(bytes32[] memory roles) {
+        uint256 roleLength = roles.length;
+        bool foundRole = false;
+        unchecked {
+            for (uint256 i = 0; i < roleLength; i++) {
+                if (_core.hasRole(roles[i], msg.sender)) {
+                    foundRole = true;
+                    break;
+                }
+            }
+        }
+        require(foundRole, "UNAUTHORIZED");
 
-    modifier hasAnyOfThreeRoles(
-        bytes32 role1,
-        bytes32 role2,
-        bytes32 role3
-    ) {
-        require(
-            _core.hasRole(role1, msg.sender) ||
-                _core.hasRole(role2, msg.sender) ||
-                _core.hasRole(role3, msg.sender),
-            "UNAUTHORIZED"
-        );
-        _;
-    }
-
-    modifier hasAnyOfFourRoles(
-        bytes32 role1,
-        bytes32 role2,
-        bytes32 role3,
-        bytes32 role4
-    ) {
-        require(
-            _core.hasRole(role1, msg.sender) ||
-                _core.hasRole(role2, msg.sender) ||
-                _core.hasRole(role3, msg.sender) ||
-                _core.hasRole(role4, msg.sender),
-            "UNAUTHORIZED"
-        );
-        _;
-    }
-
-    modifier hasAnyOfFiveRoles(
-        bytes32 role1,
-        bytes32 role2,
-        bytes32 role3,
-        bytes32 role4,
-        bytes32 role5
-    ) {
-        require(
-            _core.hasRole(role1, msg.sender) ||
-                _core.hasRole(role2, msg.sender) ||
-                _core.hasRole(role3, msg.sender) ||
-                _core.hasRole(role4, msg.sender) ||
-                _core.hasRole(role5, msg.sender),
-            "UNAUTHORIZED"
-        );
         _;
     }
 
@@ -177,32 +111,42 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         return _core;
     }
 
-    /// @notice address of the Fei contract referenced by Core
-    /// @return IFei implementation address
+    /// @notice address of the Volt contract referenced by Core
+    /// @return IVolt implementation address
     function volt() public view override returns (IVolt) {
-        return _volt;
+        return _core.volt();
     }
 
     /// @notice address of the Tribe contract referenced by Core
     /// @return IERC20 implementation address
     function vcon() public view override returns (IERC20) {
-        return _vcon;
+        return _core.vcon();
     }
 
     /// @notice volt balance of contract
     /// @return volt amount held
     function voltBalance() public view override returns (uint256) {
-        return _volt.balanceOf(address(this));
+        return volt().balanceOf(address(this));
     }
 
     /// @notice vcon balance of contract
     /// @return vcon amount held
     function vconBalance() public view override returns (uint256) {
-        return _vcon.balanceOf(address(this));
+        return vcon().balanceOf(address(this));
     }
 
     function _burnVoltHeld() internal {
-        _volt.burn(voltBalance());
+        volt().burn(voltBalance());
+    }
+
+    /// @notice set new reference to core
+    /// only callable by governor
+    /// @param newCore to reference
+    function setCore(address newCore) external onlyGovernor {
+        address oldCore = address(_core);
+        _core = ICoreV2(newCore);
+
+        emit CoreUpdate(oldCore, newCore);
     }
 
     /// @notice sweep target token, this shouldn't be needed, however it is a backup
