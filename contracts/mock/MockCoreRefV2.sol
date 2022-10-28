@@ -19,4 +19,13 @@ contract MockCoreRefV2 is CoreRefV2 {
         public
         onlyVoltRole(VoltRoles.SYSTEM_STATE_ROLE)
     {}
+
+    function testStateGovernorMinter()
+        public
+        hasAnyOfThreeRoles(
+            VoltRoles.SYSTEM_STATE_ROLE,
+            VoltRoles.GOVERNOR,
+            VoltRoles.MINTER
+        )
+    {}
 }
