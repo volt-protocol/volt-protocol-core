@@ -84,8 +84,8 @@ abstract contract CoreRef is ICoreRef, Pausable {
         _;
     }
 
-    // Named onlyTribeRole to prevent collision with OZ onlyRole modifier
-    modifier onlyTribeRole(bytes32 role) {
+    // Named onlyVoltRole to prevent collision with OZ onlyRole modifier
+    modifier onlyVoltRole(bytes32 role) {
         require(_core.hasRole(role, msg.sender), "UNAUTHORIZED");
         _;
     }
