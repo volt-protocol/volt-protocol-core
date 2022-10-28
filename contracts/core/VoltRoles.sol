@@ -42,6 +42,11 @@ library VoltRoles {
     bytes32 internal constant ILLIQUID_PCV_DEPOSIT =
         keccak256("ILLIQUID_PCV_DEPOSIT_ROLE");
 
+    /// @notice system state role can lock and unlock the global reentrancy
+    /// lock. this allows for a system wide reentrancy lock.
+    bytes32 internal constant SYSTEM_STATE_ROLE =
+        keccak256("SYSTEM_STATE_ROLE");
+
     /*///////////////////////////////////////////////////////////////
                                  Admin Roles
     //////////////////////////////////////////////////////////////*/
