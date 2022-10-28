@@ -167,6 +167,7 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
         );
 
         uint256 startingUserVoltBalance = volt.balanceOf(address(this));
+        uint256 startingCleanPsmBalance = cleanPsm.balance();
 
         underlyingToken.approve(address(cleanPsm), amountStableIn);
         cleanPsm.mint(address(this), amountStableIn, amountVoltOut);
@@ -175,7 +176,15 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
         uint256 endingPSMUnderlyingBalance = underlyingToken.balanceOf(
             address(cleanPsm)
         );
+        uint256 endingCleanPsmBalance = cleanPsm.balance();
 
+        /// assert psm receives amount stable in
+        assertEq(
+            endingCleanPsmBalance - startingCleanPsmBalance,
+            amountStableIn
+        );
+
+        uint256 startingPriceBoundPsmBalance = priceBoundPsm.balance();
         underlyingToken.approve(address(priceBoundPsm), amountStableIn);
 
         priceBoundPsm.mint(
@@ -185,9 +194,15 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
         );
 
         uint256 endingUserVoltBalance2 = volt.balanceOf(address(this));
-
         uint256 endingPSMUnderlyingBalancePriceBound = underlyingToken
             .balanceOf(address(priceBoundPsm));
+        uint256 endingPriceBoundPsmBalance = priceBoundPsm.balance();
+
+        /// assert psm receives amount stable in
+        assertEq(
+            endingPriceBoundPsmBalance - startingPriceBoundPsmBalance,
+            amountStableIn
+        );
 
         assertEq(
             endingUserVoltBalance1,
@@ -221,6 +236,9 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
             address(this)
         );
 
+        uint256 startingPsmUnderlyingBalance = cleanPsm.balance();
+        uint256 startingPSMVoltBalance = volt.balanceOf(address(cleanPsm));
+
         volt.approve(address(cleanPsm), amountVoltIn);
         cleanPsm.redeem(address(this), amountVoltIn, amountOut);
 
@@ -228,6 +246,13 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
             address(this)
         );
         uint256 endingPSMVoltBalance = volt.balanceOf(address(cleanPsm));
+        uint256 endingPsmUnderlyingBalance = cleanPsm.balance();
+
+        assertEq(
+            startingPsmUnderlyingBalance - endingPsmUnderlyingBalance,
+            underlyingOutPriceBound
+        );
+        assertEq(endingPSMVoltBalance - startingPSMVoltBalance, amountVoltIn);
 
         volt.approve(address(priceBoundPsm), amountVoltIn);
 
