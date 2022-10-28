@@ -94,4 +94,51 @@ contract UnitTestGlobalReentrancyLock is DSTest {
         assertTrue(!core.isLocked()); /// core is still not locked
         assertEq(lock.lastBlockNumber(), core.lastBlockEntered());
     }
+
+    function testGovernorSystemRecoveryFailsNotEntered() public {
+        vm.prank(addresses.governorAddress);
+        vm.expectRevert(
+            "GlobalReentrancyLock: governor recovery, system not entered"
+        );
+        core.governanceEmergencyRecover();
+    }
+
+    function testGovernorSystemRecovery() public {
+        vm.startPrank(addresses.governorAddress);
+        core.grantRole(VoltRoles.SYSTEM_STATE_ROLE, addresses.governorAddress);
+
+        core.lock();
+
+        assertTrue(core.isLocked());
+        assertTrue(!core.isUnlocked());
+        assertEq(core.lastBlockEntered(), block.number);
+
+        vm.expectRevert(
+            "GlobalReentrancyLock: cannot unlock in same block as lock"
+        );
+        core.governanceEmergencyRecover();
+
+        vm.roll(block.number + 1);
+        core.governanceEmergencyRecover();
+
+        assertTrue(!core.isLocked());
+        assertTrue(core.isUnlocked());
+        assertTrue(core.lastBlockEntered() != block.number);
+        vm.stopPrank();
+    }
+
+    function testLockFailsNonStateRole() public {
+        vm.expectRevert("GlobalReentrancyLock: address missing state role");
+        core.lock();
+    }
+
+    function testUnlockFailsNonStateRole() public {
+        vm.expectRevert("GlobalReentrancyLock: address missing state role");
+        core.unlock();
+    }
+
+    function testGovernorSystemRecoveryFailsNotGovernor() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.governanceEmergencyRecover();
+    }
 }
