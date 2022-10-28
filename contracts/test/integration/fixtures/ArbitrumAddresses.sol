@@ -3,22 +3,30 @@ pragma solidity 0.8.13;
 
 library ArbitrumAddresses {
     // ---------- VOLT ADDRESSES ----------
+
     address public constant CORE = 0x31A38B79fDcFBC3095E3268CAFac1b9791796736;
+
     address public constant VOLT = 0x6Ba6f18a290Cd55cf1B00be2bEc5c954cb29fAc5;
 
     /// ---------- CURRENT ORACLES ----------
+
     address public constant ORACLE_PASS_THROUGH =
         0xcd836280e4416e08F54E5584Bcd49Ac2E3a68747;
+
     address public constant VOLT_SYSTEM_ORACLE_0_BIPS =
         0xACce8F8661f7f214b94f94e3e1A09d81f0B924D6;
 
-    /// deprecated oracles
+    /// ---------- DEPRECATED ORACLES ----------
+
     address public constant VOLT_SYSTEM_ORACLE =
         0x69DBf8dD98Aa40F50E4f2263c6f2d66f26f9cb5b;
+
     address public constant VOLT_SYSTEM_ORACLE_144_BIPS =
         0x5DDf983CbD5819c13661046110EfCd2E8629d40b;
+
     address public constant DEPRECATED_ORACLE_PASS_THROUGH =
         0x7A23eB9bf043471dE7422a9CcdB5Ef809F34CbdE;
+
     address public constant DEPRECATED_SCALING_PRICE_ORACLE =
         0x138F30D35557FA72478663b601f0f0FD7cc4E39E;
 
@@ -29,9 +37,11 @@ library ArbitrumAddresses {
     /// @notice multisig governor
     address public constant GOVERNOR =
         0x1A1075cef632624153176CCf19Ae0175953CF010;
+
     /// @notice PCV Guardian smart contract
     address public constant PCV_GUARDIAN =
         0x14eCB5Ff2A78364E0FF443B7F0F6e0e393531484;
+
     /// @notice deployer
     address public constant DEPLOYER =
         0x25dCffa22EEDbF0A69F6277e24C459108c186ecB;
@@ -65,18 +75,15 @@ library ArbitrumAddresses {
     // ---------- TOKEN ADDRESSES ----------
 
     address public constant USDC = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
+
     address public constant DAI = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
 
     address public constant DAI_MINTER_1 =
         0x10E6593CDda8c58a1d0f14C5164B376352a55f2F;
+
     address public constant DAI_MINTER_2 =
         0x467194771dAe2967Aef3ECbEDD3Bf9a310C76C65;
 
     address public constant USDC_WHALE =
         0x489ee077994B6658eAfA855C308275EAd8097C4A;
-
-    // ---------- CHAINLINK ADDRESSES ----------
-
-    address public constant CHAINLINK_ORACLE_ADDRESS =
-        0xf76F586F6aAC0c8dE147Eea75D76AB7c2f23eDC2;
 }

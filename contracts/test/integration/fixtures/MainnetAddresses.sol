@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 library MainnetAddresses {
     // ---------- VOLT ADDRESSES ----------
+
     address public constant CORE = 0xEC7AD284f7Ad256b64c6E69b84Eb0F48f42e8196;
 
     address public constant ERC20ALLOCATOR =
@@ -10,22 +11,29 @@ library MainnetAddresses {
 
     address public constant GOVERNOR =
         0xcBB83206698E8788F85EFbEeeCAd17e53366EBDf;
+
     address public constant PCV_GUARDIAN =
         0x2c2b362e6ae0F080F39b90Cb5657E5550090D6C3;
+
     address public constant DEPLOYER =
         0x25dCffa22EEDbF0A69F6277e24C459108c186ecB;
+
     address public constant VOLT_TIMELOCK =
         0x860fa85f04f9d35B3471D8F7F7fA3Ad31Ce4D5Ae;
+
     address public constant VOLT_FEI_PSM =
         0x985f9C331a9E4447C782B98D6693F5c7dF8e560e;
+
+    address public constant TIMELOCK_CONTROLLER =
+        0x75d078248eE49c585b73E73ab08bb3eaF93383Ae;
+
+    // ---------- LIVE PSM ADDRESSES ----------
+
     address public constant VOLT_DAI_PSM =
         0x42ea9cC945fca2dfFd0beBb7e9B3022f134d9Bdd;
 
     address public constant VOLT_USDC_PSM =
         0x0b9A7EA2FCA868C93640Dd77cF44df335095F501;
-
-    address public constant TIMELOCK_CONTROLLER =
-        0x75d078248eE49c585b73E73ab08bb3eaF93383Ae;
 
     /// contracts that are routers and interact with maker routers
     address public constant MAKER_ROUTER =
@@ -35,6 +43,7 @@ library MainnetAddresses {
         0x6338Ec144279b1f05AF8C90216d90C5b54Fa4D8F;
 
     // ---------- MORPHO ADDRESSES ----------
+
     address public constant MORPHO_COMPOUND_PCV_ROUTER =
         0x579C400eaCA4b1D84956E7bD284d97611f78BA4E;
 
@@ -45,6 +54,7 @@ library MainnetAddresses {
         0xF10d810De7F0Fbd455De30f8c43AbA56F253B73B;
 
     // ---------- ORACLE ADDRESSES ----------
+
     address public constant ORACLE_PASS_THROUGH =
         0xe733985a92Bfd5BC676095561BacE90E04606E4a;
 
@@ -117,22 +127,16 @@ library MainnetAddresses {
     address public constant GEM_JOIN =
         0x0A59649758aa4d66E25f08Dd01271e891fe52199;
 
-    // ---------- CHAINLINK ADDRESSES ----------
-
-    address public constant CHAINLINK_ORACLE_ADDRESS =
-        0x049Bd8C3adC3fE7d3Fc2a44541d955A537c2A484;
-
     // ---------- PCV DEPOSIT ADDRESSES ----------
 
     address public constant COMPOUND_DAI_PCV_DEPOSIT =
         0xE3cbfd618463B7198fa0743AbFA56170557cc880;
+
     address public constant COMPOUND_FEI_PCV_DEPOSIT =
         0x604556Bbc4aB70B3c73d7bb6c4867B6239511301;
+
     address public constant COMPOUND_USDC_PCV_DEPOSIT =
         0x3B69e3073cf86099a9bbB650e8682D6FdCfb29db;
-
-    address public constant RARI_VOLT_PCV_DEPOSIT =
-        0xFeBDf448C8484834bb399d930d7E1bdC773E23bA;
 
     // ---------- CURVE ADDRESSES ----------
 
