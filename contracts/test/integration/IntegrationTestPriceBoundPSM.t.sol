@@ -28,12 +28,9 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     IVolt private fei = IVolt(MainnetAddresses.FEI);
     IVolt private underlyingToken = fei;
 
-    /// ------------ Minting and RateLimited System Params ------------
+    /// --------------- Minting Params ---------------
 
     uint256 public constant mintAmount = 10_000_000e18;
-    uint256 public constant bufferCap = 10_000_000e18;
-    uint256 public constant individualMaxBufferCap = 5_000_000e18;
-    uint256 public constant rps = 10_000e18;
 
     /// ------------ Oracle System Params ------------
 
@@ -121,16 +118,13 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     /// @notice PSM is set up correctly and view functions are working
     function testGetMaxMintAmountOut() public {
         uint256 startingBalance = volt.balanceOf(address(psm));
-        assertEq(psm.getMaxMintAmountOut(), bufferCap + startingBalance);
+        assertEq(psm.getMaxMintAmountOut(), startingBalance);
 
         vm.startPrank(MainnetAddresses.GOVERNOR);
         volt.mint(address(psm), mintAmount);
         vm.stopPrank();
 
-        assertEq(
-            psm.getMaxMintAmountOut(),
-            bufferCap + mintAmount + startingBalance
-        );
+        assertEq(psm.getMaxMintAmountOut(), mintAmount + startingBalance);
     }
 
     /// @notice PSM is set up correctly and view functions are working
