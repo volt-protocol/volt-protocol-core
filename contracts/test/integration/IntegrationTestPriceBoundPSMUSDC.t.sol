@@ -33,10 +33,6 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     uint256 public constant mintAmount = 10_000_000e6;
     uint256 public constant voltMintAmount = 10_000_000e18;
 
-    /// @notice live FEI PCV Deposit
-    ERC20CompoundPCVDeposit public immutable rariVoltPCVDeposit =
-        ERC20CompoundPCVDeposit(MainnetAddresses.RARI_VOLT_PCV_DEPOSIT);
-
     /// @notice Oracle Pass Through contract
     OraclePassThrough public oracle =
         OraclePassThrough(MainnetAddresses.DEPRECATED_ORACLE_PASS_THROUGH);

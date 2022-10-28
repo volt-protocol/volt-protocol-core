@@ -32,23 +32,6 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
 
     uint256 public constant mintAmount = 10_000_000e18;
 
-    /// ------------ Oracle System Params ------------
-
-    /// @notice prices during test will increase 1% monthly
-    int256 public constant monthlyChangeRateBasisPoints = 100;
-    uint256 public constant maxDeviationThresholdBasisPoints = 1_000;
-
-    /// @notice chainlink job id on mainnet
-    bytes32 public immutable jobId =
-        0x3666376662346162636564623438356162323765623762623339636166383237;
-    /// @notice chainlink oracle address on mainnet
-    address public immutable oracleAddress =
-        MainnetAddresses.CHAINLINK_ORACLE_ADDRESS;
-
-    /// @notice live FEI PCV Deposit
-    ERC20CompoundPCVDeposit public immutable rariVoltPCVDeposit =
-        ERC20CompoundPCVDeposit(MainnetAddresses.RARI_VOLT_PCV_DEPOSIT);
-
     /// @notice fei dai psm address
     address public immutable feiDaiPsm = MainnetAddresses.FINAL_FEI_DAI_PSM;
 
