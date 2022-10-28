@@ -1,7 +1,5 @@
 pragma solidity 0.8.13;
 
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-
 import {Vm} from "./../utils/Vm.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {ICoreV2} from "../../../core/ICoreV2.sol";
@@ -33,21 +31,6 @@ contract UnitTestCoreRefV2 is DSTest {
 
         assertEq(address(coreRef.volt()), address(core.volt()));
         assertEq(address(coreRef.vcon()), address(core.vcon()));
-    }
-
-    function testRandomsCannotCreateRole(address sender, bytes32 role) public {
-        vm.assume(!core.hasRole(VoltRoles.GOVERNOR, sender));
-        vm.prank(sender);
-
-        vm.expectRevert(
-            abi.encodePacked(
-                "AccessControl: account ",
-                Strings.toHexString(uint160(sender), 20),
-                " is missing role ",
-                Strings.toHexString(uint256(0), 32)
-            )
-        );
-        core.grantRole(role, sender);
     }
 
     function testMinter(address caller) public {

@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {IVolt} from "../../../volt/Volt.sol";
-import {Volt} from "../../../volt/Volt.sol";
-import {ICore} from "../../../core/ICore.sol";
-import {CoreV2, Vcon} from "../../../core/CoreV2.sol";
 import {Vm} from "./../utils/Vm.sol";
+import {Volt} from "../../../volt/Volt.sol";
+import {IVolt} from "../../../volt/Volt.sol";
+import {ICore} from "../../../core/ICore.sol";
 import {DSTest} from "./../utils/DSTest.sol";
-import {getCoreV2, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {MockERC20} from "./../../../mock/MockERC20.sol";
+import {CoreV2, Vcon} from "../../../core/CoreV2.sol";
+import {getCoreV2, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
 
 contract UnitTestCoreV2 is DSTest {
     CoreV2 private core;
@@ -54,6 +56,21 @@ contract UnitTestCoreV2 is DSTest {
 
         assertTrue(core.isUnlocked()); /// core starts out unlocked
         assertTrue(!core.isLocked()); /// core starts out not locked
+    }
+
+    function testRandomsCannotCreateRole(address sender, bytes32 role) public {
+        vm.assume(!core.hasRole(VoltRoles.GOVERNOR, sender));
+
+        vm.expectRevert(
+            abi.encodePacked(
+                "AccessControl: account ",
+                Strings.toHexString(uint160(sender), 20),
+                " is missing role ",
+                Strings.toHexString(uint256(core.getRoleAdmin(role)), 32)
+            )
+        );
+        vm.prank(sender);
+        core.grantRole(role, sender);
     }
 
     function testGovernorSetsVolt() public {
