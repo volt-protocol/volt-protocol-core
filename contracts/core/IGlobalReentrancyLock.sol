@@ -24,4 +24,11 @@ interface IGlobalReentrancyLock {
     /// in case of emergency by setting status to not entered
     /// only callable if system is entered
     function governanceEmergencyRecover() external;
+
+    /// ------------------------------------------
+    /// ----------------- Event ------------------
+    /// ------------------------------------------
+
+    /// @notice emitted when governor does an emergency unlock
+    event EmergencyUnlock(address indexed sender, uint256 timestamp);
 }

@@ -7,11 +7,11 @@ import {IGlobalReentrancyLock} from "./IGlobalReentrancyLock.sol";
 
 /// @notice inpsired by the openzeppelin reentrancy guard smart contracts
 /// data container size has been changed
+/// @dev allows contracts with the SYSTEM_STATE_ROLE to call in and lock and unlock
+/// this smart contract.
+/// Governor can unpause if locked but not unlocked.
 contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     using SafeCast for *;
-
-    /// @notice emitted when governor does an emergency unlock
-    event EmergencyUnlock(address indexed sender, uint256 timestamp);
 
     // Booleans are more expensive than uint256 or any type that takes up a full
     // word because each write operation emits an extra SLOAD to first read the
