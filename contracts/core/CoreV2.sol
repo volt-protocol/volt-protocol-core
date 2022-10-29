@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 import {Vcon} from "../vcon/Vcon.sol";
-import {IVolt, Volt, IERC20} from "../volt/Volt.sol";
+import {Volt} from "../volt/Volt.sol";
+import {IVolt} from "../volt/IVolt.sol";
 import {ICoreV2} from "./ICoreV2.sol";
 import {PermissionsV2} from "./PermissionsV2.sol";
 import {GlobalReentrancyLock} from "./GlobalReentrancyLock.sol";
@@ -27,13 +30,15 @@ contract CoreV2 is ICoreV2, GlobalReentrancyLock {
     }
 
     /// @notice governor only function to set the VCON token
+    /// @param _vcon new vcon token
     function setVcon(IERC20 _vcon) external onlyGovernor {
         vcon = _vcon;
 
         emit VconUpdate(address(_vcon));
     }
 
-    /// @notice governor only function to set the VCON token
+    /// @notice governor only function to set the VOLT token
+    /// @param _volt new volt token
     function setVolt(IVolt _volt) external onlyGovernor {
         volt = _volt;
 
