@@ -24,7 +24,7 @@ contract PegStabilityModule is
     using SafeCast for *;
     using SafeERC20 for IERC20;
 
-    /// @notice the token this PSM will exchange for FEI
+    /// @notice the token this PSM will exchange for VOLT
     /// This token will be set to WETH9 if the bonding curve accepts eth
     IERC20 public immutable override underlyingToken;
 
@@ -115,28 +115,32 @@ contract PegStabilityModule is
         _withdrawERC20(address(underlyingToken), to, amount);
     }
 
-    /// @notice internal helper method to redeem fei in exchange for an external asset
+    /// @notice internal helper method to redeem Volt in exchange for an external asset
     function _redeem(
         address to,
-        uint256 amountFeiIn,
+        uint256 amountVoltIn,
         uint256 minAmountOut
     ) internal virtual returns (uint256 amountOut) {
         updateOracle();
 
-        amountOut = _getRedeemAmountOut(amountFeiIn);
+        amountOut = _getRedeemAmountOut(amountVoltIn);
         require(
             amountOut >= minAmountOut,
             "PegStabilityModule: Redeem not enough out"
         );
 
-        IERC20(volt()).safeTransferFrom(msg.sender, address(this), amountFeiIn);
+        IERC20(volt()).safeTransferFrom(
+            msg.sender,
+            address(this),
+            amountVoltIn
+        );
 
         _transfer(to, amountOut);
 
-        emit Redeem(to, amountFeiIn, amountOut);
+        emit Redeem(to, amountVoltIn, amountOut);
     }
 
-    /// @notice internal helper method to mint fei in exchange for an external asset
+    /// @notice internal helper method to mint Volt in exchange for an external asset
     function _mint(
         address to,
         uint256 amountIn,
@@ -157,12 +161,13 @@ contract PegStabilityModule is
         emit Mint(to, amountIn, amountVoltOut);
     }
 
-    /// @notice function to redeem FEI for an underlying asset
-    /// We do not burn Fei; this allows the contract's balance of Fei to be used before the buffer is used
-    /// In practice, this helps prevent artificial cycling of mint-burn cycles and prevents a griefing vector.
+    /// @notice function to redeem VOLT for an underlying asset
+    /// @param to recipient of underlying tokens
+    /// @param amountVoltIn amount of volt to sell
+    /// @param minAmountOut of underlying tokens sent to recipient
     function redeem(
         address to,
-        uint256 amountFeiIn,
+        uint256 amountVoltIn,
         uint256 minAmountOut
     )
         external
@@ -173,11 +178,15 @@ contract PegStabilityModule is
         whileRedemptionsNotPaused
         returns (uint256 amountOut)
     {
-        amountOut = _redeem(to, amountFeiIn, minAmountOut);
+        amountOut = _redeem(to, amountVoltIn, minAmountOut);
     }
 
-    /// @notice function to buy FEI for an underlying asset
-    /// We first transfer any contract-owned fei, then mint the remaining if necessary
+    /// @notice function to buy VOLT for an underlying asset
+    /// This contract has no minting functionality, so the max
+    /// amount of Volt that can be purchased is the Volt balance in the contract
+    /// @param to recipient of the Volt
+    /// @param amountIn amount of underlying tokens used to purchase Volt
+    /// @param minAmountOut minimum amount of Volt recipient to receive
     function mint(
         address to,
         uint256 amountIn,
@@ -189,37 +198,39 @@ contract PegStabilityModule is
         nonReentrant
         whenNotPaused
         whileMintingNotPaused
-        returns (uint256 amountFeiOut)
+        returns (uint256 amountVoltOut)
     {
-        amountFeiOut = _mint(to, amountIn, minAmountOut);
+        amountVoltOut = _mint(to, amountIn, minAmountOut);
     }
 
     // ----------- Public View-Only API ----------
 
-    /// @notice calculate the amount of FEI out for a given `amountIn` of underlying
+    /// @notice calculate the amount of VOLT out for a given `amountIn` of underlying
     /// First get oracle price of token
     /// Then figure out how many dollars that amount in is worth by multiplying price * amount.
     /// ensure decimals are normalized if on underlying they are not 18
+    /// @param amountIn amount of underlying token in
+    /// @return amountVoltOut the amount of Volt out
     function getMintAmountOut(uint256 amountIn)
         public
         view
         override
-        returns (uint256 amountFeiOut)
+        returns (uint256 amountVoltOut)
     {
-        amountFeiOut = _getMintAmountOut(amountIn);
+        amountVoltOut = _getMintAmountOut(amountIn);
     }
 
-    /// @notice calculate the amount of underlying out for a given `amountFeiIn` of FEI
+    /// @notice calculate the amount of underlying out for a given `amountVoltIn` of Volt
     /// First get oracle price of token
     /// Then figure out how many dollars that amount in is worth by multiplying price * amount.
     /// ensure decimals are normalized if on underlying they are not 18
-    function getRedeemAmountOut(uint256 amountFeiIn)
+    function getRedeemAmountOut(uint256 amountVoltIn)
         public
         view
         override
         returns (uint256 amountTokenOut)
     {
-        amountTokenOut = _getRedeemAmountOut(amountFeiIn);
+        amountTokenOut = _getRedeemAmountOut(amountVoltIn);
     }
 
     /// @notice the maximum mint amount out
@@ -237,7 +248,7 @@ contract PegStabilityModule is
         return address(underlyingToken);
     }
 
-    /// @notice override default behavior of not checking fei balance
+    /// @notice override default behavior of not checking Volt balance
     function resistantBalanceAndVolt()
         public
         view
@@ -255,19 +266,19 @@ contract PegStabilityModule is
         internal
         view
         virtual
-        returns (uint256 amountFeiOut)
+        returns (uint256 amountVoltOut)
     {
         Decimal.D256 memory price = readOracle();
         _validatePriceRange(price);
 
         Decimal.D256 memory adjustedAmountIn = price.mul(amountIn);
 
-        amountFeiOut = adjustedAmountIn.asUint256();
+        amountVoltOut = adjustedAmountIn.asUint256();
     }
 
     /// @notice helper function to get redeem amount out based on current market prices
     /// @dev will revert if price is outside of bounds and bounded PSM is being used
-    function _getRedeemAmountOut(uint256 amountFeiIn)
+    function _getRedeemAmountOut(uint256 amountVoltIn)
         internal
         view
         virtual
@@ -277,7 +288,7 @@ contract PegStabilityModule is
         _validatePriceRange(price);
 
         /// get amount of dollars being provided
-        Decimal.D256 memory adjustedAmountIn = Decimal.from(amountFeiIn);
+        Decimal.D256 memory adjustedAmountIn = Decimal.from(amountVoltIn);
 
         /// now turn the dollars into the underlying token amounts
         /// dollars / price = how much token to pay out
