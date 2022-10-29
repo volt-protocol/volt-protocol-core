@@ -13,4 +13,6 @@ interface IPermissionsReadV2 {
     function isGuardian(address _address) external view returns (bool);
 
     function isPCVController(address _address) external view returns (bool);
+
+    function isState(address _address) external view returns (bool);
 }

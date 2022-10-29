@@ -199,7 +199,13 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     /// @notice checks if address has state role
     /// @param _address address to check
     /// @return true _address is state
-    function isState(address _address) public view virtual returns (bool) {
+    function isState(address _address)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
         return hasRole(SYSTEM_STATE_ROLE, _address);
     }
 }
