@@ -2,11 +2,10 @@
 pragma solidity 0.8.13;
 
 import {IAccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
-import {IPermissionsReadV2} from "./IPermissionsReadV2.sol";
 
 /// @title Permissions interface
 /// @author Volt Protocol
-interface IPermissionsV2 is IPermissionsReadV2, IAccessControl {
+interface IPermissionsV2 is IAccessControl {
     // ----------- Governor only state changing api -----------
 
     function createRole(bytes32 role, bytes32 adminRole) external;
@@ -36,6 +35,18 @@ interface IPermissionsV2 is IPermissionsReadV2, IAccessControl {
     function revokeOverride(bytes32 role, address account) external;
 
     // ----------- Getters -----------
+
+    function isMinter(address _address) external view returns (bool);
+
+    function isGovernor(address _address) external view returns (bool);
+
+    function isGuardian(address _address) external view returns (bool);
+
+    function isPCVController(address _address) external view returns (bool);
+
+    function isState(address _address) external view returns (bool);
+
+    // ----------- Predefined Roles -----------
 
     /// @notice guardian is able to pause and unpause smart contracts
     /// and revoke non governor roles
