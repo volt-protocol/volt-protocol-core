@@ -158,7 +158,7 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         return _core.volt();
     }
 
-    /// @notice address of the Tribe contract referenced by Core
+    /// @notice address of the Vcon contract referenced by Core
     /// @return IERC20 implementation address
     function vcon() public view override returns (IERC20) {
         return _core.vcon();

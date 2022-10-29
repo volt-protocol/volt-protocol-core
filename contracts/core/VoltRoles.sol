@@ -2,10 +2,10 @@
 pragma solidity 0.8.13;
 
 /**
- @title Tribe DAO ACL Roles
- @notice Holds a complete list of all roles which can be held by contracts inside Tribe DAO.
+ @title Volt DAO ACL Roles
+ @notice Holds a complete list of all roles which can be held by contracts inside Volt DAO.
          Roles are broken up into 3 categories:
-         * Major Roles - the most powerful roles in the Tribe DAO which should be carefully managed.
+         * Major Roles - the most powerful roles in Volt, which should be carefully managed.
          * Admin Roles - roles with management capability over critical functionality. Should only be held by automated or optimistic mechanisms
          * Minor Roles - operational roles. May be held or managed by shorter optimistic timelocks or trusted multisigs.
  */
@@ -14,10 +14,10 @@ library VoltRoles {
                                  Major Roles
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice the ultimate role of Tribe. Controls all other roles and protocol functionality.
+    /// @notice the ultimate role of Volt. Controls all other roles and protocol functionality.
     bytes32 internal constant GOVERNOR = keccak256("GOVERN_ROLE");
 
-    /// @notice the protector role of Tribe. Admin of pause, veto, revoke, and minor roles
+    /// @notice the protector role of Volt. Admin of pause, veto, revoke, and minor roles
     bytes32 internal constant GUARDIAN = keccak256("GUARDIAN_ROLE");
 
     /// @notice the role which can arbitrarily move PCV in any size from any contract
