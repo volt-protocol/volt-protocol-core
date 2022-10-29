@@ -225,6 +225,26 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
         );
     }
 
+    function testMintFuzzNotEnoughIn(uint32 amountStableIn) public {
+        uint256 amountVoltOut = cleanPsm.getMintAmountOut(amountStableIn);
+
+        uint256 amountVoltOutPriceBound = priceBoundPsm.getMintAmountOut(
+            amountStableIn
+        );
+
+        underlyingToken.approve(address(cleanPsm), amountStableIn);
+        vm.expectRevert("PegStabilityModule: Mint not enough out");
+        cleanPsm.mint(address(this), amountStableIn, amountVoltOut + 1);
+
+        underlyingToken.approve(address(priceBoundPsm), amountStableIn);
+        vm.expectRevert("PegStabilityModule: Mint not enough out");
+        priceBoundPsm.mint(
+            address(this),
+            amountStableIn,
+            amountVoltOutPriceBound + 1
+        );
+    }
+
     function testRedeemFuzz(uint32 amountVoltIn) public {
         uint256 amountOut = cleanPsm.getRedeemAmountOut(amountVoltIn);
 
@@ -285,6 +305,26 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
         assertEq(
             endingUserUnderlyingBalance2 - endingUserUnderlyingBalance1,
             underlyingOutPriceBound
+        );
+    }
+
+    function testRedeemFuzzNotEnoughOut(uint32 amountVoltIn) public {
+        uint256 amountOut = cleanPsm.getRedeemAmountOut(amountVoltIn);
+
+        uint256 underlyingOutPriceBound = priceBoundPsm.getRedeemAmountOut(
+            amountVoltIn
+        );
+
+        volt.approve(address(cleanPsm), amountVoltIn);
+        vm.expectRevert("PegStabilityModule: Redeem not enough out");
+        cleanPsm.redeem(address(this), amountVoltIn, amountOut + 1);
+
+        volt.approve(address(priceBoundPsm), amountVoltIn);
+        vm.expectRevert("PegStabilityModule: Redeem not enough out");
+        priceBoundPsm.redeem(
+            address(this),
+            amountVoltIn,
+            underlyingOutPriceBound + 1
         );
     }
 
