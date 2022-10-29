@@ -104,7 +104,7 @@ contract UnitTestCoreRefV2 is DSTest {
 
     function testStateAsState() public {
         vm.prank(addresses.governorAddress);
-        core.grantRole(VoltRoles.SYSTEM_STATE_ROLE, address(this));
+        core.grantState(address(this));
         coreRef.testSystemState();
     }
 

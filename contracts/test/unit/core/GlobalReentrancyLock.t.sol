@@ -33,7 +33,7 @@ contract UnitTestGlobalReentrancyLock is DSTest {
         core = new CoreV2(address(volt));
         vcon = new Vcon(addresses.governorAddress, addresses.governorAddress);
         lock = new MockReentrancyLock(address(core));
-        core.grantRole(VoltRoles.SYSTEM_STATE_ROLE, address(lock));
+        core.grantState(address(lock));
 
         vm.stopPrank();
     }
@@ -85,7 +85,7 @@ contract UnitTestGlobalReentrancyLock is DSTest {
             address(lock)
         );
         vm.prank(addresses.governorAddress);
-        core.grantRole(VoltRoles.SYSTEM_STATE_ROLE, address(lock2));
+        core.grantState(address(lock2));
 
         vm.expectRevert("GlobalReentrancyLock: system already entered");
         lock2.globalReentrancyFails();
@@ -105,7 +105,7 @@ contract UnitTestGlobalReentrancyLock is DSTest {
 
     function testGovernorSystemRecovery() public {
         vm.startPrank(addresses.governorAddress);
-        core.grantRole(VoltRoles.SYSTEM_STATE_ROLE, addresses.governorAddress);
+        core.grantState(addresses.governorAddress);
 
         core.lock();
 
