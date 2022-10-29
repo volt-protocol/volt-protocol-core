@@ -59,20 +59,7 @@ contract UnitTestCoreV2 is DSTest {
         assertTrue(!core.isLocked()); /// core starts out not locked
     }
 
-    function testRandomsCannotCreateRole(address sender, bytes32 role) public {
-        vm.assume(!core.hasRole(VoltRoles.GOVERNOR, sender));
-
-        vm.expectRevert(
-            abi.encodePacked(
-                "AccessControl: account ",
-                Strings.toHexString(uint160(sender), 20),
-                " is missing role ",
-                Strings.toHexString(uint256(core.getRoleAdmin(role)), 32)
-            )
-        );
-        vm.prank(sender);
-        core.grantRole(role, sender);
-    }
+    /// CoreV2
 
     function testGovernorSetsVolt() public {
         vm.prank(addresses.governorAddress);
@@ -98,7 +85,22 @@ contract UnitTestCoreV2 is DSTest {
         core.setVcon(IERC20(addresses.userAddress));
     }
 
-    /// role acl tests
+    /// PermissionsV2 Role acl tests
+
+    function testRandomsCannotCreateRole(address sender, bytes32 role) public {
+        vm.assume(!core.hasRole(VoltRoles.GOVERNOR, sender));
+
+        vm.expectRevert(
+            abi.encodePacked(
+                "AccessControl: account ",
+                Strings.toHexString(uint160(sender), 20),
+                " is missing role ",
+                Strings.toHexString(uint256(core.getRoleAdmin(role)), 32)
+            )
+        );
+        vm.prank(sender);
+        core.grantRole(role, sender);
+    }
 
     function testGovCreatesRole() public {
         uint256 role = 100;
