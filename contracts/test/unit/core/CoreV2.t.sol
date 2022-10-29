@@ -38,6 +38,7 @@ contract UnitTestCoreV2 is DSTest {
 
         assertTrue(core.isGovernor(address(core))); /// core contract is governor
         assertTrue(core.isGovernor(addresses.governorAddress)); /// msg.sender of contract is governor
+        assertTrue(!core.isGovernor(address(this))); /// only 2 governors
 
         bytes32 governRole = core.GOVERN_ROLE();
         /// assert all roles have the proper admin
@@ -95,5 +96,107 @@ contract UnitTestCoreV2 is DSTest {
     function testNonGovernorFailsSettingVcon() public {
         vm.expectRevert("Permissions: Caller is not a governor");
         core.setVcon(IERC20(addresses.userAddress));
+    }
+
+    /// role acl tests
+
+    function testGovCreatesRole() public {
+        uint256 role = 100;
+        vm.prank(addresses.governorAddress);
+        core.createRole(bytes32(role), VoltRoles.GOVERNOR);
+        assertEq(core.getRoleAdmin(bytes32(role)), VoltRoles.GOVERNOR);
+    }
+
+    function testGovAddsPCVControllerSucceeds() public {
+        vm.prank(addresses.governorAddress);
+        core.grantPCVController(address(this));
+        assertTrue(core.isPCVController(address(this)));
+    }
+
+    function testGovRevokesPCVControllerSucceeds() public {
+        testGovAddsPCVControllerSucceeds();
+        assertTrue(core.isPCVController(address(this)));
+
+        vm.prank(addresses.governorAddress);
+        core.revokePCVController(address(this));
+        assertTrue(!core.isPCVController(address(this)));
+    }
+
+    function testNonGovAddsPCVControllerFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.grantPCVController(address(this));
+    }
+
+    function testNonGovRevokesPCVControllerFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.revokePCVController(address(this));
+    }
+
+    function testGovAddsGovernorSucceeds() public {
+        vm.prank(addresses.governorAddress);
+        core.grantGovernor(address(this));
+        assertTrue(core.isGovernor(address(this)));
+    }
+
+    function testGovRevokesGovernorSucceeds() public {
+        vm.prank(addresses.governorAddress);
+        core.revokeGovernor(address(this));
+        assertTrue(!core.isGovernor(address(this)));
+    }
+
+    function testNonGovAddsGovernorFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.grantGovernor(address(this));
+    }
+
+    function testNonGovRevokesGovernorFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.revokeGovernor(address(this));
+    }
+
+    function testGovAddsGuardianSucceeds() public {
+        vm.prank(addresses.governorAddress);
+        core.grantGuardian(address(this));
+        assertTrue(core.isGuardian(address(this)));
+    }
+
+    function testGovRevokesGuardianSucceeds() public {
+        testGovAddsGuardianSucceeds();
+        vm.prank(addresses.governorAddress);
+        core.revokeGuardian(address(this));
+        assertTrue(!core.isGuardian(address(this)));
+    }
+
+    function testNonGovAddsGuardianFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.grantGuardian(address(this));
+    }
+
+    function testNonGovRevokesGuardianFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.revokeGuardian(address(this));
+    }
+
+    function testGovAddsMinterSucceeds() public {
+        vm.prank(addresses.governorAddress);
+        core.grantMinter(address(this));
+        assertTrue(core.isMinter(address(this)));
+    }
+
+    function testGovRevokesMinterSucceeds() public {
+        testGovAddsMinterSucceeds();
+        vm.prank(addresses.governorAddress);
+        core.revokeMinter(address(this));
+        assertTrue(!core.isMinter(address(this)));
+    }
+
+    function testNonGovAddsMinterFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.grantMinter(address(this));
+    }
+
+    function testNonGovRevokesMinterFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.revokeMinter(address(this));
     }
 }
