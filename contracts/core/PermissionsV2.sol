@@ -83,6 +83,12 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         _grantRole(GUARDIAN_ROLE, guardian);
     }
 
+    /// @notice grants state role to address
+    /// @param state new state address
+    function grantState(address state) external override onlyGovernor {
+        _grantRole(SYSTEM_STATE_ROLE, state);
+    }
+
     /// @notice revokes minter role from address
     /// @param minter ex minter
     function revokeMinter(address minter) external override onlyGovernor {
@@ -109,6 +115,12 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     /// @param guardian ex guardian
     function revokeGuardian(address guardian) external override onlyGovernor {
         _revokeRole(GUARDIAN_ROLE, guardian);
+    }
+
+    /// @notice revokes state role from address
+    /// @param state ex state
+    function revokeState(address state) external override onlyGovernor {
+        _revokeRole(SYSTEM_STATE_ROLE, state);
     }
 
     /// @notice revokes a role from address
@@ -182,5 +194,12 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         returns (bool)
     {
         return hasRole(GUARDIAN_ROLE, _address);
+    }
+
+    /// @notice checks if address has state role
+    /// @param _address address to check
+    /// @return true _address is state
+    function isState(address _address) public view virtual returns (bool) {
+        return hasRole(SYSTEM_STATE_ROLE, _address);
     }
 }

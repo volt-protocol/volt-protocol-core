@@ -199,4 +199,27 @@ contract UnitTestCoreV2 is DSTest {
         vm.expectRevert("Permissions: Caller is not a governor");
         core.revokeMinter(address(this));
     }
+
+    function testGovAddsStateSucceeds() public {
+        vm.prank(addresses.governorAddress);
+        core.grantState(address(this));
+        assertTrue(core.isState(address(this)));
+    }
+
+    function testGovRevokesStateSucceeds() public {
+        testGovAddsMinterSucceeds();
+        vm.prank(addresses.governorAddress);
+        core.revokeState(address(this));
+        assertTrue(!core.isState(address(this)));
+    }
+
+    function testNonGovAddsStateFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.grantState(address(this));
+    }
+
+    function testNonGovRevokesStateFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.revokeState(address(this));
+    }
 }

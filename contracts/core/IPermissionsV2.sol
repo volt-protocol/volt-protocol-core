@@ -19,6 +19,8 @@ interface IPermissionsV2 is IPermissionsReadV2, IAccessControl {
 
     function grantGuardian(address guardian) external;
 
+    function grantState(address state) external;
+
     function revokeMinter(address minter) external;
 
     function revokePCVController(address pcvController) external;
@@ -26,6 +28,8 @@ interface IPermissionsV2 is IPermissionsReadV2, IAccessControl {
     function revokeGovernor(address governor) external;
 
     function revokeGuardian(address guardian) external;
+
+    function revokeState(address state) external;
 
     // ----------- Revoker only state changing api -----------
 
