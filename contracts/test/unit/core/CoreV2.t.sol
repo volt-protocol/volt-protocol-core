@@ -11,7 +11,6 @@ import {IVolt} from "../../../volt/Volt.sol";
 import {ICore} from "../../../core/ICore.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
-import {MockERC20} from "./../../../mock/MockERC20.sol";
 import {CoreV2, Vcon} from "../../../core/CoreV2.sol";
 import {getCoreV2, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
 
@@ -20,21 +19,18 @@ contract UnitTestCoreV2 is DSTest {
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
     VoltTestAddresses public addresses = getAddresses();
-    MockERC20 volt;
-    Vcon vcon;
+    address volt;
+    address vcon;
 
     function setUp() public {
-        volt = new MockERC20();
-
-        // Deploy Core from Governor address
-        vm.prank(addresses.governorAddress);
-        core = new CoreV2(address(volt));
-        vcon = new Vcon(addresses.governorAddress, addresses.governorAddress);
+        core = getCoreV2();
+        vcon = address(core.vcon());
+        volt = address(core.volt());
     }
 
     function testSetup() public {
-        assertEq(address(core.volt()), address(volt));
-        assertEq(address(core.vcon()), address(0)); /// vcon starts set to address 0
+        assertEq(address(core.volt()), volt);
+        assertEq(address(core.vcon()), vcon); /// vcon starts set to address 0
 
         assertTrue(core.isGovernor(address(core))); /// core contract is governor
         assertTrue(core.isGovernor(addresses.governorAddress)); /// msg.sender of contract is governor
@@ -50,9 +46,9 @@ contract UnitTestCoreV2 is DSTest {
 
         /// assert there is only 1 of each role
         assertEq(core.getRoleMemberCount(governRole), 2); /// msg.sender of contract and core is governor
-        assertEq(core.getRoleMemberCount(core.MINTER_ROLE()), 0); /// this role has not been granted
-        assertEq(core.getRoleMemberCount(core.GUARDIAN_ROLE()), 0); /// this role has not been granted
-        assertEq(core.getRoleMemberCount(core.PCV_CONTROLLER_ROLE()), 0); /// this role has not been granted
+        assertEq(core.getRoleMemberCount(core.MINTER_ROLE()), 1); /// this role has not been granted
+        assertEq(core.getRoleMemberCount(core.GUARDIAN_ROLE()), 1); /// this role has not been granted
+        assertEq(core.getRoleMemberCount(core.PCV_CONTROLLER_ROLE()), 1); /// this role has not been granted
         assertEq(core.getRoleMemberCount(core.SYSTEM_STATE_ROLE()), 0); /// this role has not been granted
 
         assertTrue(core.isUnlocked()); /// core starts out unlocked
@@ -102,11 +98,38 @@ contract UnitTestCoreV2 is DSTest {
         core.grantRole(role, sender);
     }
 
-    function testGovCreatesRole() public {
+    function testGovCreatesRoleSucceeds() public {
         uint256 role = 100;
         vm.prank(addresses.governorAddress);
         core.createRole(bytes32(role), VoltRoles.GOVERNOR);
         assertEq(core.getRoleAdmin(bytes32(role)), VoltRoles.GOVERNOR);
+    }
+
+    function testNonGovCreatesRoleFails() public {
+        uint256 role = 100;
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.createRole(bytes32(role), VoltRoles.GOVERNOR);
+    }
+
+    function testNonGuardianRevokeOverrideFails() public {
+        vm.expectRevert("Permissions: Caller is not a guardian");
+        core.revokeOverride(VoltRoles.GOVERNOR, addresses.governorAddress);
+    }
+
+    function testGuardianRevokeOverrideGovernorFails() public {
+        vm.expectRevert("Permissions: Guardian cannot revoke governor");
+        vm.prank(addresses.guardianAddress);
+        core.revokeOverride(VoltRoles.GOVERNOR, addresses.governorAddress);
+    }
+
+    function testGuardianRevokeOverrideStateSucceeds() public {
+        vm.prank(addresses.governorAddress);
+        core.grantState(address(this));
+        assertTrue(core.isState(address(this)));
+
+        vm.prank(addresses.guardianAddress);
+        core.revokeOverride(VoltRoles.SYSTEM_STATE_ROLE, address(this));
+        assertTrue(!core.isState(address(this)));
     }
 
     function testGovAddsPCVControllerSucceeds() public {
