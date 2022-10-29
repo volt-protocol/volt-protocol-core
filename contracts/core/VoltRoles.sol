@@ -32,16 +32,6 @@ library VoltRoles {
     /// @notice is able to withdraw whitelisted PCV deposits to a safe address
     bytes32 internal constant PCV_GUARD = keccak256("PCV_GUARD_ROLE");
 
-    /// @notice role granted to all liquid PCV deposits so they are allowed
-    ///  to call into the PCV oracle
-    bytes32 internal constant LIQUID_PCV_DEPOSIT =
-        keccak256("LIQUID_PCV_DEPOSIT_ROLE");
-
-    /// @notice role granted to all illiquid PCV deposits so they are allowed
-    /// to call into the PCV oracle
-    bytes32 internal constant ILLIQUID_PCV_DEPOSIT =
-        keccak256("ILLIQUID_PCV_DEPOSIT_ROLE");
-
     /// @notice system state role can lock and unlock the global reentrancy
     /// lock. this allows for a system wide reentrancy lock.
     bytes32 internal constant SYSTEM_STATE_ROLE =
