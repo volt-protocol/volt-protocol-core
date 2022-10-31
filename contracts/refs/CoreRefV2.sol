@@ -176,10 +176,6 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         return vcon().balanceOf(address(this));
     }
 
-    function _burnVoltHeld() internal {
-        volt().burn(voltBalance());
-    }
-
     /// @notice set new reference to core
     /// only callable by governor
     /// @param newCore to reference
