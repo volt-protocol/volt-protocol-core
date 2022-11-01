@@ -13,8 +13,8 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         keccak256("PCV_CONTROLLER_ROLE");
     bytes32 public constant override GOVERN_ROLE = keccak256("GOVERN_ROLE");
     bytes32 public constant override GUARDIAN_ROLE = keccak256("GUARDIAN_ROLE");
-    bytes32 public constant override SYSTEM_STATE_ROLE =
-        keccak256("SYSTEM_STATE_ROLE");
+    bytes32 public constant override GLOBAL_LOCKER_ROLE =
+        keccak256("GLOBAL_LOCKER_ROLE");
 
     constructor() {
         // Appointed as a governor so guardian can have indirect access to revoke ability
@@ -24,7 +24,7 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         _setRoleAdmin(PCV_CONTROLLER_ROLE, GOVERN_ROLE);
         _setRoleAdmin(GOVERN_ROLE, GOVERN_ROLE);
         _setRoleAdmin(GUARDIAN_ROLE, GOVERN_ROLE);
-        _setRoleAdmin(SYSTEM_STATE_ROLE, GOVERN_ROLE);
+        _setRoleAdmin(GLOBAL_LOCKER_ROLE, GOVERN_ROLE);
     }
 
     modifier onlyGovernor() {
@@ -83,10 +83,14 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         _grantRole(GUARDIAN_ROLE, guardian);
     }
 
-    /// @notice grants state role to address
-    /// @param state new state address
-    function grantState(address state) external override onlyGovernor {
-        _grantRole(SYSTEM_STATE_ROLE, state);
+    /// @notice grants global locker role to address
+    /// @param globalLocker new global locker address
+    function grantGlobalLocker(address globalLocker)
+        external
+        override
+        onlyGovernor
+    {
+        _grantRole(GLOBAL_LOCKER_ROLE, globalLocker);
     }
 
     /// @notice revokes minter role from address
@@ -117,10 +121,14 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         _revokeRole(GUARDIAN_ROLE, guardian);
     }
 
-    /// @notice revokes state role from address
-    /// @param state ex state
-    function revokeState(address state) external override onlyGovernor {
-        _revokeRole(SYSTEM_STATE_ROLE, state);
+    /// @notice revokes global locker role from address
+    /// @param globalLocker ex globalLocker
+    function revokeGlobalLocker(address globalLocker)
+        external
+        override
+        onlyGovernor
+    {
+        _revokeRole(GLOBAL_LOCKER_ROLE, globalLocker);
     }
 
     /// @notice revokes a role from address
@@ -196,16 +204,16 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         return hasRole(GUARDIAN_ROLE, _address);
     }
 
-    /// @notice checks if address has state role
+    /// @notice checks if address has globalLocker role
     /// @param _address address to check
-    /// @return true _address is state
-    function isState(address _address)
+    /// @return true _address is globalLocker
+    function isGlobalLocker(address _address)
         public
         view
         virtual
         override
         returns (bool)
     {
-        return hasRole(SYSTEM_STATE_ROLE, _address);
+        return hasRole(GLOBAL_LOCKER_ROLE, _address);
     }
 }

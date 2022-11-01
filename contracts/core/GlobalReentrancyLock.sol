@@ -7,7 +7,7 @@ import {IGlobalReentrancyLock} from "./IGlobalReentrancyLock.sol";
 
 /// @notice inpsired by the openzeppelin reentrancy guard smart contracts
 /// data container size has been changed
-/// @dev allows contracts with the SYSTEM_STATE_ROLE to call in and lock and unlock
+/// @dev allows contracts with the GLOBAL_LOCKER_ROLE to call in and lock and unlock
 /// this smart contract.
 /// Governor can unpause if locked but not unlocked.
 contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
@@ -40,12 +40,12 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
         _status = _NOT_ENTERED;
     }
 
-    /// @notice only system state roles are allowed to call in and set entered
+    /// @notice only global locker role is allowed to call in and set entered
     /// or not entered
-    modifier onlyStateRole() {
+    modifier onlyGlobalLockerRole() {
         require(
-            hasRole(SYSTEM_STATE_ROLE, msg.sender),
-            "GlobalReentrancyLock: address missing state role"
+            hasRole(GLOBAL_LOCKER_ROLE, msg.sender),
+            "GlobalReentrancyLock: address missing global locker role"
         );
         _;
     }
@@ -69,22 +69,24 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
 
     /// @notice set the status to entered
     /// only available if not entered
-    /// callable only by state role
-    function lock() external override onlyStateRole {
+    /// callable only by global locker role
+    function lock() external override onlyGlobalLockerRole {
         require(
             _status == _NOT_ENTERED,
             "GlobalReentrancyLock: system already entered"
         );
 
+        uint32 blockEntered = block.number.toUint32(); /// cache value to save a warm SSTORE
+
         _status = _ENTERED;
-        _lastBlockEntered = block.number.toUint32();
+        _lastBlockEntered = blockEntered;
     }
 
     /// @notice set the status to not entered
     /// only available if entered and entered in same block
     /// otherwise, system is in an indeterminate state and no execution should be allowed
-    /// callable only by state role
-    function unlock() external override onlyStateRole {
+    /// callable only by global locker role
+    function unlock() external override onlyGlobalLockerRole {
         require(
             block.number == _lastBlockEntered && _status == _ENTERED,
             "GlobalReentrancyLock: system not entered"

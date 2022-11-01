@@ -33,7 +33,7 @@ contract UnitTestGlobalReentrancyLock is DSTest {
         core = new CoreV2(address(volt));
         vcon = new Vcon(addresses.governorAddress, addresses.governorAddress);
         lock = new MockReentrancyLock(address(core));
-        core.grantState(address(lock));
+        core.grantGlobalLocker(address(lock));
 
         vm.stopPrank();
     }
@@ -48,31 +48,49 @@ contract UnitTestGlobalReentrancyLock is DSTest {
         assertTrue(core.isUnlocked()); /// core starts out unlocked
         assertTrue(!core.isLocked()); /// core starts out not locked
 
-        assertTrue(core.hasRole(VoltRoles.SYSTEM_STATE_ROLE, address(lock)));
+        assertTrue(core.isGlobalLocker(address(lock)));
     }
 
     function testLockFailsWithoutRole() public {
         vm.prank(addresses.governorAddress);
-        core.revokeRole(VoltRoles.SYSTEM_STATE_ROLE, address(lock));
-        assertTrue(!core.hasRole(VoltRoles.SYSTEM_STATE_ROLE, address(lock)));
+        core.revokeRole(VoltRoles.GLOBAL_LOCKER_ROLE, address(lock));
+        assertTrue(!core.isGlobalLocker(address(lock)));
 
-        vm.expectRevert("GlobalReentrancyLock: address missing state role");
+        vm.expectRevert(
+            "GlobalReentrancyLock: address missing global locker role"
+        );
         lock.globalLock();
 
         assertTrue(core.isUnlocked()); /// core is still unlocked
         assertTrue(!core.isLocked()); /// core is still not locked
     }
 
-    function testLockSucceedsWithRole() public {
-        assertTrue(core.isUnlocked()); /// core is still unlocked
-        assertTrue(!core.isLocked()); /// core is still not locked
-        assertEq(lock.lastBlockNumber(), core.lastBlockEntered());
+    function testLockFailsWithoutRoleRevokeGlobalLocker() public {
+        vm.prank(addresses.governorAddress);
+        core.revokeGlobalLocker(address(lock));
+        assertTrue(!core.isGlobalLocker(address(lock)));
 
+        vm.expectRevert(
+            "GlobalReentrancyLock: address missing global locker role"
+        );
         lock.globalLock();
 
         assertTrue(core.isUnlocked()); /// core is still unlocked
         assertTrue(!core.isLocked()); /// core is still not locked
-        assertEq(lock.lastBlockNumber(), core.lastBlockEntered());
+    }
+
+    function testLockSucceedsWithRole(uint8 numRuns) public {
+        for (uint256 i = 0; i < numRuns; i++) {
+            assertTrue(core.isUnlocked()); /// core is still unlocked
+            assertTrue(!core.isLocked()); /// core is still not locked
+            assertEq(lock.lastBlockNumber(), core.lastBlockEntered());
+
+            lock.globalLock();
+
+            assertTrue(core.isUnlocked()); /// core is still unlocked
+            assertTrue(!core.isLocked()); /// core is still not locked
+            assertEq(lock.lastBlockNumber(), core.lastBlockEntered());
+        }
     }
 
     /// create a separate contract,
@@ -85,7 +103,7 @@ contract UnitTestGlobalReentrancyLock is DSTest {
             address(lock)
         );
         vm.prank(addresses.governorAddress);
-        core.grantState(address(lock2));
+        core.grantGlobalLocker(address(lock2));
 
         vm.expectRevert("GlobalReentrancyLock: system already entered");
         lock2.globalReentrancyFails();
@@ -105,7 +123,7 @@ contract UnitTestGlobalReentrancyLock is DSTest {
 
     function testGovernorSystemRecovery() public {
         vm.startPrank(addresses.governorAddress);
-        core.grantState(addresses.governorAddress);
+        core.grantGlobalLocker(addresses.governorAddress);
 
         core.lock();
 
@@ -128,12 +146,16 @@ contract UnitTestGlobalReentrancyLock is DSTest {
     }
 
     function testLockFailsNonStateRole() public {
-        vm.expectRevert("GlobalReentrancyLock: address missing state role");
+        vm.expectRevert(
+            "GlobalReentrancyLock: address missing global locker role"
+        );
         core.lock();
     }
 
     function testUnlockFailsNonStateRole() public {
-        vm.expectRevert("GlobalReentrancyLock: address missing state role");
+        vm.expectRevert(
+            "GlobalReentrancyLock: address missing global locker role"
+        );
         core.unlock();
     }
 

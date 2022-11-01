@@ -105,7 +105,7 @@ contract UnitTestCoreRefV2 is DSTest {
 
     function testStateAsState() public {
         vm.prank(addresses.governorAddress);
-        core.grantState(address(this));
+        core.grantGlobalLocker(address(this));
         coreRef.testSystemState();
     }
 
@@ -142,7 +142,7 @@ contract UnitTestCoreRefV2 is DSTest {
         if (
             !core.isGovernor(caller) &&
             !core.isMinter(caller) &&
-            !core.hasRole(VoltRoles.SYSTEM_STATE_ROLE, caller)
+            !core.isGlobalLocker(caller)
         ) {
             vm.expectRevert("UNAUTHORIZED");
         }
@@ -151,7 +151,7 @@ contract UnitTestCoreRefV2 is DSTest {
     }
 
     function testSystemState(address caller) public {
-        if (!core.hasRole(VoltRoles.SYSTEM_STATE_ROLE, caller)) {
+        if (!core.isGlobalLocker(caller)) {
             vm.expectRevert("UNAUTHORIZED");
         }
         vm.prank(caller);
