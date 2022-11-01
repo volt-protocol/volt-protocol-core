@@ -157,4 +157,53 @@ contract UnitTestCoreRefV2 is DSTest {
         vm.prank(caller);
         coreRef.testSystemState();
     }
+
+    function testEmergencyActionFailsNonGovernor() public {
+        MockCoreRefV2.Call[] memory calls = new MockCoreRefV2.Call[](1);
+        calls[0].callData = abi.encodeWithSignature(
+            "transfer(address,uint256)",
+            address(this),
+            100
+        );
+        calls[0].target = address(core.volt());
+
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        coreRef.emergencyAction(calls);
+    }
+
+    function testEmergencyActionSucceedsGovernor(uint256 mintAmount) public {
+        MockCoreRefV2.Call[] memory calls = new MockCoreRefV2.Call[](1);
+        calls[0].callData = abi.encodeWithSignature(
+            "mint(address,uint256)",
+            address(this),
+            mintAmount
+        );
+        calls[0].target = address(core.volt());
+
+        vm.prank(addresses.governorAddress);
+        coreRef.emergencyAction(calls);
+
+        assertEq(coreRef.volt().balanceOf(address(this)), mintAmount);
+    }
+
+    function testEmergencyActionSucceedsGovernorSendEth(uint128 sendAmount)
+        public
+    {
+        uint256 startingEthBalance = address(this).balance;
+
+        MockCoreRefV2.Call[] memory calls = new MockCoreRefV2.Call[](1);
+        calls[0].target = address(this);
+        calls[0].value = sendAmount;
+        vm.deal(address(coreRef), sendAmount);
+
+        vm.prank(addresses.governorAddress);
+        coreRef.emergencyAction(calls);
+
+        uint256 endingEthBalance = address(this).balance;
+
+        assertEq(endingEthBalance - startingEthBalance, sendAmount);
+        assertEq(address(coreRef).balance, 0);
+    }
+
+    fallback() external payable {}
 }
