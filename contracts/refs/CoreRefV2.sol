@@ -176,6 +176,8 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         return vcon().balanceOf(address(this));
     }
 
+    /// @notice WARNING CALLING THIS FUNCTION CAN POTENTIALLY
+    /// BRICK A CONTRACT IF CORE IS SET INCORRECTLY
     /// @notice set new reference to core
     /// only callable by governor
     /// @param newCore to reference
@@ -212,8 +214,6 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         uint256 value;
         bytes callData;
     }
-
-    /// TODO add testing here that both sends and does not send eth
 
     /// @notice due to inflexibility of current smart contracts,
     /// add this ability to be able to execute arbitrary calldata
