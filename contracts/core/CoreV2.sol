@@ -13,7 +13,7 @@ import {GlobalReentrancyLock} from "./GlobalReentrancyLock.sol";
 /// @title Source of truth for VOLT Protocol
 /// @author Volt Protocol
 /// @notice maintains roles, access control, Volt, Vcon, and the Vcon treasury
-contract CoreV2 is ICoreV2, GlobalReentrancyLock {
+contract CoreV2 is ICoreV2, PermissionsV2, GlobalReentrancyLock {
     /// @notice address of the Volt token
     IVolt public override volt;
 
@@ -22,7 +22,7 @@ contract CoreV2 is ICoreV2, GlobalReentrancyLock {
 
     /// @notice construct CoreV2
     /// @param _volt reference to the volt token
-    constructor(address _volt) GlobalReentrancyLock() {
+    constructor(address _volt) GlobalReentrancyLock() PermissionsV2() {
         volt = IVolt(_volt);
 
         /// msg.sender already has the VOLT Minting abilities, so grant them governor as well
