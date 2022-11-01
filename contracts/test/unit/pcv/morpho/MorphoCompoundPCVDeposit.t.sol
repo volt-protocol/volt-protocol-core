@@ -194,15 +194,19 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
 
             sumDeposit -= amountToWithdraw;
 
+            uint256 balance = morphoDeposit.balance();
+            uint256 lastRecordedBalance = morphoDeposit.lastRecordedBalance();
+
             vm.prank(addresses.pcvControllerAddress);
 
-            if (amountToWithdraw != 0) {
-                vm.expectEmit(true, true, false, true, address(morphoDeposit));
-                emit Withdrawal(
-                    addresses.pcvControllerAddress,
-                    to,
-                    amountToWithdraw
-                );
+            vm.expectEmit(true, true, false, true, address(morphoDeposit));
+            emit Withdrawal(
+                addresses.pcvControllerAddress,
+                to,
+                amountToWithdraw
+            );
+
+            if (balance != 0 || lastRecordedBalance != 0) {
                 emit Harvest(address(token), 0, block.timestamp); /// no profits as already accrued
             }
 
