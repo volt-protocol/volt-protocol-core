@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {IOracle} from "../oracle/IOracle.sol";
@@ -50,22 +49,6 @@ abstract contract OracleRef is IOracleRef, CoreRefV2 {
     /// @param newOracle the new oracle to reference
     function setOracle(address newOracle) external override onlyGovernor {
         _setOracle(newOracle);
-    }
-
-    /// @notice sets the flag for whether to invert or not
-    /// @param newDoInvert the new flag for whether to invert
-    function setDoInvert(bool newDoInvert) external override onlyGovernor {
-        _setDoInvert(newDoInvert);
-    }
-
-    /// @notice sets the new decimalsNormalizer
-    /// @param newDecimalsNormalizer the new decimalsNormalizer
-    function setDecimalsNormalizer(int256 newDecimalsNormalizer)
-        external
-        override
-        onlyGovernor
-    {
-        _setDecimalsNormalizer(newDecimalsNormalizer);
     }
 
     /// @notice sets the referenced backup oracle
@@ -124,7 +107,7 @@ abstract contract OracleRef is IOracleRef, CoreRefV2 {
         return _peg;
     }
 
-    function _setOracle(address newOracle) internal {
+    function _setOracle(address newOracle) private {
         require(newOracle != address(0), "OracleRef: zero address");
         address oldOracle = address(oracle);
         oracle = IOracle(newOracle);
@@ -132,20 +115,20 @@ abstract contract OracleRef is IOracleRef, CoreRefV2 {
     }
 
     /// Supports zero address if no backup
-    function _setBackupOracle(address newBackupOracle) internal {
+    function _setBackupOracle(address newBackupOracle) private {
         address oldBackupOracle = address(backupOracle);
         backupOracle = IOracle(newBackupOracle);
         emit BackupOracleUpdate(oldBackupOracle, newBackupOracle);
     }
 
-    function _setDoInvert(bool newDoInvert) internal {
+    function _setDoInvert(bool newDoInvert) private {
         bool oldDoInvert = doInvert;
         doInvert = newDoInvert;
 
         emit InvertUpdate(oldDoInvert, newDoInvert);
     }
 
-    function _setDecimalsNormalizer(int256 newDecimalsNormalizer) internal {
+    function _setDecimalsNormalizer(int256 newDecimalsNormalizer) private {
         int256 oldDecimalsNormalizer = decimalsNormalizer;
         decimalsNormalizer = newDecimalsNormalizer;
         emit DecimalsNormalizerUpdate(

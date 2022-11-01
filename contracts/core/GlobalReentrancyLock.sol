@@ -10,7 +10,7 @@ import {IGlobalReentrancyLock} from "./IGlobalReentrancyLock.sol";
 /// @dev allows contracts with the GLOBAL_LOCKER_ROLE to call in and lock and unlock
 /// this smart contract.
 /// Governor can unpause if locked but not unlocked.
-contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
+abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     using SafeCast for *;
 
     // Booleans are more expensive than uint256 or any type that takes up a full
@@ -27,7 +27,7 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     uint224 private constant _NOT_ENTERED = 1;
     uint224 private constant _ENTERED = 2;
 
-    /// entered or not entered
+    /// @notice whether or not the system is entered or not entered
     uint224 private _status;
 
     /// @notice store the last block entered
@@ -35,8 +35,8 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// which means that actions should be allowed
     uint32 private _lastBlockEntered;
 
-    /// @notice construct permissions v2
-    constructor() PermissionsV2() {
+    /// @notice construct GlobalReentrancyLock
+    constructor() {
         _status = _NOT_ENTERED;
     }
 
