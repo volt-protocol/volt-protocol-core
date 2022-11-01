@@ -11,7 +11,7 @@ import {IPCVGuardian} from "./IPCVGuardian.sol";
 import {CoreRefPausableLib} from "../libs/CoreRefPausableLib.sol";
 
 /// @notice PCV Guardian is a contract to safeguard protocol funds
-/// by being able to withdraw whitelisted PCV deposits to an immutable safe address
+/// by being able to withdraw whitelisted PCV deposits to a safe address
 contract PCVGuardian is IPCVGuardian, CoreRefV2 {
     using CoreRefPausableLib for address;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -20,7 +20,7 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
     EnumerableSet.AddressSet private whitelistAddresses;
 
     ///@notice safe address where PCV funds can be withdrawn to
-    address public immutable safeAddress;
+    address public safeAddress;
 
     constructor(
         address _core,
@@ -70,6 +70,20 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
     }
 
     // ---------- Governor-Only State-Changing API ----------
+
+    /// @notice governor-only method to change the safe address
+    /// @param newSafeAddress new safe address
+    function setSafeAddress(address newSafeAddress)
+        external
+        override
+        onlyGovernor
+    {
+        address oldSafeAddress = safeAddress;
+
+        safeAddress = newSafeAddress;
+
+        emit SafeAddressUpdated(oldSafeAddress, newSafeAddress);
+    }
 
     /// @notice governor-only method to whitelist a pcvDeposit address to withdraw funds from
     /// @param pcvDeposit the address to whitelist

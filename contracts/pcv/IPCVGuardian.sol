@@ -19,6 +19,11 @@ interface IPCVGuardian {
         uint256 amount
     );
 
+    event SafeAddressUpdated(
+        address indexed oldSafeAddress,
+        address indexed newSafeAddress
+    );
+
     // ---------- Read-Only API ----------
 
     /// @notice returns true if the pcvDeposit address is whitelisted
@@ -32,6 +37,10 @@ interface IPCVGuardian {
     function getWhitelistAddresses() external view returns (address[] memory);
 
     // ---------- Governor-Only State-Changing API ----------
+
+    /// @notice governor-only method to change the safe address
+    /// @param newSafeAddress new safe address
+    function setSafeAddress(address newSafeAddress) external;
 
     /// @notice governor-only method to whitelist a pcvDeposit address to withdraw funds from
     /// @param pcvDeposit the address to whitelist
