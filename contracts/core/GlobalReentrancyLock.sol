@@ -13,6 +13,12 @@ import {IGlobalReentrancyLock} from "./IGlobalReentrancyLock.sol";
 abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     using SafeCast for *;
 
+    /// -------------------------------------------------
+    /// -------------------------------------------------
+    /// ------------------- Constants -------------------
+    /// -------------------------------------------------
+    /// -------------------------------------------------
+
     // Booleans are more expensive than uint256 or any type that takes up a full
     // word because each write operation emits an extra SLOAD to first read the
     // slot's contents, replace the bits taken up by the boolean, and then write
@@ -26,6 +32,12 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     // increase the likelihood of the full refund coming into effect.
     uint224 private constant _NOT_ENTERED = 1;
     uint224 private constant _ENTERED = 2;
+
+    /// -------------------------------------------------
+    /// -------------------------------------------------
+    /// -------------- Single Storage Slot --------------
+    /// -------------------------------------------------
+    /// -------------------------------------------------
 
     /// @notice whether or not the system is entered or not entered
     uint224 private _status;
