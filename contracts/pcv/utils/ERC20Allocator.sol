@@ -162,19 +162,6 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2, RateLimitedV2 {
         emit DepositDeleted(pcvDeposit);
     }
 
-    /// @notice sweep target token, this shouldn't ever be needed as this contract
-    /// does not hold tokens
-    /// @param token to sweep
-    /// @param to recipient
-    /// @param amount of token to be sent
-    function sweep(
-        address token,
-        address to,
-        uint256 amount
-    ) external override onlyGovernor {
-        IERC20(token).safeTransfer(to, amount);
-    }
-
     /// ----------- Permissionless PCV Allocation APIs -----------
 
     /// @notice pull ERC20 tokens from PSM and send to PCV Deposit
