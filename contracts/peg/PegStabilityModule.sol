@@ -310,7 +310,8 @@ contract PegStabilityModule is
     }
 
     /// @notice no-op to maintain backwards compatability with IPCVDeposit
-    function deposit() external override {}
+    /// pauseable to stop integration if this contract is deprecated
+    function deposit() external override whenNotPaused {}
 
     // ----------- Hooks -----------
 
