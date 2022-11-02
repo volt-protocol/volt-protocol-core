@@ -14,6 +14,8 @@ import {PriceBoundPSM} from "../../peg/PriceBoundPSM.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
 
+import "hardhat/console.sol";
+
 contract IntegrationTestVIP14 is TimelockSimulation, vip14 {
     using SafeCast for *;
 
@@ -123,15 +125,24 @@ contract IntegrationTestVIP14 is TimelockSimulation, vip14 {
             MainnetAddresses.VOLT_USDC_PSM
         );
 
+        uint256 usdcBalance = IERC20(usdc).balanceOf(MainnetAddresses.GOVERNOR);
+        vm.prank(MainnetAddresses.GOVERNOR);
+        IERC20(usdc).transfer(address(usdcDeposit), usdcBalance);
+        usdcDeposit.deposit();
+
         assertTrue(
             IPCVDeposit(MainnetAddresses.VOLT_USDC_PSM).balance() <= 1e6
         );
 
         uint256 startingDepositBalance = usdcDeposit.balance();
 
+        console.log("startingDepositBalance: ", startingDepositBalance);
+
         allocator.drip(address(usdcDeposit));
 
         uint256 endingDepositBalance = usdcDeposit.balance();
+
+        console.log("endingDepositBalance: ", endingDepositBalance);
 
         assertApproxEq(
             (startingDepositBalance - endingDepositBalance).toInt256(),
