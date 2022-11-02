@@ -362,7 +362,6 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
         cleanPsm.redeem(address(this), mintAmount, mintAmount / 1e12);
     }
 
-    /// @notice redeem fails without approval
     function testMintFailsWhenMintExceedsPSMBalance() public {
         underlyingToken.approve(address(cleanPsm), type(uint256).max);
 
