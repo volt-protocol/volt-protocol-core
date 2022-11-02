@@ -32,16 +32,18 @@ contract CoreV2 is ICoreV2, PermissionsV2, GlobalReentrancyLock {
     /// @notice governor only function to set the VCON token
     /// @param _vcon new vcon token
     function setVcon(IERC20 _vcon) external onlyGovernor {
+        address oldVcon = address(vcon);
         vcon = _vcon;
 
-        emit VconUpdate(address(_vcon));
+        emit VconUpdate(oldVcon, address(_vcon));
     }
 
     /// @notice governor only function to set the VOLT token
     /// @param _volt new volt token
     function setVolt(IVolt _volt) external onlyGovernor {
+        address oldVolt = address(volt);
         volt = _volt;
 
-        emit VoltUpdate(address(_volt));
+        emit VoltUpdate(oldVolt, address(_volt));
     }
 }

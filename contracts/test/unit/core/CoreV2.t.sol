@@ -22,6 +22,12 @@ contract UnitTestCoreV2 is DSTest {
     address volt;
     address vcon;
 
+    /// @notice emitted with reference to VOLT token is updated
+    event VoltUpdate(address indexed oldVolt, address indexed newVolt);
+
+    /// @notice emitted when reference to VCON token is updated
+    event VconUpdate(address indexed oldVcon, address indexed newVcon);
+
     function setUp() public {
         core = getCoreV2();
         vcon = address(core.vcon());
@@ -58,6 +64,9 @@ contract UnitTestCoreV2 is DSTest {
     /// CoreV2
 
     function testGovernorSetsVolt() public {
+        vm.expectEmit(true, true, false, true, address(core));
+        emit VoltUpdate(volt, addresses.userAddress);
+
         vm.prank(addresses.governorAddress);
         core.setVolt(IVolt(address(addresses.userAddress)));
 
@@ -70,6 +79,9 @@ contract UnitTestCoreV2 is DSTest {
     }
 
     function testGovernorSetsVcon() public {
+        vm.expectEmit(true, true, false, true, address(core));
+        emit VconUpdate(vcon, addresses.userAddress);
+
         vm.prank(addresses.governorAddress);
         core.setVcon(IERC20(addresses.userAddress));
 

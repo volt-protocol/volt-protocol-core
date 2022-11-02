@@ -9,11 +9,11 @@ import {IPermissionsV2} from "./IPermissionsV2.sol";
 interface ICoreV2 is IPermissionsV2 {
     // ----------- Events -----------
 
-    /// @notice emitted with new reference to the VOLT token
-    event VoltUpdate(address indexed _volt);
+    /// @notice emitted with reference to VOLT token is updated
+    event VoltUpdate(address indexed oldVolt, address indexed newVolt);
 
-    /// @notice emitted with new reference to the VCON token
-    event VconUpdate(address indexed _vcon);
+    /// @notice emitted when reference to VCON token is updated
+    event VconUpdate(address indexed oldVcon, address indexed newVcon);
 
     // ----------- Getters -----------
 
