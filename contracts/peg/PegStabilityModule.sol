@@ -203,7 +203,7 @@ contract PegStabilityModule is
         amountVoltOut = _mint(to, amountIn, minAmountOut);
     }
 
-    // ----------- Public View-Only API ----------
+    /// ----------- Public View-Only API ----------
 
     /// @notice calculate the amount of VOLT out for a given `amountIn` of underlying
     /// First get oracle price of token
@@ -258,7 +258,7 @@ contract PegStabilityModule is
         return (balance(), voltBalance());
     }
 
-    // ----------- Internal Methods -----------
+    /// ----------- Internal Methods -----------
 
     /// @notice helper function to get mint amount out based on current market prices
     /// @dev will revert if price is outside of bounds and bounded PSM is being used
@@ -313,7 +313,7 @@ contract PegStabilityModule is
     /// pauseable to stop integration if this contract is deprecated
     function deposit() external override whenNotPaused {}
 
-    // ----------- Hooks -----------
+    /// ----------- Hook -----------
 
     /// @notice overriden function in the bounded PSM
     function _validatePriceRange(Decimal.D256 memory) internal view virtual {}
