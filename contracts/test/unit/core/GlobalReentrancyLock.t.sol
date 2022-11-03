@@ -145,6 +145,33 @@ contract UnitTestGlobalReentrancyLock is DSTest {
         vm.stopPrank();
     }
 
+    function testOnlySameLockerCanUnlock() public {
+        vm.startPrank(addresses.governorAddress);
+        core.grantGlobalLocker(addresses.governorAddress);
+
+        core.lock();
+        core.grantGlobalLocker(address(this));
+
+        vm.stopPrank();
+
+        assertTrue(core.isGlobalLocker(address(this)));
+        assertTrue(core.isLocked());
+        assertTrue(!core.isUnlocked());
+        assertEq(core.lastBlockEntered(), block.number);
+        assertEq(core.lastSender(), addresses.governorAddress);
+
+        vm.expectRevert("GlobalReentrancyLock: caller is not locker");
+        core.unlock();
+
+        vm.prank(addresses.governorAddress);
+        core.unlock();
+
+        assertTrue(!core.isLocked());
+        assertTrue(core.isUnlocked());
+        assertTrue(core.lastBlockEntered() == block.number);
+        assertEq(core.lastSender(), addresses.governorAddress);
+    }
+
     function testLockFailsNonStateRole() public {
         vm.expectRevert(
             "GlobalReentrancyLock: address missing global locker role"

@@ -9,6 +9,8 @@ import {IGlobalReentrancyLock} from "./IGlobalReentrancyLock.sol";
 /// data container size has been changed
 /// @dev allows contracts with the GLOBAL_LOCKER_ROLE to call in and lock and unlock
 /// this smart contract.
+/// once locked, only the original caller that locked can unlock the contract
+/// without the governor emergency unlock functionality.
 /// Governor can unpause if locked but not unlocked.
 abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     using SafeCast for *;
@@ -67,19 +69,24 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     }
 
     /// @notice view only function to return the last block entered
-    function lastBlockEntered() public view returns (uint88) {
+    function lastBlockEntered() external view returns (uint88) {
         return _lastBlockEntered;
+    }
+
+    /// @notice returns the last address that locked this contract
+    function lastSender() external view returns (address) {
+        return address(_sender);
     }
 
     /// @notice returns whether or not the contract is currently not entered
     /// if true, it is possible to lock
-    function isUnlocked() public view returns (bool) {
+    function isUnlocked() external view returns (bool) {
         return _status == _NOT_ENTERED;
     }
 
     /// @notice returns whether or not the contract is currently entered
     /// if true, and locked in the same block, it is possible to unlock
-    function isLocked() public view override returns (bool) {
+    function isLocked() external view override returns (bool) {
         return _status == _ENTERED;
     }
 
