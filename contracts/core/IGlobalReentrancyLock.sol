@@ -12,7 +12,7 @@ interface IGlobalReentrancyLock {
 
     /// @notice set the status to entered
     /// only available if not entered
-    /// callable only by global  role
+    /// callable only by global locker role
     function lock() external;
 
     /// @notice set the status to not entered
