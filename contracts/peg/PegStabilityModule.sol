@@ -316,9 +316,5 @@ contract PegStabilityModule is
     // ----------- Hooks -----------
 
     /// @notice overriden function in the bounded PSM
-    function _validatePriceRange(Decimal.D256 memory price)
-        internal
-        view
-        virtual
-    {}
+    function _validatePriceRange(Decimal.D256 memory) internal view virtual {}
 }
