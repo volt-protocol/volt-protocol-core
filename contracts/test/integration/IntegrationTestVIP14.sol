@@ -14,8 +14,6 @@ import {PriceBoundPSM} from "../../peg/PriceBoundPSM.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
 
-import "hardhat/console.sol";
-
 contract IntegrationTestVIP14 is TimelockSimulation, vip14 {
     using SafeCast for *;
 
@@ -136,13 +134,9 @@ contract IntegrationTestVIP14 is TimelockSimulation, vip14 {
 
         uint256 startingDepositBalance = usdcDeposit.balance();
 
-        console.log("startingDepositBalance: ", startingDepositBalance);
-
         allocator.drip(address(usdcDeposit));
 
         uint256 endingDepositBalance = usdcDeposit.balance();
-
-        console.log("endingDepositBalance: ", endingDepositBalance);
 
         assertApproxEq(
             (startingDepositBalance - endingDepositBalance).toInt256(),
