@@ -49,6 +49,7 @@ contract UnitTestCoreV2 is DSTest {
         assertEq(core.getRoleAdmin(core.GUARDIAN_ROLE()), governRole);
         assertEq(core.getRoleAdmin(core.PCV_CONTROLLER_ROLE()), governRole);
         assertEq(core.getRoleAdmin(core.GLOBAL_LOCKER_ROLE()), governRole);
+        assertEq(core.getRoleAdmin(core.PCV_GUARD_ROLE()), governRole);
 
         /// assert there is only 1 of each role
         assertEq(core.getRoleMemberCount(governRole), 2); /// msg.sender of contract and core is governor
@@ -56,9 +57,12 @@ contract UnitTestCoreV2 is DSTest {
         assertEq(core.getRoleMemberCount(core.GUARDIAN_ROLE()), 1); /// this role has not been granted
         assertEq(core.getRoleMemberCount(core.PCV_CONTROLLER_ROLE()), 1); /// this role has not been granted
         assertEq(core.getRoleMemberCount(core.GLOBAL_LOCKER_ROLE()), 0); /// this role has not been granted
+        assertEq(core.getRoleMemberCount(core.PCV_GUARD_ROLE()), 0); /// this role has not been granted
 
-        assertTrue(core.isUnlocked()); /// core starts out unlocked
-        assertTrue(!core.isLocked()); /// core starts out not locked
+        /// core starts out unlocked and unused
+        assertTrue(core.isUnlocked());
+        assertTrue(!core.isLocked());
+        assertEq(core.lastSender(), address(0));
     }
 
     /// CoreV2
@@ -189,6 +193,29 @@ contract UnitTestCoreV2 is DSTest {
     function testNonGovRevokesGovernorFails() public {
         vm.expectRevert("Permissions: Caller is not a governor");
         core.revokeGovernor(address(this));
+    }
+
+    function testGovAddsPcvGuardSucceeds() public {
+        vm.prank(addresses.governorAddress);
+        core.grantPcvGuard(address(this));
+        assertTrue(core.isPcvGuard(address(this)));
+    }
+
+    function testGovRevokesPcvGuard() public {
+        testGovAddsGuardianSucceeds();
+        vm.prank(addresses.governorAddress);
+        core.revokePcvGuard(address(this));
+        assertTrue(!core.isPcvGuard(address(this)));
+    }
+
+    function testNonGovAddsPcvGuardFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.grantPcvGuard(address(this));
+    }
+
+    function testNonGovRevokesPcvGuardFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.revokePcvGuard(address(this));
     }
 
     function testGovAddsGuardianSucceeds() public {

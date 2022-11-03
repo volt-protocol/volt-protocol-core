@@ -20,6 +20,8 @@ interface IPermissionsV2 is IAccessControl {
 
     function grantGlobalLocker(address locker) external;
 
+    function grantPcvGuard(address pcvGuard) external;
+
     function revokeMinter(address minter) external;
 
     function revokePCVController(address pcvController) external;
@@ -29,6 +31,8 @@ interface IPermissionsV2 is IAccessControl {
     function revokeGuardian(address guardian) external;
 
     function revokeGlobalLocker(address locker) external;
+
+    function revokePcvGuard(address pcvGuard) external;
 
     // ----------- Revoker only state changing api -----------
 
@@ -45,6 +49,8 @@ interface IPermissionsV2 is IAccessControl {
     function isPCVController(address _address) external view returns (bool);
 
     function isGlobalLocker(address _address) external view returns (bool);
+
+    function isPcvGuard(address _address) external view returns (bool);
 
     // ----------- Predefined Roles -----------
 

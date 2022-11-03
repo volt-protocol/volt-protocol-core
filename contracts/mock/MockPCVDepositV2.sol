@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import "../refs/CoreRef.sol";
-import "../pcv/IPCVDeposit.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract MockPCVDepositV2 is IPCVDeposit, CoreRef {
+import {CoreRefV2} from "../refs/CoreRefV2.sol";
+import {IPCVDeposit} from "../pcv/IPCVDeposit.sol";
+
+contract MockPCVDepositV2 is IPCVDeposit, CoreRefV2 {
     address public override balanceReportedIn;
 
     uint256 private resistantBalance;
@@ -15,7 +17,7 @@ contract MockPCVDepositV2 is IPCVDeposit, CoreRef {
         address _token,
         uint256 _resistantBalance,
         uint256 _resistantProtocolOwnedFei
-    ) CoreRef(_core) {
+    ) CoreRefV2(_core) {
         balanceReportedIn = _token;
         resistantBalance = _resistantBalance;
         resistantProtocolOwnedFei = _resistantProtocolOwnedFei;

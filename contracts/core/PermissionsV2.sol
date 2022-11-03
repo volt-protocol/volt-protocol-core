@@ -15,6 +15,7 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     bytes32 public constant override GUARDIAN_ROLE = keccak256("GUARDIAN_ROLE");
     bytes32 public constant override GLOBAL_LOCKER_ROLE =
         keccak256("GLOBAL_LOCKER_ROLE");
+    bytes32 public constant PCV_GUARD_ROLE = keccak256("PCV_GUARD_ROLE");
 
     constructor() {
         // Appointed as a governor so guardian can have indirect access to revoke ability
@@ -25,6 +26,7 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         _setRoleAdmin(GOVERN_ROLE, GOVERN_ROLE);
         _setRoleAdmin(GUARDIAN_ROLE, GOVERN_ROLE);
         _setRoleAdmin(GLOBAL_LOCKER_ROLE, GOVERN_ROLE);
+        _setRoleAdmin(PCV_GUARD_ROLE, GOVERN_ROLE);
     }
 
     modifier onlyGovernor() {
@@ -93,6 +95,12 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         _grantRole(GLOBAL_LOCKER_ROLE, globalLocker);
     }
 
+    /// @notice grants PCV Guard role to address
+    /// @param pcvGuard address to add as PCV Guard
+    function grantPcvGuard(address pcvGuard) external override onlyGovernor {
+        _grantRole(PCV_GUARD_ROLE, pcvGuard);
+    }
+
     /// @notice revokes minter role from address
     /// @param minter ex minter
     function revokeMinter(address minter) external override onlyGovernor {
@@ -129,6 +137,12 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         onlyGovernor
     {
         _revokeRole(GLOBAL_LOCKER_ROLE, globalLocker);
+    }
+
+    /// @notice revokes PCV Guard role from address
+    /// @param pcvGuard ex PCV Guard
+    function revokePcvGuard(address pcvGuard) external override onlyGovernor {
+        _revokeRole(PCV_GUARD_ROLE, pcvGuard);
     }
 
     /// @notice revokes a role from address
@@ -210,10 +224,16 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     function isGlobalLocker(address _address)
         public
         view
-        virtual
         override
         returns (bool)
     {
         return hasRole(GLOBAL_LOCKER_ROLE, _address);
+    }
+
+    /// @notice checks if address has PCV Guard role
+    /// @param _address address to check
+    /// @return true if _address has PCV Guard role
+    function isPcvGuard(address _address) public view override returns (bool) {
+        return hasRole(PCV_GUARD_ROLE, _address);
     }
 }
