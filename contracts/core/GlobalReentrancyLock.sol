@@ -30,8 +30,8 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     // amount. Since refunds are capped to a percentage of the total
     // transaction's gas, it is best to keep them low in cases like this one, to
     // increase the likelihood of the full refund coming into effect.
-    uint224 private constant _NOT_ENTERED = 1;
-    uint224 private constant _ENTERED = 2;
+    uint8 private constant _NOT_ENTERED = 1;
+    uint8 private constant _ENTERED = 2;
 
     /// -------------------------------------------------
     /// -------------------------------------------------
@@ -39,13 +39,17 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// -------------------------------------------------
     /// -------------------------------------------------
 
-    /// @notice whether or not the system is entered or not entered
-    uint224 private _status;
+    /// @notice cache the address that locked the system
+    /// only this address can unlock it
+    uint160 private _sender;
 
     /// @notice store the last block entered
     /// if last block entered was in the past and status is entered, the system is in an invalid state
     /// which means that actions should be allowed
-    uint32 private _lastBlockEntered;
+    uint88 private _lastBlockEntered;
+
+    /// @notice whether or not the system is entered or not entered
+    uint8 private _status;
 
     /// @notice construct GlobalReentrancyLock
     constructor() {
@@ -63,7 +67,7 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     }
 
     /// @notice view only function to return the last block entered
-    function lastBlockEntered() public view returns (uint32) {
+    function lastBlockEntered() public view returns (uint88) {
         return _lastBlockEntered;
     }
 
@@ -88,17 +92,26 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
             "GlobalReentrancyLock: system already entered"
         );
 
-        uint32 blockEntered = block.number.toUint32(); /// cache value to save a warm SSTORE
+        /// cache values to save a warm SSTORE
+        uint32 blockEntered = block.number.toUint32();
+        uint160 sender = uint160(msg.sender);
 
-        _status = _ENTERED;
+        _sender = sender;
         _lastBlockEntered = blockEntered;
+        _status = _ENTERED;
     }
 
     /// @notice set the status to not entered
     /// only available if entered and entered in same block
     /// otherwise, system is in an indeterminate state and no execution should be allowed
     /// callable only by global locker role
+    /// can only be called by the last address to lock the system
+    /// to prevent incorrect system behavior
     function unlock() external override onlyGlobalLockerRole {
+        require(
+            uint160(msg.sender) == _sender,
+            "GlobalReentrancyLock: caller is not locker"
+        );
         require(
             block.number == _lastBlockEntered && _status == _ENTERED,
             "GlobalReentrancyLock: system not entered"

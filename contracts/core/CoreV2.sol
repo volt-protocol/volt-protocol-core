@@ -21,29 +21,29 @@ contract CoreV2 is ICoreV2, PermissionsV2, GlobalReentrancyLock {
     IERC20 public override vcon;
 
     /// @notice construct CoreV2
-    /// @param _volt reference to the volt token
-    constructor(address _volt) GlobalReentrancyLock() PermissionsV2() {
-        volt = IVolt(_volt);
+    /// @param newVolt reference to the volt token
+    constructor(address newVolt) GlobalReentrancyLock() PermissionsV2() {
+        volt = IVolt(newVolt);
 
         /// msg.sender already has the VOLT Minting abilities, so grant them governor as well
         _setupRole(GOVERN_ROLE, msg.sender);
     }
 
     /// @notice governor only function to set the VCON token
-    /// @param _vcon new vcon token
-    function setVcon(IERC20 _vcon) external onlyGovernor {
+    /// @param newVcon new vcon token
+    function setVcon(IERC20 newVcon) external onlyGovernor {
         address oldVcon = address(vcon);
-        vcon = _vcon;
+        vcon = newVcon;
 
-        emit VconUpdate(oldVcon, address(_vcon));
+        emit VconUpdate(oldVcon, address(newVcon));
     }
 
     /// @notice governor only function to set the VOLT token
-    /// @param _volt new volt token
-    function setVolt(IVolt _volt) external onlyGovernor {
+    /// @param newVolt new volt token
+    function setVolt(IVolt newVolt) external onlyGovernor {
         address oldVolt = address(volt);
-        volt = _volt;
+        volt = newVolt;
 
-        emit VoltUpdate(oldVolt, address(_volt));
+        emit VoltUpdate(oldVolt, address(newVolt));
     }
 }
