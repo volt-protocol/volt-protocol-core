@@ -15,33 +15,10 @@ the _status variable is set to entered and the _lastBlockEntered variable is set
 number. This means, the contract can only be unlocked in the same block it was locked, which is
 intended behavior.
 
-ERC20HoldingPCVDeposit.constructor(address,IERC20,address)._core (contracts/pcv/ERC20HoldingPCVDeposit.sol#31) shadows:
-	- CoreRefV2._core (contracts/refs/CoreRefV2.sol#21) (state variable)
-PCVGuardAdmin.constructor(address)._core (contracts/pcv/PCVGuardAdmin.sol#15) shadows:
-	- CoreRef._core (contracts/refs/CoreRef.sol#11) (state variable)
 PCVGuardian.constructor(address,address,address[])._core (contracts/pcv/PCVGuardian.sol#26) shadows:
 	- CoreRefV2._core (contracts/refs/CoreRefV2.sol#21) (state variable)
-CompoundPCVDepositBase.constructor(address,address)._core (contracts/pcv/compound/CompoundPCVDepositBase.sol#18) shadows:
-	- CoreRefV2._core (contracts/refs/CoreRefV2.sol#21) (state variable)
-CompoundPCVRouter.constructor(address,PCVDeposit,PCVDeposit)._core (contracts/pcv/compound/CompoundPCVRouter.sol#52) shadows:
-	- CoreRefV2._core (contracts/refs/CoreRefV2.sol#21) (state variable)
-ERC20CompoundPCVDeposit.constructor(address,address)._core (contracts/pcv/compound/ERC20CompoundPCVDeposit.sol#19) shadows:
-	- CoreRefV2._core (contracts/refs/CoreRefV2.sol#21) (state variable)
-MakerRouter.constructor(address,IDSSPSM,IPegStabilityModule)._core (contracts/pcv/maker/MakerRouter.sol#41) shadows:
-	- CoreRef._core (contracts/refs/CoreRef.sol#11) (state variable)
-MorphoCompoundPCVDeposit.constructor(address,address,address,address,address)._core (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#94) shadows:
-	- CoreRefV2._core (contracts/refs/CoreRefV2.sol#21) (state variable)
-ERC20Allocator.constructor(address,uint256,uint128,uint128)._core (contracts/pcv/utils/ERC20Allocator.sol#62) shadows:
-	- CoreRefV2._core (contracts/refs/CoreRefV2.sol#21) (state variable)
-ERC20Allocator.connectPSM(address,uint248,int8).targetBalance (contracts/pcv/utils/ERC20Allocator.sol#79) shadows:
-	- ERC20Allocator.targetBalance(address) (contracts/pcv/utils/ERC20Allocator.sol#267-269) (function)
-ERC20Allocator.editPSMTargetBalance(address,uint248).targetBalance (contracts/pcv/utils/ERC20Allocator.sol#104) shadows:
-	- ERC20Allocator.targetBalance(address) (contracts/pcv/utils/ERC20Allocator.sol#267-269) (function)
 OracleRef.constructor(address,address,address,int256,bool)._core (contracts/refs/OracleRef.sol#36) shadows:
 	- CoreRefV2._core (contracts/refs/CoreRefV2.sol#21) (state variable)
-Volt.constructor(address).core (contracts/volt/Volt.sol#19) shadows:
-	- CoreRef.core() (contracts/refs/CoreRef.sol#187-189) (function)
-	- ICoreRef.core() (contracts/refs/ICoreRef.sol#30) (function)
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#local-variable-shadowing
 Response: Acknowledge, code works as intended, so will not fix.
 
