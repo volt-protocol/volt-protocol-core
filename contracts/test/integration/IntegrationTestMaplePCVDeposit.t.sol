@@ -7,19 +7,55 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Vm} from "../unit/utils/Vm.sol";
 import {Core} from "../../core/Core.sol";
 import {IVolt} from "../../volt/IVolt.sol";
-import {IPool} from "../../pcv/maple/IPool.sol";
+import {IMaplePool} from "../../pcv/maple/IMaplePool.sol";
 import {DSTest} from "../unit/utils/DSTest.sol";
 import {IDSSPSM} from "../../pcv/maker/IDSSPSM.sol";
 import {Constants} from "../../Constants.sol";
+import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
 import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
-import {IMplRewards} from "../../pcv/maple/IMplRewards.sol";
+import {IMapleRewards} from "../../pcv/maple/IMapleRewards.sol";
 import {MaplePCVDeposit} from "../../pcv/maple/MaplePCVDeposit.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 
+interface IMapleLoanFactory {
+    function createInstance(bytes calldata, bytes32) external returns (address);
+}
+
+interface IMapleLoan {
+    function drawdownFunds(uint256 amt, address to)
+        external
+        returns (uint256 collateralPosted);
+
+    function makePayment(uint256 amt)
+        external
+        returns (uint256 principal, uint256 interest);
+
+    function paymentsRemaining() external view returns (uint256);
+
+    function nextPaymentDueDate() external view returns (uint256);
+
+    function gracePeriod() external view returns (uint256);
+}
+
 contract IntegrationTestMaplePCVDeposit is DSTest {
     using SafeCast for *;
+
+    event Deposit(address indexed _caller, uint256 _amount);
+    event Withdrawal(
+        address indexed _caller,
+        address indexed _to,
+        uint256 _amount
+    );
+    event Harvest(address indexed _token, int256 _profit, uint256 _timestamp);
+    event DefaultSuffered(
+        address indexed loan,
+        uint256 defaultSuffered,
+        uint256 bptsBurned,
+        uint256 bptsReturned,
+        uint256 liquidityAssetRecoveredFromBurn
+    );
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
@@ -41,26 +77,25 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
     /// you have 2 days to withdraw before you have to request to withdraw again
     uint256 public constant withdrawPeriod = 172800;
 
-    IERC20 public constant maple =
-        IERC20(0x33349B282065b0284d756F0577FB39c158F935e6);
-    address public constant mplRewards =
-        0x7869D7a3B074b5fa484dc04798E254c9C06A5e90;
-    address public constant maplePool =
-        0xFeBd6F15Df3B73DC4307B1d7E65D46413e710C27;
-
-    address public constant mapleOwner =
-        0xd6d4Bcde6c816F17889f1Dd3000aF0261B03a196;
-
-    address public constant mapleToken =
-        0x33349B282065b0284d756F0577FB39c158F935e6;
+    IERC20 public immutable mapleToken = IERC20(MainnetAddresses.MPL_TOKEN);
+    address public immutable mapleOwner =
+        MainnetAddresses.MPL_GOVERNOR_MULTISIG;
+    address public immutable maplePool = MainnetAddresses.MPL_ORTHOGONAL_POOL;
+    address public immutable mapleRewards =
+        MainnetAddresses.MPL_ORTHOGONAL_REWARDS;
 
     function setUp() public {
-        usdcDeposit = new MaplePCVDeposit(address(core), maplePool, mplRewards);
+        usdcDeposit = new MaplePCVDeposit(
+            address(core),
+            maplePool,
+            mapleRewards,
+            address(0)
+        );
 
         vm.label(address(usdcDeposit), "Maple USDC PCV Deposit");
         vm.label(address(usdc), "USDC Token");
         vm.label(address(maplePool), "Maple Pool");
-        vm.label(address(mplRewards), "Maple Rewards");
+        vm.label(address(mapleRewards), "Maple Rewards");
 
         vm.startPrank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
         usdc.transfer(address(usdcDeposit), targetUsdcBalance);
@@ -68,55 +103,323 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
 
         /// governor has pcv controller role
         vm.prank(MainnetAddresses.GOVERNOR);
+        // check Deposit event
+        vm.expectEmit(true, false, false, true, address(usdcDeposit));
+        emit Deposit(MainnetAddresses.GOVERNOR, targetUsdcBalance);
+        // do initial deposit
         usdcDeposit.deposit();
     }
 
     function testSetup() public {
         assertEq(address(usdcDeposit.core()), address(core));
-        assertEq(
-            address(usdcDeposit.rewardsToken()),
-            MainnetAddresses.MPL_TOKEN
-        );
         assertEq(usdcDeposit.balanceReportedIn(), address(usdc));
-        assertEq(address(usdcDeposit.pool()), maplePool);
-        assertEq(address(usdcDeposit.mplRewards()), mplRewards);
-        assertEq(address(usdcDeposit.token()), address(MainnetAddresses.USDC));
+        assertEq(usdcDeposit.maplePool(), maplePool);
+        assertEq(usdcDeposit.mapleRewards(), mapleRewards);
+        assertEq(usdcDeposit.mapleToken(), MainnetAddresses.MPL_TOKEN);
         assertEq(usdcDeposit.balance(), targetUsdcBalance);
+        assertEq(usdcDeposit.lastRecordedBalance(), targetUsdcBalance);
     }
 
     function testWithdraw() public {
-        uint256 rewardRate = IMplRewards(mplRewards).rewardRate();
+        uint256 rewardRate = IMapleRewards(mapleRewards).rewardRate();
         vm.prank(mapleOwner);
-        IMplRewards(mplRewards).notifyRewardAmount(rewardRate);
+        IMapleRewards(mapleRewards).notifyRewardAmount(rewardRate);
 
-        vm.warp(block.timestamp + IPool(maplePool).lockupPeriod());
+        vm.warp(block.timestamp + IMaplePool(maplePool).lockupPeriod());
         vm.prank(MainnetAddresses.GOVERNOR);
         usdcDeposit.signalIntentToWithdraw();
 
         vm.warp(block.timestamp + cooldownPeriod);
 
+        /// governor has pcv controller role
         vm.prank(MainnetAddresses.GOVERNOR);
+        // check Harvest event for MPL rewards (don't check amount)
+        vm.expectEmit(true, false, false, false, address(usdcDeposit));
+        emit Harvest(MainnetAddresses.MPL_TOKEN, 12345, block.timestamp);
+        // check Harvest event for USDC interests (no interests/losses)
+        vm.expectEmit(true, false, false, true, address(usdcDeposit));
+        emit Harvest(MainnetAddresses.USDC, 0, block.timestamp);
+        // check Withdrawal event for principal
+        vm.expectEmit(true, true, false, true, address(usdcDeposit));
+        emit Withdrawal(
+            MainnetAddresses.GOVERNOR,
+            address(this),
+            targetUsdcBalance
+        );
+        // do withdraw
         usdcDeposit.withdraw(address(this), targetUsdcBalance);
 
-        uint256 mplBalance = maple.balanceOf(address(usdcDeposit));
-
         assertEq(usdcDeposit.balance(), 0);
+        assertEq(usdcDeposit.lastRecordedBalance(), 0);
         assertEq(usdc.balanceOf(address(this)), targetUsdcBalance);
-        assertTrue(mplBalance != 0);
+        assertTrue(mapleToken.balanceOf(address(usdcDeposit)) > 0);
     }
 
     function testHarvest() public {
-        uint256 rewardRate = IMplRewards(mplRewards).rewardRate();
+        uint256 rewardRate = IMapleRewards(mapleRewards).rewardRate();
         vm.prank(mapleOwner);
-        IMplRewards(mplRewards).notifyRewardAmount(rewardRate);
+        IMapleRewards(mapleRewards).notifyRewardAmount(rewardRate);
 
-        vm.warp(block.timestamp + IPool(maplePool).lockupPeriod());
+        vm.warp(block.timestamp + IMaplePool(maplePool).lockupPeriod());
 
+        // check Harvest event for MPL rewards (don't check amount)
+        vm.expectEmit(true, false, false, false, address(usdcDeposit));
+        emit Harvest(MainnetAddresses.MPL_TOKEN, 12345, block.timestamp);
         usdcDeposit.harvest();
 
-        uint256 mplBalance = maple.balanceOf(address(usdcDeposit));
+        uint256 mplBalance = mapleToken.balanceOf(address(usdcDeposit));
 
         assertTrue(mplBalance != 0);
+    }
+
+    function testAccrueInterestsEarned() public {
+        assertEq(usdcDeposit.lastRecordedBalance(), targetUsdcBalance);
+
+        // Someone creates a loan
+        address mapleLoanFactory = 0x36a7350309B2Eb30F3B908aB0154851B5ED81db0;
+        address mapleDebtLockerFactory = 0xA83404CAA79989FfF1d84bA883a1b8187397866C;
+        address mapleLoan;
+        uint256 gracePeriod = 432000; // 5 days
+        uint256 paymentInterval = 15552000; // 180 days
+        bytes memory arguments = abi.encode(
+            address(this), // borrower
+            address(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599), // assets[0] = collateral = WBTC
+            MainnetAddresses.USDC, // assets[1] = principal = USDC
+            gracePeriod, // terms[0]
+            paymentInterval, // terms[1] = paymentInterval
+            2, // terms[2] = numberOfPayments
+            0, // amounts[0] = collateralRequired
+            targetUsdcBalance, // amounts[1] = principalRequested
+            targetUsdcBalance, // amounts[2] = endingPrincipal
+            0.12e18, // rates[0] = interestRate = 12%
+            0.02e18, // rates[1] = earlyFeeRate = 2%
+            0, // rates[2] = lateFeeRate = 0
+            0.05e18 // rates[3] = lateInterestPremium = 5%
+        );
+        mapleLoan = IMapleLoanFactory(mapleLoanFactory).createInstance(
+            arguments,
+            keccak256(bytes("some salt for testAccrueInterestsEarned()"))
+        );
+        vm.label(mapleLoan, "mapleLoan");
+
+        // Pool delegate funds the loan
+        // The pool has enough cash to fund the loan because the PCVDeposit
+        // did a deposit() in the setUp() step.
+        vm.prank(MainnetAddresses.MPL_ORTHOGONAL_POOL_DELEGATE);
+        IMaplePool(maplePool).fundLoan(
+            mapleLoan,
+            mapleDebtLockerFactory,
+            targetUsdcBalance
+        );
+
+        // Borrower pulls loan amount
+        assertEq(usdc.balanceOf(address(this)), 0);
+        IMapleLoan(mapleLoan).drawdownFunds(targetUsdcBalance, address(this));
+        assertEq(usdc.balanceOf(address(this)), targetUsdcBalance);
+
+        // Send more USDC to the borrower so they can pay interests
+        vm.prank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
+        usdc.transfer(address(this), targetUsdcBalance);
+
+        // Warp forward and make payment
+        vm.warp(block.timestamp + gracePeriod + paymentInterval);
+        usdc.approve(mapleLoan, type(uint256).max);
+        (uint256 principal1, uint256 interest1) = IMapleLoan(mapleLoan)
+            .makePayment(7_000e6);
+        assertEq(principal1, 0);
+        assertTrue(interest1 > 5_900e6);
+
+        // Pool Manager claims the interests
+        vm.prank(MainnetAddresses.MPL_ORTHOGONAL_POOL_DELEGATE);
+        IMaplePool(maplePool).claim(mapleLoan, mapleDebtLockerFactory);
+
+        // Accrue interests in PCVDeposit and check live+recorded balances
+        uint256 protocolEarnedInterests = usdcDeposit.balance() -
+            usdcDeposit.lastRecordedBalance();
+        assertTrue(protocolEarnedInterests > 1e6); // ast least 1 USDC of interests
+
+        // check Harvest event for USDC interests
+        vm.expectEmit(true, false, false, true, address(usdcDeposit));
+        emit Harvest(
+            MainnetAddresses.USDC,
+            int256(protocolEarnedInterests),
+            block.timestamp
+        );
+        usdcDeposit.accrue();
+
+        assertEq(
+            usdcDeposit.lastRecordedBalance(),
+            targetUsdcBalance + protocolEarnedInterests
+        );
+        assertEq(usdcDeposit.lastRecordedBalance(), usdcDeposit.balance());
+    }
+
+    function testAccrueLossesIncurredButCovered() public {
+        assertEq(usdcDeposit.lastRecordedBalance(), targetUsdcBalance);
+
+        // Someone creates a loan
+        address mapleLoanFactory = 0x36a7350309B2Eb30F3B908aB0154851B5ED81db0;
+        address mapleDebtLockerFactory = 0xA83404CAA79989FfF1d84bA883a1b8187397866C;
+        address mapleLoan;
+        uint256 gracePeriod = 432000; // 5 days
+        uint256 paymentInterval = 2592000; // 30 days
+        bytes memory arguments = abi.encode(
+            address(this), // borrower
+            address(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599), // assets[0] = collateral = WBTC
+            MainnetAddresses.USDC, // assets[1] = principal = USDC
+            gracePeriod, // terms[0]
+            paymentInterval, // terms[1] = paymentInterval
+            2, // terms[2] = numberOfPayments
+            0, // amounts[0] = collateralRequired
+            targetUsdcBalance, // amounts[1] = principalRequested
+            targetUsdcBalance, // amounts[2] = endingPrincipal
+            0.12e18, // rates[0] = interestRate = 12%
+            0.02e18, // rates[1] = earlyFeeRate = 2%
+            0, // rates[2] = lateFeeRate = 0
+            0.05e18 // rates[3] = lateInterestPremium = 5%
+        );
+        mapleLoan = IMapleLoanFactory(mapleLoanFactory).createInstance(
+            arguments,
+            keccak256(
+                bytes("some salt for testAccrueLossesIncurredButCovered()")
+            )
+        );
+        vm.label(mapleLoan, "mapleLoan");
+
+        // Pool delegate funds the loan
+        // The pool has enough cash to fund the loan because the PCVDeposit
+        // did a deposit() in the setUp() step.
+        vm.prank(MainnetAddresses.MPL_ORTHOGONAL_POOL_DELEGATE);
+        IMaplePool(maplePool).fundLoan(
+            mapleLoan,
+            mapleDebtLockerFactory,
+            targetUsdcBalance
+        );
+
+        // Borrower pulls loan amount
+        assertEq(usdc.balanceOf(address(this)), 0);
+        IMapleLoan(mapleLoan).drawdownFunds(targetUsdcBalance, address(this));
+        assertEq(usdc.balanceOf(address(this)), targetUsdcBalance);
+
+        assertEq(
+            IMapleLoan(mapleLoan).nextPaymentDueDate(),
+            block.timestamp + paymentInterval
+        );
+        assertEq(IMapleLoan(mapleLoan).gracePeriod(), gracePeriod);
+
+        // Pool Manager triggers a loan default
+        vm.warp(block.timestamp + gracePeriod + paymentInterval + 1000);
+        vm.prank(MainnetAddresses.MPL_ORTHOGONAL_POOL_DELEGATE);
+        IMaplePool(maplePool).triggerDefault(mapleLoan, mapleDebtLockerFactory);
+
+        // Pool Manager claims to update accounting
+        vm.prank(MainnetAddresses.MPL_ORTHOGONAL_POOL_DELEGATE);
+        vm.expectEmit(true, false, false, false, maplePool);
+        emit DefaultSuffered(mapleLoan, 123, 456, 789, 101);
+        IMaplePool(maplePool).claim(mapleLoan, mapleDebtLockerFactory);
+
+        // First-loss capital absorbed the default
+        assertEq(usdcDeposit.balance(), targetUsdcBalance);
+
+        // The PCV Deposit can properly withdraw all principal
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.signalIntentToWithdraw();
+        vm.warp(block.timestamp + cooldownPeriod);
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.withdraw(address(this), targetUsdcBalance);
+        assertEq(usdcDeposit.balance(), 0);
+        assertEq(usdc.balanceOf(address(this)), 2 * targetUsdcBalance); // 1 from the drawn loan & 1 from the withdraw
+    }
+
+    function testAccrueLossesIncurredNotCovered() public {
+        // Load the PCV Deposit with a large amount
+        uint256 largeUsdcBalance = 20_000_000e6; // 20M$
+        vm.prank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
+        usdc.transfer(
+            address(usdcDeposit),
+            largeUsdcBalance - targetUsdcBalance
+        );
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.deposit();
+        assertEq(usdcDeposit.lastRecordedBalance(), largeUsdcBalance);
+
+        // Someone creates a loan
+        address mapleLoanFactory = 0x36a7350309B2Eb30F3B908aB0154851B5ED81db0;
+        address mapleDebtLockerFactory = 0xA83404CAA79989FfF1d84bA883a1b8187397866C;
+        address mapleLoan;
+        uint256 gracePeriod = 432000; // 5 days
+        uint256 paymentInterval = 2592000; // 30 days
+        bytes memory arguments = abi.encode(
+            address(this), // borrower
+            address(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599), // assets[0] = collateral = WBTC
+            MainnetAddresses.USDC, // assets[1] = principal = USDC
+            gracePeriod, // terms[0]
+            paymentInterval, // terms[1] = paymentInterval
+            2, // terms[2] = numberOfPayments
+            0, // amounts[0] = collateralRequired
+            largeUsdcBalance, // amounts[1] = principalRequested
+            largeUsdcBalance, // amounts[2] = endingPrincipal
+            0.12e18, // rates[0] = interestRate = 12%
+            0.02e18, // rates[1] = earlyFeeRate = 2%
+            0, // rates[2] = lateFeeRate = 0
+            0.05e18 // rates[3] = lateInterestPremium = 5%
+        );
+        mapleLoan = IMapleLoanFactory(mapleLoanFactory).createInstance(
+            arguments,
+            keccak256(
+                bytes("some salt for testAccrueLossesIncurredNotCovered()")
+            )
+        );
+        vm.label(mapleLoan, "mapleLoan");
+
+        // Pool delegate funds the loan
+        // The pool has enough cash to fund the loan because the PCVDeposit
+        // did a deposit() in the setUp() step.
+        vm.prank(MainnetAddresses.MPL_ORTHOGONAL_POOL_DELEGATE);
+        IMaplePool(maplePool).fundLoan(
+            mapleLoan,
+            mapleDebtLockerFactory,
+            largeUsdcBalance
+        );
+
+        // Borrower pulls loan amount
+        assertEq(usdc.balanceOf(address(this)), 0);
+        IMapleLoan(mapleLoan).drawdownFunds(largeUsdcBalance, address(this));
+        assertEq(usdc.balanceOf(address(this)), largeUsdcBalance);
+
+        assertEq(
+            IMapleLoan(mapleLoan).nextPaymentDueDate(),
+            block.timestamp + paymentInterval
+        );
+        assertEq(IMapleLoan(mapleLoan).gracePeriod(), gracePeriod);
+
+        // Pool Manager triggers a loan default
+        vm.warp(block.timestamp + gracePeriod + paymentInterval + 1000);
+        vm.prank(MainnetAddresses.MPL_ORTHOGONAL_POOL_DELEGATE);
+        IMaplePool(maplePool).triggerDefault(mapleLoan, mapleDebtLockerFactory);
+
+        // Pool Manager claims to update accounting
+        vm.prank(MainnetAddresses.MPL_ORTHOGONAL_POOL_DELEGATE);
+        vm.expectEmit(true, false, false, false, maplePool);
+        emit DefaultSuffered(mapleLoan, 123, 456, 789, 101);
+        IMaplePool(maplePool).claim(mapleLoan, mapleDebtLockerFactory);
+
+        // The PCV Deposit incurred a loss
+        uint256 pcvLoss = largeUsdcBalance - usdcDeposit.balance();
+        assertEq(usdcDeposit.lastRecordedBalance(), largeUsdcBalance);
+        assertTrue(pcvLoss > 1_000_000e6); // loss is 4.7M$ as of 2022-11-04 but pool cover could change over time
+
+        // check Harvest event for USDC interests
+        vm.expectEmit(true, false, false, true, address(usdcDeposit));
+        emit Harvest(
+            MainnetAddresses.USDC,
+            -1 * int256(pcvLoss),
+            block.timestamp
+        );
+        usdcDeposit.accrue();
+
+        assertEq(usdcDeposit.lastRecordedBalance(), largeUsdcBalance - pcvLoss);
+        assertEq(usdcDeposit.balance(), largeUsdcBalance - pcvLoss);
     }
 
     function _testWithdraw(uint256 amount) private {
@@ -129,7 +432,7 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
         vm.prank(MainnetAddresses.GOVERNOR);
         usdcDeposit.withdraw(address(this), amount);
 
-        uint256 mplBalance = maple.balanceOf(address(usdcDeposit));
+        uint256 mplBalance = mapleToken.balanceOf(address(usdcDeposit));
 
         uint256 targetBal = targetUsdcBalance - amount;
         assertEq(usdcDeposit.balance(), targetBal);
@@ -155,7 +458,7 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
         usdcDeposit.signalIntentToWithdraw();
 
         assertEq(
-            IPool(maplePool).withdrawCooldown(address(usdcDeposit)),
+            IMaplePool(maplePool).withdrawCooldown(address(usdcDeposit)),
             blockTimestamp
         );
     }
@@ -168,30 +471,36 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
         usdcDeposit.signalIntentToWithdraw();
 
         assertEq(
-            IPool(maplePool).withdrawCooldown(address(usdcDeposit)),
+            IMaplePool(maplePool).withdrawCooldown(address(usdcDeposit)),
             blockTimestamp
         );
 
         vm.prank(MainnetAddresses.GOVERNOR);
         usdcDeposit.cancelWithdraw();
 
-        assertEq(IPool(maplePool).withdrawCooldown(address(usdcDeposit)), 0);
+        assertEq(
+            IMaplePool(maplePool).withdrawCooldown(address(usdcDeposit)),
+            0
+        );
     }
 
-    function testExitPCVControllerSucceeds() public {
+    function testExitRewardsPCVControllerSucceeds() public {
         _setRewardsAndWarp();
 
         vm.prank(MainnetAddresses.GOVERNOR);
-        usdcDeposit.exit();
+        usdcDeposit.exitRewards();
 
         assertEq(
-            IPool(maplePool).custodyAllowance(
+            IMaplePool(maplePool).custodyAllowance(
                 address(usdcDeposit),
-                address(mplRewards)
+                address(mapleRewards)
             ),
             0
         );
-        assertEq(IMplRewards(mplRewards).balanceOf(address(usdcDeposit)), 0);
+        assertEq(
+            IMapleRewards(mapleRewards).balanceOf(address(usdcDeposit)),
+            0
+        );
     }
 
     function testWithdrawFromRewardsContractPCVControllerSucceeds() public {
@@ -201,13 +510,16 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
         usdcDeposit.withdrawFromRewardsContract();
 
         assertEq(
-            IPool(maplePool).custodyAllowance(
+            IMaplePool(maplePool).custodyAllowance(
                 address(usdcDeposit),
-                address(mplRewards)
+                address(mapleRewards)
             ),
             0
         );
-        assertEq(IMplRewards(mplRewards).balanceOf(address(usdcDeposit)), 0);
+        assertEq(
+            IMapleRewards(mapleRewards).balanceOf(address(usdcDeposit)),
+            0
+        );
     }
 
     function testWithdrawFromRewardsContractAndWithdrawFromPoolPCVControllerSucceeds()
@@ -230,16 +542,19 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
         _setRewardsAndWarp();
 
         vm.prank(MainnetAddresses.GOVERNOR);
-        usdcDeposit.exit();
+        usdcDeposit.exitRewards();
 
         assertEq(
-            IPool(maplePool).custodyAllowance(
+            IMaplePool(maplePool).custodyAllowance(
                 address(usdcDeposit),
-                address(mplRewards)
+                address(mapleRewards)
             ),
             0
         );
-        assertEq(IMplRewards(mplRewards).balanceOf(address(usdcDeposit)), 0);
+        assertEq(
+            IMapleRewards(mapleRewards).balanceOf(address(usdcDeposit)),
+            0
+        );
 
         vm.prank(MainnetAddresses.GOVERNOR);
         usdcDeposit.signalIntentToWithdraw();
@@ -254,19 +569,22 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
 
         MaplePCVDeposit.Call[] memory calls = new MaplePCVDeposit.Call[](1);
         calls[0].callData = abi.encodeWithSignature("exit()");
-        calls[0].target = mplRewards;
+        calls[0].target = mapleRewards;
 
         vm.prank(MainnetAddresses.GOVERNOR);
         usdcDeposit.emergencyAction(calls);
 
         assertEq(
-            IPool(maplePool).custodyAllowance(
+            IMaplePool(maplePool).custodyAllowance(
                 address(usdcDeposit),
-                address(mplRewards)
+                address(mapleRewards)
             ),
             0
         );
-        assertEq(IMplRewards(mplRewards).balanceOf(address(usdcDeposit)), 0);
+        assertEq(
+            IMapleRewards(mapleRewards).balanceOf(address(usdcDeposit)),
+            0
+        );
     }
 
     function testDepositNotPCVControllerFails() public {
@@ -299,9 +617,9 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
         usdcDeposit.withdrawFromRewardsContract();
     }
 
-    function testExitPCVControllerFails() public {
+    function testExitRewardsPCVControllerFails() public {
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
-        usdcDeposit.exit();
+        usdcDeposit.exitRewards();
     }
 
     function testEmergencyActionNonPCVControllerFails() public {
@@ -312,12 +630,14 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
     }
 
     function _setRewardsAndWarp() private {
-        uint256 rewardRate = IMplRewards(mplRewards).rewardRate();
+        uint256 rewardRate = IMapleRewards(mapleRewards).rewardRate();
         vm.prank(mapleOwner);
-        IMplRewards(mplRewards).notifyRewardAmount(rewardRate);
+        IMapleRewards(mapleRewards).notifyRewardAmount(rewardRate);
 
         vm.warp(
-            block.timestamp + IPool(maplePool).lockupPeriod() - cooldownPeriod
+            block.timestamp +
+                IMaplePool(maplePool).lockupPeriod() -
+                cooldownPeriod
         );
     }
 }

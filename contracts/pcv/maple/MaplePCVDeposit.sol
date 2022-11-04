@@ -1,14 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.8.13;
 
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-import {IPool} from "./IPool.sol";
-import {CoreRef} from "../../refs/CoreRef.sol";
 import {PCVDeposit} from "../PCVDeposit.sol";
-import {IMplRewards} from "./IMplRewards.sol";
+import {CoreRefV2} from "../../refs/CoreRefV2.sol";
+import {IPCVOracle} from "../../oracle/IPCVOracle.sol";
+
+import {IMaplePool} from "./IMaplePool.sol";
+import {IMapleRewards} from "./IMapleRewards.sol";
 
 /// @notice PCV Deposit for Maple
 /// Allows depositing only by privileged role to prevent lockup period being extended by griefers
@@ -33,78 +37,138 @@ import {IMplRewards} from "./IMplRewards.sol";
 /// code and complexity, so instead, Math.min(token.balanceOf(Address(this)), amountToWithdraw)
 /// is used to determine the amount of tokens that will be sent out of the contract
 /// after withdraw is called on the Maple market.
-contract MaplePCVDeposit is PCVDeposit {
+contract MaplePCVDeposit is PCVDeposit, ReentrancyGuard {
     using SafeERC20 for IERC20;
+    using SafeCast for *;
 
-    /// @notice reference to the Maple Pool where deposits and withdraws will originate
-    IPool public immutable pool;
+    /// @notice emitted when the PCV Oracle address is updated
+    event PCVOracleUpdated(address oldOracle, address newOracle);
 
-    /// @notice reference to the Maple Staking Rewards Contract
-    IMplRewards public immutable mplRewards;
-
-    /// @notice reference to the underlying token
-    IERC20 public immutable token =
-        IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
-
-    /// @notice reference to the Maple token
-    IERC20 public immutable rewardsToken;
+    /// Mainnet USDC is used for accounting and deposit/withdraw
+    /// @dev hardcoded to use USDC mainnet address as this is the only
+    /// supplied asset Volt Protocol will support
+    address private constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
 
     /// @notice scaling factor for USDC
     /// @dev hardcoded to use USDC decimals as this is the only
     /// supplied asset Volt Protocol will support
-    uint256 public constant SCALING_FACTOR = 1e12;
+    uint256 private constant SCALING_FACTOR = 1e12;
+
+    /// @notice reference to the Maple Pool where deposits and withdraws will originate
+    address public immutable maplePool;
+
+    /// @notice reference to the Maple Staking Rewards Contract
+    address public immutable mapleRewards;
+
+    /// @notice reference to the Maple token distributed as rewards
+    address public immutable mapleToken;
+
+    /// @notice track the last amount of PCV recorded in the contract
+    /// this is always out of date, except when accrue() is called
+    /// in the same block or transaction. This means the value is stale
+    /// most of the time.
+    uint256 public lastRecordedBalance;
+
+    /// @notice reference to the PCV Oracle. Settable by governance
+    /// if set, anytime PCV is updated, delta is sent in to update liquid
+    /// amount of PCV held
+    /// not set in the constructor
+    address public pcvOracle;
 
     /// @param _core reference to the Core contract
-    /// @param _pool Maple Pool contract
-    /// @param _mplRewards Maple Rewards contract
+    /// @param _maplePool Maple Pool contract
+    /// @param _mapleRewards Maple Rewards contract
+    /// @param _pcvOracle PCV Oracle to notify on balance changes
     constructor(
         address _core,
-        address _pool,
-        address _mplRewards
-    ) CoreRef(_core) {
-        pool = IPool(_pool);
-        mplRewards = IMplRewards(_mplRewards);
-        rewardsToken = IERC20(IMplRewards(_mplRewards).rewardsToken());
+        address _maplePool,
+        address _mapleRewards,
+        address _pcvOracle
+    ) CoreRefV2(_core) ReentrancyGuard() {
+        maplePool = _maplePool;
+        mapleRewards = _mapleRewards;
+        mapleToken = IMapleRewards(_mapleRewards).rewardsToken();
+        pcvOracle = _pcvOracle;
     }
 
     /// @notice return the amount of funds this contract owns in USDC
     /// accounting for interest earned
     /// and unrealized losses in the venue
     function balance() public view override returns (uint256) {
-        uint256 rawBalance = pool.balanceOf(address(this)) +
-            pool.accumulativeFundsOf(address(this)) -
-            pool.recognizableLossesOf(address(this));
-        return rawBalance / SCALING_FACTOR;
+        return
+            IMaplePool(maplePool).balanceOf(address(this)) /
+            SCALING_FACTOR +
+            IMaplePool(maplePool).accumulativeFundsOf(address(this)) -
+            IMaplePool(maplePool).recognizableLossesOf(address(this));
     }
 
     /// @notice return the underlying token denomination for this deposit
     function balanceReportedIn() external view returns (address) {
-        return address(token);
+        return USDC;
+    }
+
+    /// @notice set the pcv oracle address
+    /// @param _pcvOracle new pcv oracle to reference
+    function setPCVOracle(address _pcvOracle) external onlyGovernor {
+        address oldOracle = pcvOracle;
+        pcvOracle = _pcvOracle;
+
+        _recordPNL();
+
+        IPCVOracle(pcvOracle).updateIlliquidBalance(
+            lastRecordedBalance.toInt256()
+        );
+
+        emit PCVOracleUpdated(oldOracle, _pcvOracle);
     }
 
     /// ---------- Happy Path APIs ----------
 
     /// @notice deposit PCV into Maple.
-    /// all deposits are subject to a minimum 90 day lockup,
-    /// no op if 0 token balance
-    /// deposits are then immediately staked to accrue MPL rewards
-    /// only pcv controller can deposit, as this contract would be vulnerable
-    /// to donation / griefing attacks if anyone could call deposit and extend lockup time
+    /// deposits are subject to up to 30 days of lockup,
+    /// weighted by the amount deposited and the deposit time.
+    /// No op if 0 token balance.
+    /// Deposits are then immediately staked to accrue MPL rewards.
+    /// Only pcv controller can deposit, as this contract would be vulnerable
+    /// to donation / griefing attacks if anyone could call deposit and extend lockup time.
     function deposit() external onlyPCVController {
-        uint256 amount = IERC20(token).balanceOf(address(this));
+        uint256 amount = IERC20(USDC).balanceOf(address(this));
         if (amount == 0) {
             /// no op to prevent wasted gas
             return;
         }
 
+        int256 startingRecordedBalance = lastRecordedBalance.toInt256();
+
+        /// ------ Effects ------
+
+        /// compute profit from interest accrued and emit an event
+        /// if any profits or losses are realized
+        _recordPNL();
+
+        lastRecordedBalance += amount;
+
+        /// ------ Interactions ------
+
         /// pool deposit
-        token.approve(address(pool), amount);
-        pool.deposit(amount);
+        IERC20(USDC).approve(maplePool, amount);
+        IMaplePool(maplePool).deposit(amount);
 
         /// stake pool FDT for MPL rewards
         uint256 scaledDepositAmount = amount * SCALING_FACTOR;
-        pool.increaseCustodyAllowance(address(mplRewards), scaledDepositAmount);
-        mplRewards.stake(scaledDepositAmount);
+        IMaplePool(maplePool).increaseCustodyAllowance(
+            mapleRewards,
+            scaledDepositAmount
+        );
+        IMapleRewards(mapleRewards).stake(scaledDepositAmount);
+
+        int256 endingRecordedBalance = lastRecordedBalance.toInt256();
+
+        if (pcvOracle != address(0)) {
+            IPCVOracle(pcvOracle).updateIlliquidBalance(
+                endingRecordedBalance - startingRecordedBalance
+            );
+        }
 
         emit Deposit(msg.sender, amount);
     }
@@ -116,13 +180,52 @@ contract MaplePCVDeposit is PCVDeposit {
     /// 3. after cool down and past the lockup period,
     ///    have 2 days to withdraw before cool down period restarts.
     function signalIntentToWithdraw() external onlyPCVController {
-        pool.intendToWithdraw();
+        IMaplePool(maplePool).intendToWithdraw();
     }
 
     /// @notice function to cancel a withdraw
     /// should only be used to allow a transfer when doing a withdrawERC20 call
     function cancelWithdraw() external onlyPCVController {
-        pool.cancelWithdraw();
+        IMaplePool(maplePool).cancelWithdraw();
+    }
+
+    /// @notice function that emits an event tracking profits and losses
+    /// since the last contract interaction
+    /// then writes the current amount of PCV tracked in this contract
+    /// to lastRecordedBalance
+    /// @return the amount deposited after adding accrued interest or realizing losses
+    function accrue() external nonReentrant whenNotPaused returns (uint256) {
+        int256 startingRecordedBalance = lastRecordedBalance.toInt256();
+
+        _recordPNL(); /// update deposit amount and fire harvest event
+
+        int256 endingRecordedBalance = lastRecordedBalance.toInt256();
+
+        if (pcvOracle != address(0)) {
+            /// if any amount of PCV is withdrawn and no gains, delta is negative
+            IPCVOracle(pcvOracle).updateIlliquidBalance(
+                endingRecordedBalance - startingRecordedBalance
+            );
+        }
+
+        return lastRecordedBalance; /// return updated pcv amount
+    }
+
+    /// @notice permissionless function to harvest rewards before withdraw
+    function harvest() public nonReentrant whenNotPaused {
+        uint256 preHarvestBalance = IERC20(mapleToken).balanceOf(address(this));
+
+        IMapleRewards(mapleRewards).getReward();
+
+        uint256 postHarvestBalance = IERC20(mapleToken).balanceOf(
+            address(this)
+        );
+
+        emit Harvest(
+            mapleToken,
+            int256(postHarvestBalance - preHarvestBalance),
+            block.timestamp
+        );
     }
 
     /// @notice withdraw PCV from Maple, only callable by PCV controller
@@ -135,12 +238,17 @@ contract MaplePCVDeposit is PCVDeposit {
     {
         /// Rewards
 
-        uint256 scaledWithdrawAmount = amount * SCALING_FACTOR;
-
-        mplRewards.getReward(); /// get MPL rewards
-        mplRewards.withdraw(scaledWithdrawAmount); /// decreases allowance
+        harvest(); /// get rewards and fire MPL harvest event
+        IMapleRewards(mapleRewards).withdraw(amount * SCALING_FACTOR); /// decreases allowance
 
         /// Principal
+
+        int256 balanceBeforePnl = lastRecordedBalance.toInt256();
+
+        _recordPNL(); /// update profit/losses and fire USDC harvest event
+
+        uint256 lastRecordedBalanceAfterPnl = lastRecordedBalance;
+        int256 balanceAfterPnl = lastRecordedBalanceAfterPnl.toInt256();
 
         /// withdraw from the pool
         /// this call will withdraw amount of principal requested, and then send
@@ -148,28 +256,28 @@ contract MaplePCVDeposit is PCVDeposit {
         /// expected behavior is that this contract
         /// receives either amount of USDC, or amount of USDC + interest accrued
         /// if lending losses were taken, receive less than amount
-        pool.withdraw(amount);
+        IMaplePool(maplePool).withdraw(amount);
 
         /// withdraw min between balance and amount as losses could be sustained in venue
         /// causing less than amt to be withdrawn
         uint256 amountToTransfer = Math.min(
-            token.balanceOf(address(this)),
+            IERC20(USDC).balanceOf(address(this)),
             amount
         );
-        token.safeTransfer(to, amountToTransfer);
+        IERC20(USDC).safeTransfer(to, amountToTransfer);
+
+        uint256 balanceAfterTransfer = lastRecordedBalanceAfterPnl -
+            amountToTransfer;
+        lastRecordedBalance = balanceAfterTransfer;
+
+        if (pcvOracle != address(0)) {
+            /// if any amount of PCV is withdrawn and no gains, delta is negative
+            IPCVOracle(pcvOracle).updateIlliquidBalance(
+                balanceAfterTransfer.toInt256() - balanceBeforePnl
+            );
+        }
 
         emit Withdrawal(msg.sender, to, amountToTransfer);
-    }
-
-    /// @notice permissionless function to harvest rewards before withdraw
-    function harvest() external {
-        uint256 preHarvestBalance = rewardsToken.balanceOf(address(this));
-
-        mplRewards.getReward();
-
-        uint256 postHarvestBalance = rewardsToken.balanceOf(address(this));
-
-        emit Harvest(postHarvestBalance - preHarvestBalance);
     }
 
     /// ---------- Sad Path APIs ----------
@@ -182,15 +290,15 @@ contract MaplePCVDeposit is PCVDeposit {
 
     /// @notice get rewards and unstake from rewards contract
     /// breaks functionality of happy path withdraw functions
-    function exit() external onlyPCVController {
-        mplRewards.exit();
+    function exitRewards() external onlyPCVController {
+        IMapleRewards(mapleRewards).exit();
     }
 
     /// @notice unstake from rewards contract without getting rewards
     /// breaks functionality of happy path withdraw functions
     function withdrawFromRewardsContract() external onlyPCVController {
-        uint256 rewardsBalance = pool.balanceOf(address(this));
-        mplRewards.withdraw(rewardsBalance);
+        uint256 rewardsBalance = IMaplePool(maplePool).balanceOf(address(this));
+        IMapleRewards(mapleRewards).withdraw(rewardsBalance);
     }
 
     /// @notice unstake from Pool FDT contract without getting rewards
@@ -201,42 +309,46 @@ contract MaplePCVDeposit is PCVDeposit {
         external
         onlyPCVController
     {
-        pool.withdraw(amount);
+        IMaplePool(maplePool).withdraw(amount);
         /// withdraw min between balance and amount as losses could be sustained in venue
         /// causing less than amt to be withdrawn
         uint256 amountToTransfer = Math.min(
-            token.balanceOf(address(this)),
+            IERC20(USDC).balanceOf(address(this)),
             amount
         );
-        token.safeTransfer(to, amountToTransfer);
+        IERC20(USDC).safeTransfer(to, amountToTransfer);
 
         emit Withdrawal(msg.sender, to, amountToTransfer);
     }
 
-    /// inspired by MakerDAO Multicall:
-    /// https://github.com/makerdao/multicall/blob/master/src/Multicall.sol
+    /// @notice records how much profit or loss has been accrued
+    /// since the last call and emits an event with all profit or loss received.
+    /// Updates the lastRecordedBalance to include all realized profits or losses.
+    function _recordPNL() private {
+        /// ------ Check ------
 
-    /// @notice struct to pack calldata and targets for an emergency action
-    struct Call {
-        address target;
-        bytes callData;
-    }
+        /// then get the current balance from the market
+        uint256 currentBalance = balance();
 
-    /// @notice due to Maple's complexity, add this ability to be able
-    /// to execute arbitrary calldata against arbitrary addresses.
-    /// only callable by governor
-    function emergencyAction(Call[] memory calls)
-        external
-        onlyGovernor
-        returns (bytes[] memory returnData)
-    {
-        returnData = new bytes[](calls.length);
-        for (uint256 i = 0; i < calls.length; i++) {
-            (bool success, bytes memory returned) = calls[i].target.call(
-                calls[i].callData
-            );
-            require(success);
-            returnData[i] = returned;
+        /// save gas if contract has no balance
+        /// if cost basis is 0 and last recorded balance is 0
+        /// there is no profit or loss to record and no reason
+        /// to update lastRecordedBalance
+        if (currentBalance == 0 && lastRecordedBalance == 0) {
+            return;
         }
+
+        /// currentBalance should always be greater than or equal to
+        /// the deposited amount, except on the same block a deposit occurs, or a loss event in morpho
+        int256 profit = currentBalance.toInt256() -
+            lastRecordedBalance.toInt256();
+
+        /// ------ Effects ------
+
+        /// record new deposited amount
+        lastRecordedBalance = currentBalance;
+
+        /// profit is in underlying token
+        emit Harvest(USDC, profit, block.timestamp);
     }
 }

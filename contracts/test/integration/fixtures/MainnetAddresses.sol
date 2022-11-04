@@ -179,6 +179,9 @@ library MainnetAddresses {
 
     // ---------- MAPLE ADDRESSES ----------
 
+    address public constant MPL_GOVERNOR_MULTISIG =
+        0xd6d4Bcde6c816F17889f1Dd3000aF0261B03a196;
+
     address public constant MPL_TOKEN =
         0x33349B282065b0284d756F0577FB39c158F935e6;
 
@@ -187,4 +190,7 @@ library MainnetAddresses {
 
     address public constant MPL_ORTHOGONAL_REWARDS =
         0x7869D7a3B074b5fa484dc04798E254c9C06A5e90;
+
+    address public constant MPL_ORTHOGONAL_POOL_DELEGATE =
+        0xA6cCb9483E3E7a737E3a4F5B72a1Ce51838ba122;
 }

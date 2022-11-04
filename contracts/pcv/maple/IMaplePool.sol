@@ -2,7 +2,7 @@
 pragma solidity =0.8.13;
 
 /// @notice maple pool interface
-interface IPool {
+interface IMaplePool {
     function balanceOf(address) external view returns (uint256);
 
     function recognizableLossesOf(address) external view returns (uint256);
@@ -52,6 +52,8 @@ interface IPool {
         uint256
     ) external;
 
+    function triggerDefault(address, address) external;
+
     /**
         @dev Activates the cooldown period to withdraw. It can't be called if the account is not providing liquidity.
         @dev It emits a `Cooldown` event.
@@ -69,6 +71,8 @@ interface IPool {
         @dev Withdraws all available funds for a FDT holder.
     */
     function withdrawFunds() external;
+
+    function updateFundsReceived() external;
 
     function liquidityAsset() external view returns (address);
 
