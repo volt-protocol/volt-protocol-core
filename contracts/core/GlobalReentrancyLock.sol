@@ -100,7 +100,10 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
         );
 
         /// cache values to save a warm SSTORE
-        uint32 blockEntered = block.number.toUint32();
+        /// block number can be safely downcasted without a check on exceeding
+        /// uint88 max because the sun will explode before this statement is true:
+        /// block.number > 2^88 - 1
+        uint88 blockEntered = uint88(block.number);
         uint160 sender = uint160(msg.sender);
 
         _sender = sender;
@@ -120,7 +123,7 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
             "GlobalReentrancyLock: caller is not locker"
         );
         require(
-            block.number == _lastBlockEntered && _status == _ENTERED,
+            uint88(block.number) == _lastBlockEntered && _status == _ENTERED,
             "GlobalReentrancyLock: system not entered"
         );
 
