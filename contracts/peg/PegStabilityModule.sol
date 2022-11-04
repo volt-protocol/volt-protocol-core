@@ -121,8 +121,6 @@ contract PegStabilityModule is
         uint256 amountVoltIn,
         uint256 minAmountOut
     ) internal virtual returns (uint256 amountOut) {
-        updateOracle();
-
         amountOut = _getRedeemAmountOut(amountVoltIn);
         require(
             amountOut >= minAmountOut,
@@ -146,8 +144,6 @@ contract PegStabilityModule is
         uint256 amountIn,
         uint256 minAmountOut
     ) internal virtual returns (uint256 amountVoltOut) {
-        updateOracle();
-
         amountVoltOut = _getMintAmountOut(amountIn);
         require(
             amountVoltOut >= minAmountOut,
@@ -284,14 +280,21 @@ contract PegStabilityModule is
         virtual
         returns (uint256 amountTokenOut)
     {
+        /// 0.95e18
         Decimal.D256 memory price = readOracle();
         _validatePriceRange(price);
 
+        /// amountVoltIn = 100e18
+        /// adjustedAmountIn = 100e36
         /// get amount of dollars being provided
         Decimal.D256 memory adjustedAmountIn = Decimal.from(amountVoltIn);
 
         /// now turn the dollars into the underlying token amounts
         /// dollars / price = how much token to pay out
+        /// adjustedAmountIn / price = 105.2631e36
+        /// (adjustedAmountIn / price).asUint256() = 105.2631e18
+        /// div with numerator and denom as decimal adds another 18 decimals
+        /// before doing the division operation.
         amountTokenOut = adjustedAmountIn.div(price).asUint256();
     }
 
