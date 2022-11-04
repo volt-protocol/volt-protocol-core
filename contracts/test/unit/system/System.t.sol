@@ -1,0 +1,326 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+pragma solidity 0.8.13;
+
+import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+import {Test} from "forge-std/Test.sol";
+import {ICoreV2} from "../../../core/ICoreV2.sol";
+import {VoltRoles} from "../../../core/VoltRoles.sol";
+import {MockERC20} from "../../../mock/MockERC20.sol";
+import {PCVDeposit} from "../../../pcv/PCVDeposit.sol";
+import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
+import {MockCoreRefV2} from "../../../mock/MockCoreRefV2.sol";
+import {PriceBoundPSM} from "../../../peg/PriceBoundPSM.sol";
+import {ERC20Allocator} from "../../../pcv/utils/ERC20Allocator.sol";
+import {MockPCVDepositV2} from "../../../mock/MockPCVDepositV2.sol";
+import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
+import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
+import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
+import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
+import {IScalingPriceOracle} from "../../../oracle/IScalingPriceOracle.sol";
+import {getCoreV2, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
+
+/// deployment steps
+/// 1. core v2
+/// 2. Volt system oracle
+/// 3. oracle pass through
+/// 4. peg stability module dai
+/// 5. peg stability module usdc
+/// 6. pcv deposit dai
+/// 7. pcv deposit usdc
+/// 8. pcv guardian
+/// 9. erc20 allocator
+/// 10. compound pcv router
+
+/// setup steps
+/// 1. grant pcv guardian pcv controller role
+/// 2. grant erc20 allocator pcv controller role
+/// 3. grant compound pcv router pcv controller role
+/// 4. grant pcv guardian guardian role
+/// 5. grant pcv guard role to EOA's
+/// 6. configure timelock as owner of oracle pass through
+/// 7. revoke timelock admin rights from deployer
+/// 8. grant timelock governor
+/// 9. connect pcv deposits to psm in allocator
+
+/// test steps
+/// 1. do swaps in psm
+/// 2. do emergency action to pull funds
+/// 3. do sweep to pull funds
+/// 4. do pcv guardian withdraw as EOA
+
+interface IERC20Mintable is IERC20 {
+    function mint(address, uint256) external;
+}
+
+contract SystemUnitTest is Test {
+    VoltTestAddresses public addresses = getAddresses();
+
+    ICoreV2 private core;
+    PriceBoundPSM private daipsm;
+    PriceBoundPSM private usdcpsm;
+    MockPCVDepositV2 private pcvDepositDai;
+    MockPCVDepositV2 private pcvDepositUsdc;
+    PCVGuardian private pcvGuardian;
+    ERC20Allocator private allocator;
+    CompoundPCVRouter private router;
+    VoltSystemOracle private vso;
+    OraclePassThrough private opt;
+    TimelockController public timelockController;
+    address private voltAddress;
+    address private coreAddress;
+    IERC20Mintable private usdc;
+    IERC20Mintable private dai;
+
+    uint256 public constant timelockDelay = 600;
+    uint248 public constant usdcTargetBalance = 100_000e6;
+    uint248 public constant daiTargetBalance = 100_000e18;
+    int8 public constant usdcDecimalsNormalizer = 12;
+    int8 public constant daiDecimalsNormalizer = 0;
+
+    /// ---------- ALLOCATOR PARAMS ----------
+
+    uint256 public constant maxRateLimitPerSecond = 1_000e18; /// 1k volt per second
+    uint128 public constant rateLimitPerSecond = 10e18; /// 10 volt per second
+    uint128 public constant bufferCap = 1_000_000e18; /// buffer cap is 1m volt
+
+    /// ---------- PSM PARAMS ----------
+
+    uint256 public constant voltFloorPriceDai = 9_000; /// 1 volt for 1 dai is the minimum price
+    uint256 public constant voltCeilingPriceDai = 10_000; /// 1 volt for 1.11 dai is the max allowable price
+
+    uint256 public constant voltFloorPriceUsdc = 9e15; /// 1 volt for 1 usdc is the minimum price
+    uint256 public constant voltCeilingPriceUsdc = 10e15; /// 1 volt for 1.11 usdc is the max allowable price
+
+    /// ---------- ORACLE PARAMS ----------
+
+    uint256 public constant startPrice = 1.05e18;
+    uint256 public constant startTime = 1_000;
+    uint256 public constant monthlyChangeRateBasisPoints = 100;
+
+    function setUp() public {
+        vm.warp(startTime); /// warp past 0
+        core = getCoreV2();
+        voltAddress = address(core.volt());
+        coreAddress = address(core);
+        dai = IERC20Mintable(address(new MockERC20()));
+        usdc = IERC20Mintable(address(new MockERC20()));
+        vso = new VoltSystemOracle(
+            monthlyChangeRateBasisPoints,
+            startTime,
+            startPrice
+        );
+        opt = new OraclePassThrough(IScalingPriceOracle(address(vso)));
+
+        PegStabilityModule.OracleParams
+            memory oracleParamsUsdc = PegStabilityModule.OracleParams({
+                coreAddress: coreAddress,
+                oracleAddress: address(opt),
+                backupOracle: address(0),
+                decimalsNormalizer: 12,
+                doInvert: true
+            });
+
+        usdcpsm = new PriceBoundPSM(
+            voltFloorPriceUsdc,
+            voltCeilingPriceUsdc,
+            oracleParamsUsdc,
+            usdc
+        );
+
+        PegStabilityModule.OracleParams
+            memory oracleParamsDai = PegStabilityModule.OracleParams({
+                coreAddress: coreAddress,
+                oracleAddress: address(opt),
+                backupOracle: address(0),
+                decimalsNormalizer: 0,
+                doInvert: true
+            });
+
+        daipsm = new PriceBoundPSM(
+            voltFloorPriceDai,
+            voltCeilingPriceDai,
+            oracleParamsDai,
+            dai
+        );
+
+        pcvDepositDai = new MockPCVDepositV2(coreAddress, address(dai), 100, 0);
+        pcvDepositUsdc = new MockPCVDepositV2(
+            coreAddress,
+            address(usdc),
+            100,
+            0
+        );
+
+        address[] memory proposerCancellerAddresses = new address[](1);
+        proposerCancellerAddresses[0] = addresses.userAddress;
+
+        address[] memory executorAddresses = new address[](2);
+        executorAddresses[0] = addresses.governorAddress;
+        executorAddresses[1] = addresses.voltGovernorAddress;
+
+        timelockController = new TimelockController(
+            timelockDelay,
+            proposerCancellerAddresses,
+            executorAddresses
+        );
+
+        address[] memory toWhitelist = new address[](4);
+        toWhitelist[0] = address(pcvDepositDai);
+        toWhitelist[1] = address(pcvDepositUsdc);
+        toWhitelist[2] = address(usdcpsm);
+        toWhitelist[3] = address(daipsm);
+
+        pcvGuardian = new PCVGuardian(
+            coreAddress,
+            address(timelockController),
+            toWhitelist
+        );
+        allocator = new ERC20Allocator(
+            coreAddress,
+            maxRateLimitPerSecond,
+            rateLimitPerSecond,
+            bufferCap
+        );
+        router = new CompoundPCVRouter(
+            coreAddress,
+            PCVDeposit(address(pcvDepositDai)),
+            PCVDeposit(address(pcvDepositUsdc))
+        );
+
+        opt.transferOwnership(address(timelockController));
+        timelockController.renounceRole(
+            timelockController.TIMELOCK_ADMIN_ROLE(),
+            address(this)
+        );
+
+        vm.startPrank(addresses.governorAddress);
+
+        core.grantPCVController(address(pcvGuardian));
+        core.grantPCVController(address(router));
+        core.grantPCVController(address(allocator));
+
+        core.grantPcvGuard(addresses.userAddress);
+        core.grantPcvGuard(addresses.secondUserAddress);
+
+        core.grantGuardian(address(pcvGuardian));
+
+        core.grantGovernor(address(timelockController));
+
+        allocator.connectPSM(
+            address(usdcpsm),
+            usdcTargetBalance,
+            usdcDecimalsNormalizer
+        );
+        allocator.connectPSM(
+            address(daipsm),
+            daiTargetBalance,
+            daiDecimalsNormalizer
+        );
+
+        allocator.connectDeposit(address(usdcpsm), address(pcvDepositUsdc));
+        allocator.connectDeposit(address(daipsm), address(pcvDepositDai));
+        vm.stopPrank();
+
+        /// top up contracts with tokens for testing
+        dai.mint(address(daipsm), daiTargetBalance);
+        usdc.mint(address(usdcpsm), usdcTargetBalance);
+        dai.mint(address(pcvDepositDai), daiTargetBalance);
+        usdc.mint(address(pcvDepositUsdc), usdcTargetBalance);
+
+        vm.label(address(timelockController), "Timelock Controller");
+        vm.label(address(daipsm), "daipsm");
+        vm.label(address(usdcpsm), "usdcpsm");
+        vm.label(address(pcvDepositDai), "pcvDepositDai");
+        vm.label(address(pcvDepositUsdc), "pcvDepositUsdc");
+    }
+
+    function testSetup() public {
+        assertTrue(
+            !timelockController.hasRole(
+                timelockController.TIMELOCK_ADMIN_ROLE(),
+                address(this)
+            )
+        );
+        assertTrue(pcvGuardian.isWhitelistAddress(address(pcvDepositDai)));
+        assertTrue(pcvGuardian.isWhitelistAddress(address(pcvDepositUsdc)));
+        assertTrue(pcvGuardian.isWhitelistAddress(address(usdcpsm)));
+        assertTrue(pcvGuardian.isWhitelistAddress(address(daipsm)));
+
+        assertEq(pcvGuardian.safeAddress(), address(timelockController));
+        assertEq(address(router.daiPcvDeposit()), address(pcvDepositDai));
+        assertEq(address(router.usdcPcvDeposit()), address(pcvDepositUsdc));
+        assertEq(opt.owner(), address(timelockController));
+        assertEq(
+            vso.monthlyChangeRateBasisPoints(),
+            monthlyChangeRateBasisPoints
+        );
+        assertEq(address(opt.scalingPriceOracle()), address(vso));
+
+        {
+            (
+                address psmToken,
+                uint248 psmTargetBalance,
+                int8 decimalsNormalizer
+            ) = allocator.allPSMs(address(usdcpsm));
+            address psmAddress = allocator.pcvDepositToPSM(
+                address(pcvDepositUsdc)
+            );
+            assertEq(psmTargetBalance, usdcTargetBalance);
+            assertEq(decimalsNormalizer, usdcDecimalsNormalizer);
+            assertEq(psmAddress, address(usdcpsm));
+            assertEq(psmToken, address(usdc));
+        }
+        {
+            (
+                address psmToken,
+                uint248 psmTargetBalance,
+                int8 decimalsNormalizer
+            ) = allocator.allPSMs(address(daipsm));
+            address psmAddress = allocator.pcvDepositToPSM(
+                address(pcvDepositDai)
+            );
+            assertEq(psmTargetBalance, daiTargetBalance);
+            assertEq(decimalsNormalizer, daiDecimalsNormalizer);
+            assertEq(psmAddress, address(daipsm));
+            assertEq(psmToken, address(dai));
+        }
+
+        assertTrue(core.isPCVController(address(pcvGuardian)));
+        assertTrue(core.isPCVController(address(allocator)));
+        assertTrue(core.isPCVController(address(router)));
+
+        assertTrue(core.isGovernor(address(timelockController)));
+        assertTrue(core.isGovernor(address(core)));
+
+        assertTrue(core.isPcvGuard(addresses.userAddress));
+        assertTrue(core.isPcvGuard(addresses.secondUserAddress));
+
+        assertTrue(core.isGuardian(address(pcvGuardian)));
+    }
+
+    function testPCVGuardWithdrawAllToSafeAddress() public {
+        vm.startPrank(addresses.userAddress);
+        pcvGuardian.withdrawAllToSafeAddress(address(pcvDepositDai));
+        pcvGuardian.withdrawAllToSafeAddress(address(pcvDepositUsdc));
+        pcvGuardian.withdrawAllToSafeAddress(address(daipsm));
+        pcvGuardian.withdrawAllToSafeAddress(address(usdcpsm));
+        vm.stopPrank();
+
+        assertEq(
+            dai.balanceOf(address(timelockController)),
+            daiTargetBalance * 2
+        );
+        assertEq(
+            usdc.balanceOf(address(timelockController)),
+            usdcTargetBalance * 2
+        );
+
+        assertEq(dai.balanceOf(address(pcvDepositDai)), 0);
+        assertEq(dai.balanceOf(address(daipsm)), 0);
+
+        assertEq(usdc.balanceOf(address(pcvDepositUsdc)), 0);
+        assertEq(usdc.balanceOf(address(usdcpsm)), 0);
+    }
+}
