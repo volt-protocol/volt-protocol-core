@@ -91,9 +91,6 @@ contract vip8 is DSTest, IVIP {
     }
 
     function mainnetValidate() public override {
-        uint256 daiBalance = PegStabilityModule(MainnetAddresses.FEI_DAI_PSM)
-            .getRedeemAmountOut(startingFeiBalance);
-
         assertTrue(
             PegStabilityModule(MainnetAddresses.VOLT_FEI_PSM).redeemPaused()
         );
