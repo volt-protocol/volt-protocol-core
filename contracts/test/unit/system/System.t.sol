@@ -72,6 +72,7 @@ contract SystemUnitTest is Test {
     address private coreAddress;
     IERC20Mintable private usdc;
     IERC20Mintable private dai;
+    IERC20Mintable private volt;
 
     uint256 public constant timelockDelay = 600;
     uint248 public constant usdcTargetBalance = 100_000e6;
@@ -102,7 +103,8 @@ contract SystemUnitTest is Test {
     function setUp() public {
         vm.warp(startTime); /// warp past 0
         core = getCoreV2();
-        voltAddress = address(core.volt());
+        volt = IERC20Mintable(address(core.volt()));
+        voltAddress = address(volt);
         coreAddress = address(core);
         dai = IERC20Mintable(address(new MockERC20()));
         usdc = IERC20Mintable(address(new MockERC20()));
@@ -322,5 +324,51 @@ contract SystemUnitTest is Test {
 
         assertEq(usdc.balanceOf(address(pcvDepositUsdc)), 0);
         assertEq(usdc.balanceOf(address(usdcpsm)), 0);
+    }
+
+    function testMintRedeemSamePriceLosesMoneyDai(uint128 mintAmount) public {
+        vm.assume(mintAmount != 0);
+
+        uint256 voltAmountOut = daipsm.getMintAmountOut(mintAmount);
+        volt.mint(address(daipsm), voltAmountOut);
+
+        assertEq(volt.balanceOf(address(this)), 0);
+        dai.mint(address(this), mintAmount);
+        uint256 startingBalance = dai.balanceOf(address(this));
+
+        dai.approve(address(daipsm), mintAmount);
+        daipsm.mint(address(this), mintAmount, voltAmountOut);
+
+        uint256 voltBalance = volt.balanceOf(address(this));
+        volt.approve(address(daipsm), voltBalance);
+        daipsm.redeem(address(this), voltBalance, 0);
+
+        uint256 endingBalance = dai.balanceOf(address(this));
+
+        assertTrue(startingBalance > endingBalance);
+        assertEq(volt.balanceOf(address(daipsm)), voltAmountOut);
+    }
+
+    function testMintRedeemSamePriceLosesMoneyUsdc(uint80 mintAmount) public {
+        vm.assume(mintAmount != 0);
+
+        uint256 voltAmountOut = usdcpsm.getMintAmountOut(mintAmount);
+        volt.mint(address(usdcpsm), voltAmountOut);
+
+        assertEq(volt.balanceOf(address(this)), 0);
+        usdc.mint(address(this), mintAmount);
+        uint256 startingBalance = usdc.balanceOf(address(this));
+
+        usdc.approve(address(usdcpsm), mintAmount);
+        usdcpsm.mint(address(this), mintAmount, voltAmountOut);
+
+        uint256 voltBalance = volt.balanceOf(address(this));
+        volt.approve(address(usdcpsm), voltBalance);
+        usdcpsm.redeem(address(this), voltBalance, 0);
+
+        uint256 endingBalance = usdc.balanceOf(address(this));
+
+        assertTrue(startingBalance > endingBalance);
+        assertEq(volt.balanceOf(address(usdcpsm)), voltAmountOut);
     }
 }
