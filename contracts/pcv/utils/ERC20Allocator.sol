@@ -98,7 +98,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
 
     /// @notice edit an existing PSM
     /// @param psm Peg Stability Module for this deposit
-    /// @param targetBalance target amount of tokens for the PSM to hold
+    /// @param psmTargetBalance target amount of tokens for the PSM to hold
     /// cannot manually change the underlying token, as this is pulled from the PSM
     /// underlying token is immutable in both pcv deposit and
     function editPSMTargetBalance(address psm, uint248 psmTargetBalance)
