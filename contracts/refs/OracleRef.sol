@@ -59,21 +59,17 @@ abstract contract OracleRef is IOracleRef, CoreRef {
 
     /// @notice sets the new decimalsNormalizer
     /// @param newDecimalsNormalizer the new decimalsNormalizer
-    function setDecimalsNormalizer(int256 newDecimalsNormalizer)
-        external
-        override
-        onlyGovernor
-    {
+    function setDecimalsNormalizer(
+        int256 newDecimalsNormalizer
+    ) external override onlyGovernor {
         _setDecimalsNormalizer(newDecimalsNormalizer);
     }
 
     /// @notice sets the referenced backup oracle
     /// @param newBackupOracle the new backup oracle to reference
-    function setBackupOracle(address newBackupOracle)
-        external
-        override
-        onlyGovernorOrAdmin
-    {
+    function setBackupOracle(
+        address newBackupOracle
+    ) external override onlyGovernorOrAdmin {
         _setBackupOracle(newBackupOracle);
     }
 
@@ -81,12 +77,9 @@ abstract contract OracleRef is IOracleRef, CoreRef {
     /// @param price the peg price to invert
     /// @return the inverted peg as a Decimal
     /// @dev the inverted peg would be X per FEI
-    function invert(Decimal.D256 memory price)
-        public
-        pure
-        override
-        returns (Decimal.D256 memory)
-    {
+    function invert(
+        Decimal.D256 memory price
+    ) public pure override returns (Decimal.D256 memory) {
         return Decimal.one().div(price);
     }
 
@@ -113,10 +106,10 @@ abstract contract OracleRef is IOracleRef, CoreRef {
         // Scale the oracle price by token decimals delta if necessary
         uint256 scalingFactor;
         if (decimalsNormalizer < 0) {
-            scalingFactor = 10**(-1 * decimalsNormalizer).toUint256();
+            scalingFactor = 10 ** (-1 * decimalsNormalizer).toUint256();
             _peg = _peg.div(scalingFactor);
         } else {
-            scalingFactor = 10**decimalsNormalizer.toUint256();
+            scalingFactor = 10 ** decimalsNormalizer.toUint256();
             _peg = _peg.mul(scalingFactor);
         }
 

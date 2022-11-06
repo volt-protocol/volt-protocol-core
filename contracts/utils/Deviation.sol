@@ -14,11 +14,10 @@ library Deviation {
     event DeviationThresholdUpdate(uint256 oldThreshold, uint256 newThreshold);
 
     /// @notice return the percent deviation between a and b in basis points terms
-    function calculateDeviationThresholdBasisPoints(int256 a, int256 b)
-        internal
-        pure
-        returns (uint256)
-    {
+    function calculateDeviationThresholdBasisPoints(
+        int256 a,
+        int256 b
+    ) internal pure returns (uint256) {
         int256 delta = a - b;
         int256 basisPoints = (delta * Constants.BP_INT) / a;
 
