@@ -12,17 +12,6 @@ chai.use(CBN(ethers.BigNumber));
 const scale = ethers.constants.WeiPerEther;
 const toBN = ethers.BigNumber.from;
 const { expect } = chai;
-const WETH9 = artifacts.readArtifactSync('WETH9');
-
-async function deployDevelopmentWeth(): Promise<void> {
-  await network.provider.send('hardhat_setCode', [
-    '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
-    WETH9.deployedBytecode
-  ]);
-
-  const weth = await ethers.getContractAt(WETH9.abi, '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2');
-  await weth.init();
-}
 
 async function getAddresses(): Promise<NamedAddresses> {
   const [
@@ -284,7 +273,6 @@ export {
   expectApprox,
   assertApproxEq,
   expectApproxAbs,
-  deployDevelopmentWeth,
   getImpersonatedSigner,
   setNextBlockTimestamp,
   resetTime,
