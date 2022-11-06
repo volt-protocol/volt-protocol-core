@@ -72,11 +72,11 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
 
     /// @notice connect a new PSM
     /// @param psm Peg Stability Module to add
-    /// @param targetBalance target amount of tokens for the PSM to hold
+    /// @param psmTargetBalance target amount of tokens for the PSM to hold
     /// @param decimalsNormalizer decimal normalizer to ensure buffer is depleted and replenished properly
     function connectPSM(
         address psm,
-        uint248 targetBalance,
+        uint248 psmTargetBalance,
         int8 decimalsNormalizer
     ) external override onlyGovernor {
         address token = PCVDeposit(psm).balanceReportedIn();
@@ -88,12 +88,12 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
 
         PSMInfo memory newPSM = PSMInfo({
             token: token,
-            targetBalance: targetBalance,
+            targetBalance: psmTargetBalance,
             decimalsNormalizer: decimalsNormalizer
         });
         allPSMs[psm] = newPSM;
 
-        emit PSMConnected(psm, token, targetBalance, decimalsNormalizer);
+        emit PSMConnected(psm, token, psmTargetBalance, decimalsNormalizer);
     }
 
     /// @notice edit an existing PSM
@@ -101,7 +101,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
     /// @param targetBalance target amount of tokens for the PSM to hold
     /// cannot manually change the underlying token, as this is pulled from the PSM
     /// underlying token is immutable in both pcv deposit and
-    function editPSMTargetBalance(address psm, uint248 targetBalance)
+    function editPSMTargetBalance(address psm, uint248 psmTargetBalance)
         external
         override
         onlyGovernor
@@ -115,9 +115,9 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         require(token == storedToken, "ERC20Allocator: psm changed underlying");
 
         PSMInfo storage psmToEdit = allPSMs[psm];
-        psmToEdit.targetBalance = targetBalance;
+        psmToEdit.targetBalance = psmTargetBalance;
 
-        emit PSMTargetBalanceUpdated(psm, targetBalance);
+        emit PSMTargetBalanceUpdated(psm, psmTargetBalance);
     }
 
     /// @notice disconnect an existing deposit from the allocator
