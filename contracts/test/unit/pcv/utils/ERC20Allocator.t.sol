@@ -616,7 +616,6 @@ contract UnitTestERC20Allocator is DSTest {
         uint256 bufferEnd = allocator.buffer();
         assertEq(bufferEnd, bufferCap - targetBalance / 2);
         /// multiply by 2 to get over buffer cap and fully replenish buffer
-        uint256 skimAmount = (bufferCap - bufferEnd) * 2;
         token.mint(address(psm), (targetBalance * 3) / 2);
 
         assertTrue(allocator.checkSkimCondition(address(pcvDeposit)));
