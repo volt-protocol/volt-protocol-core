@@ -289,7 +289,7 @@ contract vip14 is DSTest, IVIP {
 
     function getArbitrumProposal()
         public
-        view
+        pure
         override
         returns (ITimelockSimulation.action[] memory)
     {
@@ -297,11 +297,11 @@ contract vip14 is DSTest, IVIP {
     }
 
     /// no-op, nothing to setup
-    function arbitrumSetup() public override {
+    function arbitrumSetup() public pure override {
         revert("no arbitrum proposal");
     }
 
-    function arbitrumValidate() public override {
+    function arbitrumValidate() public pure override {
         revert("no arbitrum proposal");
     }
 }
