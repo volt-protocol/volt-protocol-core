@@ -8,7 +8,7 @@ import {TribeRoles} from "../../../../core/TribeRoles.sol";
 import {ERC20Allocator} from "../../../../pcv/utils/ERC20Allocator.sol";
 import {PCVGuardAdmin} from "../../../../pcv/PCVGuardAdmin.sol";
 import {PCVDeposit} from "../../../../pcv/PCVDeposit.sol";
-import {ERC20HoldingPCVDeposit} from "../../../../pcv/ERC20HoldingPCVDeposit.sol";
+import {ERC20HoldingPCVDeposit} from "../../../../mock/ERC20HoldingPCVDeposit.sol";
 import {getCore, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 

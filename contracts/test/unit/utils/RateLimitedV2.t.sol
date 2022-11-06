@@ -12,7 +12,7 @@ import {TribeRoles} from "../../../core/TribeRoles.sol";
 import {PCVGuardAdmin} from "../../../pcv/PCVGuardAdmin.sol";
 import {ERC20Allocator} from "../../../pcv/utils/ERC20Allocator.sol";
 import {MockRateLimitedV2} from "../../../mock/MockRateLimitedV2.sol";
-import {ERC20HoldingPCVDeposit} from "../../../pcv/ERC20HoldingPCVDeposit.sol";
+import {ERC20HoldingPCVDeposit} from "../../../mock/ERC20HoldingPCVDeposit.sol";
 import {getCore, getAddresses, VoltTestAddresses} from "./Fixtures.sol";
 
 contract UnitTestRateLimitedV2 is DSTest {
