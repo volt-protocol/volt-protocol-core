@@ -57,7 +57,10 @@ contract PegStabilityModule is
 
     /// @notice constructor
     /// @param params PSM constructor parameter struct
-    constructor(OracleParams memory params, IERC20 _underlyingToken)
+    constructor(
+        OracleParams memory params,
+        IERC20 _underlyingToken
+    )
         OracleRef(
             params.coreAddress,
             params.oracleAddress,
@@ -106,12 +109,10 @@ contract PegStabilityModule is
     }
 
     /// @notice withdraw assets from PSM to an external address
-    function withdraw(address to, uint256 amount)
-        external
-        virtual
-        override
-        onlyPCVController
-    {
+    function withdraw(
+        address to,
+        uint256 amount
+    ) external virtual override onlyPCVController {
         _withdrawERC20(address(underlyingToken), to, amount);
     }
 
@@ -207,12 +208,9 @@ contract PegStabilityModule is
     /// ensure decimals are normalized if on underlying they are not 18
     /// @param amountIn amount of underlying token in
     /// @return amountVoltOut the amount of Volt out
-    function getMintAmountOut(uint256 amountIn)
-        public
-        view
-        override
-        returns (uint256 amountVoltOut)
-    {
+    function getMintAmountOut(
+        uint256 amountIn
+    ) public view override returns (uint256 amountVoltOut) {
         amountVoltOut = _getMintAmountOut(amountIn);
     }
 
@@ -220,12 +218,9 @@ contract PegStabilityModule is
     /// First get oracle price of token
     /// Then figure out how many dollars that amount in is worth by multiplying price * amount.
     /// ensure decimals are normalized if on underlying they are not 18
-    function getRedeemAmountOut(uint256 amountVoltIn)
-        public
-        view
-        override
-        returns (uint256 amountTokenOut)
-    {
+    function getRedeemAmountOut(
+        uint256 amountVoltIn
+    ) public view override returns (uint256 amountTokenOut) {
         amountTokenOut = _getRedeemAmountOut(amountVoltIn);
     }
 
@@ -258,12 +253,9 @@ contract PegStabilityModule is
 
     /// @notice helper function to get mint amount out based on current market prices
     /// @dev will revert if price is outside of bounds and bounded PSM is being used
-    function _getMintAmountOut(uint256 amountIn)
-        internal
-        view
-        virtual
-        returns (uint256 amountVoltOut)
-    {
+    function _getMintAmountOut(
+        uint256 amountIn
+    ) internal view virtual returns (uint256 amountVoltOut) {
         Decimal.D256 memory price = readOracle();
         _validatePriceRange(price);
 
@@ -274,12 +266,9 @@ contract PegStabilityModule is
 
     /// @notice helper function to get redeem amount out based on current market prices
     /// @dev will revert if price is outside of bounds and bounded PSM is being used
-    function _getRedeemAmountOut(uint256 amountVoltIn)
-        internal
-        view
-        virtual
-        returns (uint256 amountTokenOut)
-    {
+    function _getRedeemAmountOut(
+        uint256 amountVoltIn
+    ) internal view virtual returns (uint256 amountTokenOut) {
         /// 0.95e18
         Decimal.D256 memory price = readOracle();
         _validatePriceRange(price);
@@ -304,11 +293,7 @@ contract PegStabilityModule is
     }
 
     /// @notice transfer assets from user to this contract
-    function _transferFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) internal {
+    function _transferFrom(address from, address to, uint256 amount) internal {
         SafeERC20.safeTransferFrom(underlyingToken, from, to, amount);
     }
 

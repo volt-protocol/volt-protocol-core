@@ -58,13 +58,9 @@ contract MockCore is Permissions, Initializable {
     /// @notice checks if address is a controller
     /// @return true _address is a controller
     // only virtual for testing mock override
-    function isPCVController(address)
-        external
-        view
-        virtual
-        override
-        returns (bool)
-    {
+    function isPCVController(
+        address
+    ) external view virtual override returns (bool) {
         return true;
     }
 

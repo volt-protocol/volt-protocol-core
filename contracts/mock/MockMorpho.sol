@@ -32,14 +32,17 @@ contract MockMorpho {
         balances[to] = amount;
     }
 
-    function claimRewards(address cToken, bool swapForMorpho)
-        external
-        returns (uint256)
-    {}
+    function claimRewards(
+        address cToken,
+        bool swapForMorpho
+    ) external returns (uint256) {}
 
     function updateP2PIndexes(address) external {}
 
-    function getCurrentSupplyBalanceInOf(address, address _user)
+    function getCurrentSupplyBalanceInOf(
+        address,
+        address _user
+    )
         external
         view
         returns (

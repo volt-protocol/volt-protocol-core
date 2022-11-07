@@ -34,20 +34,16 @@ contract PriceBoundPSM is PegStabilityModule, IPriceBound {
     }
 
     /// @notice sets the floor price in BP
-    function setOracleFloorBasisPoints(uint256 newFloorBasisPoints)
-        external
-        override
-        onlyGovernor
-    {
+    function setOracleFloorBasisPoints(
+        uint256 newFloorBasisPoints
+    ) external override onlyGovernor {
         _setFloorBasisPoints(newFloorBasisPoints);
     }
 
     /// @notice sets the ceiling price in BP
-    function setOracleCeilingBasisPoints(uint256 newCeilingBasisPoints)
-        external
-        override
-        onlyGovernor
-    {
+    function setOracleCeilingBasisPoints(
+        uint256 newCeilingBasisPoints
+    ) external override onlyGovernor {
         _setCeilingBasisPoints(newCeilingBasisPoints);
     }
 
@@ -96,11 +92,9 @@ contract PriceBoundPSM is PegStabilityModule, IPriceBound {
     }
 
     /// @notice helper function to determine if price is within a valid range
-    function _validPrice(Decimal.D256 memory price)
-        internal
-        view
-        returns (bool valid)
-    {
+    function _validPrice(
+        Decimal.D256 memory price
+    ) internal view returns (bool valid) {
         valid =
             price.greaterThan(
                 Decimal.ratio(floor, Constants.BASIS_POINTS_GRANULARITY)
@@ -111,11 +105,9 @@ contract PriceBoundPSM is PegStabilityModule, IPriceBound {
     }
 
     /// @notice reverts if the price is greater than or equal to the ceiling or less than or equal to the floor
-    function _validatePriceRange(Decimal.D256 memory price)
-        internal
-        view
-        override
-    {
+    function _validatePriceRange(
+        Decimal.D256 memory price
+    ) internal view override {
         require(_validPrice(price), "PegStabilityModule: price out of bounds");
     }
 }

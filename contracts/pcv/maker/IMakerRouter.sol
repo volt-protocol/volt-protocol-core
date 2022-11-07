@@ -60,9 +60,5 @@ interface IMakerRouter {
     /// @param token the token to withdraw
     /// @param amount the amount to send
     /// @param to the address the token should be sent to
-    function withdrawERC20(
-        address token,
-        uint256 amount,
-        address to
-    ) external;
+    function withdrawERC20(address token, uint256 amount, address to) external;
 }

@@ -50,11 +50,9 @@ contract PCVGuardianWhitelist {
     }
 
     /// @notice function to grab the first 4 bytes of calldata payload
-    function bytesToBytes4(bytes memory toSlice)
-        public
-        pure
-        returns (bytes4 functionSignature)
-    {
+    function bytesToBytes4(
+        bytes memory toSlice
+    ) public pure returns (bytes4 functionSignature) {
         if (toSlice.length < 4) {
             return bytes4(0);
         }

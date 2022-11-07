@@ -18,11 +18,9 @@ contract PCVGuardAdmin is IPCVGuardAdmin, CoreRef {
 
     /// @notice This function can only be called by the Governor role to grant the PCV Guard role
     /// @param newGuard address of the account to be made a PCV Guard
-    function grantPCVGuardRole(address newGuard)
-        external
-        override
-        onlyGovernor
-    {
+    function grantPCVGuardRole(
+        address newGuard
+    ) external override onlyGovernor {
         core().grantRole(VoltRoles.PCV_GUARD, newGuard);
     }
 
@@ -30,11 +28,9 @@ contract PCVGuardAdmin is IPCVGuardAdmin, CoreRef {
 
     /// @notice This function can only be called by the Governor or Guardian roles to revoke the PCV Guard role
     /// @param oldGuard address of the account to be revoked the role of PCV Guard
-    function revokePCVGuardRole(address oldGuard)
-        external
-        override
-        onlyGuardianOrGovernor
-    {
+    function revokePCVGuardRole(
+        address oldGuard
+    ) external override onlyGuardianOrGovernor {
         core().revokeRole(VoltRoles.PCV_GUARD, oldGuard);
     }
 }

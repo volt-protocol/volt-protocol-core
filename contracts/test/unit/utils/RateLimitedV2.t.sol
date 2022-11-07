@@ -12,7 +12,7 @@ import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {PCVGuardAdmin} from "../../../pcv/PCVGuardAdmin.sol";
 import {ERC20Allocator} from "../../../pcv/utils/ERC20Allocator.sol";
 import {MockRateLimitedV2} from "../../../mock/MockRateLimitedV2.sol";
-import {ERC20HoldingPCVDeposit} from "../../../pcv/ERC20HoldingPCVDeposit.sol";
+import {ERC20HoldingPCVDeposit} from "../../../mock/ERC20HoldingPCVDeposit.sol";
 import {getCoreV2, getAddresses, VoltTestAddresses} from "./Fixtures.sol";
 
 contract UnitTestRateLimitedV2 is DSTest {
@@ -150,9 +150,10 @@ contract UnitTestRateLimitedV2 is DSTest {
         }
     }
 
-    function testReplenishBuffer(uint128 amountToReplenish, uint16 warpAmount)
-        public
-    {
+    function testReplenishBuffer(
+        uint128 amountToReplenish,
+        uint16 warpAmount
+    ) public {
         rlm.depleteBuffer(bufferCap); /// fully exhaust buffer
         assertEq(rlm.buffer(), 0);
 
@@ -209,9 +210,9 @@ contract UnitTestRateLimitedV2 is DSTest {
         assertEq(expectedBuffer, rlm.buffer());
     }
 
-    function testReplenishWhenAtBufferCapHasNoEffect(uint128 amountToReplenish)
-        public
-    {
+    function testReplenishWhenAtBufferCapHasNoEffect(
+        uint128 amountToReplenish
+    ) public {
         rlm.replenishBuffer(amountToReplenish);
         assertEq(rlm.buffer(), bufferCap);
         assertEq(block.timestamp, rlm.lastBufferUsedTime());

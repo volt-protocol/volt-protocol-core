@@ -3,12 +3,12 @@ pragma solidity =0.8.13;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IWETH} from "@uniswap/v2-periphery/contracts/interfaces/IWETH.sol";
 
+import {IWETH} from "../external/IWETH.sol";
 import {CoreRefV2} from "../refs/CoreRefV2.sol";
 import {VoltRoles} from "../core/VoltRoles.sol";
-import {PCVDeposit} from "./PCVDeposit.sol";
-import {IPCVDeposit} from "./IPCVDeposit.sol";
+import {PCVDeposit} from "./../pcv/PCVDeposit.sol";
+import {IPCVDeposit} from "./../pcv/IPCVDeposit.sol";
 import {MainnetAddresses} from "../test/integration/fixtures/MainnetAddresses.sol";
 import {ArbitrumAddresses} from "../test/integration/fixtures/ArbitrumAddresses.sol";
 import {IERC20HoldingPCVDeposit} from "./IERC20HoldingPCVDeposit.sol";
@@ -27,11 +27,7 @@ contract ERC20HoldingPCVDeposit is PCVDeposit, IERC20HoldingPCVDeposit {
     /// @notice WETH contract
     IWETH public immutable weth;
 
-    constructor(
-        address _core,
-        IERC20 _token,
-        address _weth
-    ) CoreRefV2(_core) {
+    constructor(address _core, IERC20 _token, address _weth) CoreRefV2(_core) {
         require(
             address(_token) != MainnetAddresses.VOLT &&
                 address(_token) != ArbitrumAddresses.VOLT,
@@ -76,7 +72,10 @@ contract ERC20HoldingPCVDeposit is PCVDeposit, IERC20HoldingPCVDeposit {
     /// @notice Withdraw underlying
     /// @param amountUnderlying of tokens withdrawn
     /// @param to the address to send PCV to
-    function withdraw(address to, uint256 amountUnderlying)
+    function withdraw(
+        address to,
+        uint256 amountUnderlying
+    )
         external
         override(IERC20HoldingPCVDeposit, IPCVDeposit)
         hasAnyOfTwoRoles(VoltRoles.GOVERNOR, VoltRoles.PCV_CONTROLLER)
@@ -87,10 +86,9 @@ contract ERC20HoldingPCVDeposit is PCVDeposit, IERC20HoldingPCVDeposit {
 
     /// @notice Withdraw all of underlying
     /// @param to the address to send PCV to
-    function withdrawAll(address to)
-        external
-        hasAnyOfTwoRoles(VoltRoles.GOVERNOR, VoltRoles.PCV_CONTROLLER)
-    {
+    function withdrawAll(
+        address to
+    ) external hasAnyOfTwoRoles(VoltRoles.GOVERNOR, VoltRoles.PCV_CONTROLLER) {
         uint256 amountUnderlying = token.balanceOf(address(this));
         token.safeTransfer(to, amountUnderlying);
         emit Withdrawal(msg.sender, to, amountUnderlying);

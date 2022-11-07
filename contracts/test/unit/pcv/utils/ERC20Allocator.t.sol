@@ -8,7 +8,7 @@ import {VoltRoles} from "../../../../core/VoltRoles.sol";
 import {ERC20Allocator} from "../../../../pcv/utils/ERC20Allocator.sol";
 import {PCVGuardAdmin} from "../../../../pcv/PCVGuardAdmin.sol";
 import {PCVDeposit} from "../../../../pcv/PCVDeposit.sol";
-import {ERC20HoldingPCVDeposit} from "../../../../pcv/ERC20HoldingPCVDeposit.sol";
+import {ERC20HoldingPCVDeposit} from "../../../../mock/ERC20HoldingPCVDeposit.sol";
 import {getCoreV2, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -616,7 +616,6 @@ contract UnitTestERC20Allocator is DSTest {
         uint256 bufferEnd = allocator.buffer();
         assertEq(bufferEnd, bufferCap - targetBalance / 2);
         /// multiply by 2 to get over buffer cap and fully replenish buffer
-        uint256 skimAmount = (bufferCap - bufferEnd) * 2;
         token.mint(address(psm), (targetBalance * 3) / 2);
 
         assertTrue(allocator.checkSkimCondition(address(pcvDeposit)));
@@ -805,9 +804,9 @@ contract UnitTestERC20Allocator is DSTest {
         assertEq(bufferEndAfterSkim, bufferCap); /// fully replenish buffer, meaning normalization worked properly
     }
 
-    function testDripSucceedsWhenUnderFullTargetBalance(uint8 denominator)
-        public
-    {
+    function testDripSucceedsWhenUnderFullTargetBalance(
+        uint8 denominator
+    ) public {
         vm.assume(denominator > 1);
         uint256 depositBalance = targetBalance / denominator;
 
