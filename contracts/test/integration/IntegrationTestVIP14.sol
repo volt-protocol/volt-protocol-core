@@ -123,6 +123,11 @@ contract IntegrationTestVIP14 is TimelockSimulation, vip14 {
             MainnetAddresses.VOLT_USDC_PSM
         );
 
+        uint256 usdcBalance = IERC20(usdc).balanceOf(MainnetAddresses.GOVERNOR);
+        vm.prank(MainnetAddresses.GOVERNOR);
+        IERC20(usdc).transfer(address(usdcDeposit), usdcBalance);
+        usdcDeposit.deposit();
+
         assertTrue(
             IPCVDeposit(MainnetAddresses.VOLT_USDC_PSM).balance() <= 1e6
         );

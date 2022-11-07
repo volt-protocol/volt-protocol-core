@@ -94,11 +94,11 @@ contract vip14a is DSTest, IVIP {
         returns (ITimelockSimulation.action[] memory)
     {}
 
-    function mainnetSetup() public override {
+    function mainnetSetup() public pure override {
         revert("no mainnet setup actions");
     }
 
-    function mainnetValidate() public override {
+    function mainnetValidate() public pure override {
         revert("no mainnet validate actions");
     }
 

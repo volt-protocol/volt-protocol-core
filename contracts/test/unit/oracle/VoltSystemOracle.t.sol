@@ -7,7 +7,6 @@ import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {Decimal} from "./../../../external/Decimal.sol";
 import {Constants} from "./../../../Constants.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract VoltSystemOracleUnitTest is DSTest {
