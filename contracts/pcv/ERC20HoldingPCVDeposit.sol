@@ -26,11 +26,7 @@ contract ERC20HoldingPCVDeposit is PCVDeposit, IERC20HoldingPCVDeposit {
     /// @notice WETH contract
     IWETH public immutable weth;
 
-    constructor(
-        address _core,
-        IERC20 _token,
-        address _weth
-    ) CoreRef(_core) {
+    constructor(address _core, IERC20 _token, address _weth) CoreRef(_core) {
         require(
             address(_token) != MainnetAddresses.VOLT &&
                 address(_token) != ArbitrumAddresses.VOLT,
@@ -75,7 +71,10 @@ contract ERC20HoldingPCVDeposit is PCVDeposit, IERC20HoldingPCVDeposit {
     /// @notice Withdraw underlying
     /// @param amountUnderlying of tokens withdrawn
     /// @param to the address to send PCV to
-    function withdraw(address to, uint256 amountUnderlying)
+    function withdraw(
+        address to,
+        uint256 amountUnderlying
+    )
         external
         override(IERC20HoldingPCVDeposit, IPCVDeposit)
         hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
@@ -86,7 +85,9 @@ contract ERC20HoldingPCVDeposit is PCVDeposit, IERC20HoldingPCVDeposit {
 
     /// @notice Withdraw all of underlying
     /// @param to the address to send PCV to
-    function withdrawAll(address to)
+    function withdrawAll(
+        address to
+    )
         external
         hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
     {

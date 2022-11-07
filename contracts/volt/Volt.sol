@@ -38,12 +38,10 @@ contract Volt is IVolt, ERC20Burnable, CoreRef {
     /// @notice mint FEI tokens
     /// @param account the account to mint to
     /// @param amount the amount to mint
-    function mint(address account, uint256 amount)
-        external
-        override
-        onlyMinter
-        whenNotPaused
-    {
+    function mint(
+        address account,
+        uint256 amount
+    ) external override onlyMinter whenNotPaused {
         _mint(account, amount);
         emit Minting(account, msg.sender, amount);
     }

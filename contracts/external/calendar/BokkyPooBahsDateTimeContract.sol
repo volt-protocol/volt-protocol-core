@@ -73,15 +73,9 @@ contract BokkyPooBahsDateTimeContract {
         return BokkyPooBahsDateTimeLibrary._daysFromDate(year, month, day);
     }
 
-    function _daysToDate(uint256 _days)
-        public
-        pure
-        returns (
-            uint256 year,
-            uint256 month,
-            uint256 day
-        )
-    {
+    function _daysToDate(
+        uint256 _days
+    ) public pure returns (uint256 year, uint256 month, uint256 day) {
         return BokkyPooBahsDateTimeLibrary._daysToDate(_days);
     }
 
@@ -112,21 +106,17 @@ contract BokkyPooBahsDateTimeContract {
             );
     }
 
-    function timestampToDate(uint256 timestamp)
-        public
-        pure
-        returns (
-            uint256 year,
-            uint256 month,
-            uint256 day
-        )
-    {
+    function timestampToDate(
+        uint256 timestamp
+    ) public pure returns (uint256 year, uint256 month, uint256 day) {
         (year, month, day) = BokkyPooBahsDateTimeLibrary.timestampToDate(
             timestamp
         );
     }
 
-    function timestampToDateTime(uint256 timestamp)
+    function timestampToDateTime(
+        uint256 timestamp
+    )
         public
         pure
         returns (
@@ -184,27 +174,22 @@ contract BokkyPooBahsDateTimeContract {
         weekEnd = BokkyPooBahsDateTimeLibrary.isWeekEnd(timestamp);
     }
 
-    function getDaysInMonth(uint256 timestamp)
-        public
-        pure
-        returns (uint256 daysInMonth)
-    {
+    function getDaysInMonth(
+        uint256 timestamp
+    ) public pure returns (uint256 daysInMonth) {
         daysInMonth = BokkyPooBahsDateTimeLibrary.getDaysInMonth(timestamp);
     }
 
-    function _getDaysInMonth(uint256 year, uint256 month)
-        public
-        pure
-        returns (uint256 daysInMonth)
-    {
+    function _getDaysInMonth(
+        uint256 year,
+        uint256 month
+    ) public pure returns (uint256 daysInMonth) {
         daysInMonth = BokkyPooBahsDateTimeLibrary._getDaysInMonth(year, month);
     }
 
-    function getDayOfWeek(uint256 timestamp)
-        public
-        pure
-        returns (uint256 dayOfWeek)
-    {
+    function getDayOfWeek(
+        uint256 timestamp
+    ) public pure returns (uint256 dayOfWeek) {
         dayOfWeek = BokkyPooBahsDateTimeLibrary.getDayOfWeek(timestamp);
     }
 
@@ -232,180 +217,162 @@ contract BokkyPooBahsDateTimeContract {
         second = BokkyPooBahsDateTimeLibrary.getSecond(timestamp);
     }
 
-    function addYears(uint256 timestamp, uint256 _years)
-        public
-        pure
-        returns (uint256 newTimestamp)
-    {
+    function addYears(
+        uint256 timestamp,
+        uint256 _years
+    ) public pure returns (uint256 newTimestamp) {
         newTimestamp = BokkyPooBahsDateTimeLibrary.addYears(timestamp, _years);
     }
 
-    function addMonths(uint256 timestamp, uint256 _months)
-        public
-        pure
-        returns (uint256 newTimestamp)
-    {
+    function addMonths(
+        uint256 timestamp,
+        uint256 _months
+    ) public pure returns (uint256 newTimestamp) {
         newTimestamp = BokkyPooBahsDateTimeLibrary.addMonths(
             timestamp,
             _months
         );
     }
 
-    function addDays(uint256 timestamp, uint256 _days)
-        public
-        pure
-        returns (uint256 newTimestamp)
-    {
+    function addDays(
+        uint256 timestamp,
+        uint256 _days
+    ) public pure returns (uint256 newTimestamp) {
         newTimestamp = BokkyPooBahsDateTimeLibrary.addDays(timestamp, _days);
     }
 
-    function addHours(uint256 timestamp, uint256 _hours)
-        public
-        pure
-        returns (uint256 newTimestamp)
-    {
+    function addHours(
+        uint256 timestamp,
+        uint256 _hours
+    ) public pure returns (uint256 newTimestamp) {
         newTimestamp = BokkyPooBahsDateTimeLibrary.addHours(timestamp, _hours);
     }
 
-    function addMinutes(uint256 timestamp, uint256 _minutes)
-        public
-        pure
-        returns (uint256 newTimestamp)
-    {
+    function addMinutes(
+        uint256 timestamp,
+        uint256 _minutes
+    ) public pure returns (uint256 newTimestamp) {
         newTimestamp = BokkyPooBahsDateTimeLibrary.addMinutes(
             timestamp,
             _minutes
         );
     }
 
-    function addSeconds(uint256 timestamp, uint256 _seconds)
-        public
-        pure
-        returns (uint256 newTimestamp)
-    {
+    function addSeconds(
+        uint256 timestamp,
+        uint256 _seconds
+    ) public pure returns (uint256 newTimestamp) {
         newTimestamp = BokkyPooBahsDateTimeLibrary.addSeconds(
             timestamp,
             _seconds
         );
     }
 
-    function subYears(uint256 timestamp, uint256 _years)
-        public
-        pure
-        returns (uint256 newTimestamp)
-    {
+    function subYears(
+        uint256 timestamp,
+        uint256 _years
+    ) public pure returns (uint256 newTimestamp) {
         newTimestamp = BokkyPooBahsDateTimeLibrary.subYears(timestamp, _years);
     }
 
-    function subMonths(uint256 timestamp, uint256 _months)
-        public
-        pure
-        returns (uint256 newTimestamp)
-    {
+    function subMonths(
+        uint256 timestamp,
+        uint256 _months
+    ) public pure returns (uint256 newTimestamp) {
         newTimestamp = BokkyPooBahsDateTimeLibrary.subMonths(
             timestamp,
             _months
         );
     }
 
-    function subDays(uint256 timestamp, uint256 _days)
-        public
-        pure
-        returns (uint256 newTimestamp)
-    {
+    function subDays(
+        uint256 timestamp,
+        uint256 _days
+    ) public pure returns (uint256 newTimestamp) {
         newTimestamp = BokkyPooBahsDateTimeLibrary.subDays(timestamp, _days);
     }
 
-    function subHours(uint256 timestamp, uint256 _hours)
-        public
-        pure
-        returns (uint256 newTimestamp)
-    {
+    function subHours(
+        uint256 timestamp,
+        uint256 _hours
+    ) public pure returns (uint256 newTimestamp) {
         newTimestamp = BokkyPooBahsDateTimeLibrary.subHours(timestamp, _hours);
     }
 
-    function subMinutes(uint256 timestamp, uint256 _minutes)
-        public
-        pure
-        returns (uint256 newTimestamp)
-    {
+    function subMinutes(
+        uint256 timestamp,
+        uint256 _minutes
+    ) public pure returns (uint256 newTimestamp) {
         newTimestamp = BokkyPooBahsDateTimeLibrary.subMinutes(
             timestamp,
             _minutes
         );
     }
 
-    function subSeconds(uint256 timestamp, uint256 _seconds)
-        public
-        pure
-        returns (uint256 newTimestamp)
-    {
+    function subSeconds(
+        uint256 timestamp,
+        uint256 _seconds
+    ) public pure returns (uint256 newTimestamp) {
         newTimestamp = BokkyPooBahsDateTimeLibrary.subSeconds(
             timestamp,
             _seconds
         );
     }
 
-    function diffYears(uint256 fromTimestamp, uint256 toTimestamp)
-        public
-        pure
-        returns (uint256 _years)
-    {
+    function diffYears(
+        uint256 fromTimestamp,
+        uint256 toTimestamp
+    ) public pure returns (uint256 _years) {
         _years = BokkyPooBahsDateTimeLibrary.diffYears(
             fromTimestamp,
             toTimestamp
         );
     }
 
-    function diffMonths(uint256 fromTimestamp, uint256 toTimestamp)
-        public
-        pure
-        returns (uint256 _months)
-    {
+    function diffMonths(
+        uint256 fromTimestamp,
+        uint256 toTimestamp
+    ) public pure returns (uint256 _months) {
         _months = BokkyPooBahsDateTimeLibrary.diffMonths(
             fromTimestamp,
             toTimestamp
         );
     }
 
-    function diffDays(uint256 fromTimestamp, uint256 toTimestamp)
-        public
-        pure
-        returns (uint256 _days)
-    {
+    function diffDays(
+        uint256 fromTimestamp,
+        uint256 toTimestamp
+    ) public pure returns (uint256 _days) {
         _days = BokkyPooBahsDateTimeLibrary.diffDays(
             fromTimestamp,
             toTimestamp
         );
     }
 
-    function diffHours(uint256 fromTimestamp, uint256 toTimestamp)
-        public
-        pure
-        returns (uint256 _hours)
-    {
+    function diffHours(
+        uint256 fromTimestamp,
+        uint256 toTimestamp
+    ) public pure returns (uint256 _hours) {
         _hours = BokkyPooBahsDateTimeLibrary.diffHours(
             fromTimestamp,
             toTimestamp
         );
     }
 
-    function diffMinutes(uint256 fromTimestamp, uint256 toTimestamp)
-        public
-        pure
-        returns (uint256 _minutes)
-    {
+    function diffMinutes(
+        uint256 fromTimestamp,
+        uint256 toTimestamp
+    ) public pure returns (uint256 _minutes) {
         _minutes = BokkyPooBahsDateTimeLibrary.diffMinutes(
             fromTimestamp,
             toTimestamp
         );
     }
 
-    function diffSeconds(uint256 fromTimestamp, uint256 toTimestamp)
-        public
-        pure
-        returns (uint256 _seconds)
-    {
+    function diffSeconds(
+        uint256 fromTimestamp,
+        uint256 toTimestamp
+    ) public pure returns (uint256 _seconds) {
         _seconds = BokkyPooBahsDateTimeLibrary.diffSeconds(
             fromTimestamp,
             toTimestamp

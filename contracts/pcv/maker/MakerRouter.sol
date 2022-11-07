@@ -66,7 +66,9 @@ contract MakerRouter is IMakerRouter, CoreRef {
 
     /// @notice Function to swap all of FEI balance to DAI
     /// @param to the address the DAI should be sent to once swapped
-    function swapAllFeiForDai(address to)
+    function swapAllFeiForDai(
+        address to
+    )
         external
         hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
     {
@@ -92,7 +94,9 @@ contract MakerRouter is IMakerRouter, CoreRef {
 
     /// @notice Function to swap all of FEI balance to USDC
     /// @param to the address the USDC should be sent to once swapped
-    function swapAllFeiForUsdc(address to)
+    function swapAllFeiForUsdc(
+        address to
+    )
         external
         hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
     {
@@ -173,10 +177,9 @@ contract MakerRouter is IMakerRouter, CoreRef {
 
     /// @notice Helper function to redeem DAI max allowance or balance from the FEI FEI-DAI PSM
     /// @param to the address the DAI should be sent to once swapped
-    function _redeemAllBalanceFromFeiPSM(address to)
-        private
-        returns (uint256 minDaiAmountOut)
-    {
+    function _redeemAllBalanceFromFeiPSM(
+        address to
+    ) private returns (uint256 minDaiAmountOut) {
         uint256 allowance = FEI.allowance(msg.sender, address(this));
         uint256 amountFeiIn = Math.min(FEI.balanceOf(msg.sender), allowance);
 

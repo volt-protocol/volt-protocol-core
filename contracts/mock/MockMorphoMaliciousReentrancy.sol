@@ -24,11 +24,7 @@ contract MockMorphoMaliciousReentrancy {
         morphoCompoundPCVDeposit.accrue();
     }
 
-    function supply(
-        address,
-        address,
-        uint256
-    ) external {
+    function supply(address, address, uint256) external {
         morphoCompoundPCVDeposit.deposit();
     }
 
@@ -36,16 +32,19 @@ contract MockMorphoMaliciousReentrancy {
         balances[to] = amount;
     }
 
-    function claimRewards(address cToken, bool swapForMorpho)
-        external
-        returns (uint256)
-    {}
+    function claimRewards(
+        address cToken,
+        bool swapForMorpho
+    ) external returns (uint256) {}
 
     function updateP2PIndexes(address) external {
         morphoCompoundPCVDeposit.accrue();
     }
 
-    function getCurrentSupplyBalanceInOf(address, address _user)
+    function getCurrentSupplyBalanceInOf(
+        address,
+        address _user
+    )
         external
         view
         returns (
