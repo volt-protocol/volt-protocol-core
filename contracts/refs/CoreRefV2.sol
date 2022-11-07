@@ -219,12 +219,9 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     /// add this ability to be able to execute arbitrary calldata
     /// against arbitrary addresses.
     /// callable only by governor
-    function emergencyAction(Call[] calldata calls)
-        external
-        payable
-        onlyGovernor
-        returns (bytes[] memory returnData)
-    {
+    function emergencyAction(
+        Call[] calldata calls
+    ) external payable onlyGovernor returns (bytes[] memory returnData) {
         returnData = new bytes[](calls.length);
         for (uint256 i = 0; i < calls.length; i++) {
             address payable target = payable(calls[i].target);

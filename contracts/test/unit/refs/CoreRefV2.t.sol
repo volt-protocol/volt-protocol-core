@@ -204,9 +204,9 @@ contract UnitTestCoreRefV2 is DSTest {
         assertEq(coreRef.volt().balanceOf(address(this)), mintAmount);
     }
 
-    function testEmergencyActionSucceedsGovernorSendEth(uint128 sendAmount)
-        public
-    {
+    function testEmergencyActionSucceedsGovernorSendEth(
+        uint128 sendAmount
+    ) public {
         uint256 startingEthBalance = address(this).balance;
 
         MockCoreRefV2.Call[] memory calls = new MockCoreRefV2.Call[](1);
@@ -223,9 +223,9 @@ contract UnitTestCoreRefV2 is DSTest {
         assertEq(address(coreRef).balance, 0);
     }
 
-    function testEmergencyActionSucceedsGovernorSendsEth(uint128 sendAmount)
-        public
-    {
+    function testEmergencyActionSucceedsGovernorSendsEth(
+        uint128 sendAmount
+    ) public {
         MockCoreRefV2.Call[] memory calls = new MockCoreRefV2.Call[](1);
         calls[0].target = addresses.governorAddress;
         calls[0].value = sendAmount;
