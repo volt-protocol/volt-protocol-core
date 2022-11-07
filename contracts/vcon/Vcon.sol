@@ -155,11 +155,10 @@ contract Vcon {
      * @param spender The address of the account spending the funds
      * @return The number of tokens approved
      */
-    function allowance(address account, address spender)
-        external
-        view
-        returns (uint256)
-    {
+    function allowance(
+        address account,
+        address spender
+    ) external view returns (uint256) {
         return allowances[account][spender];
     }
 
@@ -171,10 +170,10 @@ contract Vcon {
      * @param rawAmount The number of tokens that are approved (2^256-1 means infinite)
      * @return Whether or not the approval succeeded
      */
-    function approve(address spender, uint256 rawAmount)
-        external
-        returns (bool)
-    {
+    function approve(
+        address spender,
+        uint256 rawAmount
+    ) external returns (bool) {
         uint96 amount;
         if (rawAmount == type(uint256).max) {
             amount = type(uint96).max;
@@ -361,11 +360,10 @@ contract Vcon {
      * @param blockNumber The block number to get the vote balance at
      * @return The number of votes the account had as of the given block
      */
-    function getPriorVotes(address account, uint256 blockNumber)
-        public
-        view
-        returns (uint96)
-    {
+    function getPriorVotes(
+        address account,
+        uint256 blockNumber
+    ) public view returns (uint96) {
         require(blockNumber < block.number, "Vcon: not yet determined");
 
         uint32 nCheckpoints = numCheckpoints[account];
@@ -409,11 +407,7 @@ contract Vcon {
         _moveDelegates(currentDelegate, delegatee, delegatorBalance);
     }
 
-    function _transferTokens(
-        address src,
-        address dst,
-        uint96 amount
-    ) internal {
+    function _transferTokens(address src, address dst, uint96 amount) internal {
         require(
             src != address(0),
             "Vcon: cannot transfer from the zero address"
@@ -496,21 +490,19 @@ contract Vcon {
         emit DelegateVotesChanged(delegatee, oldVotes, newVotes);
     }
 
-    function safe32(uint256 n, string memory errorMessage)
-        internal
-        pure
-        returns (uint32)
-    {
-        require(n < 2**32, errorMessage);
+    function safe32(
+        uint256 n,
+        string memory errorMessage
+    ) internal pure returns (uint32) {
+        require(n < 2 ** 32, errorMessage);
         return uint32(n);
     }
 
-    function safe96(uint256 n, string memory errorMessage)
-        internal
-        pure
-        returns (uint96)
-    {
-        require(n < 2**96, errorMessage);
+    function safe96(
+        uint256 n,
+        string memory errorMessage
+    ) internal pure returns (uint96) {
+        require(n < 2 ** 96, errorMessage);
         return uint96(n);
     }
 

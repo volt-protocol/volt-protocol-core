@@ -54,11 +54,9 @@ abstract contract RateLimited is CoreRef {
     }
 
     /// @notice set the rate limit per second
-    function setRateLimitPerSecond(uint256 newRateLimitPerSecond)
-        external
-        virtual
-        onlyGovernorOrAdmin
-    {
+    function setRateLimitPerSecond(
+        uint256 newRateLimitPerSecond
+    ) external virtual onlyGovernorOrAdmin {
         require(
             newRateLimitPerSecond <= MAX_RATE_LIMIT_PER_SECOND,
             "RateLimited: rateLimitPerSecond too high"
@@ -69,11 +67,9 @@ abstract contract RateLimited is CoreRef {
     }
 
     /// @notice set the buffer cap
-    function setBufferCap(uint256 newBufferCap)
-        external
-        virtual
-        onlyGovernorOrAdmin
-    {
+    function setBufferCap(
+        uint256 newBufferCap
+    ) external virtual onlyGovernorOrAdmin {
         _setBufferCap(newBufferCap);
     }
 

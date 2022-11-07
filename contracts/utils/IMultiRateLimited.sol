@@ -47,8 +47,9 @@ interface IMultiRateLimited {
     // ----------- Governance State Changing API -----------
 
     /// @notice update the non gov max rate limit per second
-    function updateMaxRateLimitPerSecond(uint256 newMaxRateLimitPerSecond)
-        external;
+    function updateMaxRateLimitPerSecond(
+        uint256 newMaxRateLimitPerSecond
+    ) external;
 
     /// @notice update the non gov max buffer cap
     function updateMaxBufferCap(uint256 newBufferCap) external;
@@ -57,18 +58,10 @@ interface IMultiRateLimited {
     function addAddressAsMinter(address) external;
 
     /// @notice add an authorized contract, its per second replenishment and buffer
-    function addAddress(
-        address,
-        uint112,
-        uint112
-    ) external;
+    function addAddress(address, uint112, uint112) external;
 
     /// @notice update an authorized contract
-    function updateAddress(
-        address,
-        uint112,
-        uint112
-    ) external;
+    function updateAddress(address, uint112, uint112) external;
 
     /// @notice remove an authorized contract
     function removeAddress(address) external;

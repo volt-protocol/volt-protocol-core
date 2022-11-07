@@ -150,9 +150,10 @@ contract UnitTestRateLimitedV2 is DSTest {
         }
     }
 
-    function testReplenishBuffer(uint128 amountToReplenish, uint16 warpAmount)
-        public
-    {
+    function testReplenishBuffer(
+        uint128 amountToReplenish,
+        uint16 warpAmount
+    ) public {
         rlm.depleteBuffer(bufferCap); /// fully exhaust buffer
         assertEq(rlm.buffer(), 0);
 
@@ -209,9 +210,9 @@ contract UnitTestRateLimitedV2 is DSTest {
         assertEq(expectedBuffer, rlm.buffer());
     }
 
-    function testReplenishWhenAtBufferCapHasNoEffect(uint128 amountToReplenish)
-        public
-    {
+    function testReplenishWhenAtBufferCapHasNoEffect(
+        uint128 amountToReplenish
+    ) public {
         rlm.replenishBuffer(amountToReplenish);
         assertEq(rlm.buffer(), bufferCap);
         assertEq(block.timestamp, rlm.lastBufferUsedTime());

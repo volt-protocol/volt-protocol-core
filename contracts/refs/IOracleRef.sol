@@ -48,8 +48,7 @@ interface IOracleRef {
 
     function readOracle() external view returns (Decimal.D256 memory);
 
-    function invert(Decimal.D256 calldata price)
-        external
-        pure
-        returns (Decimal.D256 memory);
+    function invert(
+        Decimal.D256 calldata price
+    ) external pure returns (Decimal.D256 memory);
 }

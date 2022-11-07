@@ -804,9 +804,9 @@ contract UnitTestERC20Allocator is DSTest {
         assertEq(bufferEndAfterSkim, bufferCap); /// fully replenish buffer, meaning normalization worked properly
     }
 
-    function testDripSucceedsWhenUnderFullTargetBalance(uint8 denominator)
-        public
-    {
+    function testDripSucceedsWhenUnderFullTargetBalance(
+        uint8 denominator
+    ) public {
         vm.assume(denominator > 1);
         uint256 depositBalance = targetBalance / denominator;
 

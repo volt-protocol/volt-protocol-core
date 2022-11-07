@@ -55,11 +55,9 @@ contract OraclePassThrough is IOraclePassThrough, Ownable {
 
     /// @notice function to update the pointer to the scaling price oracle
     /// requires approval from all parties on multisig to update
-    function updateScalingPriceOracle(IScalingPriceOracle newScalingPriceOracle)
-        external
-        override
-        onlyOwner
-    {
+    function updateScalingPriceOracle(
+        IScalingPriceOracle newScalingPriceOracle
+    ) external override onlyOwner {
         IScalingPriceOracle oldScalingPriceOracle = scalingPriceOracle;
         scalingPriceOracle = newScalingPriceOracle;
 
