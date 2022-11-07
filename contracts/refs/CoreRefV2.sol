@@ -24,7 +24,6 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         _core = ICoreV2(coreAddress);
     }
 
-    /// TODO unit, fuzz, integration and invariant testing
     /// 1. call core and lock the lock
     /// 2. execute the code
     /// 3. call core and unlock the lock
