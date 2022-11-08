@@ -3,8 +3,6 @@ pragma solidity 0.8.13;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {Vcon} from "../vcon/Vcon.sol";
-import {Volt} from "../volt/Volt.sol";
 import {IVolt} from "../volt/IVolt.sol";
 import {ICoreV2} from "./ICoreV2.sol";
 import {PermissionsV2} from "./PermissionsV2.sol";
