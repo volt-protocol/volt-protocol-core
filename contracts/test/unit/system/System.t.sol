@@ -11,7 +11,7 @@ import {MockERC20} from "../../../mock/MockERC20.sol";
 import {PCVDeposit} from "../../../pcv/PCVDeposit.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {MockCoreRefV2} from "../../../mock/MockCoreRefV2.sol";
-import {PriceBoundPSM} from "../../../peg/PriceBoundPSM.sol";
+import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {ERC20Allocator} from "../../../pcv/utils/ERC20Allocator.sol";
 import {MockPCVDepositV2} from "../../../mock/MockPCVDepositV2.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
@@ -19,7 +19,9 @@ import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
 import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {IScalingPriceOracle} from "../../../oracle/IScalingPriceOracle.sol";
-import {getCoreV2, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
+import {getCoreV2, getAddresses, getVoltAddresses, VoltAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
+
+import "hardhat/console.sol";
 
 /// deployment steps
 /// 1. core v2
@@ -56,10 +58,11 @@ interface IERC20Mintable is IERC20 {
 
 contract SystemUnitTest is Test {
     VoltTestAddresses public addresses = getAddresses();
+    VoltAddresses public guardianAddresses = getVoltAddresses();
 
     ICoreV2 private core;
-    PriceBoundPSM private daipsm;
-    PriceBoundPSM private usdcpsm;
+    PegStabilityModule private daipsm;
+    PegStabilityModule private usdcpsm;
     MockPCVDepositV2 private pcvDepositDai;
     MockPCVDepositV2 private pcvDepositUsdc;
     PCVGuardian private pcvGuardian;
@@ -88,11 +91,11 @@ contract SystemUnitTest is Test {
 
     /// ---------- PSM PARAMS ----------
 
-    uint256 public constant voltFloorPriceDai = 9_000; /// 1 volt for 1 dai is the minimum price
-    uint256 public constant voltCeilingPriceDai = 10_000; /// 1 volt for 1.11 dai is the max allowable price
+    uint128 public constant voltFloorPriceDai = 1.05e18; /// 1 volt for 1.05 dai is the minimum price
+    uint128 public constant voltCeilingPriceDai = 1.1e18; /// 1 volt for 1.1 dai is the max allowable price
 
-    uint256 public constant voltFloorPriceUsdc = 9e15; /// 1 volt for 1 usdc is the minimum price
-    uint256 public constant voltCeilingPriceUsdc = 10e15; /// 1 volt for 1.11 usdc is the max allowable price
+    uint128 public constant voltFloorPriceUsdc = 1.05e6; /// 1 volt for 1.05 usdc is the min price
+    uint128 public constant voltCeilingPriceUsdc = 1.1e6; /// 1 volt for 1.1 usdc is the max price
 
     /// ---------- ORACLE PARAMS ----------
 
@@ -115,36 +118,26 @@ contract SystemUnitTest is Test {
         );
         opt = new OraclePassThrough(IScalingPriceOracle(address(vso)));
 
-        PegStabilityModule.OracleParams
-            memory oracleParamsUsdc = PegStabilityModule.OracleParams({
-                coreAddress: coreAddress,
-                oracleAddress: address(opt),
-                backupOracle: address(0),
-                decimalsNormalizer: 12,
-                doInvert: true
-            });
-
-        usdcpsm = new PriceBoundPSM(
+        usdcpsm = new PegStabilityModule(
+            coreAddress,
+            address(opt),
+            address(0),
+            -12,
+            false,
+            usdc,
             voltFloorPriceUsdc,
-            voltCeilingPriceUsdc,
-            oracleParamsUsdc,
-            usdc
+            voltCeilingPriceUsdc
         );
 
-        PegStabilityModule.OracleParams
-            memory oracleParamsDai = PegStabilityModule.OracleParams({
-                coreAddress: coreAddress,
-                oracleAddress: address(opt),
-                backupOracle: address(0),
-                decimalsNormalizer: 0,
-                doInvert: true
-            });
-
-        daipsm = new PriceBoundPSM(
+        daipsm = new PegStabilityModule(
+            coreAddress,
+            address(opt),
+            address(0),
+            0,
+            false,
+            dai,
             voltFloorPriceDai,
-            voltCeilingPriceDai,
-            oracleParamsDai,
-            dai
+            voltCeilingPriceDai
         );
 
         pcvDepositDai = new MockPCVDepositV2(coreAddress, address(dai), 100, 0);
@@ -155,8 +148,10 @@ contract SystemUnitTest is Test {
             0
         );
 
-        address[] memory proposerCancellerAddresses = new address[](1);
-        proposerCancellerAddresses[0] = addresses.userAddress;
+        address[] memory proposerCancellerAddresses = new address[](3);
+        proposerCancellerAddresses[0] = guardianAddresses.pcvGuardAddress1;
+        proposerCancellerAddresses[1] = guardianAddresses.pcvGuardAddress2;
+        proposerCancellerAddresses[2] = guardianAddresses.executorAddress;
 
         address[] memory executorAddresses = new address[](2);
         executorAddresses[0] = addresses.governorAddress;
@@ -236,6 +231,7 @@ contract SystemUnitTest is Test {
         vm.label(address(usdcpsm), "usdcpsm");
         vm.label(address(pcvDepositDai), "pcvDepositDai");
         vm.label(address(pcvDepositUsdc), "pcvDepositUsdc");
+        vm.label(address(this), "address this");
     }
 
     function testSetup() public {
@@ -245,6 +241,65 @@ contract SystemUnitTest is Test {
                 address(this)
             )
         );
+        /// timelock has admin role of itself
+        assertTrue(
+            timelockController.hasRole(
+                timelockController.TIMELOCK_ADMIN_ROLE(),
+                address(timelockController)
+            )
+        );
+
+        bytes32 cancellerRole = timelockController.CANCELLER_ROLE();
+        assertTrue(
+            timelockController.hasRole(
+                cancellerRole,
+                guardianAddresses.pcvGuardAddress1
+            )
+        );
+        assertTrue(
+            timelockController.hasRole(
+                cancellerRole,
+                guardianAddresses.pcvGuardAddress2
+            )
+        );
+        assertTrue(
+            timelockController.hasRole(
+                cancellerRole,
+                guardianAddresses.executorAddress
+            )
+        );
+
+        bytes32 proposerRole = timelockController.PROPOSER_ROLE();
+        assertTrue(
+            timelockController.hasRole(
+                proposerRole,
+                guardianAddresses.pcvGuardAddress1
+            )
+        );
+        assertTrue(
+            timelockController.hasRole(
+                proposerRole,
+                guardianAddresses.pcvGuardAddress2
+            )
+        );
+        assertTrue(
+            timelockController.hasRole(
+                proposerRole,
+                guardianAddresses.executorAddress
+            )
+        );
+
+        bytes32 executorRole = timelockController.EXECUTOR_ROLE();
+        assertTrue(
+            timelockController.hasRole(executorRole, addresses.governorAddress)
+        );
+        assertTrue(
+            timelockController.hasRole(
+                executorRole,
+                addresses.voltGovernorAddress
+            )
+        );
+
         assertTrue(pcvGuardian.isWhitelistAddress(address(pcvDepositDai)));
         assertTrue(pcvGuardian.isWhitelistAddress(address(pcvDepositUsdc)));
         assertTrue(pcvGuardian.isWhitelistAddress(address(usdcpsm)));
@@ -345,11 +400,40 @@ contract SystemUnitTest is Test {
 
         uint256 endingBalance = dai.balanceOf(address(this));
 
-        assertTrue(startingBalance > endingBalance);
+        console.log("startingBalance: ", startingBalance);
+        console.log("endingBalance: ", endingBalance);
+
+        assertTrue(startingBalance >= endingBalance);
         assertEq(volt.balanceOf(address(daipsm)), voltAmountOut);
     }
 
-    function testMintRedeemSamePriceLosesMoneyUsdc(uint80 mintAmount) public {
+    function testMintRedeemSamePriceLosesOrBreaksEvenDaiNonFuzz() public {
+        uint128 mintAmount = 1_000e18;
+
+        uint256 voltAmountOut = daipsm.getMintAmountOut(mintAmount);
+        volt.mint(address(daipsm), voltAmountOut);
+
+        assertEq(volt.balanceOf(address(this)), 0);
+        dai.mint(address(this), mintAmount);
+        uint256 startingBalance = dai.balanceOf(address(this));
+
+        dai.approve(address(daipsm), mintAmount);
+        daipsm.mint(address(this), mintAmount, voltAmountOut);
+
+        uint256 voltBalance = volt.balanceOf(address(this));
+        volt.approve(address(daipsm), voltBalance);
+        daipsm.redeem(address(this), voltBalance, 0);
+
+        uint256 endingBalance = dai.balanceOf(address(this));
+
+        assertTrue(startingBalance >= endingBalance);
+
+        assertEq(volt.balanceOf(address(daipsm)), voltAmountOut);
+    }
+
+    function testMintRedeemSamePriceLosesOrBreaksEvenUsdc(
+        uint80 mintAmount
+    ) public {
         vm.assume(mintAmount != 0);
 
         uint256 voltAmountOut = usdcpsm.getMintAmountOut(mintAmount);
@@ -368,7 +452,7 @@ contract SystemUnitTest is Test {
 
         uint256 endingBalance = usdc.balanceOf(address(this));
 
-        assertTrue(startingBalance > endingBalance);
+        assertTrue(startingBalance >= endingBalance);
         assertEq(volt.balanceOf(address(usdcpsm)), voltAmountOut);
     }
 }

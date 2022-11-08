@@ -6,12 +6,13 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {Vm} from "./../utils/Vm.sol";
 import {Volt} from "../../../volt/Volt.sol";
+import {Vcon} from "../../../vcon/Vcon.sol";
 import {IVolt} from "../../../volt/Volt.sol";
 import {ICore} from "../../../core/ICore.sol";
 import {DSTest} from "./../utils/DSTest.sol";
+import {CoreV2} from "../../../core/CoreV2.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {MockERC20} from "./../../../mock/MockERC20.sol";
-import {CoreV2, Vcon} from "../../../core/CoreV2.sol";
 import {MockReentrancyLock} from "./../../../mock/MockReentrancyLock.sol";
 import {MockReentrancyLockFailure} from "./../../../mock/MockReentrancyLockFailure.sol";
 import {getCoreV2, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
