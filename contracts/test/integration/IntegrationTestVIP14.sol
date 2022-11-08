@@ -10,7 +10,6 @@ import {ICore} from "../../core/ICore.sol";
 import {IVolt} from "../../volt/Volt.sol";
 import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
 import {IPCVGuardian} from "../../pcv/IPCVGuardian.sol";
-import {PriceBoundPSM} from "../../peg/PriceBoundPSM.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
 

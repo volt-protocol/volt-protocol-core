@@ -11,7 +11,7 @@ import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
 import {ICore} from "../../core/ICore.sol";
 import {Core} from "../../core/Core.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
-import {PriceBoundPSM, PegStabilityModule} from "../../peg/PriceBoundPSM.sol";
+import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {getCore, getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 import {Vm} from "./../unit/utils/Vm.sol";
@@ -21,7 +21,7 @@ import {Constants} from "../../Constants.sol";
 
 contract IntegrationTestPriceBoundPSMTest is DSTest {
     using SafeCast for *;
-    PriceBoundPSM private psm;
+    PegStabilityModule private psm;
     ICore private core = ICore(MainnetAddresses.CORE);
     ICore private feiCore = ICore(MainnetAddresses.FEI_CORE);
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
@@ -41,26 +41,20 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
-    uint256 voltFloorPrice = 9_000; /// 1 volt for .9 fei is the max allowable price
-    uint256 voltCeilingPrice = 10_000; /// 1 volt for 1 fei is the minimum price
+    uint128 voltFloorPrice = 1.05e18; /// 1 volt for 1.05 fei is the min price
+    uint128 voltCeilingPrice = 1.1e18; /// 1 volt for 1.1 fei is the max price
 
     function setUp() public {
-        PegStabilityModule.OracleParams memory oracleParams;
-
-        oracleParams = PegStabilityModule.OracleParams({
-            coreAddress: address(core),
-            oracleAddress: address(oracle),
-            backupOracle: address(0),
-            decimalsNormalizer: 0,
-            doInvert: true
-        });
-
         /// create PSM
-        psm = new PriceBoundPSM(
+        psm = new PegStabilityModule(
+            address(core),
+            address(oracle),
+            address(0),
+            0,
+            false,
+            IERC20(address(fei)),
             voltFloorPrice,
-            voltCeilingPrice,
-            oracleParams,
-            IERC20(address(fei))
+            voltCeilingPrice
         );
 
         vm.prank(feiDaiPsm);
@@ -80,8 +74,9 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     }
 
     /// @notice PSM inverts price
-    function testDoInvert() public {
-        assertTrue(psm.doInvert());
+    function testSetup() public {
+        assertTrue(!psm.doInvert());
+        assertEq(psm.decimalsNormalizer(), 0);
     }
 
     /// @notice PSM is set up correctly and view functions are working

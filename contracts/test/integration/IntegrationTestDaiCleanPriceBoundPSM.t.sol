@@ -11,7 +11,6 @@ import {ICoreV2} from "../../core/ICoreV2.sol";
 import {Constants} from "../../Constants.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
-import {PriceBoundPSM} from "../../peg/PriceBoundPSM.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
@@ -22,9 +21,9 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
     using SafeCast for *;
 
     /// reference PSM to test against
-    PriceBoundPSM private immutable priceBoundPsm =
-        PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM);
-    PriceBoundPSM private cleanPsm;
+    PegStabilityModule private immutable priceBoundPsm =
+        PegStabilityModule(MainnetAddresses.VOLT_DAI_PSM);
+    PegStabilityModule private cleanPsm;
 
     ICoreV2 private core = ICoreV2(MainnetAddresses.CORE);
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
@@ -41,26 +40,20 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
-    uint128 voltFloorPrice = 9_000;
-    uint128 voltCeilingPrice = 10_000;
+    uint128 voltFloorPrice = 1.04e18;
+    uint128 voltCeilingPrice = 1.1e18;
 
     function setUp() public {
-        PegStabilityModule.OracleParams memory oracleParams;
-
-        oracleParams = PegStabilityModule.OracleParams({
-            coreAddress: address(core),
-            oracleAddress: address(oracle),
-            backupOracle: address(0),
-            decimalsNormalizer: 0,
-            doInvert: true
-        });
-
         /// create PSM
-        cleanPsm = new PriceBoundPSM(
+        cleanPsm = new PegStabilityModule(
+            address(core),
+            address(oracle),
+            address(0),
+            0,
+            false,
+            dai,
             voltFloorPrice,
-            voltCeilingPrice,
-            oracleParams,
-            dai
+            voltCeilingPrice
         );
 
         vm.label(address(cleanPsm), "New PSM");
@@ -101,14 +94,12 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
     function testSetUpCorrectly() public {
         assertTrue(priceBoundPsm.doInvert());
         assertTrue(priceBoundPsm.isPriceValid());
-        assertEq(priceBoundPsm.floor(), voltFloorPrice);
-        assertEq(priceBoundPsm.ceiling(), voltCeilingPrice);
         assertEq(address(priceBoundPsm.oracle()), address(oracle));
         assertEq(address(priceBoundPsm.backupOracle()), address(0));
         assertEq(priceBoundPsm.decimalsNormalizer(), 0);
         assertEq(address(priceBoundPsm.underlyingToken()), address(dai));
 
-        assertTrue(cleanPsm.doInvert());
+        assertTrue(!cleanPsm.doInvert());
         assertEq(address(cleanPsm.oracle()), address(oracle));
         assertEq(address(cleanPsm.backupOracle()), address(0));
         assertEq(cleanPsm.decimalsNormalizer(), 0);
@@ -134,9 +125,36 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
             0
         );
 
-        assertEq(
-            cleanPsm.getRedeemAmountOut(amountVoltIn),
-            priceBoundPsm.getRedeemAmountOut(amountVoltIn)
+        assertApproxEq(
+            cleanPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
+            priceBoundPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
+            0
+        );
+    }
+
+    /// @notice PSM is set up correctly and redeem view function is working
+    function testGetRedeemAmountOutPpq(uint128 amountVoltIn) public {
+        vm.assume(amountVoltIn > 1e8);
+
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
+
+        uint256 amountOut = (amountVoltIn * currentPegPrice) / 1e18;
+
+        assertApproxEq(
+            priceBoundPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
+            amountOut.toInt256(),
+            0
+        );
+        assertApproxEq(
+            cleanPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
+            amountOut.toInt256(),
+            0
+        );
+
+        assertApproxEqPpq(
+            cleanPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
+            priceBoundPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
+            1_000_000_000
         );
     }
 
@@ -158,9 +176,36 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
             0
         );
 
-        assertEq(
-            cleanPsm.getMintAmountOut(amountDaiIn),
-            priceBoundPsm.getMintAmountOut(amountDaiIn)
+        assertApproxEq(
+            cleanPsm.getMintAmountOut(amountDaiIn).toInt256(),
+            priceBoundPsm.getMintAmountOut(amountDaiIn).toInt256(),
+            0
+        );
+    }
+
+    /// @notice PSM is set up correctly and view functions are working
+    function testGetMintAmountOutPpq(uint128 amountDaiIn) public {
+        vm.assume(amountDaiIn > 1e8);
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
+
+        uint256 amountOut = (uint256(amountDaiIn) * 1e18) / currentPegPrice;
+
+        assertApproxEq(
+            priceBoundPsm.getMintAmountOut(amountDaiIn).toInt256(),
+            amountOut.toInt256(),
+            0
+        );
+
+        assertApproxEq(
+            cleanPsm.getMintAmountOut(amountDaiIn).toInt256(),
+            amountOut.toInt256(),
+            0
+        );
+
+        assertApproxEqPpq(
+            cleanPsm.getMintAmountOut(amountDaiIn).toInt256(),
+            priceBoundPsm.getMintAmountOut(amountDaiIn).toInt256(),
+            1_000_000_000
         );
     }
 

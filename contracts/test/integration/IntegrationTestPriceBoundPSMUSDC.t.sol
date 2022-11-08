@@ -3,24 +3,25 @@ pragma solidity 0.8.13;
 
 import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {MockPCVDepositV2} from "../../mock/MockPCVDepositV2.sol";
-import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
-import {MockERC20} from "../../mock/MockERC20.sol";
-import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
-import {ICore} from "../../core/ICore.sol";
-import {Core} from "../../core/Core.sol";
-import {IVolt, Volt} from "../../volt/Volt.sol";
-import {PriceBoundPSM, PegStabilityModule} from "../../peg/PriceBoundPSM.sol";
-import {getCore, getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
-import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
+
 import {Vm} from "./../unit/utils/Vm.sol";
+import {Core} from "../../core/Core.sol";
+import {ICore} from "../../core/ICore.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
-import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {Constants} from "../../Constants.sol";
+import {MockERC20} from "../../mock/MockERC20.sol";
+import {IVolt, Volt} from "../../volt/Volt.sol";
+import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
+import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
+import {MockPCVDepositV2} from "../../mock/MockPCVDepositV2.sol";
+import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
+import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
+import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
+import {getCore, getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
 
 contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     using SafeCast for *;
-    PriceBoundPSM private psm;
+    PegStabilityModule private psm;
     ICore private core = ICore(MainnetAddresses.CORE);
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
     IERC20 private usdc = IERC20(MainnetAddresses.USDC);
@@ -39,28 +40,20 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
-    /// these are inverted
-    uint256 voltFloorPrice = 9_000e12; /// 1 volt for .9 usdc is the max allowable price
-    uint256 voltCeilingPrice = 10_000e12; /// 1 volt for 1 usdc is the minimum price
-    uint256 reservesThreshold = type(uint256).max; /// max uint so that surplus can never be allocated into the pcv deposit
+    uint128 voltFloorPrice = 1.05e6; /// 1 volt for 1.05 usdc is the min pirce
+    uint128 voltCeilingPrice = 1.1e6; /// 1 volt for 1.1 usdc is the max price
 
     function setUp() public {
-        PegStabilityModule.OracleParams memory oracleParams;
-
-        oracleParams = PegStabilityModule.OracleParams({
-            coreAddress: address(core),
-            oracleAddress: address(oracle),
-            backupOracle: address(0),
-            decimalsNormalizer: 12,
-            doInvert: true
-        });
-
         /// create PSM
-        psm = new PriceBoundPSM(
+        psm = new PegStabilityModule(
+            address(core),
+            address(oracle),
+            address(0),
+            -12,
+            false,
+            IERC20(address(usdc)),
             voltFloorPrice,
-            voltCeilingPrice,
-            oracleParams,
-            IERC20(address(usdc))
+            voltCeilingPrice
         );
 
         uint256 balance = usdc.balanceOf(makerUSDCPSM);
@@ -81,13 +74,13 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
 
     /// @notice PSM is set up correctly
     function testSetUpCorrectly() public {
-        assertTrue(psm.doInvert());
+        assertTrue(!psm.doInvert());
         assertTrue(psm.isPriceValid());
         assertEq(psm.floor(), voltFloorPrice);
         assertEq(psm.ceiling(), voltCeilingPrice);
         assertEq(address(psm.oracle()), address(oracle));
         assertEq(address(psm.backupOracle()), address(0));
-        assertEq(psm.decimalsNormalizer(), 12);
+        assertEq(psm.decimalsNormalizer(), -12);
         assertEq(address(psm.underlyingToken()), address(usdc));
     }
 
