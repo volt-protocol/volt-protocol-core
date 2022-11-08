@@ -12,11 +12,11 @@ import {DSTest} from "./../../unit/utils/DSTest.sol";
 import {PCVDeposit} from "../../../pcv/PCVDeposit.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {IPCVDeposit} from "../../../pcv/IPCVDeposit.sol";
-import {PriceBoundPSM} from "../../../peg/PriceBoundPSM.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
 import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
 import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
+import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {ITimelockSimulation} from "../utils/ITimelockSimulation.sol";
 
 /// VIP 14-A
@@ -133,18 +133,26 @@ contract vip14a is DSTest, IVIP {
         assertEq(opt.getCurrentOraclePrice(), startPrice);
         assertEq(oracle.oraclePrice(), startPrice);
 
-        assertTrue(PriceBoundPSM(ArbitrumAddresses.VOLT_USDC_PSM).mintPaused());
-        assertTrue(PriceBoundPSM(ArbitrumAddresses.VOLT_DAI_PSM).mintPaused());
+        assertTrue(
+            PegStabilityModule(ArbitrumAddresses.VOLT_USDC_PSM).mintPaused()
+        );
+        assertTrue(
+            PegStabilityModule(ArbitrumAddresses.VOLT_DAI_PSM).mintPaused()
+        );
 
         vm.expectRevert("PegStabilityModule: Minting paused");
-        PriceBoundPSM(ArbitrumAddresses.VOLT_USDC_PSM).mint(
+        PegStabilityModule(ArbitrumAddresses.VOLT_USDC_PSM).mint(
             address(this),
             0,
             0
         );
 
         vm.expectRevert("PegStabilityModule: Minting paused");
-        PriceBoundPSM(ArbitrumAddresses.VOLT_DAI_PSM).mint(address(this), 0, 0);
+        PegStabilityModule(ArbitrumAddresses.VOLT_DAI_PSM).mint(
+            address(this),
+            0,
+            0
+        );
         vm.warp(block.timestamp + 100 days);
 
         oracle.compoundInterest();
