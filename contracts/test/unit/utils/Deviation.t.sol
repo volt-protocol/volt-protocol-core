@@ -32,6 +32,18 @@ contract UnitTestDeviation is DSTest {
         );
     }
 
+    function testDeviationPpq() public {
+        int256 x = 1 ether + 1;
+        int256 y = 1 ether;
+
+        int256 delta = x - y;
+        uint256 absDeviation = delta.toUint256();
+
+        uint256 ppqDeviation = (absDeviation * 1e18) / x.toUint256();
+
+        assertEq(ppqDeviation, Deviation.calculateDeviationThresholdPPQ(x, y));
+    }
+
     function testWithinDeviation() public {
         int256 x = 275000;
         int256 y = 270000;
