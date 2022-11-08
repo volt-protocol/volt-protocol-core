@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -14,15 +13,10 @@ import {PCVDeposit} from "./../pcv/PCVDeposit.sol";
 import {IPCVDeposit} from "./../pcv/IPCVDeposit.sol";
 import {IPegStabilityModule} from "./IPegStabilityModule.sol";
 
-contract PegStabilityModule is
-    IPegStabilityModule,
-    OracleRef,
-    PCVDeposit,
-    ReentrancyGuard
-{
+contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
     using Decimal for Decimal.D256;
-    using SafeCast for *;
     using SafeERC20 for IERC20;
+    using SafeCast for *;
 
     /// @notice the token this PSM will exchange for VOLT
     /// This token will be set to WETH9 if the bonding curve accepts eth
@@ -31,44 +25,44 @@ contract PegStabilityModule is
     /// @notice boolean switch that indicates whether redemptions are paused
     bool public redeemPaused;
 
-    /// @notice event that is emitted when redemptions are paused
-    event RedemptionsPaused(address account);
-
-    /// @notice event that is emitted when redemptions are unpaused
-    event RedemptionsUnpaused(address account);
-
     /// @notice boolean switch that indicates whether minting is paused
     bool public mintPaused;
 
-    /// @notice event that is emitted when minting is paused
-    event MintingPaused(address account);
+    /// @notice the default minimum acceptable oracle price floor is 98 cents
+    uint128 public override floor;
 
-    /// @notice event that is emitted when minting is unpaused
-    event MintingUnpaused(address account);
+    /// @notice the default maximum acceptable oracle price ceiling is $1.02
+    uint128 public override ceiling;
 
-    /// @notice struct for passing constructor parameters related to OracleRef
-    struct OracleParams {
-        address coreAddress;
-        address oracleAddress;
-        address backupOracle;
-        int256 decimalsNormalizer;
-        bool doInvert;
-    }
-
-    /// @notice constructor
-    /// @param params PSM constructor parameter struct
+    /// @notice construct the PSM
+    /// @param coreAddress reference to core
+    /// @param oracleAddress reference to oracle
+    /// @param backupOracle reference to backup oracle
+    /// @param decimalsNormalizer decimal normalizer for oracle price
+    /// @param doInvert invert oracle price
+    /// @param _underlyingToken this psm uses
+    /// @param floorPrice minimum acceptable oracle price
+    /// @param ceilingPrice maximum  acceptable oracle price
     constructor(
-        OracleParams memory params,
-        IERC20 _underlyingToken
+        address coreAddress,
+        address oracleAddress,
+        address backupOracle,
+        int256 decimalsNormalizer,
+        bool doInvert,
+        IERC20 _underlyingToken,
+        uint128 floorPrice,
+        uint128 ceilingPrice
     )
         OracleRef(
-            params.coreAddress,
-            params.oracleAddress,
-            params.backupOracle,
-            params.decimalsNormalizer,
-            params.doInvert
+            coreAddress,
+            oracleAddress,
+            backupOracle,
+            decimalsNormalizer,
+            doInvert
         )
     {
+        _setCeiling(ceilingPrice);
+        _setFloor(floorPrice);
         underlyingToken = _underlyingToken;
     }
 
@@ -77,6 +71,26 @@ contract PegStabilityModule is
         require(!redeemPaused, "PegStabilityModule: Redeem paused");
         _;
     }
+
+    // ----------- Governor Only State Changing API -----------
+
+    /// @notice sets the new floor price
+    /// @param newFloorPrice new floor price
+    function setOracleFloorPrice(
+        uint128 newFloorPrice
+    ) external override onlyGovernor {
+        _setFloor(newFloorPrice);
+    }
+
+    /// @notice sets the new ceiling price
+    /// @param newCeilingPrice new ceiling price
+    function setOracleCeilingPrice(
+        uint128 newCeilingPrice
+    ) external override onlyGovernor {
+        _setCeiling(newCeilingPrice);
+    }
+
+    // ----------- Governor or Guardian Only State Changing API -----------
 
     /// @notice modifier that allows execution when minting is not paused
     modifier whileMintingNotPaused() {
@@ -108,7 +122,11 @@ contract PegStabilityModule is
         emit MintingUnpaused(msg.sender);
     }
 
+    // ----------- PCV Controller Only State Changing API -----------
+
     /// @notice withdraw assets from PSM to an external address
+    /// @param to recipient
+    /// @param amount of tokens to withdraw
     function withdraw(
         address to,
         uint256 amount
@@ -116,49 +134,14 @@ contract PegStabilityModule is
         _withdrawERC20(address(underlyingToken), to, amount);
     }
 
-    /// @notice internal helper method to redeem Volt in exchange for an external asset
-    function _redeem(
-        address to,
-        uint256 amountVoltIn,
-        uint256 minAmountOut
-    ) internal virtual returns (uint256 amountOut) {
-        amountOut = _getRedeemAmountOut(amountVoltIn);
-        require(
-            amountOut >= minAmountOut,
-            "PegStabilityModule: Redeem not enough out"
-        );
-
-        IERC20(volt()).safeTransferFrom(
-            msg.sender,
-            address(this),
-            amountVoltIn
-        );
-
-        _transfer(to, amountOut);
-
-        emit Redeem(to, amountVoltIn, amountOut);
-    }
-
-    /// @notice internal helper method to mint Volt in exchange for an external asset
-    function _mint(
-        address to,
-        uint256 amountIn,
-        uint256 minAmountOut
-    ) internal virtual returns (uint256 amountVoltOut) {
-        amountVoltOut = _getMintAmountOut(amountIn);
-        require(
-            amountVoltOut >= minAmountOut,
-            "PegStabilityModule: Mint not enough out"
-        );
-
-        _transferFrom(msg.sender, address(this), amountIn);
-
-        IERC20(volt()).safeTransfer(to, amountVoltOut);
-
-        emit Mint(to, amountIn, amountVoltOut);
-    }
+    // ----------- Public State Changing API -----------
 
     /// @notice function to redeem VOLT for an underlying asset
+    /// @dev does not require non-reentrant modifier because this contract
+    /// stores no state. Even if USDC, DAI or any other token this contract uses
+    /// had an after transfer hook, calling mint or redeem in a reentrant fashion
+    /// would not allow any theft of funds, it would simply build up a call stack
+    /// of orders that would need to be executed.
     /// @param to recipient of underlying tokens
     /// @param amountVoltIn amount of volt to sell
     /// @param minAmountOut of underlying tokens sent to recipient
@@ -170,17 +153,35 @@ contract PegStabilityModule is
         external
         virtual
         override
-        nonReentrant
         whenNotPaused
         whileRedemptionsNotPaused
         returns (uint256 amountOut)
     {
-        amountOut = _redeem(to, amountVoltIn, minAmountOut);
+        amountOut = getRedeemAmountOut(amountVoltIn);
+        require(
+            amountOut >= minAmountOut,
+            "PegStabilityModule: Redeem not enough out"
+        );
+
+        IERC20(volt()).safeTransferFrom(
+            msg.sender,
+            address(this),
+            amountVoltIn
+        );
+
+        underlyingToken.safeTransfer(to, amountOut);
+
+        emit Redeem(to, amountVoltIn, amountOut);
     }
 
     /// @notice function to buy VOLT for an underlying asset
     /// This contract has no minting functionality, so the max
     /// amount of Volt that can be purchased is the Volt balance in the contract
+    /// @dev does not require non-reentrant modifier because this contract
+    /// stores no state. Even if USDC, DAI or any other token this contract uses
+    /// had an after transfer hook, calling mint or redeem in a reentrant fashion
+    /// would not allow any theft of funds, it would simply build up a call stack
+    /// of orders that would need to be executed.
     /// @param to recipient of the Volt
     /// @param amountIn amount of underlying tokens used to purchase Volt
     /// @param minAmountOut minimum amount of Volt recipient to receive
@@ -192,13 +193,26 @@ contract PegStabilityModule is
         external
         virtual
         override
-        nonReentrant
         whenNotPaused
         whileMintingNotPaused
         returns (uint256 amountVoltOut)
     {
-        amountVoltOut = _mint(to, amountIn, minAmountOut);
+        amountVoltOut = getMintAmountOut(amountIn);
+        require(
+            amountVoltOut >= minAmountOut,
+            "PegStabilityModule: Mint not enough out"
+        );
+
+        underlyingToken.safeTransferFrom(msg.sender, address(this), amountIn);
+
+        IERC20(volt()).safeTransfer(to, amountVoltOut);
+
+        emit Mint(to, amountIn, amountVoltOut);
     }
+
+    /// @notice no-op to maintain backwards compatability with IPCVDeposit
+    /// pauseable to stop integration if this contract is deprecated
+    function deposit() external override whenNotPaused {}
 
     /// ----------- Public View-Only API ----------
 
@@ -208,23 +222,58 @@ contract PegStabilityModule is
     /// ensure decimals are normalized if on underlying they are not 18
     /// @param amountIn amount of underlying token in
     /// @return amountVoltOut the amount of Volt out
+    /// @dev reverts if price is out of allowed range
     function getMintAmountOut(
         uint256 amountIn
     ) public view override returns (uint256 amountVoltOut) {
-        amountVoltOut = _getMintAmountOut(amountIn);
+        Decimal.D256 memory oraclePrice = readOracle();
+        _validatePriceRange(oraclePrice);
+
+        /// This was included to make sure that precision is retained when dividing
+        /// In the case where 1 USDC is deposited, which is 1e6, at the time of writing
+        /// the VOLT price is $1.05 so the price we retrieve from the oracle will be 1.05e6
+        /// VOLT contains 18 decimals, so when we perform the below calculation, it amounts to
+        /// 1e6 * 1e18 / 1.05e6 = 1e24 / 1.05e6 which lands us at around 0.95e17, which is 0.95
+        /// VOLT for 1 USDC which is consistent with the exchange rate
+        /// need to multiply by 1e18 before dividing because oracle price is scaled down by
+        /// -12 decimals in the case of USDC
+
+        /// DAI example:
+        /// amountIn = 1e18 (1 DAI)
+        /// oraclePrice.value = 1.05e18 ($1.05/Volt)
+        /// amountVoltOut = (amountIn * 1e18) / oraclePrice.value
+        /// = 9.523809524E17 Volt out
+        amountVoltOut = (amountIn * 1e18) / oraclePrice.value;
     }
 
     /// @notice calculate the amount of underlying out for a given `amountVoltIn` of Volt
     /// First get oracle price of token
     /// Then figure out how many dollars that amount in is worth by multiplying price * amount.
     /// ensure decimals are normalized if on underlying they are not 18
+    /// @dev reverts if price is out of allowed range
     function getRedeemAmountOut(
         uint256 amountVoltIn
     ) public view override returns (uint256 amountTokenOut) {
-        amountTokenOut = _getRedeemAmountOut(amountVoltIn);
+        Decimal.D256 memory oraclePrice = readOracle();
+        _validatePriceRange(oraclePrice);
+
+        /// DAI Example:
+        /// decimals normalizer: 0
+        /// amountVoltIn = 1e18 (1 VOLT)
+        /// oraclePrice.value = 1.05e18 ($1.05/Volt)
+        /// amountTokenOut = oraclePrice * amountVoltIn / 1e18
+        /// = 1.05e18 DAI out
+
+        /// USDC Example:
+        /// decimals normalizer: -12
+        /// amountVoltIn = 1e18 (1 VOLT)
+        /// oraclePrice.value = 1.05e6 ($1.05/Volt)
+        /// amountTokenOut = oraclePrice * amountVoltIn / 1e18
+        /// = 1.05e6 USDC out
+        amountTokenOut = oraclePrice.mul(amountVoltIn).asUint256();
     }
 
-    /// @notice the maximum mint amount out
+    /// @notice returns the maximum amount of Volt that can be minted
     function getMaxMintAmountOut() external view override returns (uint256) {
         return volt().balanceOf(address(this));
     }
@@ -249,60 +298,50 @@ contract PegStabilityModule is
         return (balance(), voltBalance());
     }
 
-    /// ----------- Internal Methods -----------
-
-    /// @notice helper function to get mint amount out based on current market prices
-    /// @dev will revert if price is outside of bounds and bounded PSM is being used
-    function _getMintAmountOut(
-        uint256 amountIn
-    ) internal view virtual returns (uint256 amountVoltOut) {
-        Decimal.D256 memory price = readOracle();
-        _validatePriceRange(price);
-
-        Decimal.D256 memory adjustedAmountIn = price.mul(amountIn);
-
-        amountVoltOut = adjustedAmountIn.asUint256();
+    /// @notice returns whether or not the current price is valid
+    function isPriceValid() external view override returns (bool) {
+        return _validPrice(readOracle());
     }
 
-    /// @notice helper function to get redeem amount out based on current market prices
-    /// @dev will revert if price is outside of bounds and bounded PSM is being used
-    function _getRedeemAmountOut(
-        uint256 amountVoltIn
-    ) internal view virtual returns (uint256 amountTokenOut) {
-        /// 0.95e18
-        Decimal.D256 memory price = readOracle();
-        _validatePriceRange(price);
+    /// ----------- Private Helper Functions -----------
 
-        /// amountVoltIn = 100e18
-        /// adjustedAmountIn = 100e36
-        /// get amount of dollars being provided
-        Decimal.D256 memory adjustedAmountIn = Decimal.from(amountVoltIn);
+    /// @notice helper function to set the ceiling in basis points
+    function _setCeiling(uint128 newCeilingPrice) private {
+        require(
+            newCeilingPrice > floor,
+            "PegStabilityModule: ceiling must be greater than floor"
+        );
+        uint128 oldCeiling = ceiling;
+        ceiling = newCeilingPrice;
 
-        /// now turn the dollars into the underlying token amounts
-        /// dollars / price = how much token to pay out
-        /// adjustedAmountIn / price = 105.2631e36
-        /// (adjustedAmountIn / price).asUint256() = 105.2631e18
-        /// div with numerator and denom as decimal adds another 18 decimals
-        /// before doing the division operation.
-        amountTokenOut = adjustedAmountIn.div(price).asUint256();
+        emit OracleCeilingUpdate(oldCeiling, ceiling);
     }
 
-    /// @notice transfer ERC20 token
-    function _transfer(address to, uint256 amount) internal {
-        SafeERC20.safeTransfer(underlyingToken, to, amount);
+    /// @notice helper function to set the floor in basis points
+    function _setFloor(uint128 newFloorPrice) private {
+        require(newFloorPrice != 0, "PegStabilityModule: invalid floor");
+        require(
+            newFloorPrice < ceiling,
+            "PegStabilityModule: floor must be less than ceiling"
+        );
+        uint128 oldFloor = floor;
+        floor = newFloorPrice;
+
+        emit OracleFloorUpdate(oldFloor, floor);
     }
 
-    /// @notice transfer assets from user to this contract
-    function _transferFrom(address from, address to, uint256 amount) internal {
-        SafeERC20.safeTransferFrom(underlyingToken, from, to, amount);
+    /// @notice helper function to determine if price is within a valid range
+    /// @param price oracle price expressed as a decimal
+    function _validPrice(
+        Decimal.D256 memory price
+    ) private view returns (bool valid) {
+        uint256 oraclePrice = price.value;
+        valid = oraclePrice >= floor && oraclePrice <= ceiling;
     }
 
-    /// @notice no-op to maintain backwards compatability with IPCVDeposit
-    /// pauseable to stop integration if this contract is deprecated
-    function deposit() external override whenNotPaused {}
-
-    /// ----------- Hook -----------
-
-    /// @notice overriden function in the bounded PSM
-    function _validatePriceRange(Decimal.D256 memory) internal view virtual {}
+    /// @notice reverts if the price is greater than or equal to the ceiling or less than or equal to the floor
+    /// @param price oracle price expressed as a decimal
+    function _validatePriceRange(Decimal.D256 memory price) private view {
+        require(_validPrice(price), "PegStabilityModule: price out of bounds");
+    }
 }
