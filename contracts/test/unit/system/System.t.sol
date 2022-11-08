@@ -46,6 +46,8 @@ import "hardhat/console.sol";
 /// 8. grant timelock governor
 /// 9. connect pcv deposits to psm in allocator
 
+/// PSM target balance is 10k cash for both deposits
+
 /// test steps
 /// 1. do swaps in psm
 /// 2. do emergency action to pull funds
@@ -399,9 +401,6 @@ contract SystemUnitTest is Test {
         daipsm.redeem(address(this), voltBalance, 0);
 
         uint256 endingBalance = dai.balanceOf(address(this));
-
-        console.log("startingBalance: ", startingBalance);
-        console.log("endingBalance: ", endingBalance);
 
         assertTrue(startingBalance >= endingBalance);
         assertEq(volt.balanceOf(address(daipsm)), voltAmountOut);
