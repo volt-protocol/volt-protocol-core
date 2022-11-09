@@ -157,19 +157,23 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
         whileRedemptionsNotPaused
         returns (uint256 amountOut)
     {
+        /// ------- Checks -------
+        /// 1. current price from oracle is correct
+        /// 2. how much underlying token to receive
+        /// 3. underlying token to receive meets min amount out
+
         amountOut = getRedeemAmountOut(amountVoltIn);
         require(
             amountOut >= minAmountOut,
             "PegStabilityModule: Redeem not enough out"
         );
 
-        IERC20(volt()).safeTransferFrom(
-            msg.sender,
-            address(this),
-            amountVoltIn
-        );
+        /// ------- Effects / Interactions -------
 
-        underlyingToken.safeTransfer(to, amountOut);
+        volt().burnFrom(msg.sender, amountVoltIn); /// Interaction -- trusted contract
+        globalRateLimitedMinter().replenishBuffer(amountVoltIn); /// Effect -- trusted contract
+
+        underlyingToken.safeTransfer(to, amountOut); /// Interaction -- untrusted contract
 
         emit Redeem(to, amountVoltIn, amountOut);
     }
@@ -197,15 +201,25 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
         whileMintingNotPaused
         returns (uint256 amountVoltOut)
     {
+        /// ------- Checks -------
+        /// 1. current price from oracle is correct
+        /// 2. how much volt to receive
+        /// 3. volt to receive meets min amount out
+
         amountVoltOut = getMintAmountOut(amountIn);
         require(
             amountVoltOut >= minAmountOut,
             "PegStabilityModule: Mint not enough out"
         );
 
-        underlyingToken.safeTransferFrom(msg.sender, address(this), amountIn);
+        /// ------- Effects / Interactions -------
 
-        IERC20(volt()).safeTransfer(to, amountVoltOut);
+        underlyingToken.safeTransferFrom(msg.sender, address(this), amountIn); /// Interaction -- untrusted contract
+
+        /// Checks that there is enough Volt left to mint globally.
+        /// This is a check as well, because if there isn't sufficient Volt to mint,
+        /// then, the call to mintVolt will fail in the RateLimitedV2 class.
+        globalRateLimitedMinter().mintVolt(to, amountVoltOut); /// Effect, then Interaction -- trusted contract
 
         emit Mint(to, amountIn, amountVoltOut);
     }
@@ -275,7 +289,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
 
     /// @notice returns the maximum amount of Volt that can be minted
     function getMaxMintAmountOut() external view override returns (uint256) {
-        return volt().balanceOf(address(this));
+        return globalRateLimitedMinter().buffer();
     }
 
     /// @notice function from PCVDeposit that must be overriden

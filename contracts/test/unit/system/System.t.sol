@@ -2,23 +2,26 @@
 pragma solidity 0.8.13;
 
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {Test} from "forge-std/Test.sol";
 import {ICoreV2} from "../../../core/ICoreV2.sol";
+import {Deviation} from "../../../utils/Deviation.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
 import {PCVDeposit} from "../../../pcv/PCVDeposit.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {MockCoreRefV2} from "../../../mock/MockCoreRefV2.sol";
-import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {ERC20Allocator} from "../../../pcv/utils/ERC20Allocator.sol";
+import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {MockPCVDepositV2} from "../../../mock/MockPCVDepositV2.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
 import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {IScalingPriceOracle} from "../../../oracle/IScalingPriceOracle.sol";
+import {IGRLM, GlobalRateLimitedMinter} from "../../../minter/GlobalRateLimitedMinter.sol";
 import {getCoreV2, getAddresses, getVoltAddresses, VoltAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
 
 import "hardhat/console.sol";
@@ -59,6 +62,8 @@ interface IERC20Mintable is IERC20 {
 }
 
 contract SystemUnitTest is Test {
+    using SafeCast for *;
+
     VoltTestAddresses public addresses = getAddresses();
     VoltAddresses public guardianAddresses = getVoltAddresses();
 
@@ -73,6 +78,7 @@ contract SystemUnitTest is Test {
     VoltSystemOracle private vso;
     OraclePassThrough private opt;
     TimelockController public timelockController;
+    GlobalRateLimitedMinter public grlm;
     address private voltAddress;
     address private coreAddress;
     IERC20Mintable private usdc;
@@ -84,6 +90,17 @@ contract SystemUnitTest is Test {
     uint248 public constant daiTargetBalance = 100_000e18;
     int8 public constant usdcDecimalsNormalizer = 12;
     int8 public constant daiDecimalsNormalizer = 0;
+
+    /// ---------- GRLM PARAMS ----------
+
+    /// maximum rate limit per second is 100 VOLT
+    uint256 public constant maxRateLimitPerSecondMinting = 100e18;
+
+    /// replenish 500k VOLT per day
+    uint128 public constant rateLimitPerSecondMinting = 5.787e18;
+
+    /// buffer cap of 1.5m VOLT
+    uint128 public constant bufferCapMinting = 1_500_000e18;
 
     /// ---------- ALLOCATOR PARAMS ----------
 
@@ -119,6 +136,12 @@ contract SystemUnitTest is Test {
             startPrice
         );
         opt = new OraclePassThrough(IScalingPriceOracle(address(vso)));
+        grlm = new GlobalRateLimitedMinter(
+            coreAddress,
+            maxRateLimitPerSecondMinting,
+            rateLimitPerSecondMinting,
+            bufferCapMinting
+        );
 
         usdcpsm = new PegStabilityModule(
             coreAddress,
@@ -206,6 +229,12 @@ contract SystemUnitTest is Test {
         core.grantGuardian(address(pcvGuardian));
 
         core.grantGovernor(address(timelockController));
+
+        core.grantMinter(address(grlm));
+        core.grantRateLimitedMinter(address(daipsm));
+        core.grantRateLimitedMinter(address(usdcpsm));
+
+        core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
 
         allocator.connectPSM(
             address(usdcpsm),
@@ -302,6 +331,12 @@ contract SystemUnitTest is Test {
             )
         );
 
+        assertTrue(core.isMinter(address(grlm)));
+        assertTrue(core.isRateLimitedMinter(address(usdcpsm)));
+        assertTrue(core.isRateLimitedMinter(address(daipsm)));
+
+        assertEq(address(core.globalRateLimitedMinter()), address(grlm));
+
         assertTrue(pcvGuardian.isWhitelistAddress(address(pcvDepositDai)));
         assertTrue(pcvGuardian.isWhitelistAddress(address(pcvDepositUsdc)));
         assertTrue(pcvGuardian.isWhitelistAddress(address(usdcpsm)));
@@ -387,8 +422,10 @@ contract SystemUnitTest is Test {
         vm.assume(mintAmount != 0);
 
         uint256 voltAmountOut = daipsm.getMintAmountOut(mintAmount);
-        volt.mint(address(daipsm), voltAmountOut);
 
+        vm.assume(voltAmountOut <= grlm.buffer());
+
+        uint256 startingBuffer = grlm.buffer();
         assertEq(volt.balanceOf(address(this)), 0);
         dai.mint(address(this), mintAmount);
         uint256 startingBalance = dai.balanceOf(address(this));
@@ -396,14 +433,33 @@ contract SystemUnitTest is Test {
         dai.approve(address(daipsm), mintAmount);
         daipsm.mint(address(this), mintAmount, voltAmountOut);
 
+        uint256 bufferAfterMint = grlm.buffer();
+
+        assertEq(startingBuffer - voltAmountOut, bufferAfterMint);
+
         uint256 voltBalance = volt.balanceOf(address(this));
+        uint256 underlyingAmountOut = daipsm.getRedeemAmountOut(voltBalance);
+        uint256 userStartingUnderlyingBalance = dai.balanceOf(address(this));
+
         volt.approve(address(daipsm), voltBalance);
-        daipsm.redeem(address(this), voltBalance, 0);
+        daipsm.redeem(address(this), voltBalance, underlyingAmountOut);
+
+        uint256 userEndingUnderlyingBalance = dai.balanceOf(address(this));
+        uint256 bufferAfterRedeem = grlm.buffer();
 
         uint256 endingBalance = dai.balanceOf(address(this));
 
+        console.log("startingBuffer: ", startingBuffer);
+        console.log("bufferAfterRedeem: ", bufferAfterRedeem);
+
+        assertEq(bufferAfterRedeem - voltBalance, bufferAfterMint); /// assert buffer
+        assertEq(
+            userEndingUnderlyingBalance - underlyingAmountOut,
+            userStartingUnderlyingBalance
+        );
         assertTrue(startingBalance >= endingBalance);
-        assertEq(volt.balanceOf(address(daipsm)), voltAmountOut);
+        assertEq(volt.balanceOf(address(daipsm)), 0);
+        assertEq(startingBuffer, bufferAfterRedeem);
     }
 
     function testMintRedeemSamePriceLosesOrBreaksEvenDaiNonFuzz() public {
@@ -436,22 +492,49 @@ contract SystemUnitTest is Test {
         vm.assume(mintAmount != 0);
 
         uint256 voltAmountOut = usdcpsm.getMintAmountOut(mintAmount);
-        volt.mint(address(usdcpsm), voltAmountOut);
+        vm.assume(voltAmountOut <= grlm.buffer()); /// avoid rate limit hit error
 
         assertEq(volt.balanceOf(address(this)), 0);
         usdc.mint(address(this), mintAmount);
         uint256 startingBalance = usdc.balanceOf(address(this));
+        uint256 startingBuffer = grlm.buffer();
 
         usdc.approve(address(usdcpsm), mintAmount);
         usdcpsm.mint(address(this), mintAmount, voltAmountOut);
+
+        uint256 bufferAfterMint = grlm.buffer();
+        assertEq(bufferAfterMint + voltAmountOut, startingBuffer);
 
         uint256 voltBalance = volt.balanceOf(address(this));
         volt.approve(address(usdcpsm), voltBalance);
         usdcpsm.redeem(address(this), voltBalance, 0);
 
+        uint256 bufferAfterRedeem = grlm.buffer();
         uint256 endingBalance = usdc.balanceOf(address(this));
 
+        assertEq(bufferAfterRedeem, startingBuffer);
         assertTrue(startingBalance >= endingBalance);
-        assertEq(volt.balanceOf(address(usdcpsm)), voltAmountOut);
+        assertEq(volt.balanceOf(address(usdcpsm)), 0);
+    }
+
+    function assertApproxEq(
+        int256 a,
+        int256 b,
+        uint8 allowableDeviation
+    ) internal {
+        if (a != b) {
+            uint256 deviation = Deviation
+                .calculateDeviationThresholdBasisPoints(a, b);
+            if (deviation > allowableDeviation) {
+                emit log(
+                    "Error: a == b not satisfied, deviation exceeded [int]"
+                );
+                emit log_named_int("  Expected", b);
+                emit log_named_int("    Actual", a);
+                emit log_named_int("   Max Dev", int8(allowableDeviation));
+                emit log_named_int("Actual Dev", int256(deviation));
+                revert("test failed");
+            }
+        }
     }
 }

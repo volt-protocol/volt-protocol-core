@@ -16,6 +16,7 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     bytes32 public constant override GLOBAL_LOCKER_ROLE =
         keccak256("GLOBAL_LOCKER_ROLE");
     bytes32 public constant PCV_GUARD_ROLE = keccak256("PCV_GUARD_ROLE");
+    bytes32 public constant VOLT_MINTER_ROLE = keccak256("VOLT_MINTER_ROLE");
 
     constructor() {
         // Appointed as a governor so guardian can have indirect access to revoke ability
@@ -27,6 +28,7 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         _setRoleAdmin(GUARDIAN_ROLE, GOVERN_ROLE);
         _setRoleAdmin(GLOBAL_LOCKER_ROLE, GOVERN_ROLE);
         _setRoleAdmin(PCV_GUARD_ROLE, GOVERN_ROLE);
+        _setRoleAdmin(VOLT_MINTER_ROLE, GOVERN_ROLE);
     }
 
     modifier onlyGovernor() {
@@ -96,6 +98,14 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         _grantRole(PCV_GUARD_ROLE, pcvGuard);
     }
 
+    /// @notice grants ability to mint Volt through the global rate limited minter
+    /// @param rateLimitedMinter address to add as a minter in global rate limited minter
+    function grantRateLimitedMinter(
+        address rateLimitedMinter
+    ) external override onlyGovernor {
+        _grantRole(VOLT_MINTER_ROLE, rateLimitedMinter);
+    }
+
     /// @notice revokes minter role from address
     /// @param minter ex minter
     function revokeMinter(address minter) external override onlyGovernor {
@@ -134,6 +144,14 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     /// @param pcvGuard ex PCV Guard
     function revokePcvGuard(address pcvGuard) external override onlyGovernor {
         _revokeRole(PCV_GUARD_ROLE, pcvGuard);
+    }
+
+    /// @notice revokes ability to mint Volt through the global rate limited minter
+    /// @param rateLimitedMinter ex minter in global rate limited minter
+    function revokeRateLimitedMinter(
+        address rateLimitedMinter
+    ) external override onlyGovernor {
+        _revokeRole(VOLT_MINTER_ROLE, rateLimitedMinter);
     }
 
     /// @notice revokes a role from address
@@ -206,5 +224,14 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     /// @return true if _address has PCV Guard role
     function isPcvGuard(address _address) public view override returns (bool) {
         return hasRole(PCV_GUARD_ROLE, _address);
+    }
+
+    /// @notice checks if address has Volt Minter Role
+    /// @param _address address to check
+    /// @return true if _address has Volt Minter Role
+    function isRateLimitedMinter(
+        address _address
+    ) public view override returns (bool) {
+        return hasRole(VOLT_MINTER_ROLE, _address);
     }
 }

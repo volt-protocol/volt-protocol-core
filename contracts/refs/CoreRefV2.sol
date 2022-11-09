@@ -5,10 +5,11 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {IVolt} from "./../volt/IVolt.sol";
+import {IGRLM} from "../minter/IGRLM.sol";
 import {ICoreV2} from "./../core/ICoreV2.sol";
 import {VoltRoles} from "./../core/VoltRoles.sol";
 import {ICoreRefV2} from "./ICoreRefV2.sol";
+import {IVolt, IVoltBurn} from "./../volt/IVolt.sol";
 import {IGlobalReentrancyLock} from "./../core/IGlobalReentrancyLock.sol";
 
 /// @title A Reference to Core
@@ -152,15 +153,21 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     }
 
     /// @notice address of the Volt contract referenced by Core
-    /// @return IVolt implementation address
-    function volt() public view override returns (IVolt) {
-        return _core.volt();
+    /// @return IVoltBurn implementation address
+    function volt() public view override returns (IVoltBurn) {
+        return IVoltBurn(address(_core.volt()));
     }
 
     /// @notice address of the Vcon contract referenced by Core
     /// @return IERC20 implementation address
     function vcon() public view override returns (IERC20) {
         return _core.vcon();
+    }
+
+    /// @notice address of the Vcon contract referenced by Core
+    /// @return IERC20 implementation address
+    function globalRateLimitedMinter() public view override returns (IGRLM) {
+        return _core.globalRateLimitedMinter();
     }
 
     /// @notice volt balance of contract

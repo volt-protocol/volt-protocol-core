@@ -287,4 +287,27 @@ contract UnitTestCoreV2 is DSTest {
         vm.expectRevert("Permissions: Caller is not a governor");
         core.revokeGlobalLocker(address(this));
     }
+
+    function testGovAddsMinterRoleSucceeds() public {
+        vm.prank(addresses.governorAddress);
+        core.grantRateLimitedMinter(address(this));
+        assertTrue(core.isRateLimitedMinter(address(this)));
+    }
+
+    function testGovRevokesMinterRoleSucceeds() public {
+        testGovAddsMinterRoleSucceeds();
+        vm.prank(addresses.governorAddress);
+        core.revokeRateLimitedMinter(address(this));
+        assertTrue(!core.isRateLimitedMinter(address(this)));
+    }
+
+    function testNonGovAddsMinterRoleFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.grantRateLimitedMinter(address(this));
+    }
+
+    function testNonGovRevokesMinterRoleFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.revokeRateLimitedMinter(address(this));
+    }
 }
