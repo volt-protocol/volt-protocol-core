@@ -12,6 +12,11 @@ import {DSTest} from "./../utils/DSTest.sol";
 import {Vm} from "./../utils/Vm.sol";
 
 contract UnitTestPCVGuardian is DSTest {
+    event SafeAddressUpdated(
+        address indexed oldSafeAddress,
+        address indexed newSafeAddress
+    );
+
     PCVGuardian private pcvGuardian;
     PCVGuardAdmin private pcvGuardAdmin;
     MockERC20 public underlyingToken;
@@ -431,10 +436,46 @@ contract UnitTestPCVGuardian is DSTest {
         assertTrue(pcvGuardian.isWhitelistAddress(address(0x123)));
     }
 
+    function testAddWhiteListAddressNonGovernorFails() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        pcvGuardian.addWhitelistAddress(address(0x123));
+    }
+
+    function testAddWhiteListAddressesNonGovernorFails() public {
+        address[] memory toWhitelist = new address[](1);
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        pcvGuardian.addWhitelistAddresses(toWhitelist);
+    }
+
+    function testAddWhiteListAddressesGovernorSucceeds(
+        address newDeposit
+    ) public {
+        vm.assume(!pcvGuardian.isWhitelistAddress(newDeposit));
+
+        address[] memory toWhitelist = new address[](1);
+        toWhitelist[0] = newDeposit;
+        vm.prank(addresses.governorAddress);
+        pcvGuardian.addWhitelistAddresses(toWhitelist);
+        assertTrue(pcvGuardian.isWhitelistAddress(newDeposit));
+    }
+
     function testRemoveWhiteListAddress() public {
         vm.prank(addresses.governorAddress);
 
         pcvGuardian.removeWhitelistAddress(address(pcvDeposit));
         assertTrue(!pcvGuardian.isWhitelistAddress(address(pcvDeposit)));
+    }
+
+    function testSetSafeAddressNonGovernorFails() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        pcvGuardian.setSafeAddress(address(0));
+    }
+
+    function testSetSafeAddressGovernorSucceeds() public {
+        vm.expectEmit(true, true, false, true, address(pcvGuardian));
+        emit SafeAddressUpdated(address(this), address(0));
+        vm.prank(addresses.governorAddress);
+        pcvGuardian.setSafeAddress(address(0));
+        assertEq(pcvGuardian.safeAddress(), address(0));
     }
 }

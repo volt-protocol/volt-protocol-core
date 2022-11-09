@@ -11,7 +11,6 @@ import {ICoreV2} from "../../core/ICoreV2.sol";
 import {Constants} from "../../Constants.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
-import {PriceBoundPSM} from "../../peg/PriceBoundPSM.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
@@ -20,9 +19,9 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
     using SafeCast for *;
 
     /// reference PSM to test against
-    PriceBoundPSM private immutable priceBoundPsm =
-        PriceBoundPSM(MainnetAddresses.VOLT_USDC_PSM);
-    PriceBoundPSM private cleanPsm;
+    PegStabilityModule private immutable priceBoundPsm =
+        PegStabilityModule(MainnetAddresses.VOLT_USDC_PSM);
+    PegStabilityModule private cleanPsm;
 
     ICoreV2 private core = ICoreV2(MainnetAddresses.CORE);
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
@@ -39,26 +38,20 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
-    uint128 voltFloorPrice = 9_000_000_000_000_000;
-    uint128 voltCeilingPrice = 10_000_000_000_000_000;
+    uint128 voltFloorPrice = 1.04e6;
+    uint128 voltCeilingPrice = 1.1e6;
 
     function setUp() public {
-        PegStabilityModule.OracleParams memory oracleParams;
-
-        oracleParams = PegStabilityModule.OracleParams({
-            coreAddress: address(core),
-            oracleAddress: address(oracle),
-            backupOracle: address(0),
-            decimalsNormalizer: 12,
-            doInvert: true
-        });
-
         /// create PSM
-        cleanPsm = new PriceBoundPSM(
+        cleanPsm = new PegStabilityModule(
+            address(core),
+            address(oracle),
+            address(0),
+            -12,
+            false,
+            usdc,
             voltFloorPrice,
-            voltCeilingPrice,
-            oracleParams,
-            usdc
+            voltCeilingPrice
         );
 
         uint256 balance = usdc.balanceOf(MainnetAddresses.KRAKEN_USDC_WHALE);
@@ -94,17 +87,15 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
     function testSetUpCorrectly() public {
         assertTrue(priceBoundPsm.doInvert());
         assertTrue(priceBoundPsm.isPriceValid());
-        assertEq(priceBoundPsm.floor(), voltFloorPrice);
-        assertEq(priceBoundPsm.ceiling(), voltCeilingPrice);
         assertEq(address(priceBoundPsm.oracle()), address(oracle));
         assertEq(address(priceBoundPsm.backupOracle()), address(0));
         assertEq(priceBoundPsm.decimalsNormalizer(), 12);
         assertEq(address(priceBoundPsm.underlyingToken()), address(usdc));
 
-        assertTrue(cleanPsm.doInvert());
+        assertTrue(!cleanPsm.doInvert());
         assertEq(address(cleanPsm.oracle()), address(oracle));
         assertEq(address(cleanPsm.backupOracle()), address(0));
-        assertEq(cleanPsm.decimalsNormalizer(), 12);
+        assertEq(cleanPsm.decimalsNormalizer(), -12);
         assertEq(address(cleanPsm.underlyingToken()), address(usdc));
         assertEq(cleanPsm.floor(), voltFloorPrice);
         assertEq(cleanPsm.ceiling(), voltCeilingPrice);
@@ -127,9 +118,38 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
             0
         );
 
-        assertEq(
-            cleanPsm.getRedeemAmountOut(amountVoltIn),
-            priceBoundPsm.getRedeemAmountOut(amountVoltIn)
+        /// less than 1 basis point of deviation
+        assertApproxEq(
+            cleanPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
+            priceBoundPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
+            0
+        );
+    }
+
+    /// @notice PSM is set up correctly and redeem view function is working
+    function testGetRedeemAmountOutPpq(uint128 amountVoltIn) public {
+        vm.assume(amountVoltIn > 10_000_000); /// ensure accuracy down to the hundred
+
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice() / 1e12;
+
+        uint256 amountOut = (amountVoltIn * currentPegPrice) / 1e18;
+
+        assertApproxEq(
+            priceBoundPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
+            amountOut.toInt256(),
+            0
+        );
+        assertApproxEq(
+            cleanPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
+            amountOut.toInt256(),
+            0
+        );
+
+        /// accurate to the hundred thousandth
+        assertApproxEqPpq(
+            cleanPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
+            priceBoundPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
+            10_000_000_000_000
         );
     }
 
@@ -153,9 +173,11 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
             0
         );
 
-        assertEq(
-            cleanPsm.getMintAmountOut(amountUSDCIn),
-            priceBoundPsm.getMintAmountOut(amountUSDCIn)
+        /// allow one millionth deviation
+        assertApproxEqPpq(
+            cleanPsm.getMintAmountOut(amountUSDCIn).toInt256(),
+            priceBoundPsm.getMintAmountOut(amountUSDCIn).toInt256(),
+            1_000_000_000_000
         );
     }
 
@@ -216,12 +238,13 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
 
         assertEq(
             endingUserVoltBalance2 - endingUserVoltBalance1,
-            amountVoltOut
+            amountVoltOutPriceBound
         );
 
-        assertEq(
-            endingUserVoltBalance2 - endingUserVoltBalance1,
-            amountVoltOutPriceBound
+        assertApproxEq(
+            amountVoltOutPriceBound.toInt256(),
+            amountVoltOut.toInt256(),
+            0
         );
     }
 
@@ -362,7 +385,6 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
         cleanPsm.redeem(address(this), mintAmount, mintAmount / 1e12);
     }
 
-    /// @notice redeem fails without approval
     function testMintFailsWhenMintExceedsPSMBalance() public {
         underlyingToken.approve(address(cleanPsm), type(uint256).max);
 
@@ -411,6 +433,26 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
         vm.expectRevert(bytes("CoreRef: Caller is not a PCV controller"));
 
         cleanPsm.withdrawERC20(address(underlyingToken), address(this), 100);
+    }
+
+    function testPauseMintFailsNotGovernorGuardian() public {
+        vm.expectRevert("CoreRef: Caller is not a guardian or governor");
+        cleanPsm.pauseMint();
+    }
+
+    function testUnpauseMintFailsNotGovernorGuardian() public {
+        vm.expectRevert("CoreRef: Caller is not a guardian or governor");
+        cleanPsm.unpauseMint();
+    }
+
+    function testPauseRedeemFailsNotGovernorGuardian() public {
+        vm.expectRevert("CoreRef: Caller is not a guardian or governor");
+        cleanPsm.pauseRedeem();
+    }
+
+    function testUnpauseRedeemFailsNotGovernorGuardian() public {
+        vm.expectRevert("CoreRef: Caller is not a guardian or governor");
+        cleanPsm.unpauseRedeem();
     }
 
     /// @notice withdraw erc20 succeeds with correct permissions

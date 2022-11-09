@@ -7,11 +7,19 @@ import {IGlobalReentrancyLock} from "./IGlobalReentrancyLock.sol";
 
 /// @notice inpsired by the openzeppelin reentrancy guard smart contracts
 /// data container size has been changed
-/// @dev allows contracts with the SYSTEM_STATE_ROLE to call in and lock and unlock
+/// @dev allows contracts with the GLOBAL_LOCKER_ROLE to call in and lock and unlock
 /// this smart contract.
+/// once locked, only the original caller that locked can unlock the contract
+/// without the governor emergency unlock functionality.
 /// Governor can unpause if locked but not unlocked.
-contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
+abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     using SafeCast for *;
+
+    /// -------------------------------------------------
+    /// -------------------------------------------------
+    /// ------------------- Constants -------------------
+    /// -------------------------------------------------
+    /// -------------------------------------------------
 
     // Booleans are more expensive than uint256 or any type that takes up a full
     // word because each write operation emits an extra SLOAD to first read the
@@ -24,69 +32,98 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     // amount. Since refunds are capped to a percentage of the total
     // transaction's gas, it is best to keep them low in cases like this one, to
     // increase the likelihood of the full refund coming into effect.
-    uint224 private constant _NOT_ENTERED = 1;
-    uint224 private constant _ENTERED = 2;
+    uint8 private constant _NOT_ENTERED = 1;
+    uint8 private constant _ENTERED = 2;
 
-    /// entered or not entered
-    uint224 private _status;
+    /// -------------------------------------------------
+    /// -------------------------------------------------
+    /// -------------- Single Storage Slot --------------
+    /// -------------------------------------------------
+    /// -------------------------------------------------
+
+    /// @notice cache the address that locked the system
+    /// only this address can unlock it
+    uint160 private _sender;
 
     /// @notice store the last block entered
     /// if last block entered was in the past and status is entered, the system is in an invalid state
     /// which means that actions should be allowed
-    uint32 private _lastBlockEntered;
+    uint88 private _lastBlockEntered;
 
-    /// @notice construct permissions v2
-    constructor() PermissionsV2() {
+    /// @notice whether or not the system is entered or not entered
+    uint8 private _status;
+
+    /// @notice construct GlobalReentrancyLock
+    constructor() {
         _status = _NOT_ENTERED;
     }
 
-    /// @notice only system state roles are allowed to call in and set entered
+    /// @notice only global locker role is allowed to call in and set entered
     /// or not entered
-    modifier onlyStateRole() {
+    modifier onlyGlobalLockerRole() {
         require(
-            hasRole(SYSTEM_STATE_ROLE, msg.sender),
-            "GlobalReentrancyLock: address missing state role"
+            hasRole(GLOBAL_LOCKER_ROLE, msg.sender),
+            "GlobalReentrancyLock: address missing global locker role"
         );
         _;
     }
 
     /// @notice view only function to return the last block entered
-    function lastBlockEntered() public view returns (uint32) {
+    function lastBlockEntered() external view returns (uint88) {
         return _lastBlockEntered;
+    }
+
+    /// @notice returns the last address that locked this contract
+    function lastSender() external view returns (address) {
+        return address(_sender);
     }
 
     /// @notice returns whether or not the contract is currently not entered
     /// if true, it is possible to lock
-    function isUnlocked() public view returns (bool) {
+    function isUnlocked() external view returns (bool) {
         return _status == _NOT_ENTERED;
     }
 
     /// @notice returns whether or not the contract is currently entered
     /// if true, and locked in the same block, it is possible to unlock
-    function isLocked() public view override returns (bool) {
+    function isLocked() external view override returns (bool) {
         return _status == _ENTERED;
     }
 
     /// @notice set the status to entered
     /// only available if not entered
-    /// callable only by state role
-    function lock() external override onlyStateRole {
+    /// callable only by global locker role
+    function lock() external override onlyGlobalLockerRole {
         require(
             _status == _NOT_ENTERED,
             "GlobalReentrancyLock: system already entered"
         );
 
+        /// cache values to save a warm SSTORE
+        /// block number can be safely downcasted without a check on exceeding
+        /// uint88 max because the sun will explode before this statement is true:
+        /// block.number > 2^88 - 1
+        uint88 blockEntered = uint88(block.number);
+        uint160 sender = uint160(msg.sender);
+
+        _sender = sender;
+        _lastBlockEntered = blockEntered;
         _status = _ENTERED;
-        _lastBlockEntered = block.number.toUint32();
     }
 
     /// @notice set the status to not entered
     /// only available if entered and entered in same block
     /// otherwise, system is in an indeterminate state and no execution should be allowed
-    /// callable only by state role
-    function unlock() external override onlyStateRole {
+    /// callable only by global locker role
+    /// can only be called by the last address to lock the system
+    /// to prevent incorrect system behavior
+    function unlock() external override onlyGlobalLockerRole {
         require(
-            block.number == _lastBlockEntered && _status == _ENTERED,
+            uint160(msg.sender) == _sender,
+            "GlobalReentrancyLock: caller is not locker"
+        );
+        require(
+            uint88(block.number) == _lastBlockEntered && _status == _ENTERED,
             "GlobalReentrancyLock: system not entered"
         );
 

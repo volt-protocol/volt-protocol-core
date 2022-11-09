@@ -35,11 +35,7 @@ abstract contract StdLib {
         vm_std_cheats.prank(who, who);
     }
 
-    function hoax(
-        address who,
-        address,
-        uint256 give
-    ) public {
+    function hoax(address who, address, uint256 give) public {
         vm_std_cheats.deal(who, give);
         vm_std_cheats.prank(who, who);
     }
@@ -62,21 +58,17 @@ abstract contract StdLib {
         vm_std_cheats.startPrank(who, origin);
     }
 
-    function startHoax(
-        address who,
-        address origin,
-        uint256 give
-    ) public {
+    function startHoax(address who, address origin, uint256 give) public {
         vm_std_cheats.deal(who, give);
         vm_std_cheats.startPrank(who, origin);
     }
 
     // Deploys a contract by fetching the contract bytecode from
     // the artifacts directory
-    function deployCode(string memory what, bytes memory args)
-        public
-        returns (address addr)
-    {
+    function deployCode(
+        string memory what,
+        bytes memory args
+    ) public returns (address addr) {
         bytes memory bytecode = abi.encodePacked(
             vm_std_cheats.getCode(what),
             args
@@ -243,58 +235,58 @@ library stdStorage {
             ];
     }
 
-    function target(StdStorage storage self, address _target)
-        internal
-        returns (StdStorage storage)
-    {
+    function target(
+        StdStorage storage self,
+        address _target
+    ) internal returns (StdStorage storage) {
         self._target = _target;
         return self;
     }
 
-    function sig(StdStorage storage self, bytes4 _sig)
-        internal
-        returns (StdStorage storage)
-    {
+    function sig(
+        StdStorage storage self,
+        bytes4 _sig
+    ) internal returns (StdStorage storage) {
         self._sig = _sig;
         return self;
     }
 
-    function sig(StdStorage storage self, string memory _sig)
-        internal
-        returns (StdStorage storage)
-    {
+    function sig(
+        StdStorage storage self,
+        string memory _sig
+    ) internal returns (StdStorage storage) {
         self._sig = sigs(_sig);
         return self;
     }
 
-    function with_key(StdStorage storage self, address who)
-        internal
-        returns (StdStorage storage)
-    {
+    function with_key(
+        StdStorage storage self,
+        address who
+    ) internal returns (StdStorage storage) {
         self._keys.push(bytes32(uint256(uint160(who))));
         return self;
     }
 
-    function with_key(StdStorage storage self, uint256 amt)
-        internal
-        returns (StdStorage storage)
-    {
+    function with_key(
+        StdStorage storage self,
+        uint256 amt
+    ) internal returns (StdStorage storage) {
         self._keys.push(bytes32(amt));
         return self;
     }
 
-    function with_key(StdStorage storage self, bytes32 key)
-        internal
-        returns (StdStorage storage)
-    {
+    function with_key(
+        StdStorage storage self,
+        bytes32 key
+    ) internal returns (StdStorage storage) {
         self._keys.push(key);
         return self;
     }
 
-    function depth(StdStorage storage self, uint256 _depth)
-        internal
-        returns (StdStorage storage)
-    {
+    function depth(
+        StdStorage storage self,
+        uint256 _depth
+    ) internal returns (StdStorage storage) {
         self._depth = _depth;
         return self;
     }
@@ -342,11 +334,10 @@ library stdStorage {
         delete self._depth;
     }
 
-    function bytesToBytes32(bytes memory b, uint256 offset)
-        public
-        pure
-        returns (bytes32)
-    {
+    function bytesToBytes32(
+        bytes memory b,
+        uint256 offset
+    ) public pure returns (bytes32) {
         bytes32 out;
 
         for (uint256 i = 0; i < 32; i++) {

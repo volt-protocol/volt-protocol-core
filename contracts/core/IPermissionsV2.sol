@@ -18,7 +18,11 @@ interface IPermissionsV2 is IAccessControl {
 
     function grantGuardian(address guardian) external;
 
-    function grantState(address state) external;
+    function grantGlobalLocker(address locker) external;
+
+    function grantPcvGuard(address pcvGuard) external;
+
+    function grantRateLimitedMinter(address rateLimitedMinter) external;
 
     function revokeMinter(address minter) external;
 
@@ -28,7 +32,11 @@ interface IPermissionsV2 is IAccessControl {
 
     function revokeGuardian(address guardian) external;
 
-    function revokeState(address state) external;
+    function revokeGlobalLocker(address locker) external;
+
+    function revokePcvGuard(address pcvGuard) external;
+
+    function revokeRateLimitedMinter(address rateLimitedMinter) external;
 
     // ----------- Revoker only state changing api -----------
 
@@ -44,7 +52,11 @@ interface IPermissionsV2 is IAccessControl {
 
     function isPCVController(address _address) external view returns (bool);
 
-    function isState(address _address) external view returns (bool);
+    function isGlobalLocker(address _address) external view returns (bool);
+
+    function isPcvGuard(address _address) external view returns (bool);
+
+    function isRateLimitedMinter(address _address) external view returns (bool);
 
     // ----------- Predefined Roles -----------
 
@@ -65,7 +77,7 @@ interface IPermissionsV2 is IAccessControl {
     /// and can arbitrarily move funds between deposits and addresses
     function PCV_CONTROLLER_ROLE() external view returns (bytes32);
 
-    /// @notice system state role can lock and unlock the global reentrancy
+    /// @notice global locker role can lock and unlock the global reentrancy
     /// lock. this allows for a system wide reentrancy lock.
-    function SYSTEM_STATE_ROLE() external view returns (bytes32);
+    function GLOBAL_LOCKER_ROLE() external view returns (bytes32);
 }

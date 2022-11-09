@@ -32,10 +32,6 @@ interface IOracleRef {
 
     function setBackupOracle(address newBackupOracle) external;
 
-    function setDecimalsNormalizer(int256 newDecimalsNormalizer) external;
-
-    function setDoInvert(bool newDoInvert) external;
-
     // ----------- Getters -----------
 
     function oracle() external view returns (IOracle);
@@ -48,8 +44,7 @@ interface IOracleRef {
 
     function readOracle() external view returns (Decimal.D256 memory);
 
-    function invert(Decimal.D256 calldata price)
-        external
-        pure
-        returns (Decimal.D256 memory);
+    function invert(
+        Decimal.D256 calldata price
+    ) external pure returns (Decimal.D256 memory);
 }

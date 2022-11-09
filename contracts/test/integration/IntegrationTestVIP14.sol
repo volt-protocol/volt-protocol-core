@@ -10,7 +10,6 @@ import {ICore} from "../../core/ICore.sol";
 import {IVolt} from "../../volt/Volt.sol";
 import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
 import {IPCVGuardian} from "../../pcv/IPCVGuardian.sol";
-import {PriceBoundPSM} from "../../peg/PriceBoundPSM.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
 
@@ -122,6 +121,11 @@ contract IntegrationTestVIP14 is TimelockSimulation, vip14 {
         mainnetPCVGuardian.withdrawAllToSafeAddress(
             MainnetAddresses.VOLT_USDC_PSM
         );
+
+        uint256 usdcBalance = IERC20(usdc).balanceOf(MainnetAddresses.GOVERNOR);
+        vm.prank(MainnetAddresses.GOVERNOR);
+        IERC20(usdc).transfer(address(usdcDeposit), usdcBalance);
+        usdcDeposit.deposit();
 
         assertTrue(
             IPCVDeposit(MainnetAddresses.VOLT_USDC_PSM).balance() <= 1e6

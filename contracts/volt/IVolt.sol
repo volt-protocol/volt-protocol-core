@@ -38,3 +38,7 @@ interface IVolt is IERC20 {
 
     function mint(address account, uint256 amount) external;
 }
+
+interface IVoltBurn is IVolt {
+    function burnFrom(address account, uint256 amount) external;
+}

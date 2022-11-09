@@ -5,6 +5,7 @@ import {Vm} from "./../utils/Vm.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {ICoreV2} from "../../../core/ICoreV2.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
+import {MockERC20} from "../../../mock/MockERC20.sol";
 import {MockCoreRefV2} from "../../../mock/MockCoreRefV2.sol";
 import {getCoreV2, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
 
@@ -105,7 +106,7 @@ contract UnitTestCoreRefV2 is DSTest {
 
     function testStateAsState() public {
         vm.prank(addresses.governorAddress);
-        core.grantState(address(this));
+        core.grantGlobalLocker(address(this));
         coreRef.testSystemState();
     }
 
@@ -130,6 +131,23 @@ contract UnitTestCoreRefV2 is DSTest {
         coreRef.testGovernor();
     }
 
+    function testSweepFailsNonGovernor() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        coreRef.sweep(address(this), address(this), 0);
+    }
+
+    function testSweepSucceedsGovernor() public {
+        uint256 mintAmount = 100;
+        address voltAddress = address(coreRef.volt());
+
+        MockERC20(voltAddress).mint(address(coreRef), mintAmount);
+
+        vm.prank(addresses.governorAddress);
+        coreRef.sweep(voltAddress, address(this), mintAmount);
+
+        assertEq(MockERC20(voltAddress).balanceOf(address(this)), mintAmount);
+    }
+
     function testGuardian(address caller) public {
         if (!core.isGovernor(caller) && !core.isGuardian(caller)) {
             vm.expectRevert("CoreRef: Caller is not a guardian or governor");
@@ -142,7 +160,7 @@ contract UnitTestCoreRefV2 is DSTest {
         if (
             !core.isGovernor(caller) &&
             !core.isMinter(caller) &&
-            !core.hasRole(VoltRoles.SYSTEM_STATE_ROLE, caller)
+            !core.isGlobalLocker(caller)
         ) {
             vm.expectRevert("UNAUTHORIZED");
         }
@@ -151,10 +169,76 @@ contract UnitTestCoreRefV2 is DSTest {
     }
 
     function testSystemState(address caller) public {
-        if (!core.hasRole(VoltRoles.SYSTEM_STATE_ROLE, caller)) {
+        if (!core.isGlobalLocker(caller)) {
             vm.expectRevert("UNAUTHORIZED");
         }
         vm.prank(caller);
         coreRef.testSystemState();
     }
+
+    function testEmergencyActionFailsNonGovernor() public {
+        MockCoreRefV2.Call[] memory calls = new MockCoreRefV2.Call[](1);
+        calls[0].callData = abi.encodeWithSignature(
+            "transfer(address,uint256)",
+            address(this),
+            100
+        );
+        calls[0].target = address(core.volt());
+
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        coreRef.emergencyAction(calls);
+    }
+
+    function testEmergencyActionSucceedsGovernor(uint256 mintAmount) public {
+        MockCoreRefV2.Call[] memory calls = new MockCoreRefV2.Call[](1);
+        calls[0].callData = abi.encodeWithSignature(
+            "mint(address,uint256)",
+            address(this),
+            mintAmount
+        );
+        calls[0].target = address(core.volt());
+
+        vm.prank(addresses.governorAddress);
+        coreRef.emergencyAction(calls);
+
+        assertEq(coreRef.volt().balanceOf(address(this)), mintAmount);
+    }
+
+    function testEmergencyActionSucceedsGovernorSendEth(
+        uint128 sendAmount
+    ) public {
+        uint256 startingEthBalance = address(this).balance;
+
+        MockCoreRefV2.Call[] memory calls = new MockCoreRefV2.Call[](1);
+        calls[0].target = address(this);
+        calls[0].value = sendAmount;
+        vm.deal(address(coreRef), sendAmount);
+
+        vm.prank(addresses.governorAddress);
+        coreRef.emergencyAction(calls);
+
+        uint256 endingEthBalance = address(this).balance;
+
+        assertEq(endingEthBalance - startingEthBalance, sendAmount);
+        assertEq(address(coreRef).balance, 0);
+    }
+
+    function testEmergencyActionSucceedsGovernorSendsEth(
+        uint128 sendAmount
+    ) public {
+        MockCoreRefV2.Call[] memory calls = new MockCoreRefV2.Call[](1);
+        calls[0].target = addresses.governorAddress;
+        calls[0].value = sendAmount;
+        vm.deal(addresses.governorAddress, sendAmount);
+
+        vm.prank(addresses.governorAddress);
+        coreRef.emergencyAction{value: sendAmount}(calls);
+
+        uint256 endingEthBalance = addresses.governorAddress.balance;
+
+        assertEq(endingEthBalance, sendAmount);
+        assertEq(address(coreRef).balance, 0);
+    }
+
+    fallback() external payable {}
 }

@@ -39,11 +39,7 @@ interface IPCVDeposit is IPCVDepositBalances {
 
     function withdraw(address to, uint256 amount) external;
 
-    function withdrawERC20(
-        address token,
-        address to,
-        uint256 amount
-    ) external;
+    function withdrawERC20(address token, address to, uint256 amount) external;
 
     function withdrawETH(address payable to, uint256 amount) external;
 }

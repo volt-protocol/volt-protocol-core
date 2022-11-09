@@ -34,8 +34,8 @@ library VoltRoles {
 
     /// @notice system state role can lock and unlock the global reentrancy
     /// lock. this allows for a system wide reentrancy lock.
-    bytes32 internal constant SYSTEM_STATE_ROLE =
-        keccak256("SYSTEM_STATE_ROLE");
+    bytes32 internal constant GLOBAL_LOCKER_ROLE =
+        keccak256("GLOBAL_LOCKER_ROLE");
 
     /*///////////////////////////////////////////////////////////////
                                  Admin Roles

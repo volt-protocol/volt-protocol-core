@@ -1,4 +1,1 @@
 @openzeppelin/=node_modules/@openzeppelin/
-@chainlink/=node_modules/@chainlink/
-@uniswap/=node_modules/@uniswap/
-forge-std/=lib/forge-std/src/

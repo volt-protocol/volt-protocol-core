@@ -13,7 +13,6 @@ import {DSTest} from "./../../unit/utils/DSTest.sol";
 import {PCVDeposit} from "../../../pcv/PCVDeposit.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {IPCVDeposit} from "../../../pcv/IPCVDeposit.sol";
-import {PriceBoundPSM} from "../../../peg/PriceBoundPSM.sol";
 import {ERC20Allocator} from "../../../pcv/utils/ERC20Allocator.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
 import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
@@ -289,7 +288,7 @@ contract vip14 is DSTest, IVIP {
 
     function getArbitrumProposal()
         public
-        view
+        pure
         override
         returns (ITimelockSimulation.action[] memory)
     {
@@ -297,11 +296,11 @@ contract vip14 is DSTest, IVIP {
     }
 
     /// no-op, nothing to setup
-    function arbitrumSetup() public override {
+    function arbitrumSetup() public pure override {
         revert("no arbitrum proposal");
     }
 
-    function arbitrumValidate() public override {
+    function arbitrumValidate() public pure override {
         revert("no arbitrum proposal");
     }
 }

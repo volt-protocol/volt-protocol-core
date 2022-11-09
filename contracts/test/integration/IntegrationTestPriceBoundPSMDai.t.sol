@@ -11,7 +11,7 @@ import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
 import {ICore} from "../../core/ICore.sol";
 import {Core} from "../../core/Core.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
-import {PriceBoundPSM, PegStabilityModule} from "../../peg/PriceBoundPSM.sol";
+import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {getCore, getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 import {Vm} from "./../unit/utils/Vm.sol";
@@ -24,7 +24,7 @@ import {IPCVGuardian} from "../../pcv/IPCVGuardian.sol";
 
 contract IntegrationTestPriceBoundPSMDaiTest is TimelockSimulation, vip7 {
     using SafeCast for *;
-    PriceBoundPSM private psm;
+    PegStabilityModule private psm;
     ICore private core = ICore(MainnetAddresses.CORE);
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
     IVolt private dai = IVolt(MainnetAddresses.DAI);
@@ -34,11 +34,11 @@ contract IntegrationTestPriceBoundPSMDaiTest is TimelockSimulation, vip7 {
     OraclePassThrough public oracle =
         OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
-    uint256 voltFloorPrice = 9_000; /// 1 volt for .9 dai is the max allowable price
-    uint256 voltCeilingPrice = 10_000; /// 1 volt for 1 dai is the minimum price
+    uint128 voltFloorPrice = 9_000; /// 1 volt for .9 dai is the max allowable price
+    uint128 voltCeilingPrice = 10_000; /// 1 volt for 1 dai is the minimum price
 
     function setUp() public {
-        psm = PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM);
+        psm = PegStabilityModule(MainnetAddresses.VOLT_DAI_PSM);
 
         vm.startPrank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
         dai.transfer(address(this), mintAmount);

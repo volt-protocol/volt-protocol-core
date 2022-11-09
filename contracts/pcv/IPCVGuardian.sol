@@ -19,19 +19,27 @@ interface IPCVGuardian {
         uint256 amount
     );
 
+    event SafeAddressUpdated(
+        address indexed oldSafeAddress,
+        address indexed newSafeAddress
+    );
+
     // ---------- Read-Only API ----------
 
     /// @notice returns true if the pcvDeposit address is whitelisted
     /// @param pcvDeposit the address to check
-    function isWhitelistAddress(address pcvDeposit)
-        external
-        view
-        returns (bool);
+    function isWhitelistAddress(
+        address pcvDeposit
+    ) external view returns (bool);
 
     /// @notice returns all whitelisted addresses
     function getWhitelistAddresses() external view returns (address[] memory);
 
     // ---------- Governor-Only State-Changing API ----------
+
+    /// @notice governor-only method to change the safe address
+    /// @param newSafeAddress new safe address
+    function setSafeAddress(address newSafeAddress) external;
 
     /// @notice governor-only method to whitelist a pcvDeposit address to withdraw funds from
     /// @param pcvDeposit the address to whitelist
@@ -39,8 +47,9 @@ interface IPCVGuardian {
 
     /// @notice batch version of addWhitelistAddress
     /// @param whitelistAddresses the pcvDespoit addresses to whitelist, as calldata
-    function addWhitelistAddresses(address[] calldata whitelistAddresses)
-        external;
+    function addWhitelistAddresses(
+        address[] calldata whitelistAddresses
+    ) external;
 
     // ---------- Governor-or-Guardian-Only State-Changing API ----------
 
@@ -50,8 +59,9 @@ interface IPCVGuardian {
 
     /// @notice batch version of removeWhitelistAddress
     /// @param whitelistAddresses the addresses to un-whitelist
-    function removeWhitelistAddresses(address[] calldata whitelistAddresses)
-        external;
+    function removeWhitelistAddresses(
+        address[] calldata whitelistAddresses
+    ) external;
 
     /// @notice governor-or-guardian-or-pcv-guard method to withdraw funds from a pcv deposit, by calling the withdraw() method on it
     /// @param pcvDeposit the address of the pcv deposit contract
@@ -75,6 +85,8 @@ interface IPCVGuardian {
     /// @notice governor-or-guardian-or-pcv-guard method to withdraw all of an ERC20 balance from a pcv deposit, by calling the withdrawERC20() method on it
     /// @param pcvDeposit the deposit to pull funds from
     /// @param token the address of the token to withdraw
-    function withdrawAllERC20ToSafeAddress(address pcvDeposit, address token)
-        external;
+    function withdrawAllERC20ToSafeAddress(
+        address pcvDeposit,
+        address token
+    ) external;
 }

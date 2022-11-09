@@ -10,7 +10,7 @@ import {PCVDeposit} from "../../../../pcv/PCVDeposit.sol";
 import {VoltRoles} from "../../../../core/VoltRoles.sol";
 import {PCVGuardAdmin} from "../../../../pcv/PCVGuardAdmin.sol";
 import {ERC20Allocator} from "../../../../pcv/utils/ERC20Allocator.sol";
-import {ERC20HoldingPCVDeposit} from "../../../../pcv/ERC20HoldingPCVDeposit.sol";
+import {ERC20HoldingPCVDeposit} from "../../../../mock/ERC20HoldingPCVDeposit.sol";
 import {getCoreV2, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.sol";
 
 import "hardhat/console.sol";
