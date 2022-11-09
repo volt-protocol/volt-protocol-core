@@ -70,6 +70,13 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
 
     uint256 public constant targetUsdcBalance = 100_000e6;
 
+    /// Maple Parameters for creating loans
+    address private constant mapleLoanFactory =
+        0x36a7350309B2Eb30F3B908aB0154851B5ED81db0;
+    address private constant mapleDebtLockerFactory =
+        0xA83404CAA79989FfF1d84bA883a1b8187397866C;
+    uint256 private constant gracePeriod = 432000; // 5 days
+
     /// @notice once you signal to withdraw after lockup, wait 10 days
     uint256 public constant cooldownPeriod = 864000;
 
@@ -97,9 +104,8 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
         vm.label(address(maplePool), "Maple Pool");
         vm.label(address(mapleRewards), "Maple Rewards");
 
-        vm.startPrank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
+        vm.prank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
         usdc.transfer(address(usdcDeposit), targetUsdcBalance);
-        vm.stopPrank();
 
         /// governor has pcv controller role
         vm.prank(MainnetAddresses.GOVERNOR);
@@ -155,6 +161,15 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
         assertTrue(mapleToken.balanceOf(address(usdcDeposit)) > 0);
     }
 
+    function testHarvestFailIfPaused() public {
+        // Pause contract
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.pause();
+
+        vm.expectRevert(bytes("Pausable: paused"));
+        usdcDeposit.harvest();
+    }
+
     function testHarvest() public {
         uint256 rewardRate = IMapleRewards(mapleRewards).rewardRate();
         vm.prank(mapleOwner);
@@ -172,57 +187,30 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
         assertTrue(mplBalance != 0);
     }
 
+    function testAccrueFailIfPaused() public {
+        // Pause contract
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.pause();
+
+        vm.expectRevert(bytes("Pausable: paused"));
+        usdcDeposit.accrue();
+    }
+
     function testAccrueInterestsEarned() public {
         assertEq(usdcDeposit.lastRecordedBalance(), targetUsdcBalance);
 
-        // Someone creates a loan
-        address mapleLoanFactory = 0x36a7350309B2Eb30F3B908aB0154851B5ED81db0;
-        address mapleDebtLockerFactory = 0xA83404CAA79989FfF1d84bA883a1b8187397866C;
-        address mapleLoan;
-        uint256 gracePeriod = 432000; // 5 days
-        uint256 paymentInterval = 15552000; // 180 days
-        bytes memory arguments = abi.encode(
-            address(this), // borrower
-            address(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599), // assets[0] = collateral = WBTC
-            MainnetAddresses.USDC, // assets[1] = principal = USDC
-            gracePeriod, // terms[0]
-            paymentInterval, // terms[1] = paymentInterval
-            2, // terms[2] = numberOfPayments
-            0, // amounts[0] = collateralRequired
-            targetUsdcBalance, // amounts[1] = principalRequested
-            targetUsdcBalance, // amounts[2] = endingPrincipal
-            0.12e18, // rates[0] = interestRate = 12%
-            0.02e18, // rates[1] = earlyFeeRate = 2%
-            0, // rates[2] = lateFeeRate = 0
-            0.05e18 // rates[3] = lateInterestPremium = 5%
-        );
-        mapleLoan = IMapleLoanFactory(mapleLoanFactory).createInstance(
-            arguments,
-            keccak256(bytes("some salt for testAccrueInterestsEarned()"))
-        );
-        vm.label(mapleLoan, "mapleLoan");
-
-        // Pool delegate funds the loan
-        // The pool has enough cash to fund the loan because the PCVDeposit
-        // did a deposit() in the setUp() step.
-        vm.prank(MainnetAddresses.MPL_ORTHOGONAL_POOL_DELEGATE);
-        IMaplePool(maplePool).fundLoan(
-            mapleLoan,
-            mapleDebtLockerFactory,
+        // Someone creates a loan (180 days payment interval)
+        address mapleLoan = _createAndFundMapleLoan(
+            15552000,
             targetUsdcBalance
         );
-
-        // Borrower pulls loan amount
-        assertEq(usdc.balanceOf(address(this)), 0);
-        IMapleLoan(mapleLoan).drawdownFunds(targetUsdcBalance, address(this));
-        assertEq(usdc.balanceOf(address(this)), targetUsdcBalance);
 
         // Send more USDC to the borrower so they can pay interests
         vm.prank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
         usdc.transfer(address(this), targetUsdcBalance);
 
         // Warp forward and make payment
-        vm.warp(block.timestamp + gracePeriod + paymentInterval);
+        vm.warp(block.timestamp + gracePeriod + 15552000);
         usdc.approve(mapleLoan, type(uint256).max);
         (uint256 principal1, uint256 interest1) = IMapleLoan(mapleLoan)
             .makePayment(7_000e6);
@@ -257,58 +245,17 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
     function testAccrueLossesIncurredButCovered() public {
         assertEq(usdcDeposit.lastRecordedBalance(), targetUsdcBalance);
 
-        // Someone creates a loan
-        address mapleLoanFactory = 0x36a7350309B2Eb30F3B908aB0154851B5ED81db0;
-        address mapleDebtLockerFactory = 0xA83404CAA79989FfF1d84bA883a1b8187397866C;
-        address mapleLoan;
-        uint256 gracePeriod = 432000; // 5 days
-        uint256 paymentInterval = 2592000; // 30 days
-        bytes memory arguments = abi.encode(
-            address(this), // borrower
-            address(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599), // assets[0] = collateral = WBTC
-            MainnetAddresses.USDC, // assets[1] = principal = USDC
-            gracePeriod, // terms[0]
-            paymentInterval, // terms[1] = paymentInterval
-            2, // terms[2] = numberOfPayments
-            0, // amounts[0] = collateralRequired
-            targetUsdcBalance, // amounts[1] = principalRequested
-            targetUsdcBalance, // amounts[2] = endingPrincipal
-            0.12e18, // rates[0] = interestRate = 12%
-            0.02e18, // rates[1] = earlyFeeRate = 2%
-            0, // rates[2] = lateFeeRate = 0
-            0.05e18 // rates[3] = lateInterestPremium = 5%
-        );
-        mapleLoan = IMapleLoanFactory(mapleLoanFactory).createInstance(
-            arguments,
-            keccak256(
-                bytes("some salt for testAccrueLossesIncurredButCovered()")
-            )
-        );
-        vm.label(mapleLoan, "mapleLoan");
-
-        // Pool delegate funds the loan
-        // The pool has enough cash to fund the loan because the PCVDeposit
-        // did a deposit() in the setUp() step.
-        vm.prank(MainnetAddresses.MPL_ORTHOGONAL_POOL_DELEGATE);
-        IMaplePool(maplePool).fundLoan(
-            mapleLoan,
-            mapleDebtLockerFactory,
-            targetUsdcBalance
-        );
-
-        // Borrower pulls loan amount
-        assertEq(usdc.balanceOf(address(this)), 0);
-        IMapleLoan(mapleLoan).drawdownFunds(targetUsdcBalance, address(this));
-        assertEq(usdc.balanceOf(address(this)), targetUsdcBalance);
+        // Someone creates a loan (30 days payment interval)
+        address mapleLoan = _createAndFundMapleLoan(2592000, targetUsdcBalance);
 
         assertEq(
             IMapleLoan(mapleLoan).nextPaymentDueDate(),
-            block.timestamp + paymentInterval
+            block.timestamp + 2592000
         );
         assertEq(IMapleLoan(mapleLoan).gracePeriod(), gracePeriod);
 
         // Pool Manager triggers a loan default
-        vm.warp(block.timestamp + gracePeriod + paymentInterval + 1000);
+        vm.warp(block.timestamp + gracePeriod + 2592000 + 1000);
         vm.prank(MainnetAddresses.MPL_ORTHOGONAL_POOL_DELEGATE);
         IMaplePool(maplePool).triggerDefault(mapleLoan, mapleDebtLockerFactory);
 
@@ -343,58 +290,17 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
         usdcDeposit.deposit();
         assertEq(usdcDeposit.lastRecordedBalance(), largeUsdcBalance);
 
-        // Someone creates a loan
-        address mapleLoanFactory = 0x36a7350309B2Eb30F3B908aB0154851B5ED81db0;
-        address mapleDebtLockerFactory = 0xA83404CAA79989FfF1d84bA883a1b8187397866C;
-        address mapleLoan;
-        uint256 gracePeriod = 432000; // 5 days
-        uint256 paymentInterval = 2592000; // 30 days
-        bytes memory arguments = abi.encode(
-            address(this), // borrower
-            address(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599), // assets[0] = collateral = WBTC
-            MainnetAddresses.USDC, // assets[1] = principal = USDC
-            gracePeriod, // terms[0]
-            paymentInterval, // terms[1] = paymentInterval
-            2, // terms[2] = numberOfPayments
-            0, // amounts[0] = collateralRequired
-            largeUsdcBalance, // amounts[1] = principalRequested
-            largeUsdcBalance, // amounts[2] = endingPrincipal
-            0.12e18, // rates[0] = interestRate = 12%
-            0.02e18, // rates[1] = earlyFeeRate = 2%
-            0, // rates[2] = lateFeeRate = 0
-            0.05e18 // rates[3] = lateInterestPremium = 5%
-        );
-        mapleLoan = IMapleLoanFactory(mapleLoanFactory).createInstance(
-            arguments,
-            keccak256(
-                bytes("some salt for testAccrueLossesIncurredNotCovered()")
-            )
-        );
-        vm.label(mapleLoan, "mapleLoan");
-
-        // Pool delegate funds the loan
-        // The pool has enough cash to fund the loan because the PCVDeposit
-        // did a deposit() in the setUp() step.
-        vm.prank(MainnetAddresses.MPL_ORTHOGONAL_POOL_DELEGATE);
-        IMaplePool(maplePool).fundLoan(
-            mapleLoan,
-            mapleDebtLockerFactory,
-            largeUsdcBalance
-        );
-
-        // Borrower pulls loan amount
-        assertEq(usdc.balanceOf(address(this)), 0);
-        IMapleLoan(mapleLoan).drawdownFunds(largeUsdcBalance, address(this));
-        assertEq(usdc.balanceOf(address(this)), largeUsdcBalance);
+        // Someone creates a loan (30 days payment interval)
+        address mapleLoan = _createAndFundMapleLoan(2592000, largeUsdcBalance);
 
         assertEq(
             IMapleLoan(mapleLoan).nextPaymentDueDate(),
-            block.timestamp + paymentInterval
+            block.timestamp + 2592000
         );
         assertEq(IMapleLoan(mapleLoan).gracePeriod(), gracePeriod);
 
         // Pool Manager triggers a loan default
-        vm.warp(block.timestamp + gracePeriod + paymentInterval + 1000);
+        vm.warp(block.timestamp + gracePeriod + 2592000 + 1000);
         vm.prank(MainnetAddresses.MPL_ORTHOGONAL_POOL_DELEGATE);
         IMaplePool(maplePool).triggerDefault(mapleLoan, mapleDebtLockerFactory);
 
@@ -420,6 +326,67 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
 
         assertEq(usdcDeposit.lastRecordedBalance(), largeUsdcBalance - pcvLoss);
         assertEq(usdcDeposit.balance(), largeUsdcBalance - pcvLoss);
+    }
+
+    function testLossesIncurredAndDepositAgain() public {
+        // Load the PCV Deposit with a large amount
+        uint256 largeUsdcBalance = 20_000_000e6; // 20M$
+        vm.prank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
+        usdc.transfer(
+            address(usdcDeposit),
+            largeUsdcBalance - targetUsdcBalance
+        );
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.deposit();
+        assertEq(usdcDeposit.lastRecordedBalance(), largeUsdcBalance);
+
+        // Someone creates a loan (30 days payment interval)
+        address mapleLoan = _createAndFundMapleLoan(2592000, largeUsdcBalance);
+
+        assertEq(
+            IMapleLoan(mapleLoan).nextPaymentDueDate(),
+            block.timestamp + 2592000
+        );
+        assertEq(IMapleLoan(mapleLoan).gracePeriod(), gracePeriod);
+
+        // Pool Manager triggers a loan default
+        vm.warp(block.timestamp + gracePeriod + 2592000 + 1000);
+        vm.prank(MainnetAddresses.MPL_ORTHOGONAL_POOL_DELEGATE);
+        IMaplePool(maplePool).triggerDefault(mapleLoan, mapleDebtLockerFactory);
+
+        // Pool Manager claims to update accounting
+        vm.prank(MainnetAddresses.MPL_ORTHOGONAL_POOL_DELEGATE);
+        vm.expectEmit(true, false, false, false, maplePool);
+        emit DefaultSuffered(mapleLoan, 123, 456, 789, 101);
+        IMaplePool(maplePool).claim(mapleLoan, mapleDebtLockerFactory);
+
+        // The PCV Deposit incurred a loss
+        uint256 pcvLoss = largeUsdcBalance - usdcDeposit.balance();
+        assertEq(usdcDeposit.lastRecordedBalance(), largeUsdcBalance);
+        assertTrue(pcvLoss > 1_000_000e6); // loss is 4.7M$ as of 2022-11-04 but pool cover could change over time
+
+        // check Harvest event for USDC interests
+        vm.expectEmit(true, false, false, true, address(usdcDeposit));
+        emit Harvest(
+            MainnetAddresses.USDC,
+            -1 * int256(pcvLoss),
+            block.timestamp
+        );
+        usdcDeposit.accrue();
+
+        assertEq(usdcDeposit.lastRecordedBalance(), largeUsdcBalance - pcvLoss);
+        assertEq(usdcDeposit.balance(), largeUsdcBalance - pcvLoss);
+
+        // Make another deposit
+        vm.prank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
+        usdc.transfer(address(usdcDeposit), largeUsdcBalance);
+        vm.prank(MainnetAddresses.GOVERNOR);
+        usdcDeposit.deposit();
+        assertEq(
+            usdcDeposit.lastRecordedBalance(),
+            largeUsdcBalance * 2 - pcvLoss
+        );
+        assertEq(usdcDeposit.balance(), largeUsdcBalance * 2 - pcvLoss);
     }
 
     function _testWithdraw(uint256 amount) private {
@@ -639,5 +606,48 @@ contract IntegrationTestMaplePCVDeposit is DSTest {
                 IMaplePool(maplePool).lockupPeriod() -
                 cooldownPeriod
         );
+    }
+
+    /// @notice Create a Maple Loan and impersonate the pool delegate to fund it.
+    /// The borrower will also drawdown the funds from the funded loan.
+    function _createAndFundMapleLoan(
+        uint256 paymentInterval,
+        uint256 principalRequested
+    ) private returns (address mapleLoan) {
+        bytes memory arguments = abi.encode(
+            address(this), // borrower
+            address(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599), // assets[0] = collateral = WBTC
+            MainnetAddresses.USDC, // assets[1] = principal = USDC
+            gracePeriod, // terms[0]
+            paymentInterval, // terms[1] = paymentInterval
+            2, // terms[2] = numberOfPayments
+            0, // amounts[0] = collateralRequired
+            principalRequested, // amounts[1] = principalRequested
+            principalRequested, // amounts[2] = endingPrincipal
+            0.12e18, // rates[0] = interestRate = 12%
+            0.02e18, // rates[1] = earlyFeeRate = 2%
+            0, // rates[2] = lateFeeRate = 0
+            0.05e18 // rates[3] = lateInterestPremium = 5%
+        );
+        mapleLoan = IMapleLoanFactory(mapleLoanFactory).createInstance(
+            arguments,
+            keccak256(bytes("some salt"))
+        );
+        vm.label(mapleLoan, "mapleLoan");
+
+        // Pool delegate funds the loan
+        // The pool has enough cash to fund the loan because the PCVDeposit
+        // did a deposit() in the setUp() step.
+        vm.prank(MainnetAddresses.MPL_ORTHOGONAL_POOL_DELEGATE);
+        IMaplePool(maplePool).fundLoan(
+            mapleLoan,
+            mapleDebtLockerFactory,
+            principalRequested
+        );
+
+        // Borrower pulls loan amount
+        assertEq(usdc.balanceOf(address(this)), 0);
+        IMapleLoan(mapleLoan).drawdownFunds(principalRequested, address(this));
+        assertEq(usdc.balanceOf(address(this)), principalRequested);
     }
 }

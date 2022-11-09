@@ -95,6 +95,10 @@ contract MaplePCVDeposit is PCVDeposit, ReentrancyGuard {
     /// accounting for interest earned
     /// and unrealized losses in the venue
     function balance() public view override returns (uint256) {
+        // balanceOf returns a number with 18 decimals because Maple FDTs have 18 decimals
+        // accumulativeFundsOf and recognizableLossesOf are expressed in the decimals
+        // of the pool's underlying token (USDC), so they have 6 decimals, and we need to
+        // normalize to combine these balances together.
         return
             IMaplePool(maplePool).balanceOf(address(this)) /
             SCALING_FACTOR +
@@ -103,7 +107,7 @@ contract MaplePCVDeposit is PCVDeposit, ReentrancyGuard {
     }
 
     /// @notice return the underlying token denomination for this deposit
-    function balanceReportedIn() external view returns (address) {
+    function balanceReportedIn() external pure returns (address) {
         return USDC;
     }
 
@@ -197,18 +201,20 @@ contract MaplePCVDeposit is PCVDeposit, ReentrancyGuard {
     function accrue() external nonReentrant whenNotPaused returns (uint256) {
         int256 startingRecordedBalance = lastRecordedBalance.toInt256();
 
-        _recordPNL(); /// update deposit amount and fire harvest event
+        _recordPNL(); // update deposit amount and fire harvest event
 
         int256 endingRecordedBalance = lastRecordedBalance.toInt256();
 
         if (pcvOracle != address(0)) {
-            /// if any amount of PCV is withdrawn and no gains, delta is negative
+            // if any amount of PCV is withdrawn and no gains, delta is negative
             IPCVOracle(pcvOracle).updateIlliquidBalance(
                 endingRecordedBalance - startingRecordedBalance
             );
         }
 
-        return lastRecordedBalance; /// return updated pcv amount
+        // return updated pcv amount
+        // does not need a safe cast because balance is always positive
+        return uint256(endingRecordedBalance);
     }
 
     /// @notice permissionless function to harvest rewards before withdraw
@@ -223,6 +229,7 @@ contract MaplePCVDeposit is PCVDeposit, ReentrancyGuard {
 
         emit Harvest(
             mapleToken,
+            // no safecast needed because this will always be >= 0
             int256(postHarvestBalance - preHarvestBalance),
             block.timestamp
         );
@@ -248,7 +255,6 @@ contract MaplePCVDeposit is PCVDeposit, ReentrancyGuard {
         _recordPNL(); /// update profit/losses and fire USDC harvest event
 
         uint256 lastRecordedBalanceAfterPnl = lastRecordedBalance;
-        int256 balanceAfterPnl = lastRecordedBalanceAfterPnl.toInt256();
 
         /// withdraw from the pool
         /// this call will withdraw amount of principal requested, and then send
@@ -278,6 +284,37 @@ contract MaplePCVDeposit is PCVDeposit, ReentrancyGuard {
         }
 
         emit Withdrawal(msg.sender, to, amountToTransfer);
+    }
+
+    /// @notice records how much profit or loss has been accrued
+    /// since the last call and emits an event with all profit or loss received.
+    /// Updates the lastRecordedBalance to include all realized profits or losses.
+    function _recordPNL() private {
+        /// ------ Check ------
+
+        /// then get the current balance from the market
+        uint256 currentBalance = balance();
+
+        /// save gas if contract has no balance
+        /// if cost basis is 0 and last recorded balance is 0
+        /// there is no profit or loss to record and no reason
+        /// to update lastRecordedBalance
+        if (currentBalance == 0 && lastRecordedBalance == 0) {
+            return;
+        }
+
+        /// currentBalance should always be greater than or equal to
+        /// the deposited amount, except on the same block a deposit occurs, or a loss event in maple
+        int256 profit = currentBalance.toInt256() -
+            lastRecordedBalance.toInt256();
+
+        /// ------ Effects ------
+
+        /// record new deposited amount
+        lastRecordedBalance = currentBalance;
+
+        /// profit is in underlying token
+        emit Harvest(USDC, profit, block.timestamp);
     }
 
     /// ---------- Sad Path APIs ----------
@@ -319,36 +356,5 @@ contract MaplePCVDeposit is PCVDeposit, ReentrancyGuard {
         IERC20(USDC).safeTransfer(to, amountToTransfer);
 
         emit Withdrawal(msg.sender, to, amountToTransfer);
-    }
-
-    /// @notice records how much profit or loss has been accrued
-    /// since the last call and emits an event with all profit or loss received.
-    /// Updates the lastRecordedBalance to include all realized profits or losses.
-    function _recordPNL() private {
-        /// ------ Check ------
-
-        /// then get the current balance from the market
-        uint256 currentBalance = balance();
-
-        /// save gas if contract has no balance
-        /// if cost basis is 0 and last recorded balance is 0
-        /// there is no profit or loss to record and no reason
-        /// to update lastRecordedBalance
-        if (currentBalance == 0 && lastRecordedBalance == 0) {
-            return;
-        }
-
-        /// currentBalance should always be greater than or equal to
-        /// the deposited amount, except on the same block a deposit occurs, or a loss event in morpho
-        int256 profit = currentBalance.toInt256() -
-            lastRecordedBalance.toInt256();
-
-        /// ------ Effects ------
-
-        /// record new deposited amount
-        lastRecordedBalance = currentBalance;
-
-        /// profit is in underlying token
-        emit Harvest(USDC, profit, block.timestamp);
     }
 }
