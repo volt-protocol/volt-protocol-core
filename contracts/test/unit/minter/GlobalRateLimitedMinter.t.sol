@@ -1,26 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {Test} from "forge-std/Test.sol";
 import {ICoreV2} from "../../../core/ICoreV2.sol";
-import {Deviation} from "../../../utils/Deviation.sol";
-import {VoltRoles} from "../../../core/VoltRoles.sol";
-import {MockERC20} from "../../../mock/MockERC20.sol";
-import {PCVDeposit} from "../../../pcv/PCVDeposit.sol";
-import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
-import {MockCoreRefV2} from "../../../mock/MockCoreRefV2.sol";
-import {ERC20Allocator} from "../../../pcv/utils/ERC20Allocator.sol";
-import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
-import {MockPCVDepositV2} from "../../../mock/MockPCVDepositV2.sol";
-import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
-import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
-import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
-import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
-import {IScalingPriceOracle} from "../../../oracle/IScalingPriceOracle.sol";
 import {IGRLM, GlobalRateLimitedMinter} from "../../../minter/GlobalRateLimitedMinter.sol";
 import {getCoreV2, getAddresses, getVoltAddresses, VoltAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
 
@@ -41,6 +26,7 @@ contract GlobalRateLimitedMinterUnitTest is Test {
     ICoreV2 private core;
     GlobalRateLimitedMinter public grlm;
     address private coreAddress;
+    IERC20 private volt;
 
     /// ---------- GRLM PARAMS ----------
 
@@ -57,6 +43,7 @@ contract GlobalRateLimitedMinterUnitTest is Test {
         vm.warp(1); /// warp past 0
         core = getCoreV2();
         coreAddress = address(core);
+        volt = core.volt();
         grlm = new GlobalRateLimitedMinter(
             coreAddress,
             maxRateLimitPerSecondMinting,
@@ -92,5 +79,19 @@ contract GlobalRateLimitedMinterUnitTest is Test {
         assertEq(address(core.globalRateLimitedMinter()), address(grlm));
     }
 
-    /// todo add tests that assert only proper addresses can mint, and that buffers deplete properly
+    function testMintNonMinterFails() public {
+        vm.expectRevert("UNAUTHORIZED");
+        grlm.mintVolt(address(this), 100);
+    }
+
+    function testMintAsMinterSucceeds(uint80 mintAmount) public {
+        uint256 startingBuffer = grlm.buffer();
+
+        vm.prank(guardianAddresses.pcvGuardAddress1);
+        grlm.mintVolt(address(this), mintAmount);
+        uint256 endingBuffer = grlm.buffer();
+
+        assertEq(volt.balanceOf(address(this)), mintAmount);
+        assertEq(endingBuffer, startingBuffer - mintAmount);
+    }
 }
