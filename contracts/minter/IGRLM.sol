@@ -8,7 +8,7 @@ interface IGRLM is IRateLimitedV2 {
     /// pausable and depletes the msg.sender's buffer
     /// @param to the recipient address of the minted VOLT
     /// @param amount the amount of VOLT to mint
-    /// only callable by those with VOLT_MINTER_ROLE
+    /// only callable by those with VOLT_RATE_LIMITED_MINTER_ROLE
     function mintVolt(address to, uint256 amount) external;
 
     /// @notice replenish buffer by amount of volt tokens burned

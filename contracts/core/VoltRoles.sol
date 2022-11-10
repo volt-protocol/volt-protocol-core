@@ -27,7 +27,8 @@ library VoltRoles {
     bytes32 internal constant MINTER = keccak256("MINTER_ROLE");
 
     /// @notice can mint VOLT through GlobalRateLimitedMinter on a rate limit
-    bytes32 internal constant VOLT_MINTER_ROLE = keccak256("VOLT_MINTER_ROLE");
+    bytes32 internal constant VOLT_RATE_LIMITED_MINTER_ROLE =
+        keccak256("VOLT_RATE_LIMITED_MINTER_ROLE");
 
     /// @notice is able to withdraw whitelisted PCV deposits to a safe address
     bytes32 internal constant PCV_GUARD = keccak256("PCV_GUARD_ROLE");
