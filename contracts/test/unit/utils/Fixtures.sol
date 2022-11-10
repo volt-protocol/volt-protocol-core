@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 import {MockERC20} from "./../../../mock/MockERC20.sol";
 import {Core, Vcon, Volt, IERC20, IVolt} from "../../../core/Core.sol";
-import {L2Core} from "../../../core/L2Core.sol";
-import {DSTest} from "./DSTest.sol";
-import {Vm} from "./Vm.sol";
+import {CoreV2} from "../../../core/CoreV2.sol";
+import {Vm} from "forge-std/Test.sol";
 
 struct VoltTestAddresses {
     address userAddress;
@@ -108,23 +107,21 @@ function getCore() returns (Core) {
 }
 
 /// @dev Deploy and configure Core
-function getL2Core() returns (L2Core) {
+function getCoreV2() returns (CoreV2) {
     address HEVM_ADDRESS = address(
         bytes20(uint160(uint256(keccak256("hevm cheat code"))))
     );
     Vm vm = Vm(HEVM_ADDRESS);
     VoltTestAddresses memory addresses = getAddresses();
 
-    MockERC20 mockVolt = new MockERC20();
-
+    MockERC20 volt = new MockERC20();
     // Deploy Core from Governor address
     vm.startPrank(addresses.governorAddress);
-    L2Core core = new L2Core(IVolt(address(mockVolt)));
+    CoreV2 core = new CoreV2(address(volt));
     Vcon vcon = new Vcon(addresses.governorAddress, addresses.governorAddress);
 
     core.setVcon(IERC20(address(vcon)));
     core.grantMinter(addresses.minterAddress);
-    core.grantBurner(addresses.burnerAddress);
     core.grantPCVController(addresses.pcvControllerAddress);
     core.grantGuardian(addresses.guardianAddress);
 

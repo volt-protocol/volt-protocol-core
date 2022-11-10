@@ -1,0 +1,105 @@
+MaplePCVDeposit.deposit() (contracts/pcv/maple/MaplePCVDeposit.sol#99-122) uses a dangerous strict equality:
+	- amount == 0 (contracts/pcv/maple/MaplePCVDeposit.sol#101)
+MorphoCompoundPCVDeposit.deposit() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#61-76) uses a dangerous strict equality:
+	- amount == 0 (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#63)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#dangerous-strict-equalities
+Response: Strict equalities can be dangerous in the way described in the slither detector documentation. 
+However, if amount is 0 in either Maple or Morpho PCV Deposit, it is better to save gas and not execute further opcodes.
+There is no unsafe behavior that is possible as a result of doing this strict equality that amount is 0.
+
+MaplePCVDeposit.deposit() (contracts/pcv/maple/MaplePCVDeposit.sol#99-122) ignores return value by token.approve(address(pool),amount) (contracts/pcv/maple/MaplePCVDeposit.sol#107)
+MorphoCompoundPCVDeposit.deposit() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#61-76) ignores return value by IERC20(token).approve(address(MORPHO),amount) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#68)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unused-return
+Response: USDC returns true and does some validation that the addresses are incorrect.
+As long as the validations succeed, the function will return true. If the validations fail,
+the call will revert.
+DAI returns true and has no validation checks, which means the only way the approve call can fail
+is if it is out of gas.
+
+MaplePCVDeposit.constructor(address,address,address)._core (contracts/pcv/maple/MaplePCVDeposit.sol#61) shadows:
+	- CoreRef._core (contracts/refs/CoreRef.sol#11) (state variable)
+MorphoCompoundPCVDeposit.constructor(address,address)._core (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#39) shadows:
+	- CoreRef._core (contracts/refs/CoreRef.sol#11) (state variable)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#local-variable-shadowing
+Response: Author acknowledges the issue, will not fix.
+
+MorphoCompoundPCVDeposit.constructor(address,address)._cToken (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#39) lacks a zero-check on :
+		- cToken = _cToken (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#40)
+		- token = ICToken(_cToken).underlying() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#41)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-zero-address-validation
+Response: Author acknowledges the issue, will not fix because integration tests will validate the parameter is set correctly.
+
+MaplePCVDeposit.emergencyAction(MaplePCVDeposit.Call[]) (contracts/pcv/maple/MaplePCVDeposit.sol#252-265) has external calls inside a loop: (success,returned) = calls[i].target.call(calls[i].callData) (contracts/pcv/maple/MaplePCVDeposit.sol#259-261)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation/#calls-inside-a-loop
+Response: DoS attacks are not a valid vector when sender is a trusted governor and the function mutates no internal contract state.
+
+Reentrancy in MorphoCompoundPCVDeposit._withdraw(address,uint256) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#93-98):
+	External calls:
+	- IMorpho(MORPHO).withdraw(cToken,amount) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#94)
+	- IERC20(token).safeTransfer(to,amount) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#95)
+	Event emitted after the call(s):
+	- Withdrawal(msg.sender,to,amount) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#97)
+Reentrancy in MaplePCVDeposit.deposit() (contracts/pcv/maple/MaplePCVDeposit.sol#99-122):
+	External calls:
+	- token.approve(address(pool),amount) (contracts/pcv/maple/MaplePCVDeposit.sol#107)
+	- pool.deposit(amount) (contracts/pcv/maple/MaplePCVDeposit.sol#108)
+	- pool.increaseCustodyAllowance(address(mplRewards),scaledDepositAmount) (contracts/pcv/maple/MaplePCVDeposit.sol#114-117)
+	- mplRewards.stake(scaledDepositAmount) (contracts/pcv/maple/MaplePCVDeposit.sol#118)
+	Event emitted after the call(s):
+	- Deposit(msg.sender,amount) (contracts/pcv/maple/MaplePCVDeposit.sol#121)
+Reentrancy in MorphoCompoundPCVDeposit.deposit() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#61-76):
+	External calls:
+	- IERC20(token).approve(address(MORPHO),amount) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#68)
+	- MORPHO.supply(cToken,address(this),amount) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#69-73)
+	Event emitted after the call(s):
+	- Deposit(msg.sender,amount) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#75)
+Reentrancy in MaplePCVDeposit.harvest() (contracts/pcv/maple/MaplePCVDeposit.sol#191-199):
+	External calls:
+	- mplRewards.getReward() (contracts/pcv/maple/MaplePCVDeposit.sol#194)
+	Event emitted after the call(s):
+	- Harvest(postHarvestBalance - preHarvestBalance) (contracts/pcv/maple/MaplePCVDeposit.sol#198)
+Reentrancy in MorphoCompoundPCVDeposit.harvest() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#101-109):
+	External calls:
+	- claimedAmount = MORPHO.claimRewards(cTokens,false) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#106)
+	Event emitted after the call(s):
+	- Harvest(claimedAmount) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#108)
+Reentrancy in MaplePCVDeposit.withdraw(address,uint256) (contracts/pcv/maple/MaplePCVDeposit.sol#143-170):
+	External calls:
+	- mplRewards.getReward() (contracts/pcv/maple/MaplePCVDeposit.sol#150)
+	- mplRewards.withdraw(scaledWithdrawAmount) (contracts/pcv/maple/MaplePCVDeposit.sol#156)
+	- pool.withdraw(amount) (contracts/pcv/maple/MaplePCVDeposit.sol#159)
+	- token.safeTransfer(to,amountToTransfer) (contracts/pcv/maple/MaplePCVDeposit.sol#167)
+	Event emitted after the call(s):
+	- Withdrawal(msg.sender,to,amountToTransfer) (contracts/pcv/maple/MaplePCVDeposit.sol#169)
+Reentrancy in MaplePCVDeposit.withdrawAll(address) (contracts/pcv/maple/MaplePCVDeposit.sol#174-188):
+	External calls:
+	- mplRewards.exit() (contracts/pcv/maple/MaplePCVDeposit.sol#176)
+	- pool.withdraw(amount) (contracts/pcv/maple/MaplePCVDeposit.sol#182)
+	- token.safeTransfer(to,amountToTransfer) (contracts/pcv/maple/MaplePCVDeposit.sol#185)
+	Event emitted after the call(s):
+	- Withdrawal(msg.sender,to,amountToTransfer) (contracts/pcv/maple/MaplePCVDeposit.sol#187)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-3
+Response: Reentrancy is only an issue if it allows theft of funds and updating of state incorrectly in an intermediate state.
+None of the listed functions mutate any state internal to the contract. If there was a collateralization oracle in the system,
+then these issues would be worth investigating further and ensuring state could not get mixed up in a way that allowed an 
+attacker to manipulate the target price of Volt.
+
+Pragma version=0.8.13 (contracts/pcv/maple/MaplePCVDeposit.sol#2) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+Pragma version^0.8.0 (contracts/pcv/morpho/ICompound.sol#2) allows old versions
+Pragma version^0.8.0 (contracts/pcv/morpho/ILens.sol#2) allows old versions
+Pragma version^0.8.0 (contracts/pcv/morpho/IMorpho.sol#2) allows old versions
+Pragma version=0.8.13 (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#2) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+solc-0.8.13 is not recommended for deployment
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#incorrect-versions-of-solidity
+Response: Author has reviewed the solidity 0.8.13 list of known bugs https://docs.soliditylang.org/en/v0.8.13/bugs.html
+and not found any high issues that would lead to incorrect functioning of the smart contracts.
+
+Low level call in MaplePCVDeposit.emergencyAction(MaplePCVDeposit.Call[]) (contracts/pcv/maple/MaplePCVDeposit.sol#252-265):
+	- (success,returned) = calls[i].target.call(calls[i].callData) (contracts/pcv/maple/MaplePCVDeposit.sol#259-261)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#low-level-calls
+Response: This low level call is intentional and can be used during an emergency action if funds need to be moved
+out of Maple in a way the author has not yet conceived of.
+
+Constant MaplePCVDeposit.scalingFactor (contracts/pcv/maple/MaplePCVDeposit.sol#54) is not in UPPER_CASE_WITH_UNDERSCORES
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#conformance-to-solidity-naming-conventions
+Response: This is a style issue and will not be fixed.

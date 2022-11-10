@@ -7,7 +7,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {Timed} from "./../../utils/Timed.sol";
-import {CoreRef} from "./../../refs/CoreRef.sol";
+import {CoreRefV2} from "./../../refs/CoreRefV2.sol";
 import {PCVDeposit} from "./../PCVDeposit.sol";
 import {RateLimitedV2} from "./../../utils/RateLimitedV2.sol";
 import {IERC20Allocator} from "./IERC20Allocator.sol";
@@ -29,7 +29,7 @@ import {IERC20Allocator} from "./IERC20Allocator.sol";
 /// connect deposit function.
 
 /// @author Elliot Friedman
-contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
+contract ERC20Allocator is IERC20Allocator, CoreRefV2, RateLimitedV2 {
     using Address for address payable;
     using SafeERC20 for IERC20;
     using SafeCast for *;
@@ -64,7 +64,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         uint128 _rateLimitPerSecond,
         uint128 _bufferCap
     )
-        CoreRef(_core)
+        CoreRefV2(_core)
         RateLimitedV2(_maxRateLimitPerSecond, _rateLimitPerSecond, _bufferCap)
     {}
 
@@ -72,11 +72,11 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
 
     /// @notice connect a new PSM
     /// @param psm Peg Stability Module to add
-    /// @param targetBalance target amount of tokens for the PSM to hold
+    /// @param psmTargetBalance target amount of tokens for the PSM to hold
     /// @param decimalsNormalizer decimal normalizer to ensure buffer is depleted and replenished properly
     function connectPSM(
         address psm,
-        uint248 targetBalance,
+        uint248 psmTargetBalance,
         int8 decimalsNormalizer
     ) external override onlyGovernor {
         address token = PCVDeposit(psm).balanceReportedIn();
@@ -88,20 +88,20 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
 
         PSMInfo memory newPSM = PSMInfo({
             token: token,
-            targetBalance: targetBalance,
+            targetBalance: psmTargetBalance,
             decimalsNormalizer: decimalsNormalizer
         });
         allPSMs[psm] = newPSM;
 
-        emit PSMConnected(psm, token, targetBalance, decimalsNormalizer);
+        emit PSMConnected(psm, token, psmTargetBalance, decimalsNormalizer);
     }
 
     /// @notice edit an existing PSM
     /// @param psm Peg Stability Module for this deposit
-    /// @param targetBalance target amount of tokens for the PSM to hold
+    /// @param psmTargetBalance target amount of tokens for the PSM to hold
     /// cannot manually change the underlying token, as this is pulled from the PSM
     /// underlying token is immutable in both pcv deposit and
-    function editPSMTargetBalance(address psm, uint248 targetBalance)
+    function editPSMTargetBalance(address psm, uint248 psmTargetBalance)
         external
         override
         onlyGovernor
@@ -115,9 +115,9 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         require(token == storedToken, "ERC20Allocator: psm changed underlying");
 
         PSMInfo storage psmToEdit = allPSMs[psm];
-        psmToEdit.targetBalance = targetBalance;
+        psmToEdit.targetBalance = psmTargetBalance;
 
-        emit PSMTargetBalanceUpdated(psm, targetBalance);
+        emit PSMTargetBalanceUpdated(psm, psmTargetBalance);
     }
 
     /// @notice disconnect an existing deposit from the allocator
@@ -160,19 +160,6 @@ contract ERC20Allocator is IERC20Allocator, CoreRef, RateLimitedV2 {
         delete pcvDepositToPSM[pcvDeposit];
 
         emit DepositDeleted(pcvDeposit);
-    }
-
-    /// @notice sweep target token, this shouldn't ever be needed as this contract
-    /// does not hold tokens
-    /// @param token to sweep
-    /// @param to recipient
-    /// @param amount of token to be sent
-    function sweep(
-        address token,
-        address to,
-        uint256 amount
-    ) external onlyGovernor {
-        IERC20(token).safeTransfer(to, amount);
     }
 
     /// ----------- Permissionless PCV Allocation APIs -----------

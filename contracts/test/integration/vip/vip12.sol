@@ -81,19 +81,19 @@ contract vip12 is DSTest, IVIP {
 
     function getArbitrumProposal()
         public
-        view
+        pure
         override
         returns (ITimelockSimulation.action[] memory)
     {
         revert("No Arbitrum proposal");
     }
 
-    function arbitrumSetup() public override {
+    function arbitrumSetup() public pure override {
         revert("No Arbitrum proposal");
     }
 
     /// assert oracle pass through is pointing to correct volt system oracle
-    function arbitrumValidate() public override {
+    function arbitrumValidate() public pure override {
         revert("No Arbitrum proposal");
     }
 }

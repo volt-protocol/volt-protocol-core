@@ -1,0 +1,72 @@
+CoreRefV2.emergencyAction(CoreRefV2.Call[]) (contracts/refs/CoreRefV2.sol#222-240) sends eth to arbitrary user
+	Dangerous calls:
+	- (success,returned) = target.call{value: value}(callData) (contracts/refs/CoreRefV2.sol#234-236)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#functions-that-send-ether-to-arbitrary-destinations
+Response: This is intended behavior as emergencyAction is designed to allow the sending of eth if it is stuck
+in a smart contract, as well as sending eth with a call to an external smart contract.
+Only governor can call the emergencyAction function, so there is no chance of unintended behavior unless the
+governor is compromised.
+
+GlobalReentrancyLock.unlock() (contracts/core/GlobalReentrancyLock.sol#101-108) uses a dangerous strict equality:
+	- require(bool,string)(block.number == _lastBlockEntered && _status == _ENTERED,GlobalReentrancyLock: system not entered) (contracts/core/GlobalReentrancyLock.sol#102-105)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#dangerous-strict-equalities
+Response: This is a false positive, and not an issue. The reason is that when the system is locked
+the _status variable is set to entered and the _lastBlockEntered variable is set to the current block
+number. This means, the contract can only be unlocked in the same block it was locked, which is
+intended behavior.
+
+PCVGuardian.constructor(address,address,address[])._core (contracts/pcv/PCVGuardian.sol#26) shadows:
+	- CoreRefV2._core (contracts/refs/CoreRefV2.sol#21) (state variable)
+OracleRef.constructor(address,address,address,int256,bool)._core (contracts/refs/OracleRef.sol#36) shadows:
+	- CoreRefV2._core (contracts/refs/CoreRefV2.sol#21) (state variable)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#local-variable-shadowing
+Response: Acknowledge, code works as intended, so will not fix.
+
+CoreRefV2.emergencyAction(CoreRefV2.Call[]).target (contracts/refs/CoreRefV2.sol#230) lacks a zero-check on :
+		- (success,returned) = target.call{value: value}(callData) (contracts/refs/CoreRefV2.sol#234-236)
+PCVGuardian.constructor(address,address,address[])._safeAddress (contracts/pcv/PCVGuardian.sol#27) lacks a zero-check on :
+		- safeAddress = _safeAddress (contracts/pcv/PCVGuardian.sol#30)
+PCVGuardian.setSafeAddress(address).newSafeAddress (contracts/pcv/PCVGuardian.sol#76) lacks a zero-check on :
+		- safeAddress = newSafeAddress (contracts/pcv/PCVGuardian.sol#83)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-zero-address-validation
+Response: Acknowledge, and will not fix.
+
+CoreRefV2.emergencyAction(CoreRefV2.Call[]) (contracts/refs/CoreRefV2.sol#222-240) has external calls inside a loop: (success,returned) = target.call{value: value}(callData) (contracts/refs/CoreRefV2.sol#234-236)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation/#calls-inside-a-loop
+Response: DoS attacks are not a valid vector when sender is a trusted governor and the function mutates no internal contract state.
+
+PegStabilityModule._validatePriceRange(Decimal.D256) (contracts/peg/PegStabilityModule.sol#319-323) is never used and should be removed
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#dead-code
+
+Pragma version0.8.13 (contracts/core/CoreV2.sol#2) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+Pragma version0.8.13 (contracts/core/GlobalReentrancyLock.sol#1) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+Pragma version0.8.13 (contracts/core/ICoreV2.sol#2) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+Pragma version0.8.13 (contracts/core/IGlobalReentrancyLock.sol#1) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+Pragma version0.8.13 (contracts/core/IPermissionsV2.sol#2) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+Pragma version0.8.13 (contracts/core/PermissionsV2.sol#2) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+Pragma version0.8.13 (contracts/core/VoltRoles.sol#2) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+Pragma version0.8.13 (contracts/pcv/PCVGuardian.sol#2) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+Pragma version0.8.13 (contracts/peg/IPegStabilityModule.sol#2) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+Pragma version0.8.13 (contracts/peg/IPriceBound.sol#1) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+Pragma version0.8.13 (contracts/peg/PegStabilityModule.sol#2) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+Pragma version0.8.13 (contracts/peg/PriceBoundPSM.sol#2) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+Pragma version0.8.13 (contracts/refs/CoreRefV2.sol#2) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+Pragma version0.8.13 (contracts/refs/ICoreRefV2.sol#2) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+Pragma version0.8.13 (contracts/refs/IOracleRef.sol#2) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+Pragma version0.8.13 (contracts/refs/OracleRef.sol#2) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.7
+solc-0.8.13 is not recommended for deployment
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#incorrect-versions-of-solidity
+
+Low level call in CoreRefV2.emergencyAction(CoreRefV2.Call[]) (contracts/refs/CoreRefV2.sol#222-240):
+	- (success,returned) = target.call{value: value}(callData) (contracts/refs/CoreRefV2.sol#234-236)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#low-level-calls
+
+Parameter Core.setVcon(IERC20)._vcon (contracts/core/Core.sol#27) is not in mixedCase
+Parameter CoreV2.setVcon(IERC20)._vcon (contracts/core/CoreV2.sol#34) is not in mixedCase
+Parameter CoreV2.setVolt(IVolt)._volt (contracts/core/CoreV2.sol#43) is not in mixedCase
+Parameter PermissionsV2.isMinter(address)._address (contracts/core/PermissionsV2.sol#155) is not in mixedCase
+Parameter PermissionsV2.isPCVController(address)._address (contracts/core/PermissionsV2.sol#169) is not in mixedCase
+Parameter PermissionsV2.isGovernor(address)._address (contracts/core/PermissionsV2.sol#183) is not in mixedCase
+Parameter PermissionsV2.isGuardian(address)._address (contracts/core/PermissionsV2.sol#197) is not in mixedCase
+Parameter PermissionsV2.isGlobalLocker(address)._address (contracts/core/PermissionsV2.sol#210) is not in mixedCase
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#conformance-to-solidity-naming-conventions

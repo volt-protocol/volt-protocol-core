@@ -4,18 +4,19 @@ pragma solidity =0.8.13;
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ITimelockSimulation} from "../utils/ITimelockSimulation.sol";
-import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
-import {DSTest} from "./../../unit/utils/DSTest.sol";
-import {Core} from "../../../core/Core.sol";
+
 import {Vm} from "./../../unit/utils/Vm.sol";
+import {Core} from "../../../core/Core.sol";
 import {IVIP} from "./IVIP.sol";
-import {AllRoles} from "./../utils/AllRoles.sol";
 import {Volt} from "../../../volt/Volt.sol";
-import {PriceBoundPSM} from "../../../peg/PriceBoundPSM.sol";
+import {DSTest} from "./../../unit/utils/DSTest.sol";
+import {AllRoles} from "./../utils/AllRoles.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {MakerRouter} from "../../../pcv/maker/MakerRouter.sol";
 import {IPCVGuardian} from "../../../pcv/IPCVGuardian.sol";
+import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
+import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
+import {ITimelockSimulation} from "../utils/ITimelockSimulation.sol";
 
 contract vip7 is DSTest, IVIP, AllRoles {
     using SafeERC20 for IERC20;
@@ -84,62 +85,54 @@ contract vip7 is DSTest, IVIP, AllRoles {
             ),
             0
         );
-        assertTrue(PriceBoundPSM(MainnetAddresses.VOLT_FEI_PSM).mintPaused());
+        assertTrue(
+            PegStabilityModule(MainnetAddresses.VOLT_FEI_PSM).mintPaused()
+        );
         assertTrue(
             PCVGuardian(MainnetAddresses.PCV_GUARDIAN).isWhitelistAddress(
                 MainnetAddresses.VOLT_DAI_PSM
             )
         );
         assertTrue(
-            !PriceBoundPSM(MainnetAddresses.VOLT_USDC_PSM).redeemPaused()
+            !PegStabilityModule(MainnetAddresses.VOLT_USDC_PSM).redeemPaused()
         );
 
-        assertTrue(PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).doInvert());
-        assertTrue(PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).isPriceValid());
-        assertEq(PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).floor(), 9_000);
+        assertTrue(
+            PegStabilityModule(MainnetAddresses.VOLT_DAI_PSM).doInvert()
+        );
+        assertTrue(
+            PegStabilityModule(MainnetAddresses.VOLT_DAI_PSM).isPriceValid()
+        );
         assertEq(
-            PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).ceiling(),
+            PegStabilityModule(MainnetAddresses.VOLT_DAI_PSM).floor(),
+            9_000
+        );
+        assertEq(
+            PegStabilityModule(MainnetAddresses.VOLT_DAI_PSM).ceiling(),
             10_000
         );
         assertEq(
-            address(PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).oracle()),
+            address(PegStabilityModule(MainnetAddresses.VOLT_DAI_PSM).oracle()),
             MainnetAddresses.ORACLE_PASS_THROUGH
         );
         assertEq(
             address(
-                PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).backupOracle()
+                PegStabilityModule(MainnetAddresses.VOLT_DAI_PSM).backupOracle()
             ),
             address(0)
         );
         assertEq(
-            PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).decimalsNormalizer(),
-            0
-        );
-        assertEq(
-            PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).mintFeeBasisPoints(),
-            0
-        );
-        assertEq(
-            PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).redeemFeeBasisPoints(),
+            PegStabilityModule(MainnetAddresses.VOLT_DAI_PSM)
+                .decimalsNormalizer(),
             0
         );
         assertEq(
             address(
-                PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).underlyingToken()
+                PegStabilityModule(MainnetAddresses.VOLT_DAI_PSM)
+                    .underlyingToken()
             ),
             address(MainnetAddresses.DAI)
         );
-        assertEq(
-            PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).reservesThreshold(),
-            type(uint256).max
-        );
-        assertEq(
-            address(
-                PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM).surplusTarget()
-            ),
-            address(1)
-        );
-
         assertEq(
             address(MakerRouter(MainnetAddresses.MAKER_ROUTER).DAI()),
             MainnetAddresses.DAI

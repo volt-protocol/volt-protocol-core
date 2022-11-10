@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 import {Core} from "../../../core/Core.sol";
 import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
-import {TribeRoles} from "../../../core/TribeRoles.sol";
+import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {DSTest} from "./../../unit/utils/DSTest.sol";
-import {L2Core} from "../../../core/L2Core.sol";
 import {Core} from "../../../core/Core.sol";
 import {Vm} from "./../../unit/utils/Vm.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";

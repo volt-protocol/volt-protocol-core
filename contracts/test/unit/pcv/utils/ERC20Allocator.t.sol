@@ -1,15 +1,15 @@
 pragma solidity =0.8.13;
 
 import {Vm} from "./../../utils/Vm.sol";
-import {ICore} from "../../../../core/ICore.sol";
+import {ICoreV2} from "../../../../core/ICoreV2.sol";
 import {DSTest} from "./../../utils/DSTest.sol";
 import {MockERC20} from "../../../../mock/MockERC20.sol";
-import {TribeRoles} from "../../../../core/TribeRoles.sol";
+import {VoltRoles} from "../../../../core/VoltRoles.sol";
 import {ERC20Allocator} from "../../../../pcv/utils/ERC20Allocator.sol";
 import {PCVGuardAdmin} from "../../../../pcv/PCVGuardAdmin.sol";
 import {PCVDeposit} from "../../../../pcv/PCVDeposit.sol";
-import {ERC20HoldingPCVDeposit} from "../../../../pcv/ERC20HoldingPCVDeposit.sol";
-import {getCore, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.sol";
+import {ERC20HoldingPCVDeposit} from "../../../../mock/ERC20HoldingPCVDeposit.sol";
+import {getCoreV2, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "hardhat/console.sol";
@@ -30,7 +30,7 @@ contract UnitTestERC20Allocator is DSTest {
     /// @notice emitted when an existing deposit is deleted
     event DepositDeleted(address psm);
 
-    ICore private core;
+    ICoreV2 private core;
     Vm public constant vm = Vm(HEVM_ADDRESS);
     VoltTestAddresses public addresses = getAddresses();
 
@@ -59,7 +59,7 @@ contract UnitTestERC20Allocator is DSTest {
     uint128 private constant bufferCap = 10_000_000e18;
 
     function setUp() public {
-        core = getCore();
+        core = getCoreV2();
         token = new MockERC20();
 
         pcvDeposit = new ERC20HoldingPCVDeposit(
@@ -616,7 +616,6 @@ contract UnitTestERC20Allocator is DSTest {
         uint256 bufferEnd = allocator.buffer();
         assertEq(bufferEnd, bufferCap - targetBalance / 2);
         /// multiply by 2 to get over buffer cap and fully replenish buffer
-        uint256 skimAmount = (bufferCap - bufferEnd) * 2;
         token.mint(address(psm), (targetBalance * 3) / 2);
 
         assertTrue(allocator.checkSkimCondition(address(pcvDeposit)));

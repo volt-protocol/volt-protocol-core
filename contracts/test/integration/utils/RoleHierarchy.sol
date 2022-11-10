@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 import {Core, Vcon, Volt, IERC20, IVolt} from "../../../core/Core.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
-import {TribeRoles} from "../../../core/TribeRoles.sol";
+import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {DSTest} from "./../../unit/utils/DSTest.sol";
-import {L2Core} from "../../../core/L2Core.sol";
 import {Core} from "../../../core/Core.sol";
 import {Vm} from "./../../unit/utils/Vm.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
@@ -21,13 +20,13 @@ contract RoleHierarchy is DSTest {
 
     constructor() {
         /// roles and their hierarchies are the same on both mainnet and arbitrum
-        roleHierarchy.setRole(TribeRoles.GOVERNOR);
-        roleHierarchy.insert(TribeRoles.GOVERNOR, TribeRoles.GUARDIAN);
-        roleHierarchy.insert(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER);
-        roleHierarchy.insert(TribeRoles.GOVERNOR, TribeRoles.MINTER);
-        roleHierarchy.insert(TribeRoles.GOVERNOR, TribeRoles.PCV_GUARD_ADMIN);
-        roleHierarchy.insert(TribeRoles.PCV_GUARD_ADMIN, TribeRoles.PCV_GUARD);
-        roleHierarchy.insert(TribeRoles.GOVERNOR, TribeRoles.PSM_ADMIN_ROLE);
+        roleHierarchy.setRole(VoltRoles.GOVERNOR);
+        roleHierarchy.insert(VoltRoles.GOVERNOR, VoltRoles.GUARDIAN);
+        roleHierarchy.insert(VoltRoles.GOVERNOR, VoltRoles.PCV_CONTROLLER);
+        roleHierarchy.insert(VoltRoles.GOVERNOR, VoltRoles.MINTER);
+        roleHierarchy.insert(VoltRoles.GOVERNOR, VoltRoles.PCV_GUARD_ADMIN);
+        roleHierarchy.insert(VoltRoles.PCV_GUARD_ADMIN, VoltRoles.PCV_GUARD);
+        roleHierarchy.insert(VoltRoles.GOVERNOR, VoltRoles.PSM_ADMIN_ROLE);
     }
 
     /// load tree to map
@@ -68,7 +67,7 @@ contract RoleHierarchy is DSTest {
                     );
                 } else {
                     /// if no address has the role, create and grant it
-                    core.createRole(subordinateRoles[i], TribeRoles.GOVERNOR);
+                    core.createRole(subordinateRoles[i], VoltRoles.GOVERNOR);
                     core.grantRole(subordinateRoles[i], toRevokeRole);
                     assertTrue(core.hasRole(subordinateRoles[i], toRevokeRole));
                     core.revokeRole(subordinateRoles[i], toRevokeRole);

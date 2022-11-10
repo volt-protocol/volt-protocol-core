@@ -3,15 +3,15 @@ pragma solidity =0.8.13;
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
-import {ITimelockSimulation} from "../utils/ITimelockSimulation.sol";
-import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
-import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
-import {PriceBoundPSM} from "../../../peg/PriceBoundPSM.sol";
-import {AllRoles} from "./../utils/AllRoles.sol";
-import {DSTest} from "./../../unit/utils/DSTest.sol";
+import {Vm} from "./../../unit/utils/Vm.sol";
 import {Core} from "../../../core/Core.sol";
 import {IVIP} from "./IVIP.sol";
-import {Vm} from "./../../unit/utils/Vm.sol";
+import {DSTest} from "./../../unit/utils/DSTest.sol";
+import {AllRoles} from "./../utils/AllRoles.sol";
+import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
+import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
+import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
+import {ITimelockSimulation} from "../utils/ITimelockSimulation.sol";
 
 contract vip6 is DSTest, IVIP {
     using SafeCast for *;
@@ -92,21 +92,15 @@ contract vip6 is DSTest, IVIP {
     }
 
     /// @notice arbitrum usdc volt PSM
-    PriceBoundPSM private immutable usdcPSM =
-        PriceBoundPSM(ArbitrumAddresses.VOLT_USDC_PSM);
+    PegStabilityModule private immutable usdcPSM =
+        PegStabilityModule(ArbitrumAddresses.VOLT_USDC_PSM);
 
     /// @notice arbitrum dai volt PSM
-    PriceBoundPSM private immutable daiPSM =
-        PriceBoundPSM(ArbitrumAddresses.VOLT_DAI_PSM);
+    PegStabilityModule private immutable daiPSM =
+        PegStabilityModule(ArbitrumAddresses.VOLT_DAI_PSM);
 
     /// no-op
     function arbitrumSetup() public override {}
 
-    function arbitrumValidate() public override {
-        assertEq(usdcPSM.mintFeeBasisPoints(), 0);
-        assertEq(usdcPSM.redeemFeeBasisPoints(), 0);
-
-        assertEq(daiPSM.mintFeeBasisPoints(), 0);
-        assertEq(daiPSM.redeemFeeBasisPoints(), 0);
-    }
+    function arbitrumValidate() public override {}
 }

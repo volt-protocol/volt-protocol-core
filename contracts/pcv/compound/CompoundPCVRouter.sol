@@ -6,22 +6,22 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {IDSSPSM} from "./../maker/IDSSPSM.sol";
-import {CoreRef} from "../../refs/CoreRef.sol";
 import {Constants} from "../../Constants.sol";
-import {TribeRoles} from "../../core/TribeRoles.sol";
+import {CoreRefV2} from "../../refs/CoreRefV2.sol";
+import {VoltRoles} from "../../core/VoltRoles.sol";
 import {PCVDeposit} from "../PCVDeposit.sol";
 import {IPegStabilityModule} from "../../peg/IPegStabilityModule.sol";
 
 /// @notice This contracts allows for swaps between DAI and USDC
 /// by using the Maker DAI-USDC PSM
 /// @author Elliot Friedman, Kassim
-contract CompoundPCVRouter is CoreRef {
+contract CompoundPCVRouter is CoreRefV2 {
     using SafeERC20 for IERC20;
 
-    /// @notice reference to the Compound PCV deposit for USDC
+    /// @notice reference to the Compound PCV deposit for DAI
     PCVDeposit public immutable daiPcvDeposit;
 
-    /// @notice reference to the Compound PCV deposit for DAI
+    /// @notice reference to the Compound PCV deposit for USDC
     PCVDeposit public immutable usdcPcvDeposit;
 
     /// @notice reference to the Maker DAI-USDC PSM that this router interacts with
@@ -52,7 +52,7 @@ contract CompoundPCVRouter is CoreRef {
         address _core,
         PCVDeposit _daiPcvDeposit,
         PCVDeposit _usdcPcvDeposit
-    ) CoreRef(_core) {
+    ) CoreRefV2(_core) {
         daiPcvDeposit = _daiPcvDeposit;
         usdcPcvDeposit = _usdcPcvDeposit;
     }
@@ -63,9 +63,9 @@ contract CompoundPCVRouter is CoreRef {
     function swapUsdcForDai(uint256 amountUsdcIn)
         external
         hasAnyOfThreeRoles(
-            TribeRoles.GOVERNOR,
-            TribeRoles.PCV_CONTROLLER,
-            TribeRoles.PCV_GUARD
+            VoltRoles.GOVERNOR,
+            VoltRoles.PCV_CONTROLLER,
+            VoltRoles.PCV_GUARD
         )
     {
         require(daiPSM.tin() == 0, "CompoundPCVRouter: maker fee not 0");
@@ -82,9 +82,9 @@ contract CompoundPCVRouter is CoreRef {
     function swapDaiForUsdc(uint256 amountDaiIn)
         external
         hasAnyOfThreeRoles(
-            TribeRoles.GOVERNOR,
-            TribeRoles.PCV_CONTROLLER,
-            TribeRoles.PCV_GUARD
+            VoltRoles.GOVERNOR,
+            VoltRoles.PCV_CONTROLLER,
+            VoltRoles.PCV_GUARD
         )
     {
         require(daiPSM.tout() == 0, "CompoundPCVRouter: maker fee not 0");

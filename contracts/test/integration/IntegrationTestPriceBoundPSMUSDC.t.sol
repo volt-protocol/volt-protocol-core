@@ -1,25 +1,27 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {MockPCVDepositV2} from "../../mock/MockPCVDepositV2.sol";
-import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
-import {MockERC20} from "../../mock/MockERC20.sol";
-import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
-import {ICore} from "../../core/ICore.sol";
-import {Core} from "../../core/Core.sol";
-import {IVolt, Volt} from "../../volt/Volt.sol";
-import {PriceBoundPSM, PegStabilityModule} from "../../peg/PriceBoundPSM.sol";
-import {getCore, getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
-import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
+
 import {Vm} from "./../unit/utils/Vm.sol";
+import {Core} from "../../core/Core.sol";
+import {ICore} from "../../core/ICore.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
-import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {Constants} from "../../Constants.sol";
+import {MockERC20} from "../../mock/MockERC20.sol";
+import {IVolt, Volt} from "../../volt/Volt.sol";
+import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
+import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
+import {MockPCVDepositV2} from "../../mock/MockPCVDepositV2.sol";
+import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
+import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
+import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
+import {getCore, getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
 
 contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     using SafeCast for *;
+    PegStabilityModule private psm;
     ICore private core = ICore(MainnetAddresses.CORE);
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
     IERC20 private usdc = IERC20(MainnetAddresses.USDC);
@@ -34,26 +36,28 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     uint256 public constant mintAmount = 10_000_000e6;
     uint256 public constant voltMintAmount = 10_000_000e18;
 
-    uint256 public constant bufferCap = 10_000_000e18;
-    uint256 public constant individualMaxBufferCap = 5_000_000e18;
-    uint256 public constant rps = 10_000e18;
-
-    /// @notice live FEI PCV Deposit
-    ERC20CompoundPCVDeposit public immutable rariVoltPCVDeposit =
-        ERC20CompoundPCVDeposit(MainnetAddresses.RARI_VOLT_PCV_DEPOSIT);
-
     /// @notice Oracle Pass Through contract
     OraclePassThrough public oracle =
         OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
-    /// these are inverted
-    uint256 voltFloorPrice = 9_000e12; /// 1 volt for .9 usdc is the max allowable price
-    uint256 voltCeilingPrice = 10_000e12; /// 1 volt for 1 usdc is the minimum price
-    uint256 reservesThreshold = type(uint256).max; /// max uint so that surplus can never be allocated into the pcv deposit
+    uint128 voltFloorPrice = 1.05e6; /// 1 volt for 1.05 usdc is the min pirce
+    uint128 voltCeilingPrice = 1.1e6; /// 1 volt for 1.1 usdc is the max price
 
     function setUp() public {
+        /// create PSM
+        psm = new PegStabilityModule(
+            address(core),
+            address(oracle),
+            address(0),
+            -12,
+            false,
+            IERC20(address(usdc)),
+            voltFloorPrice,
+            voltCeilingPrice
+        );
+
         uint256 balance = usdc.balanceOf(makerUSDCPSM);
         vm.prank(makerUSDCPSM);
         usdc.transfer(address(this), balance);
@@ -72,17 +76,14 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
 
     /// @notice PSM is set up correctly
     function testSetUpCorrectly() public {
-        assertTrue(psm.doInvert());
+        assertTrue(!psm.doInvert());
         assertTrue(psm.isPriceValid());
         assertEq(psm.floor(), voltFloorPrice);
         assertEq(psm.ceiling(), voltCeilingPrice);
         assertEq(address(psm.oracle()), address(oracle));
         assertEq(address(psm.backupOracle()), address(0));
-        assertEq(psm.decimalsNormalizer(), 12);
-        assertEq(psm.mintFeeBasisPoints(), 0); /// mint costs 30 bps
-        assertEq(psm.redeemFeeBasisPoints(), 0); /// redeem has no fee
+        assertEq(psm.decimalsNormalizer(), -12);
         assertEq(address(psm.underlyingToken()), address(usdc));
-        assertEq(psm.reservesThreshold(), reservesThreshold);
     }
 
     /// @notice PSM is set up correctly and redeem view function is working
@@ -90,10 +91,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
         uint256 amountVoltIn = 100e18;
         uint256 currentPegPrice = oracle.getCurrentOraclePrice() / 1e12;
 
-        uint256 fee = (amountVoltIn * psm.redeemFeeBasisPoints()) /
-            Constants.BASIS_POINTS_GRANULARITY;
-
-        uint256 amountOut = ((amountVoltIn * currentPegPrice) / 1e18) - fee;
+        uint256 amountOut = ((amountVoltIn * currentPegPrice) / 1e18);
 
         assertApproxEq(
             psm.getRedeemAmountOut(amountVoltIn).toInt256(),
@@ -105,16 +103,13 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     /// @notice PSM is set up correctly and view functions are working
     function testGetMaxMintAmountOut() public {
         uint256 startingBalance = volt.balanceOf(address(psm));
-        assertEq(psm.getMaxMintAmountOut(), bufferCap + startingBalance);
+        assertEq(psm.getMaxMintAmountOut(), startingBalance);
 
         vm.startPrank(MainnetAddresses.GOVERNOR);
         volt.mint(address(psm), mintAmount);
         vm.stopPrank();
 
-        assertEq(
-            psm.getMaxMintAmountOut(),
-            bufferCap + mintAmount + startingBalance
-        );
+        assertEq(psm.getMaxMintAmountOut(), mintAmount + startingBalance);
     }
 
     /// @notice PSM is set up correctly and view functions are working
@@ -125,12 +120,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
         // The USDC PSM returns a result scaled up 1e12, so we scale the amountOut and fee
         // by this same amount to maintain precision
 
-        uint256 fee = ((amountUSDCIn * psm.mintFeeBasisPoints()) /
-            Constants.BASIS_POINTS_GRANULARITY) * 1e12;
-
-        uint256 amountOut = (((amountUSDCIn * 1e18) / currentPegPrice)) *
-            1e12 -
-            fee;
+        uint256 amountOut = (((amountUSDCIn * 1e18) / currentPegPrice)) * 1e12;
 
         assertApproxEq(
             psm.getMintAmountOut(amountUSDCIn).toInt256(),
@@ -234,78 +224,6 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
         uint256 endingBalance = underlyingToken.balanceOf(address(this));
 
         assertEq(endingBalance - startingBalance, mintAmount);
-    }
-
-    /// @notice set global rate limited minter fails when caller is governor and new address is 0
-    function testSetPCVDepositFailureZeroAddress() public {
-        vm.startPrank(MainnetAddresses.GOVERNOR);
-
-        vm.expectRevert(
-            bytes("PegStabilityModule: Invalid new surplus target")
-        );
-        psm.setSurplusTarget(IPCVDeposit(address(0)));
-
-        vm.stopPrank();
-    }
-
-    /// @notice set PCV deposit fails when caller is governor and new address is 0
-    function testSetPCVDepositFailureNonGovernor() public {
-        vm.expectRevert(
-            bytes("CoreRef: Caller is not a governor or contract admin")
-        );
-        psm.setSurplusTarget(IPCVDeposit(address(0)));
-    }
-
-    /// @notice set PCV Deposit succeeds when caller is governor and underlying tokens match
-    function testSetPCVDepositSuccess() public {
-        vm.startPrank(MainnetAddresses.GOVERNOR);
-
-        MockPCVDepositV2 newPCVDeposit = new MockPCVDepositV2(
-            address(core),
-            address(underlyingToken),
-            0,
-            0
-        );
-
-        psm.setSurplusTarget(IPCVDeposit(address(newPCVDeposit)));
-
-        vm.stopPrank();
-
-        assertEq(address(newPCVDeposit), address(psm.surplusTarget()));
-    }
-
-    /// @notice set mint fee succeeds
-    function testSetMintFeeSuccess() public {
-        vm.prank(MainnetAddresses.GOVERNOR);
-        psm.setMintFee(100);
-
-        assertEq(psm.mintFeeBasisPoints(), 100);
-    }
-
-    /// @notice set mint fee fails unauthorized
-    function testSetMintFeeFailsWithoutCorrectRoles() public {
-        vm.expectRevert(
-            bytes("CoreRef: Caller is not a governor or contract admin")
-        );
-
-        psm.setMintFee(100);
-    }
-
-    /// @notice set redeem fee succeeds
-    function testSetRedeemFeeSuccess() public {
-        vm.prank(MainnetAddresses.GOVERNOR);
-        psm.setRedeemFee(100);
-
-        assertEq(psm.redeemFeeBasisPoints(), 100);
-    }
-
-    /// @notice set redeem fee fails unauthorized
-    function testSetRedeemFeeFailsWithoutCorrectRoles() public {
-        vm.expectRevert(
-            bytes("CoreRef: Caller is not a governor or contract admin")
-        );
-
-        psm.setRedeemFee(100);
     }
 
     /// @notice redeem fails when paused

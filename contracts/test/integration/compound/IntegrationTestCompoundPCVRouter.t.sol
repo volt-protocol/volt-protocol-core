@@ -1,4 +1,4 @@
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -10,12 +10,12 @@ import {DSTest} from "../../unit/utils/DSTest.sol";
 import {IDSSPSM} from "./../../../pcv/maker/IDSSPSM.sol";
 import {stdError} from "../../unit/utils/StdLib.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
-import {TribeRoles} from "../../../core/TribeRoles.sol";
+import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
 import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
 import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
-import {ERC20CompoundPCVDeposit} from "../../../pcv/compound/ERC20CompoundPCVDeposit.sol";
+import {MorphoCompoundPCVDeposit} from "../../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
 
 contract CompoundPCVRouterIntegrationTest is DSTest {
     using SafeCast for *;
@@ -33,12 +33,17 @@ contract CompoundPCVRouterIntegrationTest is DSTest {
     IDSSPSM public immutable daiPSM =
         IDSSPSM(0x89B78CfA322F6C5dE0aBcEecab66Aee45393cC5A);
 
-    CompoundPCVRouter private compoundRouter;
+    CompoundPCVRouter private compoundRouter =
+        CompoundPCVRouter(MainnetAddresses.MORPHO_COMPOUND_PCV_ROUTER);
 
-    ERC20CompoundPCVDeposit private daiDeposit =
-        ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_DAI_PCV_DEPOSIT);
-    ERC20CompoundPCVDeposit private usdcDeposit =
-        ERC20CompoundPCVDeposit(MainnetAddresses.COMPOUND_USDC_PCV_DEPOSIT);
+    MorphoCompoundPCVDeposit private daiDeposit =
+        MorphoCompoundPCVDeposit(
+            MainnetAddresses.MORPHO_COMPOUND_DAI_PCV_DEPOSIT
+        );
+    MorphoCompoundPCVDeposit private usdcDeposit =
+        MorphoCompoundPCVDeposit(
+            MainnetAddresses.MORPHO_COMPOUND_USDC_PCV_DEPOSIT
+        );
 
     address public immutable pcvGuard = MainnetAddresses.EOA_1;
     PCVGuardian public immutable pcvGuardian =
@@ -51,15 +56,6 @@ contract CompoundPCVRouterIntegrationTest is DSTest {
     uint256 public constant USDC_SCALING_FACTOR = 1e12;
 
     function setUp() public {
-        compoundRouter = new CompoundPCVRouter(
-            address(core),
-            daiDeposit,
-            usdcDeposit
-        );
-
-        vm.prank(governor);
-        core.grantPCVController(address(compoundRouter));
-
         cDai.accrueInterest();
         cUsdc.accrueInterest();
     }
@@ -154,7 +150,7 @@ contract CompoundPCVRouterIntegrationTest is DSTest {
         uint256 withdrawAmount = usdcDeposit.balance();
         vm.startPrank(pcvGuard);
         pcvGuardian.withdrawAllToSafeAddress(address(usdcDeposit)); /// pull all funds from usdc pcv deposit
-        vm.expectRevert("CompoundPCVDeposit: redeem error"); /// CUSDC has old cToken implementation that fails without reverting
+        vm.expectRevert(stdError.arithmeticError);
         compoundRouter.swapUsdcForDai(withdrawAmount); /// withdraw all balance
         vm.stopPrank();
     }

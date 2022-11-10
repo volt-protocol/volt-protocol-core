@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {CoreRef} from "../refs/CoreRef.sol";
-import {IPCVGuardian} from "./IPCVGuardian.sol";
+
+import {CoreRefV2} from "../refs/CoreRefV2.sol";
+import {VoltRoles} from "../core/VoltRoles.sol";
 import {IPCVDeposit} from "./IPCVDeposit.sol";
+import {IPCVGuardian} from "./IPCVGuardian.sol";
 import {CoreRefPausableLib} from "../libs/CoreRefPausableLib.sol";
-import {TribeRoles} from "../core/TribeRoles.sol";
 
 /// @notice PCV Guardian is a contract to safeguard protocol funds
-/// by being able to withdraw whitelisted PCV deposits to an immutable safe address
-contract PCVGuardian is IPCVGuardian, CoreRef {
+/// by being able to withdraw whitelisted PCV deposits to a safe address
+contract PCVGuardian is IPCVGuardian, CoreRefV2 {
     using CoreRefPausableLib for address;
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -19,13 +20,13 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
     EnumerableSet.AddressSet private whitelistAddresses;
 
     ///@notice safe address where PCV funds can be withdrawn to
-    address public immutable safeAddress;
+    address public safeAddress;
 
     constructor(
         address _core,
         address _safeAddress,
         address[] memory _whitelistAddresses
-    ) CoreRef(_core) {
+    ) CoreRefV2(_core) {
         safeAddress = _safeAddress;
 
         // improbable to ever overflow
@@ -69,6 +70,20 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
     }
 
     // ---------- Governor-Only State-Changing API ----------
+
+    /// @notice governor-only method to change the safe address
+    /// @param newSafeAddress new safe address
+    function setSafeAddress(address newSafeAddress)
+        external
+        override
+        onlyGovernor
+    {
+        address oldSafeAddress = safeAddress;
+
+        safeAddress = newSafeAddress;
+
+        emit SafeAddressUpdated(oldSafeAddress, newSafeAddress);
+    }
 
     /// @notice governor-only method to whitelist a pcvDeposit address to withdraw funds from
     /// @param pcvDeposit the address to whitelist
@@ -129,9 +144,9 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         external
         override
         hasAnyOfThreeRoles(
-            TribeRoles.GOVERNOR,
-            TribeRoles.GUARDIAN,
-            TribeRoles.PCV_GUARD
+            VoltRoles.GOVERNOR,
+            VoltRoles.GUARDIAN,
+            VoltRoles.PCV_GUARD
         )
         onlyWhitelist(pcvDeposit)
     {
@@ -144,9 +159,9 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         external
         override
         hasAnyOfThreeRoles(
-            TribeRoles.GOVERNOR,
-            TribeRoles.GUARDIAN,
-            TribeRoles.PCV_GUARD
+            VoltRoles.GOVERNOR,
+            VoltRoles.GUARDIAN,
+            VoltRoles.PCV_GUARD
         )
         onlyWhitelist(pcvDeposit)
     {
@@ -165,9 +180,9 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         external
         override
         hasAnyOfThreeRoles(
-            TribeRoles.GOVERNOR,
-            TribeRoles.GUARDIAN,
-            TribeRoles.PCV_GUARD
+            VoltRoles.GOVERNOR,
+            VoltRoles.GUARDIAN,
+            VoltRoles.PCV_GUARD
         )
         onlyWhitelist(pcvDeposit)
     {
@@ -181,9 +196,9 @@ contract PCVGuardian is IPCVGuardian, CoreRef {
         external
         override
         hasAnyOfThreeRoles(
-            TribeRoles.GOVERNOR,
-            TribeRoles.GUARDIAN,
-            TribeRoles.PCV_GUARD
+            VoltRoles.GOVERNOR,
+            VoltRoles.GUARDIAN,
+            VoltRoles.PCV_GUARD
         )
         onlyWhitelist(pcvDeposit)
     {

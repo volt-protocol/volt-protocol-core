@@ -1,17 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {PCVGuardAdmin} from "../../../pcv/PCVGuardAdmin.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
 import {MockPCVDepositV2} from "../../../mock/MockPCVDepositV2.sol";
 import {getCore, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
-import {TribeRoles} from "../../../core/TribeRoles.sol";
+import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {ICore} from "../../../core/ICore.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {Vm} from "./../utils/Vm.sol";
 
 contract UnitTestPCVGuardian is DSTest {
+    event SafeAddressUpdated(
+        address indexed oldSafeAddress,
+        address indexed newSafeAddress
+    );
+
     PCVGuardian private pcvGuardian;
     PCVGuardAdmin private pcvGuardAdmin;
     MockERC20 public underlyingToken;
@@ -59,11 +64,11 @@ contract UnitTestPCVGuardian is DSTest {
         core.grantGuardian(address(pcvGuardian));
 
         // create the PCV_GUARD_ADMIN role and grant it to the PCVGuardAdmin contract
-        core.createRole(TribeRoles.PCV_GUARD_ADMIN, TribeRoles.GOVERNOR);
-        core.grantRole(TribeRoles.PCV_GUARD_ADMIN, address(pcvGuardAdmin));
+        core.createRole(VoltRoles.PCV_GUARD_ADMIN, VoltRoles.GOVERNOR);
+        core.grantRole(VoltRoles.PCV_GUARD_ADMIN, address(pcvGuardAdmin));
 
         // create the PCV guard role, and grant it to the 'guard' address
-        core.createRole(TribeRoles.PCV_GUARD, TribeRoles.PCV_GUARD_ADMIN);
+        core.createRole(VoltRoles.PCV_GUARD, VoltRoles.PCV_GUARD_ADMIN);
         pcvGuardAdmin.grantPCVGuardRole(guard);
 
         underlyingToken.mint(address(pcvDeposit), mintAmount);
@@ -79,7 +84,7 @@ contract UnitTestPCVGuardian is DSTest {
 
     function testPCVGuardAdminRole() public {
         assertTrue(
-            core.hasRole(TribeRoles.PCV_GUARD_ADMIN, address(pcvGuardAdmin))
+            core.hasRole(VoltRoles.PCV_GUARD_ADMIN, address(pcvGuardAdmin))
         );
     }
 
@@ -431,10 +436,46 @@ contract UnitTestPCVGuardian is DSTest {
         assertTrue(pcvGuardian.isWhitelistAddress(address(0x123)));
     }
 
+    function testAddWhiteListAddressNonGovernorFails() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        pcvGuardian.addWhitelistAddress(address(0x123));
+    }
+
+    function testAddWhiteListAddressesNonGovernorFails() public {
+        address[] memory toWhitelist = new address[](1);
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        pcvGuardian.addWhitelistAddresses(toWhitelist);
+    }
+
+    function testAddWhiteListAddressesGovernorSucceeds(address newDeposit)
+        public
+    {
+        vm.assume(!pcvGuardian.isWhitelistAddress(newDeposit));
+
+        address[] memory toWhitelist = new address[](1);
+        toWhitelist[0] = newDeposit;
+        vm.prank(addresses.governorAddress);
+        pcvGuardian.addWhitelistAddresses(toWhitelist);
+        assertTrue(pcvGuardian.isWhitelistAddress(newDeposit));
+    }
+
     function testRemoveWhiteListAddress() public {
         vm.prank(addresses.governorAddress);
 
         pcvGuardian.removeWhitelistAddress(address(pcvDeposit));
         assertTrue(!pcvGuardian.isWhitelistAddress(address(pcvDeposit)));
+    }
+
+    function testSetSafeAddressNonGovernorFails() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        pcvGuardian.setSafeAddress(address(0));
+    }
+
+    function testSetSafeAddressGovernorSucceeds() public {
+        vm.expectEmit(true, true, false, true, address(pcvGuardian));
+        emit SafeAddressUpdated(address(this), address(0));
+        vm.prank(addresses.governorAddress);
+        pcvGuardian.setSafeAddress(address(0));
+        assertEq(pcvGuardian.safeAddress(), address(0));
     }
 }

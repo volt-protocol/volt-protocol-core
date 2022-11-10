@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
-import "./IOracleRef.sol";
-import "./TempCoreRef.sol";
-import "./CoreRef.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+
+import {IOracle} from "../oracle/IOracle.sol";
+import {Decimal} from "../external/Decimal.sol";
+import {CoreRefV2} from "./CoreRefV2.sol";
+import {IOracleRef} from "./IOracleRef.sol";
 
 /// @title Reference to an Oracle
-/// @author Fei Protocol
+/// @author Volt & Fei Protocol
 /// @notice defines some utilities around interacting with the referenced oracle
-abstract contract OracleRef is IOracleRef, TempCoreRef {
+abstract contract OracleRef is IOracleRef, CoreRefV2 {
     using Decimal for Decimal.D256;
     using SafeCast for int256;
 
@@ -36,13 +37,10 @@ abstract contract OracleRef is IOracleRef, TempCoreRef {
         address _oracle,
         address _backupOracle,
         int256 _decimalsNormalizer,
-        bool _doInvert,
-        IVolt _volt
-    ) TempCoreRef(_core, _volt) {
+        bool _doInvert
+    ) CoreRefV2(_core) {
         _setOracle(_oracle);
-        if (_backupOracle != address(0) && _backupOracle != _oracle) {
-            _setBackupOracle(_backupOracle);
-        }
+        _setBackupOracle(_backupOracle);
         _setDoInvert(_doInvert);
         _setDecimalsNormalizer(_decimalsNormalizer);
     }
@@ -53,28 +51,12 @@ abstract contract OracleRef is IOracleRef, TempCoreRef {
         _setOracle(newOracle);
     }
 
-    /// @notice sets the flag for whether to invert or not
-    /// @param newDoInvert the new flag for whether to invert
-    function setDoInvert(bool newDoInvert) external override onlyGovernor {
-        _setDoInvert(newDoInvert);
-    }
-
-    /// @notice sets the new decimalsNormalizer
-    /// @param newDecimalsNormalizer the new decimalsNormalizer
-    function setDecimalsNormalizer(int256 newDecimalsNormalizer)
-        external
-        override
-        onlyGovernor
-    {
-        _setDecimalsNormalizer(newDecimalsNormalizer);
-    }
-
     /// @notice sets the referenced backup oracle
     /// @param newBackupOracle the new backup oracle to reference
     function setBackupOracle(address newBackupOracle)
         external
         override
-        onlyGovernorOrAdmin
+        onlyGovernor
     {
         _setBackupOracle(newBackupOracle);
     }
@@ -125,49 +107,33 @@ abstract contract OracleRef is IOracleRef, TempCoreRef {
         return _peg;
     }
 
-    function _setOracle(address newOracle) internal {
+    function _setOracle(address newOracle) private {
         require(newOracle != address(0), "OracleRef: zero address");
         address oldOracle = address(oracle);
         oracle = IOracle(newOracle);
         emit OracleUpdate(oldOracle, newOracle);
     }
 
-    // Supports zero address if no backup
-    function _setBackupOracle(address newBackupOracle) internal {
+    /// Supports zero address if no backup
+    function _setBackupOracle(address newBackupOracle) private {
         address oldBackupOracle = address(backupOracle);
         backupOracle = IOracle(newBackupOracle);
         emit BackupOracleUpdate(oldBackupOracle, newBackupOracle);
     }
 
-    function _setDoInvert(bool newDoInvert) internal {
+    function _setDoInvert(bool newDoInvert) private {
         bool oldDoInvert = doInvert;
         doInvert = newDoInvert;
-
-        if (oldDoInvert != newDoInvert) {
-            _setDecimalsNormalizer(-1 * decimalsNormalizer);
-        }
 
         emit InvertUpdate(oldDoInvert, newDoInvert);
     }
 
-    function _setDecimalsNormalizer(int256 newDecimalsNormalizer) internal {
+    function _setDecimalsNormalizer(int256 newDecimalsNormalizer) private {
         int256 oldDecimalsNormalizer = decimalsNormalizer;
         decimalsNormalizer = newDecimalsNormalizer;
         emit DecimalsNormalizerUpdate(
             oldDecimalsNormalizer,
             newDecimalsNormalizer
         );
-    }
-
-    function _setDecimalsNormalizerFromToken(address token) internal {
-        int256 feiDecimals = 18;
-        int256 _decimalsNormalizer = feiDecimals -
-            int256(uint256(IERC20Metadata(token).decimals()));
-
-        if (doInvert) {
-            _decimalsNormalizer = -1 * _decimalsNormalizer;
-        }
-
-        _setDecimalsNormalizer(_decimalsNormalizer);
     }
 }

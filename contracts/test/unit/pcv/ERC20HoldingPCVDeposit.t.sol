@@ -4,11 +4,11 @@ import {Vm} from "./../utils/Vm.sol";
 import {ICore} from "../../../core/ICore.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
-import {TribeRoles} from "../../../core/TribeRoles.sol";
+import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {IPCVDeposit} from "../../../pcv/IPCVDeposit.sol";
 import {PCVGuardAdmin} from "../../../pcv/PCVGuardAdmin.sol";
 import {MockERC20, IERC20} from "../../../mock/MockERC20.sol";
-import {ERC20HoldingPCVDeposit} from "../../../pcv/ERC20HoldingPCVDeposit.sol";
+import {ERC20HoldingPCVDeposit} from "../../../mock/ERC20HoldingPCVDeposit.sol";
 import {getCore, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
 
 contract UnitTestERC20HoldingsPCVDeposit is DSTest {

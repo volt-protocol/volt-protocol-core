@@ -1,17 +1,17 @@
 pragma solidity =0.8.13;
 
-import {TribeRoles} from "contracts/core/TribeRoles.sol";
+import {VoltRoles} from "contracts/core/VoltRoles.sol";
 
 contract AllRolesConfig {
     /// @notice all roles
     bytes32[7] public allRoles = [
-        TribeRoles.GOVERNOR,
-        TribeRoles.GUARDIAN,
-        TribeRoles.PCV_CONTROLLER,
-        TribeRoles.MINTER,
-        TribeRoles.PCV_GUARD,
-        TribeRoles.PCV_GUARD_ADMIN,
-        TribeRoles.PSM_ADMIN_ROLE
+        VoltRoles.GOVERNOR,
+        VoltRoles.GUARDIAN,
+        VoltRoles.PCV_CONTROLLER,
+        VoltRoles.MINTER,
+        VoltRoles.PCV_GUARD,
+        VoltRoles.PCV_GUARD_ADMIN,
+        VoltRoles.PSM_ADMIN_ROLE
     ];
 
     /// how many of each role exists

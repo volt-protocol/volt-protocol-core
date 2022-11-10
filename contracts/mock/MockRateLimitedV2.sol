@@ -11,7 +11,7 @@ contract MockRateLimitedV2 is RateLimitedV2 {
         uint128 _bufferCap
     )
         RateLimitedV2(_maxRateLimitPerSecond, _rateLimitPerSecond, _bufferCap)
-        CoreRef(_core)
+        CoreRefV2(_core)
     {}
 
     function depleteBuffer(uint256 amount) public {

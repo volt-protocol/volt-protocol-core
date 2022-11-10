@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.0;
+pragma solidity 0.8.13;
 
-import {IWETH} from "@uniswap/v2-periphery/contracts/interfaces/IWETH.sol";
+import {IWETH} from "./external/IWETH.sol";
 
 library Constants {
     /// @notice the denominator for basis points granularity (10,000)

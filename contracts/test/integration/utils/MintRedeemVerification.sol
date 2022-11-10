@@ -1,21 +1,20 @@
 pragma solidity =0.8.13;
 
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
-import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
-import {PriceBoundPSM} from "../../../peg/PriceBoundPSM.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
 import {Vm} from "./../../unit/utils/Vm.sol";
 import {IVolt} from "../../../volt/Volt.sol";
 import {ICore} from "../../../core/ICore.sol";
+import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
+import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
+import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 
 import "hardhat/console.sol";
 
 /// @notice contract to verify that all PSM's are able to mint and redeem
 /// after a proposal
 contract MintRedeemVerification {
-    /// TODO add support for arbitrum
-
     /// @notice all PSM's on mainnet
     address[] private allMainnetPSMs = [
         MainnetAddresses.VOLT_DAI_PSM,
@@ -39,7 +38,7 @@ contract MintRedeemVerification {
     ];
 
     function _redeem(
-        PriceBoundPSM psm,
+        PegStabilityModule psm,
         IERC20 underlying,
         IERC20 volt,
         uint256 amountVoltIn
@@ -94,7 +93,7 @@ contract MintRedeemVerification {
     }
 
     function _mint(
-        PriceBoundPSM psm,
+        PegStabilityModule psm,
         IERC20 underlying,
         IERC20 volt,
         uint256 amountUnderlyingIn,
@@ -180,7 +179,7 @@ contract MintRedeemVerification {
             }
 
             _redeem(
-                PriceBoundPSM(allPSMs[i]),
+                PegStabilityModule(allPSMs[i]),
                 allTokens[i],
                 volt,
                 amountVoltIn
@@ -215,12 +214,11 @@ contract MintRedeemVerification {
 
             /// figure out how many volt we can purchase
             uint256 psmVoltBalance = volt.balanceOf(allPSMs[i]);
-            uint256 maxAmountIn = PriceBoundPSM(allPSMs[i]).getRedeemAmountOut(
-                psmVoltBalance
-            );
+            uint256 maxAmountIn = PegStabilityModule(allPSMs[i])
+                .getRedeemAmountOut(psmVoltBalance);
 
             _mint(
-                PriceBoundPSM(allPSMs[i]),
+                PegStabilityModule(allPSMs[i]),
                 allTokens[i],
                 volt,
                 Math.min(maxAmountIn, amountIn),

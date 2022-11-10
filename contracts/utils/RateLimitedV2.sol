@@ -1,13 +1,16 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.8.13;
 
-import {CoreRef} from "../refs/CoreRef.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-/// @title abstract contract for putting a rate limit on how fast a contrac
+import {CoreRefV2} from "../refs/CoreRefV2.sol";
+import {IRateLimitedV2} from "./IRateLimitedV2.sol";
+
+/// @title abstract contract for putting a rate limit on how fast a contract
 /// can perform an action e.g. Minting
 /// @author Elliot Friedman
-abstract contract RateLimitedV2 is CoreRef {
+abstract contract RateLimitedV2 is IRateLimitedV2, CoreRefV2 {
     using SafeCast for *;
 
     /// @notice maximum rate limit per second governance can set for this contract
@@ -28,21 +31,6 @@ abstract contract RateLimitedV2 is CoreRef {
 
     /// @notice the buffer at the timestamp of lastBufferUsedTime
     uint224 public bufferStored;
-
-    /// @notice event emitted when buffer gets eaten into
-    event BufferUsed(uint256 amountUsed, uint256 bufferRemaining);
-
-    /// @notice event emitted when buffer gets replenished
-    event BufferReplenished(uint256 amountReplenished, uint256 bufferRemaining);
-
-    /// @notice event emitted when buffer cap is updated
-    event BufferCapUpdate(uint256 oldBufferCap, uint256 newBufferCap);
-
-    /// @notice event emitted when rate limit per second is updated
-    event RateLimitPerSecondUpdate(
-        uint256 oldRateLimitPerSecond,
-        uint256 newRateLimitPerSecond
-    );
 
     /// @notice RateLimitedV2 constructor
     /// @param _maxRateLimitPerSecond maximum rate limit per second that governance can set

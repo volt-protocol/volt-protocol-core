@@ -2,7 +2,7 @@
 pragma solidity =0.8.13;
 
 import {PCVDeposit} from "../PCVDeposit.sol";
-import {CoreRef} from "../../refs/CoreRef.sol";
+import {CoreRefV2} from "../../refs/CoreRefV2.sol";
 import {CToken} from "./CToken.sol";
 
 /// @title base class for a Compound PCV Deposit
@@ -15,7 +15,7 @@ abstract contract CompoundPCVDepositBase is PCVDeposit {
     /// @notice Compound PCV Deposit constructor
     /// @param _core Volt Core for reference
     /// @param _cToken Compound cToken to deposit
-    constructor(address _core, address _cToken) CoreRef(_core) {
+    constructor(address _core, address _cToken) CoreRefV2(_core) {
         cToken = CToken(_cToken);
         require(cToken.isCToken(), "CompoundPCVDeposit: Not a cToken");
     }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 /// @title interface for putting a rate limit on how fast a contract can perform an action, e.g. Minting
 /// @author Fei Protocol

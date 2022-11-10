@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 import {Vm} from "./../utils/Vm.sol";
 import "./../utils/DSTest.sol";
@@ -30,6 +30,18 @@ contract UnitTestDeviation is DSTest {
             basisPoints,
             Deviation.calculateDeviationThresholdBasisPoints(x, y)
         );
+    }
+
+    function testDeviationPpq() public {
+        int256 x = 1 ether + 1;
+        int256 y = 1 ether;
+
+        int256 delta = x - y;
+        uint256 absDeviation = delta.toUint256();
+
+        uint256 ppqDeviation = (absDeviation * 1e18) / x.toUint256();
+
+        assertEq(ppqDeviation, Deviation.calculateDeviationThresholdPPQ(x, y));
     }
 
     function testWithinDeviation() public {

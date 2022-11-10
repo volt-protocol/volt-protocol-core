@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
-import "./IPCVDepositBalances.sol";
+import {IPCVDepositBalances} from "./IPCVDepositBalances.sol";
 
 /// @title a PCV Deposit interface
 /// @author Fei Protocol
 interface IPCVDeposit is IPCVDepositBalances {
     // ----------- Events -----------
+
     event Deposit(address indexed _from, uint256 _amount);
 
     event Withdrawal(
@@ -27,6 +28,8 @@ interface IPCVDeposit is IPCVDepositBalances {
         address indexed _to,
         uint256 _amount
     );
+
+    event Harvest(address indexed _token, int256 _profit, uint256 _timestamp);
 
     // ----------- State changing api -----------
 

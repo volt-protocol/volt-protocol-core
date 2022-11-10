@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
 import {PCVGuardAdmin} from "../../pcv/PCVGuardAdmin.sol";
 
-import {TribeRoles} from "../../core/TribeRoles.sol";
+import {VoltRoles} from "../../core/VoltRoles.sol";
 import {ICore} from "../../core/ICore.sol";
 import {IVolt} from "../../volt/Volt.sol";
 import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
@@ -53,11 +53,11 @@ contract IntegrationTestPCVGuardian is DSTest {
         core.grantGuardian(address(pcvGuardian));
 
         // create the PCV_GUARD_ADMIN role and grant it to the PCVGuardAdmin contract
-        core.createRole(TribeRoles.PCV_GUARD_ADMIN, TribeRoles.GOVERNOR);
-        core.grantRole(TribeRoles.PCV_GUARD_ADMIN, address(pcvGuardAdmin));
+        core.createRole(VoltRoles.PCV_GUARD_ADMIN, VoltRoles.GOVERNOR);
+        core.grantRole(VoltRoles.PCV_GUARD_ADMIN, address(pcvGuardAdmin));
 
         // create the PCV guard role, and grant it to the 'guard' address
-        core.createRole(TribeRoles.PCV_GUARD, TribeRoles.PCV_GUARD_ADMIN);
+        core.createRole(VoltRoles.PCV_GUARD, VoltRoles.PCV_GUARD_ADMIN);
         pcvGuardAdmin.grantPCVGuardRole(guard);
         vm.stopPrank();
     }
@@ -69,7 +69,7 @@ contract IntegrationTestPCVGuardian is DSTest {
 
     function testPCVGuardAdminRole() public {
         assertTrue(
-            core.hasRole(TribeRoles.PCV_GUARD_ADMIN, address(pcvGuardAdmin))
+            core.hasRole(VoltRoles.PCV_GUARD_ADMIN, address(pcvGuardAdmin))
         );
     }
 

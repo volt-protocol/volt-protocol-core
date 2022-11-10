@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
-import {Core} from "../../../core/Core.sol";
-import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
-import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
-import {TribeRoles} from "../../../core/TribeRoles.sol";
-import {DSTest} from "./../../unit/utils/DSTest.sol";
-import {L2Core} from "../../../core/L2Core.sol";
-import {Core} from "../../../core/Core.sol";
-import {Vm} from "./../../unit/utils/Vm.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+
+import {Vm} from "./../../unit/utils/Vm.sol";
+import {Core} from "../../../core/Core.sol";
+import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {RoleTesting} from "./RoleTesting.sol";
 import {AllRolesConfig} from "./AllRolesConfig.sol";
+import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
+import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
 
 contract AllRoles is RoleTesting, AllRolesConfig {
     /// System should look the same in terms of who has roles, and what roles exist

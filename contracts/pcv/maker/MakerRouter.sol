@@ -8,7 +8,7 @@ import {IMakerRouter} from "./IMakerRouter.sol";
 import {IDSSPSM} from "./IDSSPSM.sol";
 import {IPegStabilityModule} from "../../peg/IPegStabilityModule.sol";
 import {CoreRef} from "../../refs/CoreRef.sol";
-import {TribeRoles} from "../../core/TribeRoles.sol";
+import {VoltRoles} from "../../core/VoltRoles.sol";
 import {Constants} from "../../Constants.sol";
 
 /// @notice This contracts allows for swaps between FEI-DAI and FEI-USDC
@@ -57,10 +57,7 @@ contract MakerRouter is IMakerRouter, CoreRef {
         uint256 amountFeiIn,
         uint256 minDaiAmountOut,
         address to
-    )
-        external
-        hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
-    {
+    ) external hasAnyOfTwoRoles(VoltRoles.GOVERNOR, VoltRoles.PCV_CONTROLLER) {
         _redeemFromFeiPSM(amountFeiIn, minDaiAmountOut, to);
     }
 
@@ -68,7 +65,7 @@ contract MakerRouter is IMakerRouter, CoreRef {
     /// @param to the address the DAI should be sent to once swapped
     function swapAllFeiForDai(address to)
         external
-        hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
+        hasAnyOfTwoRoles(VoltRoles.GOVERNOR, VoltRoles.PCV_CONTROLLER)
     {
         _redeemAllBalanceFromFeiPSM(to);
     }
@@ -82,10 +79,7 @@ contract MakerRouter is IMakerRouter, CoreRef {
         uint256 amountFeiIn,
         uint256 minDaiAmountOut,
         address to
-    )
-        external
-        hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
-    {
+    ) external hasAnyOfTwoRoles(VoltRoles.GOVERNOR, VoltRoles.PCV_CONTROLLER) {
         _redeemFromFeiPSM(amountFeiIn, minDaiAmountOut, address(this));
         daiPSM.buyGem(to, (minDaiAmountOut) / USDC_SCALING_FACTOR);
     }
@@ -94,7 +88,7 @@ contract MakerRouter is IMakerRouter, CoreRef {
     /// @param to the address the USDC should be sent to once swapped
     function swapAllFeiForUsdc(address to)
         external
-        hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
+        hasAnyOfTwoRoles(VoltRoles.GOVERNOR, VoltRoles.PCV_CONTROLLER)
     {
         uint256 minDaiAmountOut = _redeemAllBalanceFromFeiPSM(address(this));
         daiPSM.buyGem(to, (minDaiAmountOut) / USDC_SCALING_FACTOR);
@@ -113,10 +107,7 @@ contract MakerRouter is IMakerRouter, CoreRef {
         address usdcTo,
         address daiTo,
         uint256 ratioUSDC
-    )
-        external
-        hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
-    {
+    ) external hasAnyOfTwoRoles(VoltRoles.GOVERNOR, VoltRoles.PCV_CONTROLLER) {
         require(
             ratioUSDC < Constants.BASIS_POINTS_GRANULARITY && ratioUSDC > 0,
             "MakerRouter: Invalid USDC Ratio"
@@ -134,10 +125,7 @@ contract MakerRouter is IMakerRouter, CoreRef {
         address usdcTo,
         address daiTo,
         uint256 ratioUSDC
-    )
-        external
-        hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
-    {
+    ) external hasAnyOfTwoRoles(VoltRoles.GOVERNOR, VoltRoles.PCV_CONTROLLER) {
         uint256 minDaiAmountOut = _redeemAllBalanceFromFeiPSM(address(this));
         _swapForUsdcAndDai(minDaiAmountOut, usdcTo, daiTo, ratioUSDC);
     }
@@ -150,10 +138,7 @@ contract MakerRouter is IMakerRouter, CoreRef {
         address token,
         uint256 amount,
         address to
-    )
-        external
-        hasAnyOfTwoRoles(TribeRoles.GOVERNOR, TribeRoles.PCV_CONTROLLER)
-    {
+    ) external hasAnyOfTwoRoles(VoltRoles.GOVERNOR, VoltRoles.PCV_CONTROLLER) {
         IERC20(token).safeTransfer(to, amount);
     }
 

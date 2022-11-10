@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 import "./ICoreRef.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
@@ -84,8 +84,8 @@ abstract contract CoreRef is ICoreRef, Pausable {
         _;
     }
 
-    // Named onlyTribeRole to prevent collision with OZ onlyRole modifier
-    modifier onlyTribeRole(bytes32 role) {
+    // Named onlyVoltRole to prevent collision with OZ onlyRole modifier
+    modifier onlyVoltRole(bytes32 role) {
         require(_core.hasRole(role, msg.sender), "UNAUTHORIZED");
         _;
     }

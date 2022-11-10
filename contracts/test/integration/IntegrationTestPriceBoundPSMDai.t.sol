@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -11,7 +11,7 @@ import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
 import {ICore} from "../../core/ICore.sol";
 import {Core} from "../../core/Core.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
-import {PriceBoundPSM, PegStabilityModule} from "../../peg/PriceBoundPSM.sol";
+import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {getCore, getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 import {Vm} from "./../unit/utils/Vm.sol";
@@ -24,7 +24,7 @@ import {IPCVGuardian} from "../../pcv/IPCVGuardian.sol";
 
 contract IntegrationTestPriceBoundPSMDaiTest is TimelockSimulation, vip7 {
     using SafeCast for *;
-    PriceBoundPSM private psm;
+    PegStabilityModule private psm;
     ICore private core = ICore(MainnetAddresses.CORE);
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
     IVolt private dai = IVolt(MainnetAddresses.DAI);
@@ -34,11 +34,11 @@ contract IntegrationTestPriceBoundPSMDaiTest is TimelockSimulation, vip7 {
     OraclePassThrough public oracle =
         OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
-    uint256 voltFloorPrice = 9_000; /// 1 volt for .9 dai is the max allowable price
-    uint256 voltCeilingPrice = 10_000; /// 1 volt for 1 dai is the minimum price
+    uint128 voltFloorPrice = 9_000; /// 1 volt for .9 dai is the max allowable price
+    uint128 voltCeilingPrice = 10_000; /// 1 volt for 1 dai is the minimum price
 
     function setUp() public {
-        psm = PriceBoundPSM(MainnetAddresses.VOLT_DAI_PSM);
+        psm = PegStabilityModule(MainnetAddresses.VOLT_DAI_PSM);
 
         vm.startPrank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
         dai.transfer(address(this), mintAmount);
@@ -62,11 +62,7 @@ contract IntegrationTestPriceBoundPSMDaiTest is TimelockSimulation, vip7 {
         assertEq(address(psm.oracle()), address(oracle));
         assertEq(address(psm.backupOracle()), address(0));
         assertEq(psm.decimalsNormalizer(), 0);
-        assertEq(psm.mintFeeBasisPoints(), 0);
-        assertEq(psm.redeemFeeBasisPoints(), 0);
         assertEq(address(psm.underlyingToken()), address(dai));
-        assertEq(psm.reservesThreshold(), type(uint256).max);
-        assertEq(address(psm.surplusTarget()), address(1));
     }
 
     /// @notice PSM is set up correctly and view functions are working
@@ -215,78 +211,6 @@ contract IntegrationTestPriceBoundPSMDaiTest is TimelockSimulation, vip7 {
         uint256 endingBalance = underlyingToken.balanceOf(address(this));
 
         assertEq(endingBalance - startingBalance, mintAmount);
-    }
-
-    /// @notice set global rate limited minter fails when caller is governor and new address is 0
-    function testSetPCVDepositFailureZeroAddress() public {
-        vm.startPrank(MainnetAddresses.GOVERNOR);
-
-        vm.expectRevert(
-            bytes("PegStabilityModule: Invalid new surplus target")
-        );
-        psm.setSurplusTarget(IPCVDeposit(address(0)));
-
-        vm.stopPrank();
-    }
-
-    /// @notice set PCV deposit fails when caller is governor and new address is 0
-    function testSetPCVDepositFailureNonGovernor() public {
-        vm.expectRevert(
-            bytes("CoreRef: Caller is not a governor or contract admin")
-        );
-        psm.setSurplusTarget(IPCVDeposit(address(0)));
-    }
-
-    /// @notice set PCV Deposit succeeds when caller is governor and underlying tokens match
-    function testSetPCVDepositSuccess() public {
-        vm.startPrank(MainnetAddresses.GOVERNOR);
-
-        MockPCVDepositV2 newPCVDeposit = new MockPCVDepositV2(
-            address(core),
-            address(underlyingToken),
-            0,
-            0
-        );
-
-        psm.setSurplusTarget(IPCVDeposit(address(newPCVDeposit)));
-
-        vm.stopPrank();
-
-        assertEq(address(newPCVDeposit), address(psm.surplusTarget()));
-    }
-
-    /// @notice set mint fee succeeds
-    function testSetMintFeeSuccess() public {
-        vm.prank(MainnetAddresses.GOVERNOR);
-        psm.setMintFee(100);
-
-        assertEq(psm.mintFeeBasisPoints(), 100);
-    }
-
-    /// @notice set mint fee fails unauthorized
-    function testSetMintFeeFailsWithoutCorrectRoles() public {
-        vm.expectRevert(
-            bytes("CoreRef: Caller is not a governor or contract admin")
-        );
-
-        psm.setMintFee(100);
-    }
-
-    /// @notice set redeem fee succeeds
-    function testSetRedeemFeeSuccess() public {
-        vm.prank(MainnetAddresses.GOVERNOR);
-        psm.setRedeemFee(100);
-
-        assertEq(psm.redeemFeeBasisPoints(), 100);
-    }
-
-    /// @notice set redeem fee fails unauthorized
-    function testSetRedeemFeeFailsWithoutCorrectRoles() public {
-        vm.expectRevert(
-            bytes("CoreRef: Caller is not a governor or contract admin")
-        );
-
-        psm.setRedeemFee(100);
     }
 
     /// @notice redeem fails when paused

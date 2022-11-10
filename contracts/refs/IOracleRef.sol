@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 import "../oracle/IOracle.sol";
 
@@ -31,10 +31,6 @@ interface IOracleRef {
     function setOracle(address newOracle) external;
 
     function setBackupOracle(address newBackupOracle) external;
-
-    function setDecimalsNormalizer(int256 newDecimalsNormalizer) external;
-
-    function setDoInvert(bool newDoInvert) external;
 
     // ----------- Getters -----------
 
