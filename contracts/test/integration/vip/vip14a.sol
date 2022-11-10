@@ -133,13 +133,6 @@ contract vip14a is DSTest, IVIP {
         assertEq(opt.getCurrentOraclePrice(), startPrice);
         assertEq(oracle.oraclePrice(), startPrice);
 
-        assertTrue(
-            PegStabilityModule(ArbitrumAddresses.VOLT_USDC_PSM).mintPaused()
-        );
-        assertTrue(
-            PegStabilityModule(ArbitrumAddresses.VOLT_DAI_PSM).mintPaused()
-        );
-
         vm.expectRevert("PegStabilityModule: Minting paused");
         PegStabilityModule(ArbitrumAddresses.VOLT_USDC_PSM).mint(
             address(this),
