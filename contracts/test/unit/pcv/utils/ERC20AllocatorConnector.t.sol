@@ -1,6 +1,7 @@
 pragma solidity =0.8.13;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 import {Vm} from "./../../utils/Vm.sol";
 import {ICoreV2} from "../../../../core/ICoreV2.sol";
 import {DSTest} from "./../../utils/DSTest.sol";
@@ -8,12 +9,9 @@ import {MockPSM} from "../../../../mock/MockPSM.sol";
 import {MockERC20} from "../../../../mock/MockERC20.sol";
 import {PCVDeposit} from "../../../../pcv/PCVDeposit.sol";
 import {VoltRoles} from "../../../../core/VoltRoles.sol";
-import {PCVGuardAdmin} from "../../../../pcv/PCVGuardAdmin.sol";
 import {ERC20Allocator} from "../../../../pcv/utils/ERC20Allocator.sol";
 import {ERC20HoldingPCVDeposit} from "../../../../mock/ERC20HoldingPCVDeposit.sol";
 import {getCoreV2, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.sol";
-
-import "hardhat/console.sol";
 
 contract UnitTestERC20AllocatorConnector is DSTest {
     /// @notice emitted when an existing deposit is updated
@@ -94,6 +92,7 @@ contract UnitTestERC20AllocatorConnector is DSTest {
         vm.startPrank(addresses.governorAddress);
         allocator.connectPSM(address(psm), targetBalance, 0);
         allocator.connectDeposit(address(psm), address(pcvDeposit));
+        core.grantGlobalLocker(address(allocator));
         vm.stopPrank();
     }
 
