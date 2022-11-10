@@ -34,6 +34,14 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         IGlobalReentrancyLock(address(_core)).unlock();
     }
 
+    modifier isGlobalReentrancyLocked() {
+        require(
+            IGlobalReentrancyLock(address(_core)).isLocked(),
+            "CoreRef: System not locked"
+        );
+        _;
+    }
+
     modifier onlyMinter() {
         require(_core.isMinter(msg.sender), "CoreRef: Caller is not a minter");
         _;
@@ -69,10 +77,9 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         _;
     }
 
-    /// Named onlyVoltRole to prevent collision with OZ onlyRole modifier
     modifier onlyVoltMinter() {
         require(
-            _core.hasRole(VoltRoles.VOLT_MINTER_ROLE, msg.sender),
+            _core.hasRole(VoltRoles.VOLT_RATE_LIMITED_MINTER_ROLE, msg.sender),
             "UNAUTHORIZED"
         );
         _;
