@@ -43,7 +43,7 @@ contract MintRedeemVerification {
         IERC20 volt,
         uint256 amountVoltIn
     ) private {
-        if (psm.paused() || psm.redeemPaused()) {
+        if (psm.paused()) {
             return;
         }
 
@@ -99,7 +99,7 @@ contract MintRedeemVerification {
         uint256 amountUnderlyingIn,
         bool doLogging
     ) private {
-        if (psm.paused() || psm.mintPaused()) {
+        if (psm.paused()) {
             if (doLogging) {
                 console.log(
                     "not verifying psm minting, paused: ",

@@ -223,22 +223,4 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
 
         assertEq(endingBalance - startingBalance, mintAmount);
     }
-
-    /// @notice redeem fails when paused
-    function testRedeemFailsWhenPaused() public {
-        vm.prank(MainnetAddresses.GOVERNOR);
-        psm.pauseRedeem();
-
-        vm.expectRevert(bytes("PegStabilityModule: Redeem paused"));
-        psm.redeem(address(this), 100, 100);
-    }
-
-    /// @notice mint fails when paused
-    function testMintFailsWhenPaused() public {
-        vm.prank(MainnetAddresses.GOVERNOR);
-        psm.pauseMint();
-
-        vm.expectRevert(bytes("PegStabilityModule: Minting paused"));
-        psm.mint(address(this), 100, 100);
-    }
 }

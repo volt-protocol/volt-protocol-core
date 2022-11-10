@@ -198,25 +198,25 @@ contract UnitTestCoreV2 is DSTest {
 
     function testGovAddsPcvGuardSucceeds() public {
         vm.prank(addresses.governorAddress);
-        core.grantPcvGuard(address(this));
-        assertTrue(core.isPcvGuard(address(this)));
+        core.grantPCVGuard(address(this));
+        assertTrue(core.isPCVGuard(address(this)));
     }
 
     function testGovRevokesPcvGuard() public {
         testGovAddsGuardianSucceeds();
         vm.prank(addresses.governorAddress);
-        core.revokePcvGuard(address(this));
-        assertTrue(!core.isPcvGuard(address(this)));
+        core.revokePCVGuard(address(this));
+        assertTrue(!core.isPCVGuard(address(this)));
     }
 
     function testNonGovAddsPcvGuardFails() public {
         vm.expectRevert("Permissions: Caller is not a governor");
-        core.grantPcvGuard(address(this));
+        core.grantPCVGuard(address(this));
     }
 
     function testNonGovRevokesPcvGuardFails() public {
         vm.expectRevert("Permissions: Caller is not a governor");
-        core.revokePcvGuard(address(this));
+        core.revokePCVGuard(address(this));
     }
 
     function testGovAddsGuardianSucceeds() public {

@@ -11,7 +11,6 @@ import {MockCToken} from "../../../../mock/MockCToken.sol";
 import {MockMorpho} from "../../../../mock/MockMorpho.sol";
 import {IPCVDeposit} from "../../../../pcv/IPCVDeposit.sol";
 import {MockPCVOracle} from "../../../../mock/MockPCVOracle.sol";
-import {PCVGuardAdmin} from "../../../../pcv/PCVGuardAdmin.sol";
 import {MockERC20, IERC20} from "../../../../mock/MockERC20.sol";
 import {MorphoCompoundPCVDeposit} from "../../../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {MockMorphoMaliciousReentrancy} from "../../../../mock/MockMorphoMaliciousReentrancy.sol";

@@ -14,9 +14,14 @@ import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
+import {IGRLM, GlobalRateLimitedMinter} from "../../minter/GlobalRateLimitedMinter.sol";
+import {getCoreV2, getAddresses, getVoltAddresses, VoltAddresses, VoltTestAddresses} from "./../unit/utils/Fixtures.sol";
 
 contract IntegrationTestCleanPriceBoundPSM is DSTest {
     using SafeCast for *;
+
+    VoltTestAddresses public addresses = getAddresses();
+    VoltAddresses public guardianAddresses = getVoltAddresses();
 
     /// reference PSM to test against
     PegStabilityModule private immutable priceBoundPsm =
@@ -24,9 +29,11 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
     PegStabilityModule private cleanPsm;
 
     ICoreV2 private core = ICoreV2(MainnetAddresses.CORE);
+    ICoreV2 private tmpCore;
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
     IERC20 private usdc = IERC20(MainnetAddresses.USDC);
     IERC20 private underlyingToken = usdc;
+    GlobalRateLimitedMinter public grlm;
 
     uint256 public constant mintAmount = 10_000_000e6;
     uint256 public constant voltMintAmount = 10_000_000e18;
@@ -41,10 +48,23 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
     uint128 voltFloorPrice = 1.04e6;
     uint128 voltCeilingPrice = 1.1e6;
 
+    /// ---------- GRLM PARAMS ----------
+
+    /// maximum rate limit per second is 100 VOLT
+    uint256 public constant maxRateLimitPerSecondMinting = 100e18;
+
+    /// replenish 500k VOLT per day
+    uint128 public constant rateLimitPerSecondMinting = 5.787e18;
+
+    /// buffer cap of 10m VOLT
+    uint128 public constant bufferCapMinting = uint128(voltMintAmount);
+
     function setUp() public {
+        tmpCore = getCoreV2();
+
         /// create PSM
         cleanPsm = new PegStabilityModule(
-            address(core),
+            address(tmpCore),
             address(oracle),
             address(0),
             -12,
@@ -53,6 +73,19 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
             voltFloorPrice,
             voltCeilingPrice
         );
+        vm.prank(addresses.governorAddress);
+        tmpCore.grantGlobalLocker(address(cleanPsm));
+        grlm = new GlobalRateLimitedMinter(
+            address(tmpCore),
+            maxRateLimitPerSecondMinting,
+            rateLimitPerSecondMinting,
+            bufferCapMinting
+        );
+        vm.startPrank(addresses.governorAddress);
+        tmpCore.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
+        tmpCore.grantMinter(address(grlm));
+        tmpCore.grantRateLimitedMinter(address(cleanPsm));
+        vm.stopPrank();
 
         uint256 balance = usdc.balanceOf(MainnetAddresses.KRAKEN_USDC_WHALE);
         vm.prank(MainnetAddresses.KRAKEN_USDC_WHALE);
@@ -93,6 +126,7 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
         assertEq(address(priceBoundPsm.underlyingToken()), address(usdc));
 
         assertTrue(!cleanPsm.doInvert());
+        assertEq(address(cleanPsm.core()), address(tmpCore));
         assertEq(address(cleanPsm.oracle()), address(oracle));
         assertEq(address(cleanPsm.backupOracle()), address(0));
         assertEq(cleanPsm.decimalsNormalizer(), -12);
@@ -435,26 +469,6 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
         cleanPsm.withdrawERC20(address(underlyingToken), address(this), 100);
     }
 
-    function testPauseMintFailsNotGovernorGuardian() public {
-        vm.expectRevert("CoreRef: Caller is not a guardian or governor");
-        cleanPsm.pauseMint();
-    }
-
-    function testUnpauseMintFailsNotGovernorGuardian() public {
-        vm.expectRevert("CoreRef: Caller is not a guardian or governor");
-        cleanPsm.unpauseMint();
-    }
-
-    function testPauseRedeemFailsNotGovernorGuardian() public {
-        vm.expectRevert("CoreRef: Caller is not a guardian or governor");
-        cleanPsm.pauseRedeem();
-    }
-
-    function testUnpauseRedeemFailsNotGovernorGuardian() public {
-        vm.expectRevert("CoreRef: Caller is not a guardian or governor");
-        cleanPsm.unpauseRedeem();
-    }
-
     /// @notice withdraw erc20 succeeds with correct permissions
     function testERC20WithdrawSuccess() public {
         vm.prank(MainnetAddresses.GOVERNOR);
@@ -471,21 +485,11 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
         assertEq(endingBalance - startingBalance, mintAmount);
     }
 
-    /// @notice redeem fails when paused
-    function testRedeemFailsWhenPaused() public {
-        vm.prank(MainnetAddresses.GOVERNOR);
-        cleanPsm.pause();
+    /// TODO add these tests
 
-        vm.expectRevert(bytes("Pausable: paused"));
-        cleanPsm.redeem(address(this), 100, 100);
-    }
+    /// @notice redeem fails when paused
+    function testRedeemFailsWithoutGlobalStateRole() public {}
 
     /// @notice mint fails when paused
-    function testMintFailsWhenPaused() public {
-        vm.prank(MainnetAddresses.GOVERNOR);
-        cleanPsm.pause();
-
-        vm.expectRevert(bytes("Pausable: paused"));
-        cleanPsm.mint(address(this), 100, 100);
-    }
+    function testMintFailsWithoutGlobalStateRole() public {}
 }

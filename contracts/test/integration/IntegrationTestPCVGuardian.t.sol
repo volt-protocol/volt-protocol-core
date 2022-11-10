@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
-import {PCVGuardAdmin} from "../../pcv/PCVGuardAdmin.sol";
-
-import {VoltRoles} from "../../core/VoltRoles.sol";
+import {Vm} from "../unit/utils/Vm.sol";
 import {ICore} from "../../core/ICore.sol";
 import {IVolt} from "../../volt/Volt.sol";
-import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
-import {getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
 import {DSTest} from "../unit/utils/DSTest.sol";
-import {Vm} from "../unit/utils/Vm.sol";
+import {VoltRoles} from "../../core/VoltRoles.sol";
+import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
+import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
+import {getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
 
 interface IPCVDepositTest is IPCVDeposit {
     function pause() external;
@@ -21,7 +19,6 @@ interface IPCVDepositTest is IPCVDeposit {
 
 contract IntegrationTestPCVGuardian is DSTest {
     PCVGuardian private pcvGuardian;
-    PCVGuardAdmin private pcvGuardAdmin;
 
     ICore private core = ICore(MainnetAddresses.CORE);
     IVolt private fei = IVolt(MainnetAddresses.FEI);
@@ -45,20 +42,16 @@ contract IntegrationTestPCVGuardian is DSTest {
             whitelistAddresses
         );
 
-        pcvGuardAdmin = new PCVGuardAdmin(address(core));
-
         // grant the pcvGuardian the PCV controller and Guardian roles
         vm.startPrank(MainnetAddresses.GOVERNOR);
         core.grantPCVController(address(pcvGuardian));
         core.grantGuardian(address(pcvGuardian));
 
-        // create the PCV_GUARD_ADMIN role and grant it to the PCVGuardAdmin contract
-        core.createRole(VoltRoles.PCV_GUARD_ADMIN, VoltRoles.GOVERNOR);
-        core.grantRole(VoltRoles.PCV_GUARD_ADMIN, address(pcvGuardAdmin));
+        /// create the PCV_GUARD role
+        core.createRole(VoltRoles.PCV_GUARD, VoltRoles.GOVERNOR);
 
-        // create the PCV guard role, and grant it to the 'guard' address
-        core.createRole(VoltRoles.PCV_GUARD, VoltRoles.PCV_GUARD_ADMIN);
-        pcvGuardAdmin.grantPCVGuardRole(guard);
+        /// grant it to the 'guard' address
+        core.grantRole(VoltRoles.PCV_GUARD, guard);
         vm.stopPrank();
     }
 
@@ -67,10 +60,8 @@ contract IntegrationTestPCVGuardian is DSTest {
         assertTrue(core.isPCVController(address(pcvGuardian)));
     }
 
-    function testPCVGuardAdminRole() public {
-        assertTrue(
-            core.hasRole(VoltRoles.PCV_GUARD_ADMIN, address(pcvGuardAdmin))
-        );
+    function testPCVGuardRole() public {
+        assertTrue(core.hasRole(VoltRoles.PCV_GUARD, guard));
     }
 
     function testPausedAfterWithdrawToSafeAddress() public {
@@ -192,7 +183,7 @@ contract IntegrationTestPCVGuardian is DSTest {
 
     function testWithdrawToSafeAddressFailWhenGuardRevokedGovernor() public {
         vm.prank(MainnetAddresses.GOVERNOR);
-        pcvGuardAdmin.revokePCVGuardRole(guard);
+        core.revokeRole(VoltRoles.PCV_GUARD, guard);
 
         vm.prank(guard);
         vm.expectRevert(bytes("UNAUTHORIZED"));
@@ -202,7 +193,7 @@ contract IntegrationTestPCVGuardian is DSTest {
 
     function testWithdrawAllToSafeAddressFailWhenGuardRevokedGovernor() public {
         vm.prank(MainnetAddresses.GOVERNOR);
-        pcvGuardAdmin.revokePCVGuardRole(guard);
+        core.revokeRole(VoltRoles.PCV_GUARD, guard);
 
         vm.prank(guard);
         vm.expectRevert(bytes("UNAUTHORIZED"));
@@ -212,7 +203,7 @@ contract IntegrationTestPCVGuardian is DSTest {
 
     function testWithdrawToSafeAddressFailWhenGuardRevokedGuardian() public {
         vm.prank(MainnetAddresses.PCV_GUARDIAN);
-        pcvGuardAdmin.revokePCVGuardRole(guard);
+        core.revokeRole(VoltRoles.PCV_GUARD, guard);
 
         vm.prank(guard);
         vm.expectRevert(bytes("UNAUTHORIZED"));
@@ -222,7 +213,7 @@ contract IntegrationTestPCVGuardian is DSTest {
 
     function testWithdrawAllToSafeAddressFailWhenGuardRevokedGuardian() public {
         vm.prank(MainnetAddresses.PCV_GUARDIAN);
-        pcvGuardAdmin.revokePCVGuardRole(guard);
+        core.revokeRole(VoltRoles.PCV_GUARD, guard);
 
         vm.prank(guard);
         vm.expectRevert(bytes("UNAUTHORIZED"));

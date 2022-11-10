@@ -223,8 +223,8 @@ contract SystemUnitTest is Test {
         core.grantPCVController(address(router));
         core.grantPCVController(address(allocator));
 
-        core.grantPcvGuard(addresses.userAddress);
-        core.grantPcvGuard(addresses.secondUserAddress);
+        core.grantPCVGuard(addresses.userAddress);
+        core.grantPCVGuard(addresses.secondUserAddress);
 
         core.grantGuardian(address(pcvGuardian));
 
@@ -233,6 +233,10 @@ contract SystemUnitTest is Test {
         core.grantMinter(address(grlm));
         core.grantRateLimitedMinter(address(daipsm));
         core.grantRateLimitedMinter(address(usdcpsm));
+
+        core.grantGlobalLocker(address(allocator));
+        core.grantGlobalLocker(address(daipsm));
+        core.grantGlobalLocker(address(usdcpsm));
 
         core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
 
@@ -266,6 +270,10 @@ contract SystemUnitTest is Test {
     }
 
     function testSetup() public {
+        assertTrue(core.isGlobalLocker(address(usdcpsm)));
+        assertTrue(core.isGlobalLocker(address(daipsm)));
+        assertTrue(core.isGlobalLocker(address(allocator)));
+
         assertTrue(
             !timelockController.hasRole(
                 timelockController.TIMELOCK_ADMIN_ROLE(),
@@ -388,8 +396,8 @@ contract SystemUnitTest is Test {
         assertTrue(core.isGovernor(address(timelockController)));
         assertTrue(core.isGovernor(address(core)));
 
-        assertTrue(core.isPcvGuard(addresses.userAddress));
-        assertTrue(core.isPcvGuard(addresses.secondUserAddress));
+        assertTrue(core.isPCVGuard(addresses.userAddress));
+        assertTrue(core.isPCVGuard(addresses.secondUserAddress));
 
         assertTrue(core.isGuardian(address(pcvGuardian)));
     }

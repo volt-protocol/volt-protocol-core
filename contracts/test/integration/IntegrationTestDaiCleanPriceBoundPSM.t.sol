@@ -467,26 +467,6 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
         cleanPsm.withdrawERC20(address(underlyingToken), address(this), 100);
     }
 
-    function testPauseMintFailsNotGovernorGuardian() public {
-        vm.expectRevert("CoreRef: Caller is not a guardian or governor");
-        cleanPsm.pauseMint();
-    }
-
-    function testUnpauseMintFailsNotGovernorGuardian() public {
-        vm.expectRevert("CoreRef: Caller is not a guardian or governor");
-        cleanPsm.unpauseMint();
-    }
-
-    function testPauseRedeemFailsNotGovernorGuardian() public {
-        vm.expectRevert("CoreRef: Caller is not a guardian or governor");
-        cleanPsm.pauseRedeem();
-    }
-
-    function testUnpauseRedeemFailsNotGovernorGuardian() public {
-        vm.expectRevert("CoreRef: Caller is not a guardian or governor");
-        cleanPsm.unpauseRedeem();
-    }
-
     /// @notice withdraw erc20 succeeds with correct permissions
     function testERC20WithdrawSuccess() public {
         vm.prank(MainnetAddresses.GOVERNOR);
@@ -514,23 +494,5 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
 
         vm.expectRevert("Pausable: paused");
         cleanPsm.deposit();
-    }
-
-    /// @notice redeem fails when paused
-    function testRedeemFailsWhenPaused() public {
-        vm.prank(MainnetAddresses.GOVERNOR);
-        cleanPsm.pause();
-
-        vm.expectRevert("Pausable: paused");
-        cleanPsm.redeem(address(this), 100, 100);
-    }
-
-    /// @notice mint fails when paused
-    function testMintFailsWhenPaused() public {
-        vm.prank(MainnetAddresses.GOVERNOR);
-        cleanPsm.pause();
-
-        vm.expectRevert("Pausable: paused");
-        cleanPsm.mint(address(this), 100, 100);
     }
 }
