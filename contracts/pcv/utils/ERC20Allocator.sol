@@ -166,7 +166,9 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2, RateLimitedV2 {
     /// if the amount of tokens held in the PSM is above
     /// the target balance.
     /// @param pcvDeposit deposit to send excess funds to
-    function skim(address pcvDeposit) external whenNotPaused {
+    function skim(
+        address pcvDeposit
+    ) external whenNotPaused globalReentrancyLock {
         address psm = pcvDepositToPSM[pcvDeposit];
         require(psm != address(0), "ERC20Allocator: invalid PCVDeposit");
 
@@ -210,7 +212,9 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2, RateLimitedV2 {
     /// @notice push ERC20 tokens to PSM by pulling from a PCV deposit
     /// flow of funds: PCV Deposit -> PSM
     /// @param pcvDeposit to pull funds from and send to corresponding PSM
-    function drip(address pcvDeposit) external whenNotPaused {
+    function drip(
+        address pcvDeposit
+    ) external whenNotPaused globalReentrancyLock {
         address psm = pcvDepositToPSM[pcvDeposit];
         require(psm != address(0), "ERC20Allocator: invalid PCVDeposit");
 
@@ -247,7 +251,9 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2, RateLimitedV2 {
 
     /// @notice does an action if any are available
     /// @param pcvDeposit whose corresponding peg stability module action will be run on
-    function doAction(address pcvDeposit) external whenNotPaused {
+    function doAction(
+        address pcvDeposit
+    ) external whenNotPaused globalReentrancyLock {
         address psm = pcvDepositToPSM[pcvDeposit];
         require(psm != address(0), "ERC20Allocator: invalid PCVDeposit");
 
