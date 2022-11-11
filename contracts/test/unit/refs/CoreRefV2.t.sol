@@ -27,12 +27,17 @@ contract UnitTestCoreRefV2 is DSTest {
     }
 
     function testSetup() public {
-        assertEq(address(coreRef.core()), address(core));
-        assertTrue(address(coreRef.volt()) != address(0));
-        assertTrue(address(coreRef.vcon()) != address(0));
-
+        assertEq(
+            address(coreRef.globalRateLimitedMinter()),
+            address(core.globalRateLimitedMinter())
+        );
+        assertEq(address(coreRef.globalRateLimitedMinter()), address(0));
         assertEq(address(coreRef.volt()), address(core.volt()));
         assertEq(address(coreRef.vcon()), address(core.vcon()));
+        assertEq(address(coreRef.core()), address(core));
+        assertEq(address(coreRef.core()), address(core));
+        assertEq(coreRef.voltBalance(), 0);
+        assertEq(coreRef.vconBalance(), 0);
     }
 
     function testMinter(address caller) public {
@@ -58,6 +63,26 @@ contract UnitTestCoreRefV2 is DSTest {
 
         assertTrue(address(coreRef.volt()) != address(core.volt()));
         assertTrue(address(coreRef.vcon()) != address(core.vcon()));
+    }
+
+    function testSetCoreAddressZeroGovSucceedsBricksContract() public {
+        address voltAddress = address(coreRef.volt());
+
+        vm.prank(addresses.governorAddress);
+        vm.expectEmit(true, true, false, true, address(coreRef));
+        emit CoreUpdate(address(core), address(0));
+
+        coreRef.setCore(address(0));
+
+        vm.expectRevert();
+        coreRef.volt();
+        vm.expectRevert();
+        coreRef.vcon();
+        vm.expectRevert();
+        coreRef.globalRateLimitedMinter();
+
+        vm.expectRevert();
+        coreRef.sweep(voltAddress, address(this), 0);
     }
 
     function testSetCoreToAddress0GovSucceeds() public {
@@ -240,5 +265,19 @@ contract UnitTestCoreRefV2 is DSTest {
         assertEq(address(coreRef).balance, 0);
     }
 
-    fallback() external payable {}
+    /// ---------- ACL ----------
+
+    function testPauseSucceedsGovernor() public {
+        assertTrue(!coreRef.paused());
+        vm.prank(addresses.governorAddress);
+        coreRef.pause();
+        assertTrue(coreRef.paused());
+    }
+
+    function testPauseFailsNonGovernor() public {
+        vm.expectRevert("CoreRef: Caller is not a guardian or governor");
+        coreRef.pause();
+    }
+
+    receive() external payable {}
 }
