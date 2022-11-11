@@ -81,13 +81,9 @@ abstract contract RateLimitedV2 is IRateLimitedV2, CoreRefV2 {
             Math.min(bufferStored + (rateLimitPerSecond * elapsed), bufferCap);
     }
 
-    /** 
-        @notice the method that enforces the rate limit. Decreases buffer by "amount". 
-        If buffer is <= amount either
-        1. Does a partial mint by the amount remaining in the buffer or
-        2. Reverts
-        Depending on whether doPartialAction is true or false
-    */
+    /// @notice the method that enforces the rate limit.
+    /// Decreases buffer by "amount".
+    /// If buffer is <= amount, revert
     function _depleteBuffer(uint256 amount) internal {
         uint256 newBuffer = buffer();
 
