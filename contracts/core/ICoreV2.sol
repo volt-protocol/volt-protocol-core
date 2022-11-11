@@ -18,8 +18,8 @@ interface ICoreV2 is IPermissionsV2 {
 
     /// @notice emitted when reference to global rate limited minter is updated
     event GlobalRateLimitedMinterUpdate(
-        address indexed oldVcon,
-        address indexed newVcon
+        address indexed oldGrlm,
+        address indexed newGrlm
     );
 
     // ----------- Getters -----------
