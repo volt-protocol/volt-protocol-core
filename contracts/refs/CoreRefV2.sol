@@ -171,8 +171,8 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         return _core.vcon();
     }
 
-    /// @notice address of the Vcon contract referenced by Core
-    /// @return IERC20 implementation address
+    /// @notice address of the GlobalRateLimitedMinter contract referenced by Core
+    /// @return IGRLM implementation address
     function globalRateLimitedMinter() public view override returns (IGRLM) {
         return _core.globalRateLimitedMinter();
     }
