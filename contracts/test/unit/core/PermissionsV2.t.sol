@@ -66,11 +66,49 @@ contract UnitTestPermissionsV2 is DSTest {
         core.grantRole(role, sender);
     }
 
+    function testRandomsCannotRevokeRole(address sender, bytes32 role) public {
+        vm.assume(!core.hasRole(VoltRoles.GOVERNOR, sender));
+
+        vm.expectRevert(
+            abi.encodePacked(
+                "AccessControl: account ",
+                Strings.toHexString(uint160(sender), 20),
+                " is missing role ",
+                Strings.toHexString(uint256(core.getRoleAdmin(role)), 32)
+            )
+        );
+        vm.prank(sender);
+        core.revokeRole(role, sender);
+    }
+
     function testGovCreatesRoleSucceeds() public {
         uint256 role = 100;
         vm.prank(addresses.governorAddress);
         core.createRole(bytes32(role), VoltRoles.GOVERNOR);
         assertEq(core.getRoleAdmin(bytes32(role)), VoltRoles.GOVERNOR);
+    }
+
+    function testGovRevokesRoleSucceeds() public {
+        assertTrue(core.isMinter(addresses.minterAddress));
+
+        bytes32 minterRole = core.MINTER_ROLE();
+        vm.prank(addresses.governorAddress);
+        core.revokeRole(minterRole, addresses.minterAddress);
+        assertTrue(!core.isMinter(addresses.minterAddress));
+        assertEq(core.getRoleMemberCount(minterRole), 0);
+    }
+
+    function testGovRevokesPCVControllerRoleSucceeds() public {
+        assertTrue(core.isPCVController(addresses.pcvControllerAddress));
+
+        vm.prank(addresses.governorAddress);
+        core.revokeRole(
+            VoltRoles.PCV_CONTROLLER,
+            addresses.pcvControllerAddress
+        );
+
+        assertTrue(!core.isPCVController(addresses.pcvControllerAddress));
+        assertEq(core.getRoleMemberCount(VoltRoles.PCV_CONTROLLER), 0);
     }
 
     function testNonGovCreatesRoleFails() public {
@@ -94,10 +132,22 @@ contract UnitTestPermissionsV2 is DSTest {
         vm.prank(addresses.governorAddress);
         core.grantGlobalLocker(address(this));
         assertTrue(core.isGlobalLocker(address(this)));
+        assertEq(core.getRoleMemberCount(core.GLOBAL_LOCKER_ROLE()), 1);
 
         vm.prank(addresses.guardianAddress);
         core.revokeOverride(VoltRoles.GLOBAL_LOCKER_ROLE, address(this));
         assertTrue(!core.isGlobalLocker(address(this)));
+        assertEq(core.getRoleMemberCount(core.GLOBAL_LOCKER_ROLE()), 0);
+    }
+
+    function testGuardianRevokeOverrideMinterSucceeds() public {
+        assertTrue(core.isMinter(addresses.minterAddress));
+
+        bytes32 minterRole = core.MINTER_ROLE();
+        vm.prank(addresses.guardianAddress);
+        core.revokeOverride(minterRole, addresses.minterAddress);
+        assertTrue(!core.isMinter(addresses.minterAddress));
+        assertEq(core.getRoleMemberCount(minterRole), 0);
     }
 
     function testGovAddsPCVControllerSucceeds() public {
@@ -132,6 +182,7 @@ contract UnitTestPermissionsV2 is DSTest {
     }
 
     function testGovRevokesGovernorSucceeds() public {
+        testGovAddsGovernorSucceeds();
         vm.prank(addresses.governorAddress);
         core.revokeGovernor(address(this));
         assertTrue(!core.isGovernor(address(this)));
