@@ -1,20 +1,16 @@
 pragma solidity 0.8.13;
 
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-
 import {PermissionsV2} from "./PermissionsV2.sol";
 import {IGlobalReentrancyLock} from "./IGlobalReentrancyLock.sol";
 
 /// @notice inpsired by the openzeppelin reentrancy guard smart contracts
-/// data container size has been changed
-/// @dev allows contracts with the GLOBAL_LOCKER_ROLE to call in and lock and unlock
-/// this smart contract.
+/// data container size has been changed.
+/// @dev allows contracts and addresses with the GLOBAL_LOCKER_ROLE to call
+/// in and lock and unlock this smart contract.
 /// once locked, only the original caller that locked can unlock the contract
 /// without the governor emergency unlock functionality.
 /// Governor can unpause if locked but not unlocked.
 abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
-    using SafeCast for *;
-
     /// -------------------------------------------------
     /// -------------------------------------------------
     /// ------------------- Constants -------------------
@@ -68,6 +64,8 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
         _;
     }
 
+    /// ---------- View Only APIs ----------
+
     /// @notice view only function to return the last block entered
     function lastBlockEntered() external view returns (uint88) {
         return _lastBlockEntered;
@@ -90,6 +88,8 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
         return _status == _ENTERED;
     }
 
+    /// ---------- Global Locker Role State Changing APIs ----------
+
     /// @notice set the status to entered
     /// only available if not entered
     /// callable only by global locker role
@@ -104,6 +104,9 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
         /// uint88 max because the sun will explode before this statement is true:
         /// block.number > 2^88 - 1
         uint88 blockEntered = uint88(block.number);
+        /// address can be stored in a uint160 because an address is only 20 bytes
+        /// in the EVM. 160bits / 8 bits per byte = 20 bytes
+        /// https://docs.soliditylang.org/en/develop/types.html#address
         uint160 sender = uint160(msg.sender);
 
         _sender = sender;
@@ -118,17 +121,29 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// can only be called by the last address to lock the system
     /// to prevent incorrect system behavior
     function unlock() external override onlyGlobalLockerRole {
+        /// address can be stored in a uint160 because an address is only 20 bytes
+        /// in the EVM. 160bits / 8 bits per byte = 20 bytes
+        /// https://docs.soliditylang.org/en/develop/types.html#address
         require(
             uint160(msg.sender) == _sender,
             "GlobalReentrancyLock: caller is not locker"
         );
+        /// block number can be safely downcasted without a check on exceeding
+        /// uint88 max because the sun will explode before this statement is true:
+        /// block.number > 2^88 - 1
         require(
-            uint88(block.number) == _lastBlockEntered && _status == _ENTERED,
+            uint88(block.number) == _lastBlockEntered,
+            "GlobalReentrancyLock: not entered this block"
+        );
+        require(
+            _status == _ENTERED,
             "GlobalReentrancyLock: system not entered"
         );
 
         _status = _NOT_ENTERED;
     }
+
+    /// ---------- Governor Only State Changing API ----------
 
     /// @notice function to recover the system from an incorrect state
     /// in case of emergency by setting status to not entered
