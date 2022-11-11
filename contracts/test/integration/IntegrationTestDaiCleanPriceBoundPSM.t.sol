@@ -14,21 +14,30 @@ import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
+import {IGRLM, GlobalRateLimitedMinter} from "../../minter/GlobalRateLimitedMinter.sol";
+import {getCoreV2, getAddresses, VoltTestAddresses} from "./../unit/utils/Fixtures.sol";
 
+/// Differential Test that compares current production PSM to the new PSM
+/// to ensure parity in behavior
 /// TODO use vm.deal to increase balance in DAI and VOLT,
 /// increase values for fuzzer for more realistic tests
 contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
     using SafeCast for *;
+
+    VoltTestAddresses public addresses = getAddresses();
 
     /// reference PSM to test against
     PegStabilityModule private immutable priceBoundPsm =
         PegStabilityModule(MainnetAddresses.VOLT_DAI_PSM);
     PegStabilityModule private cleanPsm;
 
+    ICoreV2 private tmpCore;
+    IVolt private tmpVolt;
     ICoreV2 private core = ICoreV2(MainnetAddresses.CORE);
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
     IERC20 private dai = IERC20(MainnetAddresses.DAI);
     IERC20 private underlyingToken = dai;
+    GlobalRateLimitedMinter public grlm;
 
     uint256 public constant mintAmount = 10_000_000e18;
     uint256 public constant voltMintAmount = 10_000_000e18;
@@ -43,10 +52,24 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
     uint128 voltFloorPrice = 1.04e18;
     uint128 voltCeilingPrice = 1.1e18;
 
+    /// ---------- GRLM PARAMS ----------
+
+    /// maximum rate limit per second is 100 VOLT
+    uint256 public constant maxRateLimitPerSecondMinting = 100e18;
+
+    /// replenish 500k VOLT per day
+    uint128 public constant rateLimitPerSecondMinting = 5.787e18;
+
+    /// buffer cap of 10m VOLT
+    uint128 public constant bufferCapMinting = uint128(voltMintAmount);
+
     function setUp() public {
+        tmpCore = getCoreV2();
+        tmpVolt = tmpCore.volt();
+
         /// create PSM
         cleanPsm = new PegStabilityModule(
-            address(core),
+            address(tmpCore),
             address(oracle),
             address(0),
             0,
@@ -55,6 +78,21 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
             voltFloorPrice,
             voltCeilingPrice
         );
+        vm.prank(addresses.governorAddress);
+        tmpCore.grantGlobalLocker(address(cleanPsm));
+        grlm = new GlobalRateLimitedMinter(
+            address(tmpCore),
+            maxRateLimitPerSecondMinting,
+            rateLimitPerSecondMinting,
+            bufferCapMinting
+        );
+
+        vm.startPrank(addresses.governorAddress);
+        tmpCore.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
+        tmpCore.grantMinter(address(grlm));
+        tmpCore.grantRateLimitedMinter(address(cleanPsm));
+        tmpCore.grantGlobalLocker(address(cleanPsm));
+        vm.stopPrank();
 
         vm.label(address(cleanPsm), "New PSM");
         vm.label(address(priceBoundPsm), "Existing PSM");
@@ -78,8 +116,8 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
 
         /// mint VOLT to the user
         volt.mint(address(priceBoundPsm), voltMintAmount);
-        volt.mint(address(cleanPsm), voltMintAmount);
         volt.mint(address(this), voltMintAmount);
+        tmpVolt.mint(address(this), voltMintAmount);
 
         /// pull all dai
         pcvGuardian.withdrawAllToSafeAddress(address(priceBoundPsm));
@@ -216,18 +254,24 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
             amountStableIn
         );
 
-        assertEq(amountVoltOutPriceBound, amountVoltOut);
-
-        uint256 startingPsmVoltBalance = volt.balanceOf(address(cleanPsm));
-        uint256 startingUserVoltBalance = volt.balanceOf(address(this));
+        uint256 startingVoltTotalSupply = tmpVolt.totalSupply();
+        uint256 startingUserVoltBalance = tmpVolt.balanceOf(address(this));
         uint256 startingCleanPsmBalance = cleanPsm.balance();
 
         underlyingToken.approve(address(cleanPsm), amountStableIn);
         cleanPsm.mint(address(this), amountStableIn, amountVoltOut);
 
-        uint256 endingPsmVoltBalance = volt.balanceOf(address(cleanPsm));
-        uint256 endingUserVoltBalance1 = volt.balanceOf(address(this));
+        uint256 endingVoltTotalSupply = tmpVolt.totalSupply();
+        uint256 endingUserVoltBalance1 = tmpVolt.balanceOf(address(this));
+        uint256 endingPSMUnderlyingBalance = underlyingToken.balanceOf(
+            address(cleanPsm)
+        );
         uint256 endingCleanPsmBalance = cleanPsm.balance();
+
+        assertEq(
+            startingVoltTotalSupply + amountVoltOut,
+            endingVoltTotalSupply
+        );
 
         /// assert psm receives amount stable in
         assertEq(
@@ -235,18 +279,9 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
             amountStableIn
         );
 
-        /// assert user receives amount volt out
-        assertEq(
-            endingUserVoltBalance1,
-            startingUserVoltBalance + amountVoltOut
-        );
-
-        /// assert psm sent volt out
-        assertEq(startingPsmVoltBalance - amountVoltOut, endingPsmVoltBalance);
-
         uint256 startingPriceBoundPsmBalance = priceBoundPsm.balance();
-
         underlyingToken.approve(address(priceBoundPsm), amountStableIn);
+
         priceBoundPsm.mint(
             address(this),
             amountStableIn,
@@ -254,6 +289,8 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
         );
 
         uint256 endingUserVoltBalance2 = volt.balanceOf(address(this));
+        uint256 endingPSMUnderlyingBalancePriceBound = underlyingToken
+            .balanceOf(address(priceBoundPsm));
         uint256 endingPriceBoundPsmBalance = priceBoundPsm.balance();
 
         /// assert psm receives amount stable in
@@ -262,17 +299,27 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
             amountStableIn
         );
 
-        /// assert both psms had the same amount underlying removed
-        assertEq(endingCleanPsmBalance, endingPriceBoundPsmBalance);
-
         assertEq(
-            endingUserVoltBalance2 - endingUserVoltBalance1,
-            amountVoltOut
+            endingUserVoltBalance1,
+            startingUserVoltBalance + amountVoltOut
         );
 
         assertEq(
-            endingUserVoltBalance2 - endingUserVoltBalance1,
+            endingPSMUnderlyingBalance,
+            endingPSMUnderlyingBalancePriceBound
+        );
+
+        assertEq(endingUserVoltBalance1 - voltMintAmount, amountVoltOut);
+
+        assertEq(
+            endingUserVoltBalance2 - voltMintAmount,
             amountVoltOutPriceBound
+        );
+
+        assertApproxEq(
+            amountVoltOutPriceBound.toInt256(),
+            amountVoltOut.toInt256(),
+            0
         );
     }
 
@@ -308,29 +355,24 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
         );
 
         uint256 startingPsmUnderlyingBalance = cleanPsm.balance();
-        uint256 startingPSMVoltBalance = volt.balanceOf(address(cleanPsm));
-        uint256 startingUserVoltBalance = volt.balanceOf(address(this));
+        uint256 startingUserVoltBalance = tmpVolt.balanceOf(address(this));
 
-        volt.approve(address(cleanPsm), amountVoltIn);
+        tmpVolt.approve(address(cleanPsm), amountVoltIn);
         cleanPsm.redeem(address(this), amountVoltIn, amountOut);
 
         uint256 endingUserUnderlyingBalance1 = underlyingToken.balanceOf(
             address(this)
         );
-        uint256 endingUserVoltBalance = volt.balanceOf(address(this));
-        uint256 endingPSMVoltBalance = volt.balanceOf(address(cleanPsm));
+        uint256 endingUserVoltBalance = tmpVolt.balanceOf(address(this));
         uint256 endingPsmUnderlyingBalance = cleanPsm.balance();
-
-        assertEq(startingUserVoltBalance - endingUserVoltBalance, amountVoltIn);
 
         assertEq(
             startingPsmUnderlyingBalance - endingPsmUnderlyingBalance,
-            underlyingOutPriceBound
+            amountOut
         );
-        assertEq(endingPSMVoltBalance - startingPSMVoltBalance, amountVoltIn);
+        assertEq(startingUserVoltBalance - endingUserVoltBalance, amountVoltIn);
 
         volt.approve(address(priceBoundPsm), amountVoltIn);
-
         priceBoundPsm.redeem(
             address(this),
             amountVoltIn,
@@ -349,17 +391,18 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
             endingUserUnderlyingBalance1,
             startingUserUnderlyingBalance + amountOut
         );
-
-        assertEq(endingPSMVoltBalance, endingPSMUnderlyingBalancePriceBound);
-
         assertEq(
-            endingUserUnderlyingBalance2 - endingUserUnderlyingBalance1,
-            amountOut
+            amountVoltIn,
+            endingPSMUnderlyingBalancePriceBound - voltMintAmount
         );
-
         assertEq(
             endingUserUnderlyingBalance2 - endingUserUnderlyingBalance1,
             underlyingOutPriceBound
+        );
+        assertApproxEq(
+            underlyingOutPriceBound.toInt256(),
+            amountOut.toInt256(),
+            0
         );
     }
 
@@ -387,7 +430,7 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
     function testSwapUnderlyingForVolt() public {
         uint256 amountStableIn = 101_000;
         uint256 amountVoltOut = cleanPsm.getMintAmountOut(amountStableIn);
-        uint256 startingUserVoltBalance = volt.balanceOf(address(this));
+        uint256 startingUserVoltBalance = tmpVolt.balanceOf(address(this));
         uint256 startingPSMUnderlyingBalance = underlyingToken.balanceOf(
             address(cleanPsm)
         );
@@ -395,7 +438,7 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
         underlyingToken.approve(address(cleanPsm), amountStableIn);
         cleanPsm.mint(address(this), amountStableIn, amountVoltOut);
 
-        uint256 endingUserVoltBalance = volt.balanceOf(address(this));
+        uint256 endingUserVoltBalance = tmpVolt.balanceOf(address(this));
         uint256 endingPSMUnderlyingBalance = underlyingToken.balanceOf(
             address(cleanPsm)
         );
@@ -412,24 +455,25 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
 
     /// @notice redeem fails without approval
     function testSwapVoltFordaiFailsWithoutApproval() public {
-        vm.expectRevert("ERC20: transfer amount exceeds allowance");
+        vm.expectRevert("ERC20: insufficient allowance");
 
         cleanPsm.redeem(address(this), mintAmount, mintAmount);
     }
 
-    function testMintFailsWhenMintExceedsPSMBalance() public {
+    function testMintFailsWhenMintExceedsBuffer() public {
         underlyingToken.approve(address(cleanPsm), type(uint256).max);
 
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
-        uint256 psmVoltBalance = volt.balanceOf(address(cleanPsm));
+        uint256 psmVoltBalance = grlm.buffer() + 1; /// try to mint 1 wei over buffer which causes failure
 
-        // we get the amount we want to put in by getting the total PSM balance and dividing by the current peg price
-        // this lets us get the maximum amount we can deposit
+        /// we get the amount we want to put in by getting the
+        /// total PSM balance and dividing by the current peg price
+        /// this lets us get the maximum amount we can deposit
         uint256 amountIn = (psmVoltBalance * currentPegPrice) / 1e6;
 
         // this will revert (correctly) as the math above is less precise than the PSMs, therefore our amountIn
         // will slightly exceed the balance the PSM can give to us.
-        vm.expectRevert("Dai/insufficient-balance");
+        vm.expectRevert("RateLimited: rate limit hit");
 
         cleanPsm.mint(address(this), amountIn, psmVoltBalance);
     }
@@ -443,8 +487,8 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
 
     /// @notice withdraw succeeds with correct permissions
     function testWithdrawSuccess() public {
-        vm.prank(MainnetAddresses.GOVERNOR);
-        core.grantPCVController(address(this));
+        vm.prank(addresses.governorAddress);
+        tmpCore.grantPCVController(address(this));
 
         uint256 startingBalance = underlyingToken.balanceOf(address(this));
         cleanPsm.withdraw(address(this), mintAmount);
@@ -469,8 +513,8 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
 
     /// @notice withdraw erc20 succeeds with correct permissions
     function testERC20WithdrawSuccess() public {
-        vm.prank(MainnetAddresses.GOVERNOR);
-        core.grantPCVController(address(this));
+        vm.prank(addresses.governorAddress);
+        tmpCore.grantPCVController(address(this));
 
         uint256 startingBalance = underlyingToken.balanceOf(address(this));
         cleanPsm.withdrawERC20(
@@ -489,7 +533,7 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
 
     /// @notice deposit fails when paused
     function testDepositFailsWhenPaused() public {
-        vm.prank(MainnetAddresses.GOVERNOR);
+        vm.prank(addresses.governorAddress);
         cleanPsm.pause();
 
         vm.expectRevert("Pausable: paused");

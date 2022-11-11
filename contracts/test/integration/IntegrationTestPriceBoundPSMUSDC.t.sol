@@ -6,8 +6,8 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {Vm} from "./../unit/utils/Vm.sol";
 import {Core} from "../../core/Core.sol";
-import {ICore} from "../../core/ICore.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
+import {ICoreV2} from "../../core/ICoreV2.sol";
 import {Constants} from "../../Constants.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
@@ -17,13 +17,18 @@ import {MockPCVDepositV2} from "../../mock/MockPCVDepositV2.sol";
 import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
-import {getCore, getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
+import {IGRLM, GlobalRateLimitedMinter} from "../../minter/GlobalRateLimitedMinter.sol";
+import {getCoreV2, getAddresses, VoltTestAddresses} from "./../unit/utils/Fixtures.sol";
 
 contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     using SafeCast for *;
+
+    VoltTestAddresses public addresses = getAddresses();
+
+    IVolt private volt;
+    ICoreV2 private core;
     PegStabilityModule private psm;
-    ICore private core = ICore(MainnetAddresses.CORE);
-    IVolt private volt = IVolt(MainnetAddresses.VOLT);
+    GlobalRateLimitedMinter public grlm;
     IERC20 private usdc = IERC20(MainnetAddresses.USDC);
     IERC20 private underlyingToken = usdc;
 
@@ -36,14 +41,28 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
 
     /// @notice Oracle Pass Through contract
     OraclePassThrough public oracle =
-        OraclePassThrough(MainnetAddresses.DEPRECATED_ORACLE_PASS_THROUGH);
+        OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
     uint128 voltFloorPrice = 1.05e6; /// 1 volt for 1.05 usdc is the min pirce
     uint128 voltCeilingPrice = 1.1e6; /// 1 volt for 1.1 usdc is the max price
 
+    /// ---------- GRLM PARAMS ----------
+
+    /// maximum rate limit per second is 100 VOLT
+    uint256 public constant maxRateLimitPerSecondMinting = 100e18;
+
+    /// replenish 500k VOLT per day
+    uint128 public constant rateLimitPerSecondMinting = 5.787e18;
+
+    /// buffer cap of 10m VOLT
+    uint128 public constant bufferCapMinting = uint128(voltMintAmount);
+
     function setUp() public {
+        core = getCoreV2();
+        volt = core.volt();
+
         /// create PSM
         psm = new PegStabilityModule(
             address(core),
@@ -55,19 +74,35 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
             voltFloorPrice,
             voltCeilingPrice
         );
+        grlm = new GlobalRateLimitedMinter(
+            address(core),
+            maxRateLimitPerSecondMinting,
+            rateLimitPerSecondMinting,
+            bufferCapMinting
+        );
+
+        vm.startPrank(addresses.governorAddress);
+        core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
+        core.grantMinter(address(grlm));
+        core.grantRateLimitedMinter(address(psm));
+        core.grantGlobalLocker(address(psm));
+        vm.stopPrank();
+
+        vm.label(address(psm), "PSM");
+        vm.label(address(core), "core");
+        vm.label(address(grlm), "global rate limited minter");
+        vm.label(address(volt), "volt");
+        vm.label(address(usdc), "usdc");
+        vm.label(address(oracle), "oracle");
 
         uint256 balance = usdc.balanceOf(makerUSDCPSM);
         vm.prank(makerUSDCPSM);
         usdc.transfer(address(this), balance);
 
-        vm.startPrank(MainnetAddresses.GOVERNOR);
-
         /// grant the PSM the PCV Controller role
-        core.grantMinter(MainnetAddresses.GOVERNOR);
         /// mint VOLT to the user
         volt.mint(address(psm), voltMintAmount);
         volt.mint(address(this), voltMintAmount);
-        vm.stopPrank();
 
         usdc.transfer(address(psm), balance / 2);
     }
@@ -82,6 +117,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
         assertEq(address(psm.backupOracle()), address(0));
         assertEq(psm.decimalsNormalizer(), -12);
         assertEq(address(psm.underlyingToken()), address(usdc));
+        assertEq(address(core.globalRateLimitedMinter()), address(grlm));
     }
 
     /// @notice PSM is set up correctly and redeem view function is working
@@ -100,14 +136,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
 
     /// @notice PSM is set up correctly and view functions are working
     function testGetMaxMintAmountOut() public {
-        uint256 startingBalance = volt.balanceOf(address(psm));
-        assertEq(psm.getMaxMintAmountOut(), startingBalance);
-
-        vm.startPrank(MainnetAddresses.GOVERNOR);
-        volt.mint(address(psm), mintAmount);
-        vm.stopPrank();
-
-        assertEq(psm.getMaxMintAmountOut(), mintAmount + startingBalance);
+        assertEq(psm.getMaxMintAmountOut(), grlm.buffer());
     }
 
     /// @notice PSM is set up correctly and view functions are working
@@ -193,28 +222,28 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
 
     /// @notice redeem fails without approval
     function testSwapVoltForUSDCFailsWithoutApproval() public {
-        vm.expectRevert(bytes("ERC20: transfer amount exceeds allowance"));
+        vm.expectRevert("ERC20: insufficient allowance");
 
         psm.redeem(address(this), mintAmount, mintAmount / 1e12);
     }
 
     /// @notice mint fails without approval
     function testSwapUnderlyingForVoltFailsWithoutApproval() public {
-        vm.expectRevert(bytes("ERC20: transfer amount exceeds allowance"));
+        vm.expectRevert("ERC20: transfer amount exceeds allowance");
 
         psm.mint(address(this), mintAmount, 0);
     }
 
     /// @notice withdraw erc20 fails without correct permissions
     function testERC20WithdrawFailure() public {
-        vm.expectRevert(bytes("CoreRef: Caller is not a PCV controller"));
+        vm.expectRevert("CoreRef: Caller is not a PCV controller");
 
         psm.withdrawERC20(address(underlyingToken), address(this), 100);
     }
 
     /// @notice withdraw erc20 succeeds with correct permissions
     function testERC20WithdrawSuccess() public {
-        vm.prank(MainnetAddresses.GOVERNOR);
+        vm.prank(addresses.governorAddress);
         core.grantPCVController(address(this));
 
         uint256 startingBalance = underlyingToken.balanceOf(address(this));

@@ -201,26 +201,6 @@ contract IntegrationTestPCVGuardian is DSTest {
         pcvGuardian.withdrawAllToSafeAddress(address(pcvDeposit));
     }
 
-    function testWithdrawToSafeAddressFailWhenGuardRevokedGuardian() public {
-        vm.prank(MainnetAddresses.PCV_GUARDIAN);
-        core.revokeRole(VoltRoles.PCV_GUARD, guard);
-
-        vm.prank(guard);
-        vm.expectRevert(bytes("UNAUTHORIZED"));
-
-        pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), withdrawAmount);
-    }
-
-    function testWithdrawAllToSafeAddressFailWhenGuardRevokedGuardian() public {
-        vm.prank(MainnetAddresses.PCV_GUARDIAN);
-        core.revokeRole(VoltRoles.PCV_GUARD, guard);
-
-        vm.prank(guard);
-        vm.expectRevert(bytes("UNAUTHORIZED"));
-
-        pcvGuardian.withdrawAllToSafeAddress(address(pcvDeposit));
-    }
-
     function testSetWhiteListAddress() public {
         vm.prank(MainnetAddresses.GOVERNOR);
 
