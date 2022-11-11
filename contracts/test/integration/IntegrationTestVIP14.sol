@@ -116,38 +116,6 @@ contract IntegrationTestVIP14 is TimelockSimulation, vip14 {
         );
     }
 
-    function testDripUsdcToPsm() public {
-        vm.prank(MainnetAddresses.EOA_1);
-        mainnetPCVGuardian.withdrawAllToSafeAddress(
-            MainnetAddresses.VOLT_USDC_PSM
-        );
-
-        uint256 usdcBalance = IERC20(usdc).balanceOf(MainnetAddresses.GOVERNOR);
-        vm.prank(MainnetAddresses.GOVERNOR);
-        IERC20(usdc).transfer(address(usdcDeposit), usdcBalance);
-        usdcDeposit.deposit();
-
-        assertTrue(
-            IPCVDeposit(MainnetAddresses.VOLT_USDC_PSM).balance() <= 1e6
-        );
-
-        uint256 startingDepositBalance = usdcDeposit.balance();
-
-        allocator.drip(address(usdcDeposit));
-
-        uint256 endingDepositBalance = usdcDeposit.balance();
-
-        assertApproxEq(
-            (startingDepositBalance - endingDepositBalance).toInt256(),
-            targetUsdcBalance.toInt256(),
-            0
-        );
-        assertEq(
-            IPCVDeposit(MainnetAddresses.VOLT_USDC_PSM).balance(),
-            targetUsdcBalance
-        );
-    }
-
     function testDripDaiToPsm() public {
         vm.prank(MainnetAddresses.EOA_1);
         mainnetPCVGuardian.withdrawAllToSafeAddress(
