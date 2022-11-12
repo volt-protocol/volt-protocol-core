@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {Test} from "forge-std/Test.sol";
 import {ICoreV2} from "../../../core/ICoreV2.sol";
@@ -90,10 +91,21 @@ contract GlobalRateLimitedMinterUnitTest is Test {
         grlm.mintVolt(address(this), 100);
     }
 
+    function testReplenishNonMinterNonPsmFails() public {
+        vm.expectRevert("UNAUTHORIZED");
+        grlm.replenishBuffer(100);
+    }
+
     function testMintAsMinterFailsWhenNotLocked() public {
         vm.expectRevert("CoreRef: System not locked");
         vm.prank(guardianAddresses.pcvGuardAddress1);
         grlm.mintVolt(address(this), 0);
+    }
+
+    function testReplenishAsMinterFailsWhenNotLocked() public {
+        vm.expectRevert("CoreRef: System not locked");
+        vm.prank(guardianAddresses.pcvGuardAddress1);
+        grlm.replenishBuffer(0);
     }
 
     function testMintAsMinterSucceeds(uint80 mintAmount) public {
@@ -104,5 +116,22 @@ contract GlobalRateLimitedMinterUnitTest is Test {
 
         assertEq(volt.balanceOf(address(this)), mintAmount);
         assertEq(endingBuffer, startingBuffer - mintAmount);
+    }
+
+    function testReplenishAsMinterSucceeds(
+        uint80 replenishAmount,
+        uint80 depleteAmount
+    ) public {
+        minter.mint(address(this), depleteAmount);
+
+        uint256 startingBuffer = grlm.buffer();
+
+        minter.replenishBuffer(replenishAmount);
+        uint256 endingBuffer = grlm.buffer();
+
+        assertEq(
+            endingBuffer,
+            Math.min(startingBuffer + replenishAmount, grlm.bufferCap())
+        );
     }
 }
