@@ -130,7 +130,9 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
 
         /// ------- Effects / Interactions -------
 
-        /// TODO add comment explaining reasoning here
+        /// Do effect after interaction because you don't want to give tokens before
+        /// taking the corresponding amount of Volt from the account.
+        /// Replenishing buffer allows more Volt to be minted.
         volt().burnFrom(msg.sender, amountVoltIn); /// Check and Interaction -- trusted contract
         globalRateLimitedMinter().replenishBuffer(amountVoltIn); /// Effect -- trusted contract
 
