@@ -2,6 +2,7 @@ pragma solidity =0.8.13;
 
 import {IGRLM} from "./IGRLM.sol";
 import {CoreRefV2} from "../refs/CoreRefV2.sol";
+import {VoltRoles} from "../core/VoltRoles.sol";
 import {RateLimitedV2} from "../utils/RateLimitedV2.sol";
 
 /// @notice contract to mint Volt on a rate limit.
@@ -30,7 +31,12 @@ contract GlobalRateLimitedMinter is IGRLM, RateLimitedV2 {
     function mintVolt(
         address to,
         uint256 amount
-    ) external onlyVoltMinter isGlobalReentrancyLocked /**check */ {
+    )
+        external
+        /// checks
+        onlyVoltRole(VoltRoles.VOLT_RATE_LIMITED_MINTER_ROLE)
+        isGlobalReentrancyLocked
+    {
         _depleteBuffer(amount); /// check and effects
         volt().mint(to, amount); /// interactions
     }
@@ -38,7 +44,15 @@ contract GlobalRateLimitedMinter is IGRLM, RateLimitedV2 {
     /// @notice replenish buffer by amount of volt tokens burned
     function replenishBuffer(
         uint256 amount
-    ) external onlyVoltMinter isGlobalReentrancyLocked /**check */ {
+    )
+        external
+        /// checks
+        hasAnyOfTwoRoles(
+            VoltRoles.VOLT_RATE_LIMITED_MINTER_ROLE,
+            VoltRoles.NON_CUSTODIAL_PSM
+        )
+        isGlobalReentrancyLocked
+    {
         _replenishBuffer(amount); /// effects
     }
 }
