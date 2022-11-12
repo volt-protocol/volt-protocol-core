@@ -21,9 +21,6 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRef, PCVDeposit {
     using SafeERC20 for IERC20;
     using SafeCast for *;
 
-    /// @notice decimals to scale by
-    uint256 public constant SCALE = 1e18;
-
     /// @notice the token this PSM will exchange for VOLT
     IERC20 public immutable override underlyingToken;
 
