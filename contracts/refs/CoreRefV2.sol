@@ -77,14 +77,6 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         _;
     }
 
-    modifier onlyVoltMinter() {
-        require(
-            _core.hasRole(VoltRoles.VOLT_RATE_LIMITED_MINTER_ROLE, msg.sender),
-            "UNAUTHORIZED"
-        );
-        _;
-    }
-
     // Modifiers to allow any combination of roles
     modifier hasAnyOfTwoRoles(bytes32 role1, bytes32 role2) {
         require(
