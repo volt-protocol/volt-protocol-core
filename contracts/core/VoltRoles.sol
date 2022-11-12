@@ -38,6 +38,11 @@ library VoltRoles {
     bytes32 internal constant GLOBAL_LOCKER_ROLE =
         keccak256("GLOBAL_LOCKER_ROLE");
 
+    /// @notice non custodial PSM role.
+    /// used in the GlobalRedeemBuffer contract to rate limit large redemptions
+    bytes32 internal constant NON_CUSTODIAL_PSM =
+        keccak256("NON_CUSTODIAL_PSM");
+
     /*///////////////////////////////////////////////////////////////
                                  Admin Roles
     //////////////////////////////////////////////////////////////*/
