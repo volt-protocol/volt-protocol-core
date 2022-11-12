@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import {MockERC20} from "./../../../mock/MockERC20.sol";
 import {Core, Vcon, Volt, IERC20, IVolt} from "../../../core/Core.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
-import {Vm} from "forge-std/Test.sol";
+import {Vm} from "../../../../forge-std/src/Test.sol";
 
 struct VoltTestAddresses {
     address userAddress;

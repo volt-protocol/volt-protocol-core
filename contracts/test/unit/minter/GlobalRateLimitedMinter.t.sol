@@ -5,11 +5,13 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-import {Test} from "forge-std/Test.sol";
+import {Test} from "../../../../forge-std/src/Test.sol";
 import {ICoreV2} from "../../../core/ICoreV2.sol";
 import {MockMinter} from "../../../mock/MockMinter.sol";
 import {IGRLM, GlobalRateLimitedMinter} from "../../../minter/GlobalRateLimitedMinter.sol";
 import {getCoreV2, getAddresses, getVoltAddresses, VoltAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
+
+import "hardhat/console.sol";
 
 /// deployment steps
 /// 1. core v2
@@ -54,6 +56,9 @@ contract GlobalRateLimitedMinterUnitTest is Test {
             bufferCapMinting
         );
         minter = new MockMinter(coreAddress, address(grlm));
+
+        // deal(address(volt), address(this), 100);
+        console.log("volt balance: ", volt.balanceOf(address(this)));
 
         vm.startPrank(addresses.governorAddress);
 
