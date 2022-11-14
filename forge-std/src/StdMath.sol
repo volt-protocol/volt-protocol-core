@@ -30,11 +30,10 @@ library stdMath {
         return abs(a) + abs(b);
     }
 
-    function percentDelta(uint256 a, uint256 b)
-        internal
-        pure
-        returns (uint256)
-    {
+    function percentDelta(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (uint256) {
         uint256 absDelta = delta(a, b);
 
         return (absDelta * 1e18) / b;

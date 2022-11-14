@@ -20,14 +20,10 @@ interface VmSafe {
     function load(address, bytes32) external view returns (bytes32);
 
     // Signs data, (privateKey, digest) => (v, r, s)
-    function sign(uint256, bytes32)
-        external
-        pure
-        returns (
-            uint8,
-            bytes32,
-            bytes32
-        );
+    function sign(
+        uint256,
+        bytes32
+    ) external pure returns (uint8, bytes32, bytes32);
 
     // Gets the address for a given private key, (privateKey) => (address)
     function addr(uint256) external pure returns (address);
@@ -57,57 +53,56 @@ interface VmSafe {
     function envBytes(string calldata) external view returns (bytes memory);
 
     // Reads environment variables as arrays, (name, delim) => (value[])
-    function envBool(string calldata, string calldata)
-        external
-        view
-        returns (bool[] memory);
+    function envBool(
+        string calldata,
+        string calldata
+    ) external view returns (bool[] memory);
 
-    function envUint(string calldata, string calldata)
-        external
-        view
-        returns (uint256[] memory);
+    function envUint(
+        string calldata,
+        string calldata
+    ) external view returns (uint256[] memory);
 
-    function envInt(string calldata, string calldata)
-        external
-        view
-        returns (int256[] memory);
+    function envInt(
+        string calldata,
+        string calldata
+    ) external view returns (int256[] memory);
 
-    function envAddress(string calldata, string calldata)
-        external
-        view
-        returns (address[] memory);
+    function envAddress(
+        string calldata,
+        string calldata
+    ) external view returns (address[] memory);
 
-    function envBytes32(string calldata, string calldata)
-        external
-        view
-        returns (bytes32[] memory);
+    function envBytes32(
+        string calldata,
+        string calldata
+    ) external view returns (bytes32[] memory);
 
-    function envString(string calldata, string calldata)
-        external
-        view
-        returns (string[] memory);
+    function envString(
+        string calldata,
+        string calldata
+    ) external view returns (string[] memory);
 
-    function envBytes(string calldata, string calldata)
-        external
-        view
-        returns (bytes[] memory);
+    function envBytes(
+        string calldata,
+        string calldata
+    ) external view returns (bytes[] memory);
 
     // Records all storage reads and writes
     function record() external;
 
     // Gets all accessed reads and write slot from a recording session, for a given address
-    function accesses(address)
-        external
-        returns (bytes32[] memory reads, bytes32[] memory writes);
+    function accesses(
+        address
+    ) external returns (bytes32[] memory reads, bytes32[] memory writes);
 
     // Gets the _creation_ bytecode from an artifact file. Takes in the relative path to the json file
     function getCode(string calldata) external view returns (bytes memory);
 
     // Gets the _deployed_ bytecode from an artifact file. Takes in the relative path to the json file
-    function getDeployedCode(string calldata)
-        external
-        view
-        returns (bytes memory);
+    function getDeployedCode(
+        string calldata
+    ) external view returns (bytes memory);
 
     // Labels an address in call traces
     function label(address, string calldata) external;
@@ -137,10 +132,9 @@ interface VmSafe {
     function readFile(string calldata) external view returns (string memory);
 
     // Reads the entire content of file as binary. Path is relative to the project root. (path) => (data)
-    function readFileBinary(string calldata)
-        external
-        view
-        returns (bytes memory);
+    function readFileBinary(
+        string calldata
+    ) external view returns (bytes memory);
 
     // Get the path of the current project root
     function projectRoot() external view returns (string memory);
@@ -234,10 +228,10 @@ interface VmSafe {
     // decode the tuple in that order, and thus fail.
     // ----
     // Given a string of JSON, return it as ABI-encoded, (stringified json, key) => (ABI-encoded data)
-    function parseJson(string calldata, string calldata)
-        external
-        pure
-        returns (bytes memory);
+    function parseJson(
+        string calldata,
+        string calldata
+    ) external pure returns (bytes memory);
 
     function parseJson(string calldata) external pure returns (bytes memory);
 
@@ -392,11 +386,7 @@ interface Vm is VmSafe {
     function chainId(uint256) external;
 
     // Stores a value to an address' storage slot, (who, slot, value)
-    function store(
-        address,
-        bytes32,
-        bytes32
-    ) external;
+    function store(address, bytes32, bytes32) external;
 
     // Sets the nonce of an account; must be higher than the current nonce of the account
     function setNonce(address, uint64) external;
@@ -432,30 +422,15 @@ interface Vm is VmSafe {
     // Prepare an expected log with (bool checkTopic1, bool checkTopic2, bool checkTopic3, bool checkData).
     // Call this function, then emit an event, then call a function. Internally after the call, we check if
     // logs were emitted in the expected order with the expected topics and data (as specified by the booleans)
-    function expectEmit(
-        bool,
-        bool,
-        bool,
-        bool
-    ) external;
+    function expectEmit(bool, bool, bool, bool) external;
 
-    function expectEmit(
-        bool,
-        bool,
-        bool,
-        bool,
-        address
-    ) external;
+    function expectEmit(bool, bool, bool, bool, address) external;
 
     // Mocks a call to an address, returning specified data.
     // Calldata can either be strict or a partial match, e.g. if you only
     // pass a Solidity selector to the expected calldata, then the entire Solidity
     // function will be mocked.
-    function mockCall(
-        address,
-        bytes calldata,
-        bytes calldata
-    ) external;
+    function mockCall(address, bytes calldata, bytes calldata) external;
 
     // Mocks a call to an address with a specific msg.value, returning specified data.
     // Calldata match takes precedence over msg.value in case of ambiguity.
@@ -474,11 +449,7 @@ interface Vm is VmSafe {
     function expectCall(address, bytes calldata) external;
 
     // Expects a call to an address with the specified msg.value and calldata
-    function expectCall(
-        address,
-        uint256,
-        bytes calldata
-    ) external;
+    function expectCall(address, uint256, bytes calldata) external;
 
     // Sets block.coinbase (who)
     function coinbase(address) external;
@@ -503,14 +474,16 @@ interface Vm is VmSafe {
     function createFork(string calldata, bytes32) external returns (uint256);
 
     // Creates _and_ also selects a new fork with the given endpoint and block and returns the identifier of the fork
-    function createSelectFork(string calldata, uint256)
-        external
-        returns (uint256);
+    function createSelectFork(
+        string calldata,
+        uint256
+    ) external returns (uint256);
 
     // Creates _and_ also selects new fork with the given endpoint and at the block the given transaction was mined in, and replays all transaction mined in the block before the transaction
-    function createSelectFork(string calldata, bytes32)
-        external
-        returns (uint256);
+    function createSelectFork(
+        string calldata,
+        bytes32
+    ) external returns (uint256);
 
     // Creates _and_ also selects a new fork with the given endpoint and the latest block and returns the identifier of the fork
     function createSelectFork(string calldata) external returns (uint256);
@@ -542,11 +515,7 @@ interface Vm is VmSafe {
 
     function makePersistent(address, address) external;
 
-    function makePersistent(
-        address,
-        address,
-        address
-    ) external;
+    function makePersistent(address, address, address) external;
 
     function makePersistent(address[] calldata) external;
 

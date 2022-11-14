@@ -81,9 +81,10 @@ contract StdAssertionsTest is Test {
         t._assertEq(a, a, EXPECT_PASS);
     }
 
-    function testAssertEq_Bytes_Fail(bytes calldata a, bytes calldata b)
-        external
-    {
+    function testAssertEq_Bytes_Fail(
+        bytes calldata a,
+        bytes calldata b
+    ) external {
         vm.assume(keccak256(a) != keccak256(b));
 
         vm.expectEmit(false, false, false, true);
@@ -95,9 +96,10 @@ contract StdAssertionsTest is Test {
         t._assertEq(a, a, CUSTOM_ERROR, EXPECT_PASS);
     }
 
-    function testAssertEq_BytesErr_Fail(bytes calldata a, bytes calldata b)
-        external
-    {
+    function testAssertEq_BytesErr_Fail(
+        bytes calldata a,
+        bytes calldata b
+    ) external {
         vm.assume(keccak256(a) != keccak256(b));
 
         vm.expectEmit(false, false, false, true);
@@ -126,11 +128,7 @@ contract StdAssertionsTest is Test {
         t._assertEq(a, b, EXPECT_PASS);
     }
 
-    function testAssertEq_IntArr_Pass(
-        int256 e0,
-        int256 e1,
-        int256 e2
-    ) public {
+    function testAssertEq_IntArr_Pass(int256 e0, int256 e1, int256 e2) public {
         int256[] memory a = new int256[](3);
         a[0] = e0;
         a[1] = e1;
@@ -256,9 +254,10 @@ contract StdAssertionsTest is Test {
         t._assertEq(a, b, EXPECT_FAIL);
     }
 
-    function testAssertEq_AddressArr_FailLen(uint256 lenA, uint256 lenB)
-        public
-    {
+    function testAssertEq_AddressArr_FailLen(
+        uint256 lenA,
+        uint256 lenB
+    ) public {
         vm.assume(lenA != lenB);
         vm.assume(lenA <= 10000);
         vm.assume(lenB <= 10000);
@@ -270,9 +269,10 @@ contract StdAssertionsTest is Test {
         t._assertEq(a, b, EXPECT_FAIL);
     }
 
-    function testAssertEq_UintArrErr_FailLen(uint256 lenA, uint256 lenB)
-        public
-    {
+    function testAssertEq_UintArrErr_FailLen(
+        uint256 lenA,
+        uint256 lenB
+    ) public {
         vm.assume(lenA != lenB);
         vm.assume(lenA <= 10000);
         vm.assume(lenB <= 10000);
@@ -300,9 +300,10 @@ contract StdAssertionsTest is Test {
         t._assertEq(a, b, CUSTOM_ERROR, EXPECT_FAIL);
     }
 
-    function testAssertEq_AddressArrErr_FailLen(uint256 lenA, uint256 lenB)
-        public
-    {
+    function testAssertEq_AddressArrErr_FailLen(
+        uint256 lenA,
+        uint256 lenB
+    ) public {
         vm.assume(lenA != lenB);
         vm.assume(lenA <= 10000);
         vm.assume(lenB <= 10000);
@@ -557,10 +558,10 @@ contract TestTest is Test {
         fail(err);
     }
 
-    function _assertFalse(bool data, bool expectFail)
-        external
-        expectFailure(expectFail)
-    {
+    function _assertFalse(
+        bool data,
+        bool expectFail
+    ) external expectFailure(expectFail) {
         assertFalse(data);
     }
 

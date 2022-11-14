@@ -122,10 +122,10 @@ interface IERC721 is IERC165 {
     /// @param _owner The address that owns the NFTs
     /// @param _operator The address that acts on behalf of the owner
     /// @return True if `_operator` is an approved operator for `_owner`, false otherwise
-    function isApprovedForAll(address _owner, address _operator)
-        external
-        view
-        returns (bool);
+    function isApprovedForAll(
+        address _owner,
+        address _operator
+    ) external view returns (bool);
 }
 
 /// @dev Note: the ERC-165 identifier for this interface is 0x150b7a02.
@@ -190,8 +190,8 @@ interface IERC721Enumerable is IERC721 {
     /// @param _index A counter less than `balanceOf(_owner)`
     /// @return The token identifier for the `_index`th NFT assigned to `_owner`,
     /// (sort order not specified)
-    function tokenOfOwnerByIndex(address _owner, uint256 _index)
-        external
-        view
-        returns (uint256);
+    function tokenOfOwnerByIndex(
+        address _owner,
+        uint256 _index
+    ) external view returns (uint256);
 }

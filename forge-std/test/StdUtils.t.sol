@@ -47,11 +47,7 @@ contract StdUtilsTest is Test {
         }
     }
 
-    function testBound(
-        uint256 num,
-        uint256 min,
-        uint256 max
-    ) public {
+    function testBound(uint256 num, uint256 min, uint256 max) public {
         if (min > max) (min, max) = (max, min);
 
         uint256 result = bound(num, min, max);

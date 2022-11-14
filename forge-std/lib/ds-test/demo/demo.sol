@@ -37,7 +37,7 @@ contract DemoTest is DSTest {
         emit log_named_decimal_int("decimal int", -1.0e18, 18);
     }
 
-    event log_old_named_uint(bytes32, uint256);
+    event log_old_named_uint(bytes32, uint);
 
     function test_old_logs() public {
         emit log_old_named_uint("key", 500);
@@ -59,15 +59,14 @@ contract DemoTest is DSTest {
         emit logs(hex"ff");
     }
 
-    function echo(string memory s1, string memory s2)
-        public
-        pure
-        returns (string memory, string memory)
-    {
+    function echo(
+        string memory s1,
+        string memory s2
+    ) public pure returns (string memory, string memory) {
         return (s1, s2);
     }
 
-    function prove_this(uint256 x) public {
+    function prove_this(uint x) public {
         emit log_named_uint("sym x", x);
         assertGt(x + 1, 0);
     }
@@ -81,7 +80,7 @@ contract DemoTest is DSTest {
         }
     }
 
-    event MyEvent(uint256, uint256 indexed, uint256, uint256 indexed);
+    event MyEvent(uint, uint indexed, uint, uint indexed);
 
     function test_events() public {
         emit MyEvent(1, 2, 3, 4);
@@ -110,9 +109,9 @@ contract DemoTest is DSTest {
         assertEq32("bytes 1", "bytes 2", err);
 
         emit log("\n## assertEq(uint,uint)\n");
-        assertEq(uint256(0), 1);
+        assertEq(uint(0), 1);
         emit log("\n");
-        assertEq(uint256(0), 1, err);
+        assertEq(uint(0), 1, err);
 
         emit log("\n## assertEq(int,int)\n");
         assertEq(-1, -2);
@@ -125,14 +124,14 @@ contract DemoTest is DSTest {
         assertEqDecimal(-1.0e18, -1.1e18, 18, err);
 
         emit log("\n## assertEqDecimal(uint,uint,uint)\n");
-        assertEqDecimal(uint256(1.0e18), 1.1e18, 18);
+        assertEqDecimal(uint(1.0e18), 1.1e18, 18);
         emit log("\n");
-        assertEqDecimal(uint256(1.0e18), 1.1e18, 18, err);
+        assertEqDecimal(uint(1.0e18), 1.1e18, 18, err);
 
         emit log("\n## assertGt(uint,uint)\n");
-        assertGt(uint256(0), 0);
+        assertGt(uint(0), 0);
         emit log("\n");
-        assertGt(uint256(0), 0, err);
+        assertGt(uint(0), 0, err);
 
         emit log("\n## assertGt(int,int)\n");
         assertGt(-1, -1);
@@ -145,14 +144,14 @@ contract DemoTest is DSTest {
         assertGtDecimal(-2.0e18, -1.1e18, 18, err);
 
         emit log("\n## assertGtDecimal(uint,uint,uint)\n");
-        assertGtDecimal(uint256(1.0e18), 1.1e18, 18);
+        assertGtDecimal(uint(1.0e18), 1.1e18, 18);
         emit log("\n");
-        assertGtDecimal(uint256(1.0e18), 1.1e18, 18, err);
+        assertGtDecimal(uint(1.0e18), 1.1e18, 18, err);
 
         emit log("\n## assertGe(uint,uint)\n");
-        assertGe(uint256(0), 1);
+        assertGe(uint(0), 1);
         emit log("\n");
-        assertGe(uint256(0), 1, err);
+        assertGe(uint(0), 1, err);
 
         emit log("\n## assertGe(int,int)\n");
         assertGe(-1, 0);
@@ -165,14 +164,14 @@ contract DemoTest is DSTest {
         assertGeDecimal(-2.0e18, -1.1e18, 18, err);
 
         emit log("\n## assertGeDecimal(uint,uint,uint)\n");
-        assertGeDecimal(uint256(1.0e18), 1.1e18, 18);
+        assertGeDecimal(uint(1.0e18), 1.1e18, 18);
         emit log("\n");
-        assertGeDecimal(uint256(1.0e18), 1.1e18, 18, err);
+        assertGeDecimal(uint(1.0e18), 1.1e18, 18, err);
 
         emit log("\n## assertLt(uint,uint)\n");
-        assertLt(uint256(0), 0);
+        assertLt(uint(0), 0);
         emit log("\n");
-        assertLt(uint256(0), 0, err);
+        assertLt(uint(0), 0, err);
 
         emit log("\n## assertLt(int,int)\n");
         assertLt(-1, -1);
@@ -185,14 +184,14 @@ contract DemoTest is DSTest {
         assertLtDecimal(-1.0e18, -1.1e18, 18, err);
 
         emit log("\n## assertLtDecimal(uint,uint,uint)\n");
-        assertLtDecimal(uint256(2.0e18), 1.1e18, 18);
+        assertLtDecimal(uint(2.0e18), 1.1e18, 18);
         emit log("\n");
-        assertLtDecimal(uint256(2.0e18), 1.1e18, 18, err);
+        assertLtDecimal(uint(2.0e18), 1.1e18, 18, err);
 
         emit log("\n## assertLe(uint,uint)\n");
-        assertLe(uint256(1), 0);
+        assertLe(uint(1), 0);
         emit log("\n");
-        assertLe(uint256(1), 0, err);
+        assertLe(uint(1), 0, err);
 
         emit log("\n## assertLe(int,int)\n");
         assertLe(0, -1);
@@ -205,9 +204,9 @@ contract DemoTest is DSTest {
         assertLeDecimal(-1.0e18, -1.1e18, 18, err);
 
         emit log("\n## assertLeDecimal(uint,uint,uint)\n");
-        assertLeDecimal(uint256(2.0e18), 1.1e18, 18);
+        assertLeDecimal(uint(2.0e18), 1.1e18, 18);
         emit log("\n");
-        assertLeDecimal(uint256(2.0e18), 1.1e18, 18, err);
+        assertLeDecimal(uint(2.0e18), 1.1e18, 18, err);
 
         emit log("\n## assertEq(string,string)\n");
         string memory s1 = "string 1";

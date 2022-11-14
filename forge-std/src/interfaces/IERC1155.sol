@@ -97,19 +97,19 @@ interface ERC1155 is IERC165 {
     /// @param _owner The address of the token holder
     /// @param _id ID of the token
     /// @return The _owner's balance of the token type requested
-    function balanceOf(address _owner, uint256 _id)
-        external
-        view
-        returns (uint256);
+    function balanceOf(
+        address _owner,
+        uint256 _id
+    ) external view returns (uint256);
 
     /// @notice Get the balance of multiple account/token pairs
     /// @param _owners The addresses of the token holders
     /// @param _ids ID of the tokens
     /// @return The _owner's balance of the token types requested (i.e. balance for each (owner, id) pair)
-    function balanceOfBatch(address[] calldata _owners, uint256[] calldata _ids)
-        external
-        view
-        returns (uint256[] memory);
+    function balanceOfBatch(
+        address[] calldata _owners,
+        uint256[] calldata _ids
+    ) external view returns (uint256[] memory);
 
     /// @notice Enable or disable approval for a third party ("operator") to manage all of the caller's tokens.
     /// @dev MUST emit the ApprovalForAll event on success.
@@ -121,8 +121,8 @@ interface ERC1155 is IERC165 {
     /// @param _owner The owner of the tokens
     /// @param _operator Address of authorized operator
     /// @return True if the operator is approved, false if not
-    function isApprovedForAll(address _owner, address _operator)
-        external
-        view
-        returns (bool);
+    function isApprovedForAll(
+        address _owner,
+        address _operator
+    ) external view returns (bool);
 }

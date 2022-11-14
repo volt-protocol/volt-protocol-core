@@ -54,12 +54,10 @@ abstract contract StdUtils {
 
     /// @dev Compute the address a contract will be deployed at for a given deployer address and nonce
     /// @notice adapated from Solmate implementation (https://github.com/Rari-Capital/solmate/blob/main/src/utils/LibRLP.sol)
-    function computeCreateAddress(address deployer, uint256 nonce)
-        internal
-        pure
-        virtual
-        returns (address)
-    {
+    function computeCreateAddress(
+        address deployer,
+        uint256 nonce
+    ) internal pure virtual returns (address) {
         // forgefmt: disable-start
         // The integer zero is treated as an empty byte string, and as a result it only has a length prefix, 0x80, computed via 0x80 + 0.
         // A one byte integer uses its own value as its length prefix, there is no additional "0x80 + length" prefix that comes before it.
@@ -89,7 +87,7 @@ abstract contract StdUtils {
                 );
 
         // Nonces greater than 1 byte all follow a consistent encoding scheme, where each value is preceded by a prefix of 0x80 + length.
-        if (nonce <= 2**8 - 1)
+        if (nonce <= 2 ** 8 - 1)
             return
                 addressFromLast20Bytes(
                     keccak256(
@@ -102,7 +100,7 @@ abstract contract StdUtils {
                         )
                     )
                 );
-        if (nonce <= 2**16 - 1)
+        if (nonce <= 2 ** 16 - 1)
             return
                 addressFromLast20Bytes(
                     keccak256(
@@ -115,7 +113,7 @@ abstract contract StdUtils {
                         )
                     )
                 );
-        if (nonce <= 2**24 - 1)
+        if (nonce <= 2 ** 24 - 1)
             return
                 addressFromLast20Bytes(
                     keccak256(
@@ -162,11 +160,9 @@ abstract contract StdUtils {
             );
     }
 
-    function addressFromLast20Bytes(bytes32 bytesValue)
-        private
-        pure
-        returns (address)
-    {
+    function addressFromLast20Bytes(
+        bytes32 bytesValue
+    ) private pure returns (address) {
         return address(uint160(uint256(bytesValue)));
     }
 }

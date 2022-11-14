@@ -25,10 +25,10 @@ interface IERC20 {
 
     /// @notice Returns the remaining number of tokens that `spender` is allowed
     /// to spend on behalf of `owner`
-    function allowance(address owner, address spender)
-        external
-        view
-        returns (uint256);
+    function allowance(
+        address owner,
+        address spender
+    ) external view returns (uint256);
 
     /// @notice Sets `amount` as the allowance of `spender` over the caller's tokens.
     /// @dev Be aware of front-running risks: https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729

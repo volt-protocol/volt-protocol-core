@@ -136,58 +136,58 @@ library stdStorageSafe {
             ];
     }
 
-    function target(StdStorage storage self, address _target)
-        internal
-        returns (StdStorage storage)
-    {
+    function target(
+        StdStorage storage self,
+        address _target
+    ) internal returns (StdStorage storage) {
         self._target = _target;
         return self;
     }
 
-    function sig(StdStorage storage self, bytes4 _sig)
-        internal
-        returns (StdStorage storage)
-    {
+    function sig(
+        StdStorage storage self,
+        bytes4 _sig
+    ) internal returns (StdStorage storage) {
         self._sig = _sig;
         return self;
     }
 
-    function sig(StdStorage storage self, string memory _sig)
-        internal
-        returns (StdStorage storage)
-    {
+    function sig(
+        StdStorage storage self,
+        string memory _sig
+    ) internal returns (StdStorage storage) {
         self._sig = sigs(_sig);
         return self;
     }
 
-    function with_key(StdStorage storage self, address who)
-        internal
-        returns (StdStorage storage)
-    {
+    function with_key(
+        StdStorage storage self,
+        address who
+    ) internal returns (StdStorage storage) {
         self._keys.push(bytes32(uint256(uint160(who))));
         return self;
     }
 
-    function with_key(StdStorage storage self, uint256 amt)
-        internal
-        returns (StdStorage storage)
-    {
+    function with_key(
+        StdStorage storage self,
+        uint256 amt
+    ) internal returns (StdStorage storage) {
         self._keys.push(bytes32(amt));
         return self;
     }
 
-    function with_key(StdStorage storage self, bytes32 key)
-        internal
-        returns (StdStorage storage)
-    {
+    function with_key(
+        StdStorage storage self,
+        bytes32 key
+    ) internal returns (StdStorage storage) {
         self._keys.push(key);
         return self;
     }
 
-    function depth(StdStorage storage self, uint256 _depth)
-        internal
-        returns (StdStorage storage)
-    {
+    function depth(
+        StdStorage storage self,
+        uint256 _depth
+    ) internal returns (StdStorage storage) {
         self._depth = _depth;
         return self;
     }
@@ -223,11 +223,10 @@ library stdStorageSafe {
         return abi.decode(read(self), (int256));
     }
 
-    function bytesToBytes32(bytes memory b, uint256 offset)
-        private
-        pure
-        returns (bytes32)
-    {
+    function bytesToBytes32(
+        bytes memory b,
+        uint256 offset
+    ) private pure returns (bytes32) {
         bytes32 out;
 
         uint256 max = b.length > 32 ? 32 : b.length;
@@ -263,52 +262,52 @@ library stdStorage {
         return stdStorageSafe.find(self);
     }
 
-    function target(StdStorage storage self, address _target)
-        internal
-        returns (StdStorage storage)
-    {
+    function target(
+        StdStorage storage self,
+        address _target
+    ) internal returns (StdStorage storage) {
         return stdStorageSafe.target(self, _target);
     }
 
-    function sig(StdStorage storage self, bytes4 _sig)
-        internal
-        returns (StdStorage storage)
-    {
+    function sig(
+        StdStorage storage self,
+        bytes4 _sig
+    ) internal returns (StdStorage storage) {
         return stdStorageSafe.sig(self, _sig);
     }
 
-    function sig(StdStorage storage self, string memory _sig)
-        internal
-        returns (StdStorage storage)
-    {
+    function sig(
+        StdStorage storage self,
+        string memory _sig
+    ) internal returns (StdStorage storage) {
         return stdStorageSafe.sig(self, _sig);
     }
 
-    function with_key(StdStorage storage self, address who)
-        internal
-        returns (StdStorage storage)
-    {
+    function with_key(
+        StdStorage storage self,
+        address who
+    ) internal returns (StdStorage storage) {
         return stdStorageSafe.with_key(self, who);
     }
 
-    function with_key(StdStorage storage self, uint256 amt)
-        internal
-        returns (StdStorage storage)
-    {
+    function with_key(
+        StdStorage storage self,
+        uint256 amt
+    ) internal returns (StdStorage storage) {
         return stdStorageSafe.with_key(self, amt);
     }
 
-    function with_key(StdStorage storage self, bytes32 key)
-        internal
-        returns (StdStorage storage)
-    {
+    function with_key(
+        StdStorage storage self,
+        bytes32 key
+    ) internal returns (StdStorage storage) {
         return stdStorageSafe.with_key(self, key);
     }
 
-    function depth(StdStorage storage self, uint256 _depth)
-        internal
-        returns (StdStorage storage)
-    {
+    function depth(
+        StdStorage storage self,
+        uint256 _depth
+    ) internal returns (StdStorage storage) {
         return stdStorageSafe.depth(self, _depth);
     }
 
@@ -388,11 +387,10 @@ library stdStorage {
     }
 
     // Private function so needs to be copied over
-    function bytesToBytes32(bytes memory b, uint256 offset)
-        private
-        pure
-        returns (bytes32)
-    {
+    function bytesToBytes32(
+        bytes memory b,
+        uint256 offset
+    ) private pure returns (bytes32) {
         bytes32 out;
 
         uint256 max = b.length > 32 ? 32 : b.length;

@@ -34,11 +34,7 @@ abstract contract StdAssertions is DSTest {
         }
     }
 
-    function assertEq(
-        bool a,
-        bool b,
-        string memory err
-    ) internal virtual {
+    function assertEq(bool a, bool b, string memory err) internal virtual {
         if (a != b) {
             emit log_named_string("Error", err);
             assertEq(a, b);

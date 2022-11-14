@@ -106,11 +106,9 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
 
     /// @notice grants ability to mint Volt through the global rate limited minter
     /// @param rateLimitedMinter address to add as a minter in global rate limited minter
-    function grantRateLimitedMinter(address rateLimitedMinter)
-        external
-        override
-        onlyGovernor
-    {
+    function grantRateLimitedMinter(
+        address rateLimitedMinter
+    ) external override onlyGovernor {
         _grantRole(VOLT_RATE_LIMITED_MINTER_ROLE, rateLimitedMinter);
     }
 
@@ -160,11 +158,9 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
 
     /// @notice revokes ability to mint Volt through the global rate limited minter
     /// @param rateLimitedMinter ex minter in global rate limited minter
-    function revokeRateLimitedMinter(address rateLimitedMinter)
-        external
-        override
-        onlyGovernor
-    {
+    function revokeRateLimitedMinter(
+        address rateLimitedMinter
+    ) external override onlyGovernor {
         _revokeRole(VOLT_RATE_LIMITED_MINTER_ROLE, rateLimitedMinter);
     }
 
@@ -263,12 +259,9 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     /// @notice checks if address has Volt Minter Role
     /// @param _address address to check
     /// @return true if _address has Volt Minter Role
-    function isRateLimitedMinter(address _address)
-        public
-        view
-        override
-        returns (bool)
-    {
+    function isRateLimitedMinter(
+        address _address
+    ) public view override returns (bool) {
         return hasRole(VOLT_RATE_LIMITED_MINTER_ROLE, _address);
     }
 }

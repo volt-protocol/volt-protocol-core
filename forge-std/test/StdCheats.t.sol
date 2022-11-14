@@ -256,7 +256,7 @@ contract StdCheatsTest is Test {
             number =
                 number +
                 uint256(uint8(b[i])) *
-                (2**(8 * (b.length - (i + 1))));
+                (2 ** (8 * (b.length - (i + 1))));
         }
         return number;
     }
@@ -283,11 +283,10 @@ contract StdCheatsTest is Test {
     function testRpcs() public {
         string[2][] memory rpcs = vm.rpcUrls();
         for (uint256 i = 0; i < rpcs.length; i++) {
-            (
-                ,
-                /* string memory name */
-                string memory rpcUrl
-            ) = (rpcs[i][0], rpcs[i][1]);
+            (, /* string memory name */ string memory rpcUrl) = (
+                rpcs[i][0],
+                rpcs[i][1]
+            );
             vm.createSelectFork(rpcUrl);
         }
     }
@@ -310,10 +309,10 @@ contract Bar {
         require(tx.origin == expectedSender, "!prank");
     }
 
-    function origin(address expectedSender, address expectedOrigin)
-        public
-        payable
-    {
+    function origin(
+        address expectedSender,
+        address expectedOrigin
+    ) public payable {
         require(msg.sender == expectedSender, "!prank");
         require(tx.origin == expectedOrigin, "!prank");
     }
