@@ -13,7 +13,7 @@ import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {ITimelockSimulation} from "../utils/ITimelockSimulation.sol";
 import {ERC20Allocator} from "../../../pcv/utils/ERC20Allocator.sol";
 import {ERC20CompoundPCVDeposit} from "../../../pcv/compound/ERC20CompoundPCVDeposit.sol";
-import {PriceBoundPSM} from "../../../peg/PriceBoundPSM.sol";
+import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {IPegStabilityModule} from "../../../peg/IPegStabilityModule.sol";
 import {VoltMigrator} from "../../../volt/VoltMigrator.sol";
 import {VoltV2} from "../../../volt/VoltV2.sol";
@@ -31,8 +31,8 @@ contract vip13 is DSTest, IVIP {
     uint256 public usdcInUsdcPSM;
     uint256 public daiInDaiPSM;
 
-    PriceBoundPSM public voltV2DaiPriceBoundPSM;
-    PriceBoundPSM public voltV2UsdcPriceBoundPSM;
+    PegStabilityModule public voltV2DaiPriceBoundPSM;
+    PegStabilityModule public voltV2UsdcPriceBoundPSM;
 
     VoltV2 public voltV2;
     IVolt public oldVolt = IVolt(MainnetAddresses.VOLT);
@@ -43,11 +43,11 @@ contract vip13 is DSTest, IVIP {
     ITimelockSimulation.action[] private proposal;
 
     uint256 oldVoltTotalSupply;
-    uint256 voltDaiFloorPrice = 9_000;
-    uint256 voltDaiCeilingPrice = 10_000;
+    uint128 voltDaiFloorPrice = 1.04e18;
+    uint128 voltDaiCeilingPrice = 1.1e18;
 
-    uint256 voltUsdcFloorPrice = 9_000e12;
-    uint256 voltUsdcCeilingPrice = 10_000e12;
+    uint128 voltUsdcFloorPrice = 9_000e12;
+    uint128 voltUsdcCeilingPrice = 10_000e12;
 
     /// @notice target token balance for the DAI PSM to hold
     uint248 private constant targetBalanceDai = 100_000e18;
@@ -84,7 +84,7 @@ contract vip13 is DSTest, IVIP {
             IVolt(address(voltV2))
         );
 
-        deployPsms(address(voltV2));
+        deployPsms();
 
         migratorRouter = new MigratorRouter(
             IVolt(address(voltV2)),
@@ -444,16 +444,9 @@ contract vip13 is DSTest, IVIP {
         );
         assertEq(address(voltV2UsdcPriceBoundPSM.backupOracle()), address(0));
         assertEq(voltV2UsdcPriceBoundPSM.decimalsNormalizer(), 12);
-        assertEq(voltV2UsdcPriceBoundPSM.mintFeeBasisPoints(), 0);
-        assertEq(voltV2UsdcPriceBoundPSM.redeemFeeBasisPoints(), 0);
         assertEq(
             address(voltV2UsdcPriceBoundPSM.underlyingToken()),
             MainnetAddresses.USDC
-        );
-        assertEq(address(voltV2UsdcPriceBoundPSM.surplusTarget()), address(1));
-        assertEq(
-            voltV2UsdcPriceBoundPSM.reservesThreshold(),
-            type(uint256).max
         );
         assertEq(address(voltV2UsdcPriceBoundPSM.volt()), address(voltV2));
         assertEq(
@@ -478,14 +471,10 @@ contract vip13 is DSTest, IVIP {
         );
         assertEq(address(voltV2DaiPriceBoundPSM.backupOracle()), address(0));
         assertEq(voltV2DaiPriceBoundPSM.decimalsNormalizer(), 0);
-        assertEq(voltV2DaiPriceBoundPSM.mintFeeBasisPoints(), 0);
-        assertEq(voltV2DaiPriceBoundPSM.redeemFeeBasisPoints(), 0);
         assertEq(
             address(voltV2DaiPriceBoundPSM.underlyingToken()),
             address(MainnetAddresses.DAI)
         );
-        assertEq(voltV2DaiPriceBoundPSM.reservesThreshold(), type(uint256).max);
-        assertEq(address(voltV2DaiPriceBoundPSM.surplusTarget()), address(1));
         assertEq(address(voltV2DaiPriceBoundPSM.volt()), address(voltV2));
         assertEq(
             voltV2.balanceOf(address(voltV2DaiPriceBoundPSM)),
@@ -577,56 +566,27 @@ contract vip13 is DSTest, IVIP {
         revert("no arbitrum proposal");
     }
 
-    function deployPsms(address _voltV2) internal {
-        PegStabilityModule.OracleParams memory oracleParamsDai;
-        PegStabilityModule.OracleParams memory oracleParamsUsdc;
-
-        oracleParamsDai = PegStabilityModule.OracleParams({
-            coreAddress: address(MainnetAddresses.CORE),
-            oracleAddress: address(MainnetAddresses.ORACLE_PASS_THROUGH),
-            backupOracle: address(0),
-            decimalsNormalizer: 0,
-            doInvert: true,
-            volt: IVolt(_voltV2)
-        });
-
-        oracleParamsUsdc = PegStabilityModule.OracleParams({
-            coreAddress: address(MainnetAddresses.CORE),
-            oracleAddress: address(MainnetAddresses.ORACLE_PASS_THROUGH),
-            backupOracle: address(0),
-            decimalsNormalizer: 12,
-            doInvert: true,
-            volt: IVolt(_voltV2)
-        });
-
-        voltV2DaiPriceBoundPSM = new PriceBoundPSM(
+    function deployPsms() internal {
+        voltV2DaiPriceBoundPSM = new PegStabilityModule(
+            MainnetAddresses.CORE,
+            MainnetAddresses.ORACLE_PASS_THROUGH,
+            address(0),
+            0,
+            false,
+            IERC20(MainnetAddresses.DAI),
             voltDaiFloorPrice,
-            voltDaiCeilingPrice,
-            oracleParamsDai,
-            0,
-            0,
-            // the next 3 values are garbage values as
-            // psms are no longer given the minter role to mint
-            type(uint256).max,
-            10_000e18,
-            10_000_000e18,
-            IERC20(address(MainnetAddresses.DAI)),
-            IPCVDeposit(address(1))
+            voltDaiCeilingPrice
         );
 
-        voltV2UsdcPriceBoundPSM = new PriceBoundPSM(
+        voltV2UsdcPriceBoundPSM = new PegStabilityModule(
+            MainnetAddresses.CORE,
+            MainnetAddresses.ORACLE_PASS_THROUGH,
+            address(0),
+            -12,
+            false,
+            IERC20(MainnetAddresses.USDC),
             voltUsdcFloorPrice,
-            voltUsdcCeilingPrice,
-            oracleParamsUsdc,
-            0,
-            0,
-            // the next 3 values are garbage values as
-            // psms are no longer given the minter role to mint
-            type(uint256).max,
-            10_000e18,
-            10_000_000e18,
-            IERC20(address(MainnetAddresses.USDC)),
-            IPCVDeposit(address(1))
+            voltUsdcCeilingPrice
         );
     }
 }

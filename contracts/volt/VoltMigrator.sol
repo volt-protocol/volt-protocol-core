@@ -4,7 +4,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-import {CoreRef} from "../refs/CoreRef.sol";
+import {CoreRefV2} from "../refs/CoreRefV2.sol";
 import {Volt} from "./Volt.sol";
 import {IVolt} from "./IVolt.sol";
 import {IVoltMigrator} from "./IVoltMigrator.sol";
@@ -14,7 +14,7 @@ import {IVoltMigrator} from "./IVoltMigrator.sol";
 /// to the new VOLT token that will be able to participate in the Volt Veto Module.
 /// users will deposit their old VOLT token which'll be burnt, and the new Volt token
 /// will be minted to them.
-contract VoltMigrator is IVoltMigrator, CoreRef {
+contract VoltMigrator is IVoltMigrator, CoreRefV2 {
     using SafeERC20 for IERC20;
 
     /// @notice address of the old VOLT token
@@ -24,7 +24,7 @@ contract VoltMigrator is IVoltMigrator, CoreRef {
     /// @notice address of the new VOLT token
     IVolt public immutable newVolt;
 
-    constructor(address core, IVolt _newVolt) CoreRef(core) {
+    constructor(address core, IVolt _newVolt) CoreRefV2(core) {
         newVolt = _newVolt;
     }
 
@@ -82,7 +82,7 @@ contract VoltMigrator is IVoltMigrator, CoreRef {
         address token,
         address to,
         uint256 amount
-    ) external onlyGovernor {
+    ) external override onlyGovernor {
         require(
             token != address(newVolt),
             "VoltMigrator: cannot sweep new Volt"

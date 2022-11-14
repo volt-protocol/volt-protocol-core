@@ -10,7 +10,6 @@ import {IVolt} from "../../volt/Volt.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {vip13} from "./vip/vip13.sol";
 import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
-import {PriceBoundPSM} from "../../peg/PriceBoundPSM.sol";
 import {IPCVGuardian} from "../../pcv/IPCVGuardian.sol";
 
 contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
