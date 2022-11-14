@@ -16,15 +16,14 @@ contract ERC20CompoundPCVDeposit is CompoundPCVDepositBase {
     /// @notice Compound ERC20 PCV Deposit constructor
     /// @param _core Volt Core for reference
     /// @param _cToken Compound cToken to deposit
-    constructor(
-        address _core,
-        address _cToken
-    ) CompoundPCVDepositBase(_core, _cToken) {
+    constructor(address _core, address _cToken)
+        CompoundPCVDepositBase(_core, _cToken)
+    {
         token = IERC20(CErc20(_cToken).underlying());
     }
 
     /// @notice deposit ERC-20 tokens to Compound
-    function deposit() external override whenNotPaused {
+    function deposit() external override whenNotPaused globalReentrancyLock {
         uint256 amount = token.balanceOf(address(this));
 
         token.approve(address(cToken), amount);

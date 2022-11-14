@@ -23,10 +23,13 @@ abstract contract CompoundPCVDepositBase is PCVDeposit {
     /// @notice withdraw tokens from the PCV allocation
     /// @param amountUnderlying of tokens withdrawn
     /// @param to the address to send PCV to
-    function withdraw(
-        address to,
-        uint256 amountUnderlying
-    ) external override onlyPCVController whenNotPaused {
+    function withdraw(address to, uint256 amountUnderlying)
+        external
+        override
+        onlyPCVController
+        whenNotPaused
+        isGlobalReentrancyLocked
+    {
         require(
             cToken.redeemUnderlying(amountUnderlying) == 0,
             "CompoundPCVDeposit: redeem error"
