@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
-import {PCVGuardAdmin} from "../../../pcv/PCVGuardAdmin.sol";
-import {MockERC20} from "../../../mock/MockERC20.sol";
-import {MockPCVDepositV2} from "../../../mock/MockPCVDepositV2.sol";
-import {getCore, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
-import {VoltRoles} from "../../../core/VoltRoles.sol";
-import {ICore} from "../../../core/ICore.sol";
-import {DSTest} from "./../utils/DSTest.sol";
 import {Vm} from "./../utils/Vm.sol";
+import {DSTest} from "./../utils/DSTest.sol";
+import {ICoreV2} from "../../../core/ICoreV2.sol";
+import {VoltRoles} from "../../../core/VoltRoles.sol";
+import {MockERC20} from "../../../mock/MockERC20.sol";
+import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
+import {MockPCVDepositV2} from "../../../mock/MockPCVDepositV2.sol";
+import {getCoreV2, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
 
 contract UnitTestPCVGuardian is DSTest {
     event SafeAddressUpdated(
@@ -18,11 +17,10 @@ contract UnitTestPCVGuardian is DSTest {
     );
 
     PCVGuardian private pcvGuardian;
-    PCVGuardAdmin private pcvGuardAdmin;
     MockERC20 public underlyingToken;
     MockERC20 public rewardToken;
     MockPCVDepositV2 public pcvDeposit;
-    ICore private core;
+    ICoreV2 private core;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
     VoltTestAddresses public addresses = getAddresses();
@@ -33,7 +31,7 @@ contract UnitTestPCVGuardian is DSTest {
     uint256 public mintAmount = 10_000_000;
 
     function setUp() public {
-        core = getCore();
+        core = getCoreV2();
 
         // acts as the underlying token in the pcv depost
         underlyingToken = new MockERC20();
@@ -47,29 +45,22 @@ contract UnitTestPCVGuardian is DSTest {
             0
         );
 
-        pcvGuardAdmin = new PCVGuardAdmin(address(core));
-
-        // whitelist the pcvDeposit as one of the addresses that can be withdrawn from
+        /// whitelist the pcvDeposit as one of the addresses that can be withdrawn from
         whitelistAddresses.push(address(pcvDeposit));
 
         pcvGuardian = new PCVGuardian(
             address(core),
-            address(this), // using 'this' address as the safe address for withdrawals
+            address(this), /// using 'this' address as the safe address for withdrawals
             whitelistAddresses
         );
 
-        // grant the pcvGuardian the PCV controller and Guardian roles
+        /// grant the pcvGuardian the PCV controller and Guardian roles
         vm.startPrank(addresses.governorAddress);
         core.grantPCVController(address(pcvGuardian));
         core.grantGuardian(address(pcvGuardian));
 
-        // create the PCV_GUARD_ADMIN role and grant it to the PCVGuardAdmin contract
-        core.createRole(VoltRoles.PCV_GUARD_ADMIN, VoltRoles.GOVERNOR);
-        core.grantRole(VoltRoles.PCV_GUARD_ADMIN, address(pcvGuardAdmin));
-
-        // create the PCV guard role, and grant it to the 'guard' address
-        core.createRole(VoltRoles.PCV_GUARD, VoltRoles.PCV_GUARD_ADMIN);
-        pcvGuardAdmin.grantPCVGuardRole(guard);
+        /// grant the PCV guard role to the 'guard' address
+        core.grantPCVGuard(guard);
 
         underlyingToken.mint(address(pcvDeposit), mintAmount);
         rewardToken.mint(address(pcvDeposit), mintAmount);
@@ -80,12 +71,6 @@ contract UnitTestPCVGuardian is DSTest {
     function testPCVGuardianRoles() public {
         assertTrue(core.isGuardian(address(pcvGuardian)));
         assertTrue(core.isPCVController(address(pcvGuardian)));
-    }
-
-    function testPCVGuardAdminRole() public {
-        assertTrue(
-            core.hasRole(VoltRoles.PCV_GUARD_ADMIN, address(pcvGuardAdmin))
-        );
     }
 
     function testPausedAfterWithdrawToSafeAddress() public {
@@ -137,7 +122,7 @@ contract UnitTestPCVGuardian is DSTest {
 
     function testWithdrawToSafeAddressFailWhenGuardRevokedGovernor() public {
         vm.prank(addresses.governorAddress);
-        pcvGuardAdmin.revokePCVGuardRole(guard);
+        core.revokePCVGuard(guard);
 
         vm.prank(guard);
         vm.expectRevert(bytes("UNAUTHORIZED"));
@@ -147,19 +132,17 @@ contract UnitTestPCVGuardian is DSTest {
 
     function testWithdrawToSafeAddressFailWhenGuardRevokedGuardian() public {
         vm.prank(addresses.guardianAddress);
-        pcvGuardAdmin.revokePCVGuardRole(guard);
+        core.revokeOverride(VoltRoles.PCV_GUARD, guard);
 
         vm.prank(guard);
-        vm.expectRevert(bytes("UNAUTHORIZED"));
+        vm.expectRevert("UNAUTHORIZED");
 
         pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), mintAmount);
     }
 
     function testWithdrawToSafeAddressFailWhenNotWhitelist() public {
         vm.prank(addresses.governorAddress);
-        vm.expectRevert(
-            bytes("PCVGuardian: Provided address is not whitelisted")
-        );
+        vm.expectRevert("PCVGuardian: Provided address is not whitelisted");
 
         pcvGuardian.withdrawToSafeAddress(address(0x1), mintAmount);
     }
@@ -217,7 +200,7 @@ contract UnitTestPCVGuardian is DSTest {
 
     function testWithdrawAllToSafeAddressFailWhenGuardRevokedGovernor() public {
         vm.prank(addresses.governorAddress);
-        pcvGuardAdmin.revokePCVGuardRole(guard);
+        core.revokePCVGuard(guard);
 
         vm.prank(guard);
         vm.expectRevert(bytes("UNAUTHORIZED"));
@@ -227,7 +210,7 @@ contract UnitTestPCVGuardian is DSTest {
 
     function testWithdrawAllToSafeAddressFailWhenGuardRevokedGuardian() public {
         vm.prank(addresses.guardianAddress);
-        pcvGuardAdmin.revokePCVGuardRole(guard);
+        core.revokeOverride(VoltRoles.PCV_GUARD, guard);
 
         vm.prank(guard);
         vm.expectRevert(bytes("UNAUTHORIZED"));
@@ -299,7 +282,7 @@ contract UnitTestPCVGuardian is DSTest {
         public
     {
         vm.prank(addresses.governorAddress);
-        pcvGuardAdmin.revokePCVGuardRole(guard);
+        core.revokePCVGuard(guard);
 
         vm.prank(guard);
         vm.expectRevert(bytes("UNAUTHORIZED"));
@@ -315,7 +298,7 @@ contract UnitTestPCVGuardian is DSTest {
         public
     {
         vm.prank(addresses.guardianAddress);
-        pcvGuardAdmin.revokePCVGuardRole(guard);
+        core.revokeOverride(VoltRoles.PCV_GUARD, guard);
 
         vm.prank(guard);
         vm.expectRevert(bytes("UNAUTHORIZED"));
@@ -391,7 +374,7 @@ contract UnitTestPCVGuardian is DSTest {
         public
     {
         vm.prank(addresses.governorAddress);
-        pcvGuardAdmin.revokePCVGuardRole(guard);
+        core.revokePCVGuard(guard);
 
         vm.prank(guard);
         vm.expectRevert(bytes("UNAUTHORIZED"));
@@ -405,8 +388,8 @@ contract UnitTestPCVGuardian is DSTest {
     function testWithdrawAllERC20ToSafeAddressFailWhenGuardRevokedGuardian()
         public
     {
-        vm.prank(addresses.guardianAddress);
-        pcvGuardAdmin.revokePCVGuardRole(guard);
+        vm.prank(addresses.governorAddress);
+        core.revokePCVGuard(guard);
 
         vm.prank(guard);
         vm.expectRevert(bytes("UNAUTHORIZED"));

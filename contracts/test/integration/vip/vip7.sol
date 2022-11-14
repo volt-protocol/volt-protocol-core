@@ -86,15 +86,9 @@ contract vip7 is DSTest, IVIP, AllRoles {
             0
         );
         assertTrue(
-            PegStabilityModule(MainnetAddresses.VOLT_FEI_PSM).mintPaused()
-        );
-        assertTrue(
             PCVGuardian(MainnetAddresses.PCV_GUARDIAN).isWhitelistAddress(
                 MainnetAddresses.VOLT_DAI_PSM
             )
-        );
-        assertTrue(
-            !PegStabilityModule(MainnetAddresses.VOLT_USDC_PSM).redeemPaused()
         );
 
         assertTrue(

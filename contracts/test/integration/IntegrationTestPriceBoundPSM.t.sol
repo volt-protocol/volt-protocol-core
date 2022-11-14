@@ -4,33 +4,39 @@ pragma solidity 0.8.13;
 import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
-import {MockPCVDepositV2} from "../../mock/MockPCVDepositV2.sol";
-import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
-import {MockERC20} from "../../mock/MockERC20.sol";
-import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
-import {ICore} from "../../core/ICore.sol";
-import {Core} from "../../core/Core.sol";
-import {IVolt, Volt} from "../../volt/Volt.sol";
-import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
-import {getCore, getMainnetAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
-import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 import {Vm} from "./../unit/utils/Vm.sol";
+import {Core} from "../../core/Core.sol";
+import {ICore} from "../../core/ICore.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
-import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
+import {ICoreV2} from "../../core/ICoreV2.sol";
 import {Constants} from "../../Constants.sol";
+import {MockERC20} from "../../mock/MockERC20.sol";
+import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
+import {IVolt, Volt} from "../../volt/Volt.sol";
+import {MockPCVDepositV2} from "../../mock/MockPCVDepositV2.sol";
+import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
+import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
+import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
+import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
+import {IGRLM, GlobalRateLimitedMinter} from "../../minter/GlobalRateLimitedMinter.sol";
+import {getCoreV2, getAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
 
 contract IntegrationTestPriceBoundPSMTest is DSTest {
     using SafeCast for *;
+
+    VoltTestAddresses public addresses = getAddresses();
+
+    IVolt private volt;
+    ICoreV2 private core;
     PegStabilityModule private psm;
-    ICore private core = ICore(MainnetAddresses.CORE);
-    ICore private feiCore = ICore(MainnetAddresses.FEI_CORE);
-    IVolt private volt = IVolt(MainnetAddresses.VOLT);
     IVolt private fei = IVolt(MainnetAddresses.FEI);
     IVolt private underlyingToken = fei;
+    GlobalRateLimitedMinter public grlm;
 
     /// --------------- Minting Params ---------------
 
     uint256 public constant mintAmount = 10_000_000e18;
+    uint256 public constant voltMintAmount = 10_000_000e18;
 
     /// @notice fei dai psm address
     address public immutable feiDaiPsm = MainnetAddresses.FINAL_FEI_DAI_PSM;
@@ -44,7 +50,21 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     uint128 voltFloorPrice = 1.05e18; /// 1 volt for 1.05 fei is the min price
     uint128 voltCeilingPrice = 1.1e18; /// 1 volt for 1.1 fei is the max price
 
+    /// ---------- GRLM PARAMS ----------
+
+    /// maximum rate limit per second is 100 VOLT
+    uint256 public constant maxRateLimitPerSecondMinting = 100e18;
+
+    /// replenish 500k VOLT per day
+    uint128 public constant rateLimitPerSecondMinting = 5.787e18;
+
+    /// buffer cap of 10m VOLT
+    uint128 public constant bufferCapMinting = uint128(voltMintAmount);
+
     function setUp() public {
+        core = getCoreV2();
+        volt = core.volt();
+
         /// create PSM
         psm = new PegStabilityModule(
             address(core),
@@ -57,17 +77,26 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
             voltCeilingPrice
         );
 
+        grlm = new GlobalRateLimitedMinter(
+            address(core),
+            maxRateLimitPerSecondMinting,
+            rateLimitPerSecondMinting,
+            bufferCapMinting
+        );
+
+        vm.startPrank(addresses.governorAddress);
+        core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
+        core.grantMinter(address(grlm));
+        core.grantRateLimitedMinter(address(psm));
+        core.grantGlobalLocker(address(psm));
+        vm.stopPrank();
+
         vm.prank(feiDaiPsm);
         fei.mint(address(this), mintAmount);
 
-        vm.startPrank(MainnetAddresses.GOVERNOR);
-
-        /// grant the PSM the PCV Controller role
-        core.grantMinter(MainnetAddresses.GOVERNOR);
         /// mint VOLT to the user
         volt.mint(address(psm), mintAmount);
         volt.mint(address(this), mintAmount);
-        vm.stopPrank();
 
         vm.prank(feiDaiPsm);
         fei.mint(address(psm), mintAmount * 100_000);
@@ -95,14 +124,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
 
     /// @notice PSM is set up correctly and view functions are working
     function testGetMaxMintAmountOut() public {
-        uint256 startingBalance = volt.balanceOf(address(psm));
-        assertEq(psm.getMaxMintAmountOut(), startingBalance);
-
-        vm.startPrank(MainnetAddresses.GOVERNOR);
-        volt.mint(address(psm), mintAmount);
-        vm.stopPrank();
-
-        assertEq(psm.getMaxMintAmountOut(), mintAmount + startingBalance);
+        assertEq(psm.getMaxMintAmountOut(), grlm.buffer());
     }
 
     /// @notice PSM is set up correctly and view functions are working
@@ -192,7 +214,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
 
     /// @notice redeem fails without approval
     function testSwapFeiForUnderlyingFailsWithoutApproval() public {
-        vm.expectRevert(bytes("ERC20: transfer amount exceeds allowance"));
+        vm.expectRevert(bytes("ERC20: insufficient allowance"));
 
         psm.redeem(address(this), mintAmount, mintAmount);
     }
@@ -213,7 +235,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
 
     /// @notice withdraw erc20 succeeds with correct permissions
     function testERC20WithdrawSuccess() public {
-        vm.prank(MainnetAddresses.GOVERNOR);
+        vm.prank(addresses.governorAddress);
         core.grantPCVController(address(this));
 
         vm.prank(feiDaiPsm);
@@ -224,23 +246,5 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
         uint256 endingBalance = underlyingToken.balanceOf(address(this));
 
         assertEq(endingBalance - startingBalance, mintAmount);
-    }
-
-    /// @notice redeem fails when paused
-    function testRedeemFailsWhenPaused() public {
-        vm.prank(MainnetAddresses.GOVERNOR);
-        psm.pauseRedeem();
-
-        vm.expectRevert(bytes("PegStabilityModule: Redeem paused"));
-        psm.redeem(address(this), 100, 100);
-    }
-
-    /// @notice mint fails when paused
-    function testMintFailsWhenPaused() public {
-        vm.prank(MainnetAddresses.GOVERNOR);
-        psm.pauseMint();
-
-        vm.expectRevert(bytes("PegStabilityModule: Minting paused"));
-        psm.mint(address(this), 100, 100);
     }
 }

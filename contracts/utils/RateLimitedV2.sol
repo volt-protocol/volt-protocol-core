@@ -83,22 +83,21 @@ abstract contract RateLimitedV2 is IRateLimitedV2, CoreRefV2 {
             Math.min(bufferStored + (rateLimitPerSecond * elapsed), bufferCap);
     }
 
-    /** 
-        @notice the method that enforces the rate limit. Decreases buffer by "amount". 
-        If buffer is <= amount either
-        1. Does a partial mint by the amount remaining in the buffer or
-        2. Reverts
-        Depending on whether doPartialAction is true or false
-    */
+    /// @notice the method that enforces the rate limit.
+    /// Decreases buffer by "amount".
+    /// If buffer is <= amount, revert
     function _depleteBuffer(uint256 amount) internal {
         uint256 newBuffer = buffer();
 
         require(newBuffer != 0, "RateLimited: no rate limit buffer");
         require(amount <= newBuffer, "RateLimited: rate limit hit");
 
-        bufferStored = (newBuffer - amount).toUint224();
+        uint32 blockTimestamp = block.timestamp.toUint32();
+        uint224 newBufferStored = (newBuffer - amount).toUint224();
 
-        lastBufferUsedTime = block.timestamp.toUint32();
+        /// gas optimization to only use a single SSTORE
+        lastBufferUsedTime = blockTimestamp;
+        bufferStored = newBufferStored;
 
         emit BufferUsed(amount, bufferStored);
     }
@@ -118,10 +117,15 @@ abstract contract RateLimitedV2 is IRateLimitedV2, CoreRefV2 {
             return;
         }
 
-        lastBufferUsedTime = block.timestamp.toUint32();
-
+        uint32 blockTimestamp = block.timestamp.toUint32();
         /// ensure that bufferStored cannot be gt buffer cap
-        bufferStored = Math.min(newBuffer + amount, _bufferCap).toUint224();
+        uint224 newBufferStored = Math
+            .min(newBuffer + amount, _bufferCap)
+            .toUint224();
+
+        /// gas optimization to only use a single SSTORE
+        lastBufferUsedTime = blockTimestamp;
+        bufferStored = newBufferStored;
 
         emit BufferReplenished(amount, bufferStored);
     }

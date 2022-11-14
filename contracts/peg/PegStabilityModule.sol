@@ -18,20 +18,17 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
     using SafeERC20 for IERC20;
     using SafeCast for *;
 
+    /// @notice decimals to scale by
+    uint256 public constant SCALE = 1e18;
+
     /// @notice the token this PSM will exchange for VOLT
     /// This token will be set to WETH9 if the bonding curve accepts eth
     IERC20 public immutable override underlyingToken;
 
-    /// @notice boolean switch that indicates whether redemptions are paused
-    bool public redeemPaused;
-
-    /// @notice boolean switch that indicates whether minting is paused
-    bool public mintPaused;
-
-    /// @notice the default minimum acceptable oracle price floor is 98 cents
+    /// @notice the minimum acceptable oracle price floor
     uint128 public override floor;
 
-    /// @notice the default maximum acceptable oracle price ceiling is $1.02
+    /// @notice the maximum acceptable oracle price ceiling
     uint128 public override ceiling;
 
     /// @notice construct the PSM
@@ -40,7 +37,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
     /// @param backupOracle reference to backup oracle
     /// @param decimalsNormalizer decimal normalizer for oracle price
     /// @param doInvert invert oracle price
-    /// @param _underlyingToken this psm uses
+    /// @param underlyingTokenAddress this psm uses
     /// @param floorPrice minimum acceptable oracle price
     /// @param ceilingPrice maximum  acceptable oracle price
     constructor(
@@ -49,7 +46,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
         address backupOracle,
         int256 decimalsNormalizer,
         bool doInvert,
-        IERC20 _underlyingToken,
+        IERC20 underlyingTokenAddress,
         uint128 floorPrice,
         uint128 ceilingPrice
     )
@@ -63,16 +60,12 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
     {
         _setCeiling(ceilingPrice);
         _setFloor(floorPrice);
-        underlyingToken = _underlyingToken;
-    }
-
-    /// @notice modifier that allows execution when redemptions are not paused
-    modifier whileRedemptionsNotPaused() {
-        require(!redeemPaused, "PegStabilityModule: Redeem paused");
-        _;
+        underlyingToken = underlyingTokenAddress;
     }
 
     // ----------- Governor Only State Changing API -----------
+
+    /// TODO test this
 
     /// @notice sets the new floor price
     /// @param newFloorPrice new floor price
@@ -92,38 +85,6 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
         onlyGovernor
     {
         _setCeiling(newCeilingPrice);
-    }
-
-    // ----------- Governor or Guardian Only State Changing API -----------
-
-    /// @notice modifier that allows execution when minting is not paused
-    modifier whileMintingNotPaused() {
-        require(!mintPaused, "PegStabilityModule: Minting paused");
-        _;
-    }
-
-    /// @notice set secondary pausable methods to paused
-    function pauseRedeem() external onlyGuardianOrGovernor {
-        redeemPaused = true;
-        emit RedemptionsPaused(msg.sender);
-    }
-
-    /// @notice set secondary pausable methods to unpaused
-    function unpauseRedeem() external onlyGuardianOrGovernor {
-        redeemPaused = false;
-        emit RedemptionsUnpaused(msg.sender);
-    }
-
-    /// @notice set secondary pausable methods to paused
-    function pauseMint() external onlyGuardianOrGovernor {
-        mintPaused = true;
-        emit MintingPaused(msg.sender);
-    }
-
-    /// @notice set secondary pausable methods to unpaused
-    function unpauseMint() external onlyGuardianOrGovernor {
-        mintPaused = false;
-        emit MintingUnpaused(msg.sender);
     }
 
     // ----------- PCV Controller Only State Changing API -----------
@@ -159,8 +120,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
         external
         virtual
         override
-        whenNotPaused
-        whileRedemptionsNotPaused
+        globalReentrancyLock
         returns (uint256 amountOut)
     {
         /// ------- Checks -------
@@ -176,7 +136,10 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
 
         /// ------- Effects / Interactions -------
 
-        volt().burnFrom(msg.sender, amountVoltIn); /// Interaction -- trusted contract
+        /// Do effect after interaction because you don't want to give tokens before
+        /// taking the corresponding amount of Volt from the account.
+        /// Replenishing buffer allows more Volt to be minted.
+        volt().burnFrom(msg.sender, amountVoltIn); /// Check and Interaction -- trusted contract
         globalRateLimitedMinter().replenishBuffer(amountVoltIn); /// Effect -- trusted contract
 
         underlyingToken.safeTransfer(to, amountOut); /// Interaction -- untrusted contract
@@ -203,8 +166,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
         external
         virtual
         override
-        whenNotPaused
-        whileMintingNotPaused
+        globalReentrancyLock
         returns (uint256 amountVoltOut)
     {
         /// ------- Checks -------
@@ -220,12 +182,12 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
 
         /// ------- Effects / Interactions -------
 
-        underlyingToken.safeTransferFrom(msg.sender, address(this), amountIn); /// Interaction -- untrusted contract
-
         /// Checks that there is enough Volt left to mint globally.
         /// This is a check as well, because if there isn't sufficient Volt to mint,
         /// then, the call to mintVolt will fail in the RateLimitedV2 class.
         globalRateLimitedMinter().mintVolt(to, amountVoltOut); /// Effect, then Interaction -- trusted contract
+
+        underlyingToken.safeTransferFrom(msg.sender, address(this), amountIn); /// Interaction -- untrusted contract
 
         emit Mint(to, amountIn, amountVoltOut);
     }
@@ -266,7 +228,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
         /// oraclePrice.value = 1.05e18 ($1.05/Volt)
         /// amountVoltOut = (amountIn * 1e18) / oraclePrice.value
         /// = 9.523809524E17 Volt out
-        amountVoltOut = (amountIn * 1e18) / oraclePrice.value;
+        amountVoltOut = (amountIn * SCALE) / oraclePrice.value;
     }
 
     /// @notice calculate the amount of underlying out for a given `amountVoltIn` of Volt

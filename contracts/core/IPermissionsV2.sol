@@ -20,7 +20,7 @@ interface IPermissionsV2 is IAccessControl {
 
     function grantGlobalLocker(address locker) external;
 
-    function grantPcvGuard(address pcvGuard) external;
+    function grantPCVGuard(address pcvGuard) external;
 
     function grantRateLimitedMinter(address rateLimitedMinter) external;
 
@@ -34,7 +34,7 @@ interface IPermissionsV2 is IAccessControl {
 
     function revokeGlobalLocker(address locker) external;
 
-    function revokePcvGuard(address pcvGuard) external;
+    function revokePCVGuard(address pcvGuard) external;
 
     function revokeRateLimitedMinter(address rateLimitedMinter) external;
 
@@ -54,7 +54,7 @@ interface IPermissionsV2 is IAccessControl {
 
     function isGlobalLocker(address _address) external view returns (bool);
 
-    function isPcvGuard(address _address) external view returns (bool);
+    function isPCVGuard(address _address) external view returns (bool);
 
     function isRateLimitedMinter(address _address) external view returns (bool);
 

@@ -6,7 +6,6 @@ import {DSTest} from "./../utils/DSTest.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {IPCVDeposit} from "../../../pcv/IPCVDeposit.sol";
-import {PCVGuardAdmin} from "../../../pcv/PCVGuardAdmin.sol";
 import {MockERC20, IERC20} from "../../../mock/MockERC20.sol";
 import {ERC20HoldingPCVDeposit} from "../../../mock/ERC20HoldingPCVDeposit.sol";
 import {getCore, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";

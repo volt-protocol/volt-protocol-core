@@ -91,17 +91,6 @@ contract vip8 is DSTest, IVIP {
     }
 
     function mainnetValidate() public override {
-        assertTrue(
-            PegStabilityModule(MainnetAddresses.VOLT_FEI_PSM).redeemPaused()
-        );
-
-        // assertEq(
-        //     IERC20(MainnetAddresses.DAI).balanceOf(
-        //         MainnetAddresses.VOLT_DAI_PSM
-        //     ),
-        //     daiBalance
-        // );
-
         assertEq(
             IERC20(MainnetAddresses.FEI).balanceOf(
                 MainnetAddresses.VOLT_FEI_PSM
@@ -116,13 +105,6 @@ contract vip8 is DSTest, IVIP {
             ),
             0
         );
-
-        // assertEq(
-        //     IERC20(MainnetAddresses.VOLT).balanceOf(
-        //         MainnetAddresses.VOLT_DAI_PSM
-        //     ),
-        //     2_700_000e18
-        // );
     }
 
     /// prevent errors by reverting on arbitrum proposal functions being called on this VIP
