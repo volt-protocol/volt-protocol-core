@@ -34,7 +34,7 @@ contract UnitTestGlobalReentrancyLock is DSTest {
         core = new CoreV2(address(volt));
         vcon = new Vcon(addresses.governorAddress, addresses.governorAddress);
         lock = new MockReentrancyLock(address(core));
-        core.grantGlobalLocker(address(lock));
+        core.grantLevelOneLocker(address(lock));
 
         vm.stopPrank();
     }
@@ -51,47 +51,47 @@ contract UnitTestGlobalReentrancyLock is DSTest {
         assertEq(core.lastSender(), address(0));
         assertEq(core.lastBlockEntered(), 0);
 
-        assertTrue(core.isGlobalLocker(address(lock)));
+        assertTrue(core.isLevelOneLocker(address(lock)));
     }
 
     function testLockFailsWithoutRole() public {
         vm.prank(addresses.governorAddress);
-        core.revokeRole(VoltRoles.GLOBAL_LOCKER_ROLE, address(lock));
-        assertTrue(!core.isGlobalLocker(address(lock)));
+        core.revokeRole(VoltRoles.LEVEL_ONE_LOCKER_ROLE, address(lock));
+        assertTrue(!core.isLevelOneLocker(address(lock)));
 
         vm.expectRevert(
-            "GlobalReentrancyLock: address missing global locker role"
+            "GlobalReentrancyLock: address missing global locker level one role"
         );
         lock.globalLock();
 
-        assertTrue(core.isUnlocked()); /// core is still unlocked
-        assertTrue(!core.isLocked()); /// core is still not locked
+        assertTrue(core.isUnlocked());
+        assertTrue(!core.isLocked());
     }
 
     function testLockFailsWithoutRoleRevokeGlobalLocker() public {
         vm.prank(addresses.governorAddress);
-        core.revokeGlobalLocker(address(lock));
-        assertTrue(!core.isGlobalLocker(address(lock)));
+        core.revokeLevelOneLocker(address(lock));
+        assertTrue(!core.isLevelOneLocker(address(lock)));
 
         vm.expectRevert(
-            "GlobalReentrancyLock: address missing global locker role"
+            "GlobalReentrancyLock: address missing global locker level one role"
         );
         lock.globalLock();
 
-        assertTrue(core.isUnlocked()); /// core is still unlocked
-        assertTrue(!core.isLocked()); /// core is still not locked
+        assertTrue(core.isUnlocked());
+        assertTrue(!core.isLocked());
     }
 
     function testLockSucceedsWithRole(uint8 numRuns) public {
         for (uint256 i = 0; i < numRuns; i++) {
-            assertTrue(core.isUnlocked()); /// core is still unlocked
-            assertTrue(!core.isLocked()); /// core is still not locked
+            assertTrue(core.isUnlocked());
+            assertTrue(!core.isLocked());
             assertEq(lock.lastBlockNumber(), core.lastBlockEntered());
 
             lock.globalLock();
 
-            assertTrue(core.isUnlocked()); /// core is still unlocked
-            assertTrue(!core.isLocked()); /// core is still not locked
+            assertTrue(core.isUnlocked());
+            assertTrue(!core.isLocked());
             assertEq(lock.lastBlockNumber(), core.lastBlockEntered());
             assertEq(core.lastSender(), address(lock));
         }
@@ -102,25 +102,128 @@ contract UnitTestGlobalReentrancyLock is DSTest {
         address[8] memory lockers
     ) public {
         for (uint256 i = 0; i < numRuns; i++) {
-            assertTrue(core.isUnlocked()); /// core is still unlocked
-            assertTrue(!core.isLocked()); /// core is still not locked
+            assertTrue(core.isUnlocked());
+            assertTrue(!core.isLocked());
 
             address toPrank = lockers[i > 7 ? 7 : i];
-            if (!core.isGlobalLocker(toPrank)) {
+            if (!core.isLevelOneLocker(toPrank)) {
                 vm.prank(addresses.governorAddress);
-                core.grantGlobalLocker(toPrank);
+                core.grantLevelOneLocker(toPrank);
             }
 
             vm.prank(toPrank);
-            core.lock();
-            assertTrue(core.isLocked()); /// core is locked
-            assertTrue(!core.isUnlocked()); /// core is locked
+            core.lockLevelOne();
+            assertTrue(core.isLockedLevelOne());
+            assertTrue(!core.isUnlockedLevelOne());
+
+            assertTrue(!core.isLockedLevelTwo());
+            assertTrue(core.isUnlockedLevelTwo());
+            assertEq(core.lastBlockEntered(), block.number);
+
             assertEq(toPrank, core.lastSender());
             vm.prank(toPrank);
-            core.unlock();
+            core.unlockLevelOne();
 
-            assertTrue(core.isUnlocked()); /// core is still unlocked
-            assertTrue(!core.isLocked()); /// core is still not locked
+            assertTrue(core.isUnlocked());
+            assertTrue(!core.isLocked());
+            assertEq(toPrank, core.lastSender());
+            vm.roll(block.number + 1);
+        }
+    }
+
+    function testLockLevel2SucceedsWithRole(
+        uint8 numRuns,
+        address[8] memory lockers
+    ) public {
+        for (uint256 i = 0; i < numRuns; i++) {
+            assertTrue(core.isUnlocked());
+            assertTrue(!core.isLocked());
+
+            address toPrank = lockers[i > 7 ? 7 : i];
+            if (!core.isLevelTwoLocker(toPrank)) {
+                vm.prank(addresses.governorAddress);
+                core.grantLevelTwoLocker(toPrank);
+            }
+
+            vm.prank(toPrank);
+            core.lockLevelTwo();
+            assertTrue(core.isLockedLevelOne());
+            assertTrue(!core.isUnlockedLevelOne());
+
+            assertTrue(core.isLockedLevelTwo());
+            assertTrue(!core.isUnlockedLevelTwo());
+            assertEq(core.lastBlockEntered(), block.number);
+
+            assertEq(toPrank, core.lastSender());
+            vm.prank(toPrank);
+            core.unlockLevelTwo();
+
+            assertTrue(!core.isLockedLevelTwo());
+            assertTrue(core.isUnlockedLevelTwo());
+            assertTrue(core.isUnlocked());
+            assertTrue(!core.isLocked());
+            assertEq(toPrank, core.lastSender());
+            vm.roll(block.number + 1);
+        }
+    }
+
+    function testLockLevel1And2SucceedsWithRole(
+        uint8 numRuns,
+        address[8] memory lockers
+    ) public {
+        /// level
+        for (uint256 i = 0; i < numRuns; i++) {
+            assertTrue(core.isUnlocked());
+            assertTrue(!core.isLocked());
+
+            address toPrank = lockers[i > 7 ? 7 : i];
+            if (!core.isLevelOneLocker(toPrank)) {
+                vm.prank(addresses.governorAddress);
+                core.grantLevelOneLocker(toPrank);
+            }
+
+            vm.prank(toPrank);
+            core.lockLevelOne();
+            assertTrue(core.isLockedLevelOne());
+            assertTrue(!core.isUnlockedLevelOne());
+
+            assertTrue(!core.isLockedLevelTwo());
+            assertTrue(core.isUnlockedLevelTwo());
+            assertEq(core.lastBlockEntered(), block.number);
+
+            if (!core.isLevelTwoLocker(toPrank)) {
+                vm.prank(addresses.governorAddress);
+                core.grantLevelTwoLocker(toPrank);
+            }
+
+            vm.prank(toPrank);
+            core.lockLevelTwo();
+
+            assertTrue(core.isLockedLevelOne());
+            assertTrue(core.isLockedLevelTwo());
+
+            assertTrue(!core.isUnlockedLevelOne());
+            assertTrue(!core.isUnlockedLevelTwo());
+
+            assertEq(core.lastBlockEntered(), block.number);
+            assertEq(toPrank, core.lastSender());
+
+            vm.prank(toPrank);
+            core.unlockLevelTwo();
+
+            assertTrue(!core.isLockedLevelTwo());
+            assertTrue(core.isUnlockedLevelTwo());
+            assertTrue(!core.isUnlockedLevelOne());
+            assertTrue(!core.isUnlocked());
+            assertTrue(core.isLocked());
+            assertEq(toPrank, core.lastSender());
+
+            assertEq(toPrank, core.lastSender());
+            vm.prank(toPrank);
+            core.unlockLevelOne();
+
+            assertTrue(core.isUnlocked()); /// core is fully unlocked
+            assertTrue(!core.isLocked());
             assertEq(toPrank, core.lastSender());
             vm.roll(block.number + 1);
         }
@@ -136,13 +239,13 @@ contract UnitTestGlobalReentrancyLock is DSTest {
             address(lock)
         );
         vm.prank(addresses.governorAddress);
-        core.grantGlobalLocker(address(lock2));
+        core.grantLevelOneLocker(address(lock2));
 
-        vm.expectRevert("GlobalReentrancyLock: system already entered");
+        vm.expectRevert("GlobalReentrancyLock: system locked level 1");
         lock2.globalReentrancyFails();
 
-        assertTrue(core.isUnlocked()); /// core is still unlocked
-        assertTrue(!core.isLocked()); /// core is still not locked
+        assertTrue(core.isUnlocked());
+        assertTrue(!core.isLocked());
         assertEq(lock.lastBlockNumber(), core.lastBlockEntered());
     }
 
@@ -156,9 +259,9 @@ contract UnitTestGlobalReentrancyLock is DSTest {
 
     function testGovernorSystemRecovery() public {
         vm.startPrank(addresses.governorAddress);
-        core.grantGlobalLocker(addresses.governorAddress);
+        core.grantLevelOneLocker(addresses.governorAddress);
 
-        core.lock();
+        core.lockLevelOne();
 
         assertTrue(core.isLocked());
         assertTrue(!core.isUnlocked());
@@ -180,24 +283,24 @@ contract UnitTestGlobalReentrancyLock is DSTest {
 
     function testOnlySameLockerCanUnlock() public {
         vm.startPrank(addresses.governorAddress);
-        core.grantGlobalLocker(addresses.governorAddress);
+        core.grantLevelOneLocker(addresses.governorAddress);
 
-        core.lock();
-        core.grantGlobalLocker(address(this));
+        core.lockLevelOne();
+        core.grantLevelOneLocker(address(this));
 
         vm.stopPrank();
 
-        assertTrue(core.isGlobalLocker(address(this)));
+        assertTrue(core.isLevelOneLocker(address(this)));
         assertTrue(core.isLocked());
         assertTrue(!core.isUnlocked());
         assertEq(core.lastBlockEntered(), block.number);
         assertEq(core.lastSender(), addresses.governorAddress);
 
         vm.expectRevert("GlobalReentrancyLock: caller is not locker");
-        core.unlock();
+        core.unlockLevelOne();
 
         vm.prank(addresses.governorAddress);
-        core.unlock();
+        core.unlockLevelOne();
 
         assertTrue(!core.isLocked());
         assertTrue(core.isUnlocked());
@@ -208,42 +311,56 @@ contract UnitTestGlobalReentrancyLock is DSTest {
     function testUnlockFailsSystemNotEntered() public {
         vm.startPrank(addresses.governorAddress);
 
-        core.grantGlobalLocker(addresses.governorAddress);
-        core.lock();
-        core.unlock();
+        core.grantLevelOneLocker(addresses.governorAddress);
+        core.lockLevelOne();
+        core.unlockLevelOne();
         vm.expectRevert("GlobalReentrancyLock: system not entered");
-        core.unlock();
+        core.unlockLevelOne();
         vm.roll(block.number + 1);
         vm.expectRevert("GlobalReentrancyLock: not entered this block");
-        core.unlock();
+        core.unlockLevelOne();
 
         vm.stopPrank();
     }
 
     function testUnlockFailsSystemNotEnteredBlockAdvanced() public {
         vm.startPrank(addresses.governorAddress);
-        core.grantGlobalLocker(addresses.governorAddress);
-        core.lock();
-        core.unlock();
+        core.grantLevelOneLocker(addresses.governorAddress);
+        core.lockLevelOne();
+        core.unlockLevelOne();
         vm.roll(block.number + 1);
         vm.expectRevert("GlobalReentrancyLock: not entered this block");
-        core.unlock();
+        core.unlockLevelOne();
     }
 
     /// ---------- ACL Tests ----------
 
     function testUnlockFailsNonStateRole() public {
         vm.expectRevert(
-            "GlobalReentrancyLock: address missing global locker role"
+            "GlobalReentrancyLock: address missing global locker level one role"
         );
-        core.unlock();
+        core.unlockLevelOne();
     }
 
     function testLockFailsNonStateRole() public {
         vm.expectRevert(
-            "GlobalReentrancyLock: address missing global locker role"
+            "GlobalReentrancyLock: address missing global locker level one role"
         );
-        core.lock();
+        core.lockLevelOne();
+    }
+
+    function testUnlockLevelTwoFailsNonStateRole() public {
+        vm.expectRevert(
+            "GlobalReentrancyLock: address missing global locker level two role"
+        );
+        core.unlockLevelTwo();
+    }
+
+    function testLockLevelTwoFailsNonStateRole() public {
+        vm.expectRevert(
+            "GlobalReentrancyLock: address missing global locker level two role"
+        );
+        core.lockLevelTwo();
     }
 
     function testGovernorSystemRecoveryFailsNotGovernor() public {

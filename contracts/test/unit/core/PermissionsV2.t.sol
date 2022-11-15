@@ -32,7 +32,7 @@ contract UnitTestPermissionsV2 is DSTest {
         assertEq(core.getRoleAdmin(core.MINTER_ROLE()), governRole);
         assertEq(core.getRoleAdmin(core.GUARDIAN_ROLE()), governRole);
         assertEq(core.getRoleAdmin(core.PCV_CONTROLLER_ROLE()), governRole);
-        assertEq(core.getRoleAdmin(core.GLOBAL_LOCKER_ROLE()), governRole);
+        assertEq(core.getRoleAdmin(core.LEVEL_ONE_LOCKER_ROLE()), governRole);
         assertEq(core.getRoleAdmin(core.PCV_GUARD_ROLE()), governRole);
 
         /// assert there is only 1 of each role
@@ -40,7 +40,8 @@ contract UnitTestPermissionsV2 is DSTest {
         assertEq(core.getRoleMemberCount(core.MINTER_ROLE()), 1); /// this role has not been granted
         assertEq(core.getRoleMemberCount(core.GUARDIAN_ROLE()), 1); /// this role has not been granted
         assertEq(core.getRoleMemberCount(core.PCV_CONTROLLER_ROLE()), 1); /// this role has not been granted
-        assertEq(core.getRoleMemberCount(core.GLOBAL_LOCKER_ROLE()), 0); /// this role has not been granted
+        assertEq(core.getRoleMemberCount(core.LEVEL_ONE_LOCKER_ROLE()), 0); /// this role has not been granted
+        assertEq(core.getRoleMemberCount(core.LEVEL_TWO_LOCKER_ROLE()), 0); /// this role has not been granted
         assertEq(core.getRoleMemberCount(core.PCV_GUARD_ROLE()), 0); /// this role has not been granted
 
         /// core starts out unlocked and unused
@@ -130,14 +131,14 @@ contract UnitTestPermissionsV2 is DSTest {
 
     function testGuardianRevokeOverrideStateSucceeds() public {
         vm.prank(addresses.governorAddress);
-        core.grantGlobalLocker(address(this));
-        assertTrue(core.isGlobalLocker(address(this)));
-        assertEq(core.getRoleMemberCount(core.GLOBAL_LOCKER_ROLE()), 1);
+        core.grantLevelOneLocker(address(this));
+        assertTrue(core.isLevelOneLocker(address(this)));
+        assertEq(core.getRoleMemberCount(core.LEVEL_ONE_LOCKER_ROLE()), 1);
 
         vm.prank(addresses.guardianAddress);
-        core.revokeOverride(VoltRoles.GLOBAL_LOCKER_ROLE, address(this));
-        assertTrue(!core.isGlobalLocker(address(this)));
-        assertEq(core.getRoleMemberCount(core.GLOBAL_LOCKER_ROLE()), 0);
+        core.revokeOverride(VoltRoles.LEVEL_ONE_LOCKER_ROLE, address(this));
+        assertTrue(!core.isLevelOneLocker(address(this)));
+        assertEq(core.getRoleMemberCount(core.LEVEL_ONE_LOCKER_ROLE()), 0);
     }
 
     function testGuardianRevokeOverrideMinterSucceeds() public {
@@ -267,27 +268,50 @@ contract UnitTestPermissionsV2 is DSTest {
         core.revokeMinter(address(this));
     }
 
+    function testGovAddsLevelTwoLockerSucceeds() public {
+        vm.prank(addresses.governorAddress);
+        core.grantLevelTwoLocker(address(this));
+        assertTrue(core.isLevelTwoLocker(address(this)));
+    }
+
+    function testGovRevokesLevelTwoLockerSucceeds() public {
+        testGovAddsLevelTwoLockerSucceeds();
+        vm.prank(addresses.governorAddress);
+        core.revokeLevelTwoLocker(address(this));
+        assertTrue(!core.isLevelTwoLocker(address(this)));
+    }
+
+    function testNonGovAddsLevelTwoLockerFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.grantLevelTwoLocker(address(this));
+    }
+
+    function testNonGovRevokesLevelTwoLockerFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.revokeLevelTwoLocker(address(this));
+    }
+
     function testGovAddsStateSucceeds() public {
         vm.prank(addresses.governorAddress);
-        core.grantGlobalLocker(address(this));
-        assertTrue(core.isGlobalLocker(address(this)));
+        core.grantLevelOneLocker(address(this));
+        assertTrue(core.isLevelOneLocker(address(this)));
     }
 
     function testGovRevokesStateSucceeds() public {
         testGovAddsMinterSucceeds();
         vm.prank(addresses.governorAddress);
-        core.revokeGlobalLocker(address(this));
-        assertTrue(!core.isGlobalLocker(address(this)));
+        core.revokeLevelOneLocker(address(this));
+        assertTrue(!core.isLevelOneLocker(address(this)));
     }
 
     function testNonGovAddsStateFails() public {
         vm.expectRevert("Permissions: Caller is not a governor");
-        core.grantGlobalLocker(address(this));
+        core.grantLevelOneLocker(address(this));
     }
 
     function testNonGovRevokesStateFails() public {
         vm.expectRevert("Permissions: Caller is not a governor");
-        core.revokeGlobalLocker(address(this));
+        core.revokeLevelOneLocker(address(this));
     }
 
     function testGovAddsMinterRoleSucceeds() public {
@@ -311,5 +335,28 @@ contract UnitTestPermissionsV2 is DSTest {
     function testNonGovRevokesMinterRoleFails() public {
         vm.expectRevert("Permissions: Caller is not a governor");
         core.revokeRateLimitedMinter(address(this));
+    }
+
+    function testGovAddsRedeemerRoleSucceeds() public {
+        vm.prank(addresses.governorAddress);
+        core.grantRateLimitedRedeemer(address(this));
+        assertTrue(core.isRateLimitedRedeemer(address(this)));
+    }
+
+    function testGovRevokesRedeemerRoleSucceeds() public {
+        testGovAddsRedeemerRoleSucceeds();
+        vm.prank(addresses.governorAddress);
+        core.revokeRateLimitedRedeemer(address(this));
+        assertTrue(!core.isRateLimitedRedeemer(address(this)));
+    }
+
+    function testNonGovAddsRedeemerRoleFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.grantRateLimitedRedeemer(address(this));
+    }
+
+    function testNonGovRevokesRedeemerRoleFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.revokeRateLimitedRedeemer(address(this));
     }
 }
