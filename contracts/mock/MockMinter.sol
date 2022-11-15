@@ -10,11 +10,16 @@ contract MockMinter is CoreRefV2 {
         grlm = IGRLM(_grlm);
     }
 
-    function mint(address to, uint256 amount) external globalReentrancyLock {
+    function mint(
+        address to,
+        uint256 amount
+    ) external globalReentrancyLockLevelOne {
         grlm.mintVolt(to, amount);
     }
 
-    function replenishBuffer(uint256 amount) external globalReentrancyLock {
+    function replenishBuffer(
+        uint256 amount
+    ) external globalReentrancyLockLevelOne {
         grlm.replenishBuffer(amount);
     }
 }

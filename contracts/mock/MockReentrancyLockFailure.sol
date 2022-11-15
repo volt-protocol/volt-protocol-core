@@ -18,7 +18,7 @@ contract MockReentrancyLockFailure is CoreRefV2 {
     }
 
     /// this will always fail due to the global reentrancy lock
-    function globalReentrancyFails() external globalReentrancyLock {
+    function globalReentrancyFails() external globalReentrancyLockLevelOne {
         lock.globalLock();
     }
 }

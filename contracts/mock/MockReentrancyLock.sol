@@ -15,7 +15,7 @@ contract MockReentrancyLock is CoreRefV2 {
 
     /// this contract asserts the core invariant of global reentrancy lock
     /// that it is always locked during execution
-    function globalLock() external globalReentrancyLock {
+    function globalLock() external globalReentrancyLockLevelOne {
         require(
             IGlobalReentrancyLock(address(core())).isLocked(),
             "System not locked correctly"
@@ -24,7 +24,10 @@ contract MockReentrancyLock is CoreRefV2 {
     }
 
     /// this will always fail due to the global reentrancy lock
-    function globalLockReentrantFailure() external globalReentrancyLock {
+    function globalLockReentrantFailure()
+        external
+        globalReentrancyLockLevelOne
+    {
         MockReentrancyLock(address(this)).globalLock();
     }
 }
