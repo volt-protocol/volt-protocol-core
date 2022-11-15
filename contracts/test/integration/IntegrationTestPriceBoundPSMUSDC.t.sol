@@ -32,8 +32,6 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     IERC20 private usdc = IERC20(MainnetAddresses.USDC);
     IERC20 private underlyingToken = usdc;
 
-    PriceBoundPSM private psm = PriceBoundPSM(MainnetAddresses.VOLT_USDC_PSM);
-
     address public makerUSDCPSM = MainnetAddresses.KRAKEN_USDC_WHALE;
 
     /// ------------ Minting and RateLimited System Params ------------

@@ -17,10 +17,12 @@ import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {IPegStabilityModule} from "../../../peg/IPegStabilityModule.sol";
 import {VoltMigrator} from "../../../volt/VoltMigrator.sol";
 import {VoltV2} from "../../../volt/VoltV2.sol";
+import {CoreV2} from "../../../core/CoreV2.sol";
 import {IVolt} from "../../../volt/IVolt.sol";
 import {IVoltMigrator} from "../../../volt/IVoltMigrator.sol";
 import {IPCVDeposit} from "../../../pcv/IPCVDeposit.sol";
 import {MigratorRouter} from "../../../pcv/MigratorRouter.sol";
+import {console} from "hardhat/console.sol";
 
 contract vip13 is DSTest, IVIP {
     using SafeERC20 for IERC20;
@@ -34,6 +36,7 @@ contract vip13 is DSTest, IVIP {
     PegStabilityModule public voltV2DaiPriceBoundPSM;
     PegStabilityModule public voltV2UsdcPriceBoundPSM;
 
+    CoreV2 public coreV2;
     VoltV2 public voltV2;
     IVolt public oldVolt = IVolt(MainnetAddresses.VOLT);
 
@@ -46,8 +49,8 @@ contract vip13 is DSTest, IVIP {
     uint128 voltDaiFloorPrice = 1.04e18;
     uint128 voltDaiCeilingPrice = 1.1e18;
 
-    uint128 voltUsdcFloorPrice = 9_000e12;
-    uint128 voltUsdcCeilingPrice = 10_000e12;
+    uint128 voltUsdcFloorPrice = 1.05e6;
+    uint128 voltUsdcCeilingPrice = 1.1e6;
 
     /// @notice target token balance for the DAI PSM to hold
     uint248 private constant targetBalanceDai = 100_000e18;
@@ -77,14 +80,17 @@ contract vip13 is DSTest, IVIP {
 
         mainnetSetup();
 
-        voltV2 = new VoltV2(MainnetAddresses.CORE);
+        coreV2 = new CoreV2(address(0));
+        coreV2.grantGovernor(MainnetAddresses.TIMELOCK_CONTROLLER);
+
+        voltV2 = new VoltV2(address(coreV2));
 
         voltMigrator = new VoltMigrator(
-            MainnetAddresses.CORE,
+            address(coreV2),
             IVolt(address(voltV2))
         );
 
-        deployPsms();
+        deployPsms(address(coreV2));
 
         migratorRouter = new MigratorRouter(
             IVolt(address(voltV2)),
@@ -105,7 +111,19 @@ contract vip13 is DSTest, IVIP {
         proposal.push(
             ITimelockSimulation.action({
                 value: 0,
-                target: MainnetAddresses.CORE,
+                target: address(coreV2),
+                arguments: abi.encodeWithSignature(
+                    "setVolt(address)",
+                    address(voltV2)
+                ),
+                description: "Set correct volt address on CoreV2"
+            })
+        );
+
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: address(coreV2),
                 arguments: abi.encodeWithSignature(
                     "grantMinter(address)",
                     MainnetAddresses.TIMELOCK_CONTROLLER
@@ -130,7 +148,7 @@ contract vip13 is DSTest, IVIP {
         proposal.push(
             ITimelockSimulation.action({
                 value: 0,
-                target: MainnetAddresses.CORE,
+                target: address(coreV2),
                 arguments: abi.encodeWithSignature(
                     "revokeMinter(address)",
                     MainnetAddresses.TIMELOCK_CONTROLLER
@@ -409,10 +427,10 @@ contract vip13 is DSTest, IVIP {
         assertEq(voltV2.symbol(), "VOLT");
         assertEq(voltV2.name(), "Volt");
         assertEq(voltV2.totalSupply(), oldVoltTotalSupply);
-        assertEq(address(voltV2.core()), MainnetAddresses.CORE);
+        assertEq(address(voltV2.core()), address(coreV2));
 
         // Volt Migrator Validations
-        assertEq(address(voltMigrator.core()), MainnetAddresses.CORE);
+        assertEq(address(voltMigrator.core()), address(coreV2));
         assertEq(address(voltMigrator.OLD_VOLT()), MainnetAddresses.VOLT);
         assertEq(address(voltMigrator.newVolt()), address(voltV2));
         assertEq(
@@ -434,7 +452,6 @@ contract vip13 is DSTest, IVIP {
         assertEq(address(migratorRouter.OLD_VOLT()), MainnetAddresses.VOLT);
 
         // New USDC PriceBoundPSM validations
-        assertTrue(voltV2UsdcPriceBoundPSM.doInvert());
         assertTrue(voltV2UsdcPriceBoundPSM.isPriceValid());
         assertEq(voltV2UsdcPriceBoundPSM.floor(), voltUsdcFloorPrice);
         assertEq(voltV2UsdcPriceBoundPSM.ceiling(), voltUsdcCeilingPrice);
@@ -443,7 +460,7 @@ contract vip13 is DSTest, IVIP {
             address(MainnetAddresses.ORACLE_PASS_THROUGH)
         );
         assertEq(address(voltV2UsdcPriceBoundPSM.backupOracle()), address(0));
-        assertEq(voltV2UsdcPriceBoundPSM.decimalsNormalizer(), 12);
+        assertEq(voltV2UsdcPriceBoundPSM.decimalsNormalizer(), -12);
         assertEq(
             address(voltV2UsdcPriceBoundPSM.underlyingToken()),
             MainnetAddresses.USDC
@@ -461,7 +478,6 @@ contract vip13 is DSTest, IVIP {
         );
 
         // New DAI PriceBoundPSM validations
-        assertTrue(voltV2DaiPriceBoundPSM.doInvert());
         assertTrue(voltV2DaiPriceBoundPSM.isPriceValid());
         assertEq(voltV2DaiPriceBoundPSM.floor(), voltDaiFloorPrice);
         assertEq(voltV2DaiPriceBoundPSM.ceiling(), voltDaiCeilingPrice);
@@ -546,6 +562,7 @@ contract vip13 is DSTest, IVIP {
                 MainnetAddresses.VOLT_DAI_PSM
             )
         );
+        console.log("here");
     }
 
     /// prevent errors by reverting on arbitrum proposal functions being called on this VIP
@@ -566,9 +583,9 @@ contract vip13 is DSTest, IVIP {
         revert("no arbitrum proposal");
     }
 
-    function deployPsms() internal {
+    function deployPsms(address _coreV2) internal {
         voltV2DaiPriceBoundPSM = new PegStabilityModule(
-            MainnetAddresses.CORE,
+            _coreV2,
             MainnetAddresses.ORACLE_PASS_THROUGH,
             address(0),
             0,
@@ -579,7 +596,7 @@ contract vip13 is DSTest, IVIP {
         );
 
         voltV2UsdcPriceBoundPSM = new PegStabilityModule(
-            MainnetAddresses.CORE,
+            _coreV2,
             MainnetAddresses.ORACLE_PASS_THROUGH,
             address(0),
             -12,

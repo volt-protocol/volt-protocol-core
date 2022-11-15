@@ -11,6 +11,7 @@ import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {vip13} from "./vip/vip13.sol";
 import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
 import {IPCVGuardian} from "../../pcv/IPCVGuardian.sol";
+import {console} from "hardhat/console.sol";
 
 contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
     using SafeCast for *;
@@ -38,24 +39,25 @@ contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
             false
         );
         mainnetValidate();
+        // console.log("hereerjkrn");
 
-        vm.startPrank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
-        dai.transfer(address(this), mintAmountDai);
-        dai.transfer(address(voltV2DaiPriceBoundPSM), mintAmountDai * 2);
-        vm.stopPrank();
+        // vm.startPrank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
+        // dai.transfer(address(this), mintAmountDai);
+        // dai.transfer(address(voltV2DaiPriceBoundPSM), mintAmountDai * 2);
+        // vm.stopPrank();
 
-        uint256 balance = usdc.balanceOf(MainnetAddresses.KRAKEN_USDC_WHALE);
-        vm.prank(MainnetAddresses.KRAKEN_USDC_WHALE);
-        usdc.transfer(address(this), balance);
+        // uint256 balance = usdc.balanceOf(MainnetAddresses.KRAKEN_USDC_WHALE);
+        // vm.prank(MainnetAddresses.KRAKEN_USDC_WHALE);
+        // usdc.transfer(address(this), balance);
 
-        vm.startPrank(MainnetAddresses.GOVERNOR);
-        core.grantMinter(MainnetAddresses.GOVERNOR);
-        voltV2.mint(address(voltV2UsdcPriceBoundPSM), voltMintAmount);
-        oldVolt.mint(address(this), voltMintAmount);
-        voltV2.mint(address(this), voltMintAmount);
-        vm.stopPrank();
+        // // vm.startPrank(MainnetAddresses.GOVERNOR);
+        // // core.grantMinter(MainnetAddresses.GOVERNOR);
+        // // voltV2.mint(address(voltV2UsdcPriceBoundPSM), voltMintAmount);
+        // // oldVolt.mint(address(this), voltMintAmount);
+        // // voltV2.mint(address(this), voltMintAmount);
+        // // vm.stopPrank();
 
-        usdc.transfer(address(voltV2UsdcPriceBoundPSM), balance / 2);
+        // usdc.transfer(address(voltV2UsdcPriceBoundPSM), balance / 2);
     }
 
     function testSwapDaiForVolt() public {
