@@ -28,10 +28,26 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     /// 1. call core and lock the lock
     /// 2. execute the code
     /// 3. call core and unlock the lock
-    modifier globalReentrancyLock() {
-        IGlobalReentrancyLock(address(_core)).lock();
+    modifier globalReentrancyLockLevelOne() {
+        IGlobalReentrancyLock(address(_core)).lockLevelOne();
         _;
-        IGlobalReentrancyLock(address(_core)).unlock();
+        IGlobalReentrancyLock(address(_core)).unlockLevelOne();
+    }
+
+    /// 1. call core and assert level one lock is locked if bool is true
+    /// 2. lock the level two lock
+    /// 2. execute the code
+    /// 3. call core and unlock the level two lock
+    modifier globalReentrancyLockLevelTwo(bool requireLevelOneLock) {
+        if (requireLevelOneLock) {
+            require(
+                IGlobalReentrancyLock(address(_core)).isLockedLevelOne(),
+                "CoreRef: System not locked level 1"
+            );
+        }
+        IGlobalReentrancyLock(address(_core)).lockLevelTwo();
+        _;
+        IGlobalReentrancyLock(address(_core)).unlockLevelTwo();
     }
 
     modifier isGlobalReentrancyLocked() {
