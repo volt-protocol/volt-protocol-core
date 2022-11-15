@@ -98,8 +98,15 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
             _statusLevelOne == _NOT_ENTERED && _statusLevelTwo == _NOT_ENTERED;
     }
 
+    /// @notice returns whether or not the contract is currently entered
+    /// if true, and locked in the same block, it is possible to unlock
+    function isLocked() external view override returns (bool) {
+        return _statusLevelOne == _ENTERED || _statusLevelTwo == _ENTERED;
+    }
+
     /// @notice returns whether or not the contract is currently not entered
-    /// if true, it is possible to lock
+    /// if level one or level two is locked, return false
+    /// if true, it is possible to lock both levels 1 and 2
     function isUnlockedLevelOne() external view override returns (bool) {
         return
             _statusLevelOne == _NOT_ENTERED && _statusLevelTwo == _NOT_ENTERED;
@@ -109,12 +116,6 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// if true, it is possible to lock at level 2
     function isUnlockedLevelTwo() external view override returns (bool) {
         return _statusLevelTwo == _NOT_ENTERED;
-    }
-
-    /// @notice returns whether or not the contract is currently entered
-    /// if true, and locked in the same block, it is possible to unlock
-    function isLocked() external view override returns (bool) {
-        return _statusLevelOne == _ENTERED || _statusLevelTwo == _ENTERED;
     }
 
     /// @notice returns whether or not the contract is currently entered
@@ -168,7 +169,7 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     function lockLevelTwo() external override onlyLockerLevelTwoRole {
         require(
             _statusLevelTwo == _NOT_ENTERED,
-            "GlobalReentrancyLock: system locked level 2"
+            "GlobalReentrancyLock: system already locked level 2"
         );
 
         /// if already entered at level 1, don't store address to validate
@@ -177,7 +178,7 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
             /// if already entered, ensure entered in this block
             require(
                 block.number == _lastBlockEntered,
-                "GlobalReentrancyLock: system not entered level 2"
+                "GlobalReentrancyLock: system not entered this block level 2"
             );
 
             /// don't write lastBlock entered because it has not changed
@@ -264,7 +265,7 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
             /// https://docs.soliditylang.org/en/develop/types.html#address
             require(
                 uint160(msg.sender) == _sender,
-                "GlobalReentrancyLock: caller is not locker"
+                "GlobalReentrancyLock: caller is not level 2 locker"
             );
         }
 
@@ -282,7 +283,7 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
             _statusLevelOne == _ENTERED || _statusLevelTwo == _ENTERED,
             "GlobalReentrancyLock: governor recovery, system not entered"
         );
-        /// status l1 or l2 == entered at this point
+        /// status level 1 or level 2 lock == entered at this point
         /// stop malicious governor from unlocking in the same block as lock happened
         /// if governor is compromised, we're likely in a state FUBAR
         require(
