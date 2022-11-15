@@ -9,6 +9,8 @@ import {RateLimitedV2} from "../utils/RateLimitedV2.sol";
 /// All minting should flow through this smart contract.
 /// Peg Stability Modules will be granted the VOLT_RATE_LIMITED_MINTER_ROLE to mint Volt
 /// through this contract on a global rate limit.
+/// Peg Stability Modules will be granted the VOLT_RATE_LIMITED_REDEEMER_ROLE to replenish
+/// this contract's on a global rate limit when burning Volt.
 contract GlobalRateLimitedMinter is IGRLM, RateLimitedV2 {
     /// @param _core reference to the core smart contract
     /// @param _maxRateLimitPerSecond maximum rate limit per second that governance can set
@@ -35,7 +37,9 @@ contract GlobalRateLimitedMinter is IGRLM, RateLimitedV2 {
         external
         /// checks
         onlyVoltRole(VoltRoles.VOLT_RATE_LIMITED_MINTER_ROLE)
-        isGlobalReentrancyLocked
+        /// system must be level 1 locked before this function can execute
+        /// asserts system is inside PSM mint when this function is called
+        globalReentrancyLockLevelTwo(true)
     {
         _depleteBuffer(amount); /// check and effects
         volt().mint(to, amount); /// interactions
@@ -47,11 +51,10 @@ contract GlobalRateLimitedMinter is IGRLM, RateLimitedV2 {
     )
         external
         /// checks
-        hasAnyOfTwoRoles(
-            VoltRoles.VOLT_RATE_LIMITED_MINTER_ROLE,
-            VoltRoles.NON_CUSTODIAL_PSM
-        )
-        isGlobalReentrancyLocked
+        onlyVoltRole(VoltRoles.VOLT_RATE_LIMITED_REDEEMER_ROLE)
+        /// system must be level 1 locked before this function can execute
+        /// asserts system is inside PSM redeem when this function is called
+        globalReentrancyLockLevelTwo(true)
     {
         _replenishBuffer(amount); /// effects
     }
