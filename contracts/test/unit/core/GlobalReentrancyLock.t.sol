@@ -59,9 +59,7 @@ contract UnitTestGlobalReentrancyLock is DSTest {
         core.revokeRole(VoltRoles.LEVEL_ONE_LOCKER_ROLE, address(lock));
         assertTrue(!core.isLevelOneLocker(address(lock)));
 
-        vm.expectRevert(
-            "GlobalReentrancyLock: address missing global locker level one role"
-        );
+        vm.expectRevert("GlobalReentrancyLock: missing locker level one role");
         lock.globalLock();
 
         assertTrue(core.isUnlocked());
@@ -73,9 +71,7 @@ contract UnitTestGlobalReentrancyLock is DSTest {
         core.revokeLevelOneLocker(address(lock));
         assertTrue(!core.isLevelOneLocker(address(lock)));
 
-        vm.expectRevert(
-            "GlobalReentrancyLock: address missing global locker level one role"
-        );
+        vm.expectRevert("GlobalReentrancyLock: missing locker level one role");
         lock.globalLock();
 
         assertTrue(core.isUnlocked());
@@ -544,30 +540,22 @@ contract UnitTestGlobalReentrancyLock is DSTest {
     /// ---------- ACL Tests ----------
 
     function testUnlockFailsNonStateRole() public {
-        vm.expectRevert(
-            "GlobalReentrancyLock: address missing global locker level one role"
-        );
+        vm.expectRevert("GlobalReentrancyLock: missing locker level one role");
         core.unlockLevelOne();
     }
 
     function testLockFailsNonStateRole() public {
-        vm.expectRevert(
-            "GlobalReentrancyLock: address missing global locker level one role"
-        );
+        vm.expectRevert("GlobalReentrancyLock: missing locker level one role");
         core.lockLevelOne();
     }
 
     function testUnlockLevelTwoFailsNonStateRole() public {
-        vm.expectRevert(
-            "GlobalReentrancyLock: address missing global locker level two role"
-        );
+        vm.expectRevert("GlobalReentrancyLock: missing locker level two role");
         core.unlockLevelTwo();
     }
 
     function testLockLevelTwoFailsNonStateRole() public {
-        vm.expectRevert(
-            "GlobalReentrancyLock: address missing global locker level two role"
-        );
+        vm.expectRevert("GlobalReentrancyLock: missing locker level two role");
         core.lockLevelTwo();
     }
 
