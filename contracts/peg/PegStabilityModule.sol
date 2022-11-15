@@ -91,7 +91,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
     function withdraw(
         address to,
         uint256 amount
-    ) external virtual override onlyPCVController {
+    ) external virtual override onlyPCVController globalReentrancyLockLevelOne {
         _withdrawERC20(address(underlyingToken), to, amount);
     }
 
@@ -114,7 +114,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
         external
         virtual
         override
-        globalReentrancyLock
+        globalReentrancyLockLevelOne
         returns (uint256 amountOut)
     {
         /// ------- Checks -------
@@ -160,7 +160,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
         external
         virtual
         override
-        globalReentrancyLock
+        globalReentrancyLockLevelOne
         returns (uint256 amountVoltOut)
     {
         /// ------- Checks -------
