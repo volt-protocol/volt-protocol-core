@@ -65,7 +65,7 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     modifier onlyLockerLevelOneRole() {
         require(
             hasRole(LEVEL_ONE_LOCKER_ROLE, msg.sender),
-            "GlobalReentrancyLock: address missing global locker level one role"
+            "GlobalReentrancyLock: missing locker level one role"
         );
         _;
     }
@@ -74,7 +74,7 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     modifier onlyLockerLevelTwoRole() {
         require(
             hasRole(LEVEL_TWO_LOCKER_ROLE, msg.sender),
-            "GlobalReentrancyLock: address missing global locker level two role"
+            "GlobalReentrancyLock: missing locker level two role"
         );
         _;
     }
@@ -133,8 +133,7 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// ---------- Global Locker Role State Changing APIs ----------
 
     /// @notice set the status to entered
-    /// only available if not entered
-    /// callable only by global locker role
+    /// only available if not entered at level 1 and level 2
     /// Only callable by locker level 1 role
     function lockLevelOne() external override onlyLockerLevelOneRole {
         require(
@@ -164,7 +163,6 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
 
     /// @notice set the status to entered
     /// only available if not entered
-    /// callable only by global locker role
     /// Only callable by locker level 2 role
     function lockLevelTwo() external override onlyLockerLevelTwoRole {
         require(
@@ -204,7 +202,6 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// @notice set the status to not entered
     /// only available if entered and entered in same block
     /// otherwise, system is in an indeterminate state and no execution should be allowed
-    /// callable only by global locker role
     /// can only be called by the last address to lock the system
     /// to prevent incorrect system behavior
     /// Only callable by locker level 1 role
@@ -240,7 +237,6 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// @notice set the status to not entered
     /// only available if entered and entered in same block
     /// otherwise, system is in an indeterminate state and no execution should be allowed
-    /// callable only by global locker role
     /// can only be called by the last address to lock the system
     /// to prevent incorrect system behavior
     /// Only callable by locker level 2 role
