@@ -7,17 +7,42 @@ import {IPermissionsV2} from "./IPermissionsV2.sol";
 /// @title Access control module for Core
 /// @author Volt Protocol
 contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
-    /// @notice main roles in the Volt system
+    /// @notice minter role is allowed to mint Volt tokens directly
     bytes32 public constant override MINTER_ROLE = keccak256("MINTER_ROLE");
+
+    /// @notice pcv controller role controls PCV in the system
+    /// and can arbitrarily move funds between deposits and addresses
     bytes32 public constant override PCV_CONTROLLER_ROLE =
         keccak256("PCV_CONTROLLER_ROLE");
+
+    /// @notice granted to timelock and multisig. this is the most powerful
+    /// role in the system and can revoke all other roles.
     bytes32 public constant override GOVERN_ROLE = keccak256("GOVERN_ROLE");
+
+    /// @notice granted to the multisig and PCV Guardian smart contract
+    /// to enable unpausing of deposits while withdrawing.
     bytes32 public constant override GUARDIAN_ROLE = keccak256("GUARDIAN_ROLE");
-    bytes32 public constant override GLOBAL_LOCKER_ROLE =
-        keccak256("GLOBAL_LOCKER_ROLE");
+
+    /// @notice granted to EOA's to enable movement of funds to safety in an emergency
     bytes32 public constant PCV_GUARD_ROLE = keccak256("PCV_GUARD_ROLE");
+
+    /// @notice granted to peg stability modules that will call in to deplete buffer
+    /// and mint Volt
     bytes32 public constant VOLT_RATE_LIMITED_MINTER_ROLE =
         keccak256("VOLT_RATE_LIMITED_MINTER_ROLE");
+
+    /// @notice granted to peg stability modules that will call in to replenish the
+    /// buffer Volt is minted from
+    bytes32 public constant VOLT_RATE_LIMITED_REDEEMER_ROLE =
+        keccak256("VOLT_RATE_LIMITED_REDEEMER_ROLE");
+
+    /// @notice granted to system smart contracts to enable the setting
+    /// of reentrancy locks within the GlobalReentrancyLock contract
+    bytes32 public constant override LEVEL_ONE_LOCKER_ROLE =
+        keccak256("LEVEL_ONE_LOCKER_ROLE");
+
+    bytes32 public constant override LEVEL_TWO_LOCKER_ROLE =
+        keccak256("LEVEL_TWO_LOCKER_ROLE");
 
     constructor() {
         // Appointed as a governor so guardian can have indirect access to revoke ability
@@ -27,9 +52,11 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         _setRoleAdmin(PCV_CONTROLLER_ROLE, GOVERN_ROLE);
         _setRoleAdmin(GOVERN_ROLE, GOVERN_ROLE);
         _setRoleAdmin(GUARDIAN_ROLE, GOVERN_ROLE);
-        _setRoleAdmin(GLOBAL_LOCKER_ROLE, GOVERN_ROLE);
+        _setRoleAdmin(LEVEL_ONE_LOCKER_ROLE, GOVERN_ROLE);
+        _setRoleAdmin(LEVEL_TWO_LOCKER_ROLE, GOVERN_ROLE);
         _setRoleAdmin(PCV_GUARD_ROLE, GOVERN_ROLE);
         _setRoleAdmin(VOLT_RATE_LIMITED_MINTER_ROLE, GOVERN_ROLE);
+        _setRoleAdmin(VOLT_RATE_LIMITED_REDEEMER_ROLE, GOVERN_ROLE);
     }
 
     modifier onlyGovernor() {
@@ -85,12 +112,20 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         _grantRole(GUARDIAN_ROLE, guardian);
     }
 
-    /// @notice grants global locker role to address
-    /// @param globalLocker new global locker address
-    function grantGlobalLocker(
-        address globalLocker
+    /// @notice grants level one locker role to address
+    /// @param levelOneLocker new level one locker address
+    function grantLevelOneLocker(
+        address levelOneLocker
     ) external override onlyGovernor {
-        _grantRole(GLOBAL_LOCKER_ROLE, globalLocker);
+        _grantRole(LEVEL_ONE_LOCKER_ROLE, levelOneLocker);
+    }
+
+    /// @notice grants global locker role to address
+    /// @param levelTwoLocker new global locker address
+    function grantLevelTwoLocker(
+        address levelTwoLocker
+    ) external override onlyGovernor {
+        _grantRole(LEVEL_TWO_LOCKER_ROLE, levelTwoLocker);
     }
 
     /// @notice grants PCV Guard role to address
@@ -105,6 +140,14 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         address rateLimitedMinter
     ) external override onlyGovernor {
         _grantRole(VOLT_RATE_LIMITED_MINTER_ROLE, rateLimitedMinter);
+    }
+
+    /// @notice grants ability to replenish buffer for minting Volt through the global rate limited minter
+    /// @param rateLimitedRedeemer address to add as a redeemer in global rate limited minter
+    function grantRateLimitedRedeemer(
+        address rateLimitedRedeemer
+    ) external override onlyGovernor {
+        _grantRole(VOLT_RATE_LIMITED_REDEEMER_ROLE, rateLimitedRedeemer);
     }
 
     /// @notice revokes minter role from address
@@ -134,11 +177,19 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     }
 
     /// @notice revokes global locker role from address
-    /// @param globalLocker ex globalLocker
-    function revokeGlobalLocker(
-        address globalLocker
+    /// @param levelOneLocker ex globalLocker
+    function revokeLevelOneLocker(
+        address levelOneLocker
     ) external override onlyGovernor {
-        _revokeRole(GLOBAL_LOCKER_ROLE, globalLocker);
+        _revokeRole(LEVEL_ONE_LOCKER_ROLE, levelOneLocker);
+    }
+
+    /// @notice revokes global locker role from address
+    /// @param levelTwoLocker ex globalLocker
+    function revokeLevelTwoLocker(
+        address levelTwoLocker
+    ) external override onlyGovernor {
+        _revokeRole(LEVEL_TWO_LOCKER_ROLE, levelTwoLocker);
     }
 
     /// @notice revokes PCV Guard role from address
@@ -153,6 +204,14 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         address rateLimitedMinter
     ) external override onlyGovernor {
         _revokeRole(VOLT_RATE_LIMITED_MINTER_ROLE, rateLimitedMinter);
+    }
+
+    /// @notice revokes ability to replenish buffer for minting Volt through the global rate limited minter
+    /// @param rateLimitedRedeemer ex redeemer in global rate limited minter
+    function revokeRateLimitedRedeemer(
+        address rateLimitedRedeemer
+    ) external override onlyGovernor {
+        _revokeRole(VOLT_RATE_LIMITED_REDEEMER_ROLE, rateLimitedRedeemer);
     }
 
     /// @notice revokes a role from address
@@ -214,10 +273,19 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     /// @notice checks if address has globalLocker role
     /// @param _address address to check
     /// @return true _address is globalLocker
-    function isGlobalLocker(
+    function isLevelOneLocker(
         address _address
     ) public view override returns (bool) {
-        return hasRole(GLOBAL_LOCKER_ROLE, _address);
+        return hasRole(LEVEL_ONE_LOCKER_ROLE, _address);
+    }
+
+    /// @notice checks if address has globalLocker role
+    /// @param _address address to check
+    /// @return true _address is globalLocker
+    function isLevelTwoLocker(
+        address _address
+    ) public view override returns (bool) {
+        return hasRole(LEVEL_TWO_LOCKER_ROLE, _address);
     }
 
     /// @notice checks if address has PCV Guard role
@@ -234,5 +302,14 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         address _address
     ) public view override returns (bool) {
         return hasRole(VOLT_RATE_LIMITED_MINTER_ROLE, _address);
+    }
+
+    /// @notice checks if address has Volt Redeemer Role
+    /// @param _address address to check
+    /// @return true if _address has Volt Redeemer Role
+    function isRateLimitedRedeemer(
+        address _address
+    ) public view override returns (bool) {
+        return hasRole(VOLT_RATE_LIMITED_REDEEMER_ROLE, _address);
     }
 }

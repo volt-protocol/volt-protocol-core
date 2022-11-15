@@ -18,11 +18,15 @@ interface IPermissionsV2 is IAccessControl {
 
     function grantGuardian(address guardian) external;
 
-    function grantGlobalLocker(address locker) external;
+    function grantLevelOneLocker(address levelOneLocker) external;
+
+    function grantLevelTwoLocker(address levelTwoLocker) external;
 
     function grantPCVGuard(address pcvGuard) external;
 
     function grantRateLimitedMinter(address rateLimitedMinter) external;
+
+    function grantRateLimitedRedeemer(address rateLimitedRedeemer) external;
 
     function revokeMinter(address minter) external;
 
@@ -32,11 +36,15 @@ interface IPermissionsV2 is IAccessControl {
 
     function revokeGuardian(address guardian) external;
 
-    function revokeGlobalLocker(address locker) external;
+    function revokeLevelOneLocker(address levelOneLocker) external;
+
+    function revokeLevelTwoLocker(address levelTwoLocker) external;
 
     function revokePCVGuard(address pcvGuard) external;
 
     function revokeRateLimitedMinter(address rateLimitedMinter) external;
+
+    function revokeRateLimitedRedeemer(address rateLimitedRedeemer) external;
 
     // ----------- Revoker only state changing api -----------
 
@@ -52,11 +60,17 @@ interface IPermissionsV2 is IAccessControl {
 
     function isPCVController(address _address) external view returns (bool);
 
-    function isGlobalLocker(address _address) external view returns (bool);
+    function isLevelOneLocker(address _address) external view returns (bool);
+
+    function isLevelTwoLocker(address _address) external view returns (bool);
 
     function isPCVGuard(address _address) external view returns (bool);
 
     function isRateLimitedMinter(address _address) external view returns (bool);
+
+    function isRateLimitedRedeemer(
+        address _address
+    ) external view returns (bool);
 
     // ----------- Predefined Roles -----------
 
@@ -79,5 +93,17 @@ interface IPermissionsV2 is IAccessControl {
 
     /// @notice global locker role can lock and unlock the global reentrancy
     /// lock. this allows for a system wide reentrancy lock.
-    function GLOBAL_LOCKER_ROLE() external view returns (bytes32);
+    function LEVEL_ONE_LOCKER_ROLE() external view returns (bytes32);
+
+    /// @notice global locker role can lock and unlock the global reentrancy
+    /// lock. this allows for a system wide reentrancy lock.
+    function LEVEL_TWO_LOCKER_ROLE() external view returns (bytes32);
+
+    /// @notice granted to peg stability modules that will call in to deplete buffer
+    /// and mint Volt
+    function VOLT_RATE_LIMITED_MINTER_ROLE() external view returns (bytes32);
+
+    /// @notice granted to peg stability modules that will call in to replenish the
+    /// buffer Volt is minted from
+    function VOLT_RATE_LIMITED_REDEEMER_ROLE() external view returns (bytes32);
 }
