@@ -73,7 +73,6 @@ contract UnitTestPegStabilityModule is Test {
         );
 
         vm.prank(addresses.governorAddress);
-        core.grantLevelOneLocker(address(psm));
         grlm = new GlobalRateLimitedMinter(
             address(core),
             maxRateLimitPerSecondMinting,
@@ -85,8 +84,8 @@ contract UnitTestPegStabilityModule is Test {
         core.grantMinter(address(grlm));
         core.grantRateLimitedRedeemer(address(psm));
         core.grantRateLimitedMinter(address(psm));
-        core.grantLevelOneLocker(address(psm));
-        core.grantLevelTwoLocker(address(grlm));
+        core.grantLocker(address(psm));
+        core.grantLocker(address(grlm));
         vm.stopPrank();
 
         vm.label(address(psm), "PSM");
