@@ -9,7 +9,7 @@ import {IOracle} from "./IOracle.sol";
 import {VoltRoles} from "../core/VoltRoles.sol";
 import {CoreRefV2} from "../refs/CoreRefV2.sol";
 import {PCVDeposit} from "../pcv/PCVDeposit.sol";
-import {MarketGovernanceOracle} from "./MarketGovernanceOracle.sol";
+import {DynamicVoltSystemOracle} from "./DynamicVoltSystemOracle.sol";
 
 /// @notice Contract to centralize information about PCV in the Volt system.
 /// This contract will emit events relevant for building offchain dashboards
@@ -27,8 +27,8 @@ contract PCVOracle is CoreRefV2 {
     using SafeCast for *;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    /// @notice emitted when a new token oracle is set
-    event OracleUpdate(
+    /// @notice emitted when a new venue oracle is set
+    event VenueOracleUpdated(
         address indexed venue,
         address indexed oldOracle,
         address indexed newOracle
@@ -54,10 +54,7 @@ contract PCVOracle is CoreRefV2 {
     );
 
     /// @notice emitted when market governance oracle is updated
-    event MarketGovernanceOracleUpdated(
-        address oldMgovOracle,
-        address newMgovOracle
-    );
+    event VoltSystemOracleUpdated(address oldOracle, address newOracle);
 
     /// @notice Map from venue address to oracle address. By reading an oracle
     /// value and multiplying by the PCVDeposit's balance(), the PCVOracle can
@@ -71,7 +68,7 @@ contract PCVOracle is CoreRefV2 {
     EnumerableSet.AddressSet private illiquidVenues;
 
     /// @notice reference to the market governance oracle smart contract
-    address public marketGovernanceOracle;
+    address public voltOracle;
 
     /// @notice last illiquid balance
     uint256 public lastIlliquidBalance;
@@ -307,20 +304,14 @@ contract PCVOracle is CoreRefV2 {
         if (nonZeroBalances) _afterActionHook();
     }
 
-    /// @notice set the market governance oracle address
+    /// @notice set the VOLT System Oracle address
     /// only callable by governor
-    /// @param _marketGovernanceOracle new address of the market governance oracle
-    function setMarketGovernanceOracle(address _marketGovernanceOracle)
-        external
-        onlyGovernor
-    {
-        address oldMarketGovernanceOracle = marketGovernanceOracle;
-        marketGovernanceOracle = _marketGovernanceOracle;
+    /// @param _voltOracle new address of the market governance oracle
+    function setVoltOracle(address _voltOracle) external onlyGovernor {
+        address oldVoltOracle = voltOracle;
+        voltOracle = _voltOracle;
 
-        emit MarketGovernanceOracleUpdated(
-            oldMarketGovernanceOracle,
-            _marketGovernanceOracle
-        );
+        emit VoltSystemOracleUpdated(oldVoltOracle, _voltOracle);
     }
 
     /// ------------- Helper Methods -------------
@@ -331,7 +322,7 @@ contract PCVOracle is CoreRefV2 {
         venueToOracle[venue] = newOracle;
 
         // emit event
-        emit OracleUpdate(venue, oldOracle, newOracle);
+        emit VenueOracleUpdated(venue, oldOracle, newOracle);
     }
 
     function _getUsdPcvDelta(address venue, int256 pcvDelta)
@@ -348,8 +339,8 @@ contract PCVOracle is CoreRefV2 {
     }
 
     function _afterActionHook() private {
-        if (marketGovernanceOracle != address(0)) {
-            MarketGovernanceOracle(marketGovernanceOracle).updateActualRate(
+        if (voltOracle != address(0)) {
+            DynamicVoltSystemOracle(voltOracle).updateActualRate(
                 getLiquidVenuePercentage()
             );
         }
