@@ -24,7 +24,8 @@ import {getCoreV2, getAddresses, getLocalOracleSystem, VoltTestAddresses} from "
 contract UnitTestPegStabilityModule is Test {
     using SafeCast for *;
     VoltTestAddresses public addresses = getAddresses();
-    /// @notice PSM to test redemptions against
+
+    /// @notice PSM to test against
     PegStabilityModule private psm;
 
     ICoreV2 private core;
