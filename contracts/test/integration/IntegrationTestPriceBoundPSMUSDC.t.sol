@@ -84,12 +84,12 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
         vm.startPrank(addresses.governorAddress);
 
         core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
-        core.grantLevelTwoLocker(address(grlm)); /// allow setting of reentrancy lock
+        core.grantLocker(address(grlm)); /// allow setting of reentrancy lock
         core.grantMinter(address(grlm));
 
         core.grantRateLimitedRedeemer(address(psm));
         core.grantRateLimitedMinter(address(psm));
-        core.grantLevelOneLocker(address(psm));
+        core.grantLocker(address(psm));
 
         vm.stopPrank();
 
