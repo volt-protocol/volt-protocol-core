@@ -32,6 +32,8 @@ contract UnitTestOracleRef is Test {
     }
 
     function testSetup() public {
+        assertEq(oracleRef.doInvert(), doInvert);
+        assertEq(oracleRef.decimalsNormalizer(), decimalsNormalizer);
         assertEq(address(core), address(oracleRef.core()));
         assertEq(oracleRef.readOracle().value, voltStartingPrice);
         assertEq(address(oracleRef.backupOracle()), address(0));
