@@ -92,7 +92,7 @@ contract UnitTestERC20AllocatorConnector is DSTest {
         vm.startPrank(addresses.governorAddress);
         allocator.connectPSM(address(psm), targetBalance, 0);
         allocator.connectDeposit(address(psm), address(pcvDeposit));
-        core.grantLevelOneLocker(address(allocator));
+        core.grantLocker(address(allocator));
         vm.stopPrank();
     }
 

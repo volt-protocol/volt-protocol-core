@@ -58,7 +58,7 @@ contract GlobalRateLimitedMinterUnitTest is Test {
         vm.startPrank(addresses.governorAddress);
 
         core.grantMinter(address(grlm));
-        core.grantLevelTwoLocker(address(grlm));
+        core.grantLocker(address(grlm));
 
         core.grantRateLimitedMinter(guardianAddresses.pcvGuardAddress1);
         core.grantRateLimitedMinter(guardianAddresses.pcvGuardAddress2);
@@ -66,7 +66,7 @@ contract GlobalRateLimitedMinterUnitTest is Test {
         core.grantRateLimitedRedeemer(guardianAddresses.pcvGuardAddress2);
 
         core.grantRateLimitedMinter(address(minter));
-        core.grantLevelOneLocker(address(minter));
+        core.grantLocker(address(minter));
 
         core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
 
@@ -100,13 +100,13 @@ contract GlobalRateLimitedMinterUnitTest is Test {
     }
 
     function testMintAsMinterFailsWhenNotLocked() public {
-        vm.expectRevert("CoreRef: System not locked level 1");
+        vm.expectRevert("CoreRef: restricted lock");
         vm.prank(guardianAddresses.pcvGuardAddress1);
         grlm.mintVolt(address(this), 0);
     }
 
     function testReplenishAsMinterFailsWhenNotLocked() public {
-        vm.expectRevert("CoreRef: System not locked level 1");
+        vm.expectRevert("CoreRef: restricted lock");
         vm.prank(guardianAddresses.pcvGuardAddress1);
         grlm.replenishBuffer(0);
     }

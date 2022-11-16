@@ -236,12 +236,12 @@ contract SystemUnitTest is Test {
         core.grantRateLimitedRedeemer(address(daipsm));
         core.grantRateLimitedRedeemer(address(usdcpsm));
 
-        core.grantLevelOneLocker(address(allocator));
-        core.grantLevelOneLocker(address(daipsm));
-        core.grantLevelOneLocker(address(usdcpsm));
+        core.grantLocker(address(allocator));
+        core.grantLocker(address(daipsm));
+        core.grantLocker(address(usdcpsm));
 
         /// grant level two locker to grlm
-        core.grantLevelTwoLocker(address(grlm));
+        core.grantLocker(address(grlm));
 
         core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
 
@@ -275,9 +275,9 @@ contract SystemUnitTest is Test {
     }
 
     function testSetup() public {
-        assertTrue(core.isLevelOneLocker(address(usdcpsm)));
-        assertTrue(core.isLevelOneLocker(address(daipsm)));
-        assertTrue(core.isLevelOneLocker(address(allocator)));
+        assertTrue(core.isLocker(address(usdcpsm)));
+        assertTrue(core.isLocker(address(daipsm)));
+        assertTrue(core.isLocker(address(allocator)));
 
         assertTrue(
             !timelockController.hasRole(
