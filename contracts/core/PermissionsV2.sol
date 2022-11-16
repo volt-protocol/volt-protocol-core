@@ -38,11 +38,7 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
 
     /// @notice granted to system smart contracts to enable the setting
     /// of reentrancy locks within the GlobalReentrancyLock contract
-    bytes32 public constant override LEVEL_ONE_LOCKER_ROLE =
-        keccak256("LEVEL_ONE_LOCKER_ROLE");
-
-    bytes32 public constant override LEVEL_TWO_LOCKER_ROLE =
-        keccak256("LEVEL_TWO_LOCKER_ROLE");
+    bytes32 public constant override LOCKER_ROLE = keccak256("LOCKER_ROLE");
 
     constructor() {
         // Appointed as a governor so guardian can have indirect access to revoke ability
@@ -52,8 +48,7 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         _setRoleAdmin(PCV_CONTROLLER_ROLE, GOVERN_ROLE);
         _setRoleAdmin(GOVERN_ROLE, GOVERN_ROLE);
         _setRoleAdmin(GUARDIAN_ROLE, GOVERN_ROLE);
-        _setRoleAdmin(LEVEL_ONE_LOCKER_ROLE, GOVERN_ROLE);
-        _setRoleAdmin(LEVEL_TWO_LOCKER_ROLE, GOVERN_ROLE);
+        _setRoleAdmin(LOCKER_ROLE, GOVERN_ROLE);
         _setRoleAdmin(PCV_GUARD_ROLE, GOVERN_ROLE);
         _setRoleAdmin(VOLT_RATE_LIMITED_MINTER_ROLE, GOVERN_ROLE);
         _setRoleAdmin(VOLT_RATE_LIMITED_REDEEMER_ROLE, GOVERN_ROLE);
@@ -114,18 +109,10 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
 
     /// @notice grants level one locker role to address
     /// @param levelOneLocker new level one locker address
-    function grantLevelOneLocker(
+    function grantLocker(
         address levelOneLocker
     ) external override onlyGovernor {
-        _grantRole(LEVEL_ONE_LOCKER_ROLE, levelOneLocker);
-    }
-
-    /// @notice grants global locker role to address
-    /// @param levelTwoLocker new global locker address
-    function grantLevelTwoLocker(
-        address levelTwoLocker
-    ) external override onlyGovernor {
-        _grantRole(LEVEL_TWO_LOCKER_ROLE, levelTwoLocker);
+        _grantRole(LOCKER_ROLE, levelOneLocker);
     }
 
     /// @notice grants PCV Guard role to address
@@ -178,18 +165,10 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
 
     /// @notice revokes global locker role from address
     /// @param levelOneLocker ex globalLocker
-    function revokeLevelOneLocker(
+    function revokeLocker(
         address levelOneLocker
     ) external override onlyGovernor {
-        _revokeRole(LEVEL_ONE_LOCKER_ROLE, levelOneLocker);
-    }
-
-    /// @notice revokes global locker role from address
-    /// @param levelTwoLocker ex globalLocker
-    function revokeLevelTwoLocker(
-        address levelTwoLocker
-    ) external override onlyGovernor {
-        _revokeRole(LEVEL_TWO_LOCKER_ROLE, levelTwoLocker);
+        _revokeRole(LOCKER_ROLE, levelOneLocker);
     }
 
     /// @notice revokes PCV Guard role from address
@@ -273,19 +252,8 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     /// @notice checks if address has globalLocker role
     /// @param _address address to check
     /// @return true _address is globalLocker
-    function isLevelOneLocker(
-        address _address
-    ) public view override returns (bool) {
-        return hasRole(LEVEL_ONE_LOCKER_ROLE, _address);
-    }
-
-    /// @notice checks if address has globalLocker role
-    /// @param _address address to check
-    /// @return true _address is globalLocker
-    function isLevelTwoLocker(
-        address _address
-    ) public view override returns (bool) {
-        return hasRole(LEVEL_TWO_LOCKER_ROLE, _address);
+    function isLocker(address _address) public view override returns (bool) {
+        return hasRole(LOCKER_ROLE, _address);
     }
 
     /// @notice checks if address has PCV Guard role

@@ -18,9 +18,7 @@ interface IPermissionsV2 is IAccessControl {
 
     function grantGuardian(address guardian) external;
 
-    function grantLevelOneLocker(address levelOneLocker) external;
-
-    function grantLevelTwoLocker(address levelTwoLocker) external;
+    function grantLocker(address levelOneLocker) external;
 
     function grantPCVGuard(address pcvGuard) external;
 
@@ -36,9 +34,7 @@ interface IPermissionsV2 is IAccessControl {
 
     function revokeGuardian(address guardian) external;
 
-    function revokeLevelOneLocker(address levelOneLocker) external;
-
-    function revokeLevelTwoLocker(address levelTwoLocker) external;
+    function revokeLocker(address levelOneLocker) external;
 
     function revokePCVGuard(address pcvGuard) external;
 
@@ -60,9 +56,7 @@ interface IPermissionsV2 is IAccessControl {
 
     function isPCVController(address _address) external view returns (bool);
 
-    function isLevelOneLocker(address _address) external view returns (bool);
-
-    function isLevelTwoLocker(address _address) external view returns (bool);
+    function isLocker(address _address) external view returns (bool);
 
     function isPCVGuard(address _address) external view returns (bool);
 
@@ -93,11 +87,7 @@ interface IPermissionsV2 is IAccessControl {
 
     /// @notice global locker role can lock and unlock the global reentrancy
     /// lock. this allows for a system wide reentrancy lock.
-    function LEVEL_ONE_LOCKER_ROLE() external view returns (bytes32);
-
-    /// @notice global locker role can lock and unlock the global reentrancy
-    /// lock. this allows for a system wide reentrancy lock.
-    function LEVEL_TWO_LOCKER_ROLE() external view returns (bytes32);
+    function LOCKER_ROLE() external view returns (bytes32);
 
     /// @notice granted to peg stability modules that will call in to deplete buffer
     /// and mint Volt
