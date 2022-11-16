@@ -6,9 +6,9 @@ import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IGRLM} from "../minter/IGRLM.sol";
-import {ICoreV2} from "./../core/ICoreV2.sol";
 import {VoltRoles} from "./../core/VoltRoles.sol";
 import {ICoreRefV2} from "./ICoreRefV2.sol";
+import {CoreV2, ICoreV2} from "./../core/CoreV2.sol";
 import {IVolt, IVoltBurn} from "./../volt/IVolt.sol";
 import {IGlobalReentrancyLock} from "./../core/IGlobalReentrancyLock.sol";
 
@@ -19,35 +19,36 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     using SafeERC20 for IERC20;
 
     /// @notice reference to Core
-    ICoreV2 private _core;
+    CoreV2 private _core;
 
     constructor(address coreAddress) {
-        _core = ICoreV2(coreAddress);
+        _core = CoreV2(coreAddress);
     }
 
     /// 1. call core and lock the lock
     /// 2. execute the code
     /// 3. call core and unlock the lock
-    modifier globalReentrancyLockLevelOne() {
-        IGlobalReentrancyLock(address(_core)).lockLevelOne();
+    modifier globalLock(uint8 level) {
+        uint8 startingLevel = _core.lockLevel();
+        require(
+            startingLevel < level,
+            "CoreRef: cannot lock less than current level"
+        );
+        _core.lock(level);
         _;
-        IGlobalReentrancyLock(address(_core)).unlockLevelOne();
+        _core.unlock(startingLevel);
     }
 
-    /// 1. call core and assert level one lock is locked if bool is true
-    /// 2. lock the level two lock
-    /// 2. execute the code
-    /// 3. call core and unlock the level two lock
-    modifier globalReentrancyLockLevelTwo(bool requireLevelOneLock) {
-        if (requireLevelOneLock) {
-            require(
-                IGlobalReentrancyLock(address(_core)).isLockedLevelOne(),
-                "CoreRef: System not locked level 1"
-            );
-        }
-        IGlobalReentrancyLock(address(_core)).lockLevelTwo();
+    /// 1. validate system is already at level 1 locked
+    /// 2. call core and lock the lock to level 2
+    /// 3. execute the code
+    /// 4. call core and unlock the lock to level 2
+    modifier globalLockLevelTwo() {
+        uint8 currentLevel = _core.lockLevel();
+        require(currentLevel == 1, "CoreRef: restricted lock");
+        _core.lock(2);
         _;
-        IGlobalReentrancyLock(address(_core)).unlockLevelTwo();
+        _core.unlock(1);
     }
 
     modifier isGlobalReentrancyLocked() {
@@ -164,7 +165,7 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     /// @notice address of the Core contract referenced
     /// @return ICore implementation address
     function core() public view override returns (ICoreV2) {
-        return _core;
+        return ICoreV2(address(_core));
     }
 
     /// @notice address of the Volt contract referenced by Core
@@ -204,7 +205,7 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     /// @param newCore to reference
     function setCore(address newCore) external onlyGovernor {
         address oldCore = address(_core);
-        _core = ICoreV2(newCore);
+        _core = CoreV2(newCore);
 
         emit CoreUpdate(oldCore, newCore);
     }
