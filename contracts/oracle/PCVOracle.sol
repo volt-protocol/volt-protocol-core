@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -10,6 +11,17 @@ import {CoreRefV2} from "../refs/CoreRefV2.sol";
 import {PCVDeposit} from "../pcv/PCVDeposit.sol";
 import {MarketGovernanceOracle} from "./MarketGovernanceOracle.sol";
 
+/// @notice Contract to centralize information about PCV in the Volt system.
+/// This contract will emit events relevant for building offchain dashboards
+/// of pcv growth, composition, and locations (venues).
+/// This contract keeps track of the percentage of illiquid investments,
+/// which allows dynamic VOLT rate based on the liquidity available for
+/// redemptions (in other parts of the system).
+/// Each PCV Deposit has an oracle, which allows governance to manually
+/// mark down a given PCVDeposit, if losses occur and the implementation
+/// does not automatically detect it & return erroneous balance() values.
+/// Oracles are also responsible for decimal normalization.
+/// @author Eswak, Elliot Friedman
 contract PCVOracle is CoreRefV2 {
     using Decimal for Decimal.D256;
     using SafeCast for *;
@@ -17,7 +29,7 @@ contract PCVOracle is CoreRefV2 {
 
     /// @notice emitted when a new token oracle is set
     event OracleUpdate(
-        address indexed token,
+        address indexed venue,
         address indexed oldOracle,
         address indexed newOracle
     );
@@ -47,14 +59,10 @@ contract PCVOracle is CoreRefV2 {
         address newMgovOracle
     );
 
-    /// @notice Map of oracles to use to get USD values of assets held in
-    ///         PCV deposits. This map is used to get the oracle address from
-    ///         and ERC20 address.
-    mapping(address => address) public tokenToOracle;
-
-    /// @notice Map from deposit address to token address. It is used the oracle
-    /// of a PCVDeposit by using tokenToOracle(depositToToken(depositAddress)).
-    mapping(address => address) public depositToToken;
+    /// @notice Map from venue address to oracle address. By reading an oracle
+    /// value and multiplying by the PCVDeposit's balance(), the PCVOracle can
+    /// know the USD value of PCV deployed in a given venue.
+    mapping(address => address) public venueToOracle;
 
     ///@notice set of whitelisted pcvDeposit addresses for withdrawal
     EnumerableSet.AddressSet private liquidVenues;
@@ -80,17 +88,17 @@ contract PCVOracle is CoreRefV2 {
     // ----------- Getters -----------
 
     /// @notice return all addresses listed as liquid venues
-    function getLiquidVenues() public view returns (address[] memory) {
+    function getLiquidVenues() external view returns (address[] memory) {
         return liquidVenues.values();
     }
 
     /// @notice return all addresses listed as illiquid venues
-    function getIlliquidVenues() public view returns (address[] memory) {
+    function getIlliquidVenues() external view returns (address[] memory) {
         return illiquidVenues.values();
     }
 
     /// @notice return all addresses that are liquid or illiquid venues
-    function getAllVenues() public view returns (address[] memory) {
+    function getAllVenues() external view returns (address[] memory) {
         uint256 liquidVenueLength = liquidVenues.length();
         uint256 illiquidVenueLength = illiquidVenues.length();
         address[] memory allVenues = new address[](
@@ -128,28 +136,30 @@ contract PCVOracle is CoreRefV2 {
     /// @notice check if a venue is in the list of illiquid venues
     /// @param illiquidVenue address to check
     /// @return boolean whether or not the illiquidVenue is in the illiquid venue list
-    function isIlliquidVenue(address illiquidVenue) public view returns (bool) {
+    function isIlliquidVenue(address illiquidVenue)
+        external
+        view
+        returns (bool)
+    {
         return illiquidVenues.contains(illiquidVenue);
     }
 
     /// @notice check if a venue is in the list of illiquid venues
     /// @param liquidVenue address to check
     /// @return boolean whether or not the liquidVenue is in the illiquid venue list
-    function isLiquidVenue(address liquidVenue) public view returns (bool) {
+    function isLiquidVenue(address liquidVenue) external view returns (bool) {
         return liquidVenues.contains(liquidVenue);
     }
 
     /// @notice check if a venue is in the list of liquid or illiquid venues
     /// @param venue address to check
     /// @return boolean whether or not the venue is part of the liquid or illiquid venue list
-    function isVenue(address venue) public view returns (bool) {
+    function isVenue(address venue) external view returns (bool) {
         return liquidVenues.contains(venue) || illiquidVenues.contains(venue);
     }
 
     /// @notice get the total PCV balance by looping through the liquid and illiquid pcv deposits
-    /// @dev this function is meant to be used offchain, as it is pretty gas expensive. It also reads
-    /// the fresh balance and not the resistant balance of PCVDeposits, which could be subject to
-    /// in-block manipulations.
+    /// @dev this function is meant to be used offchain, as it is pretty gas expensive.
     function getTotalPcv()
         external
         view
@@ -168,7 +178,7 @@ contract PCVOracle is CoreRefV2 {
             for (uint256 i = 0; i < liquidVenueLength; i++) {
                 address depositAddress = liquidVenues.at(i);
                 (Decimal.D256 memory oracleValue, bool oracleValid) = IOracle(
-                    tokenToOracle[depositToToken[depositAddress]]
+                    venueToOracle[depositAddress]
                 ).read();
                 require(oracleValid, "PCVO: invalid oracle value");
 
@@ -181,7 +191,7 @@ contract PCVOracle is CoreRefV2 {
             for (uint256 i = 0; i < illiquidVenueLength; i++) {
                 address depositAddress = illiquidVenues.at(i);
                 (Decimal.D256 memory oracleValue, bool oracleValid) = IOracle(
-                    tokenToOracle[depositToToken[depositAddress]]
+                    venueToOracle[depositAddress]
                 ).read();
                 require(oracleValid, "PCVO: invalid oracle value");
 
@@ -202,17 +212,10 @@ contract PCVOracle is CoreRefV2 {
     /// this allows for lazy evaluation of the TWAPCV
     /// @param pcvDelta the amount of PCV change in the venue
     function updateLiquidBalance(int256 pcvDelta)
-        external
+        public
         onlyVoltRole(VoltRoles.LIQUID_PCV_DEPOSIT_ROLE)
     {
-        address token = PCVDeposit(msg.sender).balanceReportedIn();
-        IOracle oracle = IOracle(tokenToOracle[token]);
-        (Decimal.D256 memory oracleValue, bool oracleValid) = oracle.read();
-        require(oracleValid, "PCVO: invalid oracle value");
-        int256 usdPcvDelta = (int256(oracleValue.asUint256()) * pcvDelta) /
-            1e18;
-
-        _updateLiquidBalance(usdPcvDelta);
+        _updateBalance(_getUsdPcvDelta(msg.sender, pcvDelta), true);
         _afterActionHook();
     }
 
@@ -221,67 +224,87 @@ contract PCVOracle is CoreRefV2 {
     /// this allows for lazy evaluation of the TWAPCV
     /// @param pcvDelta the amount of PCV change in the venue
     function updateIlliquidBalance(int256 pcvDelta)
-        external
+        public
         onlyVoltRole(VoltRoles.ILLIQUID_PCV_DEPOSIT_ROLE)
     {
-        address token = PCVDeposit(msg.sender).balanceReportedIn();
-        IOracle oracle = IOracle(tokenToOracle[token]);
-        (Decimal.D256 memory oracleValue, bool oracleValid) = oracle.read();
-        require(oracleValid, "PCVO: invalid oracle value");
-        int256 usdPcvDelta = (int256(oracleValue.asUint256()) * pcvDelta) /
-            1e18;
-
-        _updateIlliquidBalance(usdPcvDelta);
+        _updateBalance(_getUsdPcvDelta(msg.sender, pcvDelta), false);
         _afterActionHook();
     }
 
     /// ------------- Governor Only API -------------
 
-    /// @notice set the oracle for a given token, used to normalize
-    /// balances into USD values.
-    function setOracle(address token, address newOracle) external onlyGovernor {
-        // add oracle to the map(ERC20Address) => OracleAddress
-        address oldOracle = tokenToOracle[token];
-        tokenToOracle[token] = newOracle;
-
-        // emit event
-        emit OracleUpdate(token, oldOracle, newOracle);
+    /// @notice set the oracle for a given venue, used to normalize
+    /// balances into USD values, and correct for exceptional gains
+    /// and losses that are not properly reported by the PCVDeposit
+    function setOracle(address venue, address newOracle) external onlyGovernor {
+        _setOracle(venue, newOracle);
     }
 
-    /// @notice add illiquid venues to the oracle
+    /// @notice add venues to the oracle
     /// only callable by the governor
-    /// 1. add venues
-    /// 2. governance action or later should call deposit thus benchmarking the previous balance
-    /// (implicit) disallow deposit being called if contract does not have PCV deposit role
-    function addIlliquidVenues(address[] calldata illiquidVenuesToAdd)
-        external
-        onlyGovernor
-    {
-        uint256 illiquidVenueLength = illiquidVenuesToAdd.length;
-        for (uint256 i = 0; i < illiquidVenueLength; ) {
-            _addIlliquidVenue(illiquidVenuesToAdd[i]);
+    function addVenues(
+        address[] calldata venues,
+        address[] calldata oracles,
+        bool[] calldata isLiquid
+    ) external onlyGovernor {
+        uint256 length = venues.length;
+        require(oracles.length == length, "PCVO: invalid oracles length");
+        require(isLiquid.length == length, "PCVO: invalid isLiquid length");
+        bool nonZeroBalances = false;
+        for (uint256 i = 0; i < length; ) {
+            require(venues[i] != address(0), "PCVO: invalid venue");
+            require(oracles[i] != address(0), "PCVO: invalid oracle");
+
+            _setOracle(venues[i], oracles[i]);
+            _addVenue(venues[i], isLiquid[i]);
+
+            uint256 balance = PCVDeposit(venues[i]).balance();
+            if (balance != 0) {
+                nonZeroBalances = true;
+                // no need for safe cast here because balance is always > 0
+                _updateBalance(
+                    _getUsdPcvDelta(venues[i], int256(balance)),
+                    isLiquid[i]
+                );
+            }
+
             unchecked {
                 ++i;
             }
         }
+        if (nonZeroBalances) _afterActionHook();
     }
 
-    /// @notice add liquid venues to the oracle
+    /// @notice remove venues from the oracle
     /// only callable by the governor
-    /// 1. add venues
-    /// 2. governance action or later should call deposit, thus benchmarking the previous balance
-    /// (implicit) disallow deposit being called if contract does not have PCV deposit role
-    function addLiquidVenues(address[] calldata liquidVenuesToAdd)
+    function removeVenues(address[] calldata venues, bool[] calldata isLiquid)
         external
         onlyGovernor
     {
-        uint256 liquidVenueLength = liquidVenuesToAdd.length;
-        for (uint256 i = 0; i < liquidVenueLength; ) {
-            _addLiquidVenue(liquidVenuesToAdd[i]);
+        uint256 length = venues.length;
+        require(isLiquid.length == length, "PCVO: invalid isLiquid length");
+        bool nonZeroBalances = false;
+        for (uint256 i = 0; i < length; ) {
+            require(venues[i] != address(0), "PCVO: invalid venue");
+
+            _setOracle(venues[i], address(0));
+            _removeVenue(venues[i], isLiquid[i]);
+
+            uint256 balance = PCVDeposit(venues[i]).balance();
+            if (balance != 0) {
+                nonZeroBalances = true;
+                // no need for safe cast here because balance is always > 0
+                _updateBalance(
+                    _getUsdPcvDelta(venues[i], -1 * int256(balance)),
+                    isLiquid[i]
+                );
+            }
+
             unchecked {
                 ++i;
             }
         }
+        if (nonZeroBalances) _afterActionHook();
     }
 
     /// @notice set the market governance oracle address
@@ -302,6 +325,28 @@ contract PCVOracle is CoreRefV2 {
 
     /// ------------- Helper Methods -------------
 
+    function _setOracle(address venue, address newOracle) private {
+        // add oracle to the map(PCVDepositAddress) => OracleAddress
+        address oldOracle = venueToOracle[venue];
+        venueToOracle[venue] = newOracle;
+
+        // emit event
+        emit OracleUpdate(venue, oldOracle, newOracle);
+    }
+
+    function _getUsdPcvDelta(address venue, int256 pcvDelta)
+        private
+        view
+        returns (int256)
+    {
+        address oracle = venueToOracle[venue];
+        require(oracle != address(0), "PCVO: invalid caller deposit");
+        (Decimal.D256 memory oracleValue, bool oracleValid) = IOracle(oracle)
+            .read();
+        require(oracleValid, "PCVO: invalid oracle value");
+        return (int256(oracleValue.asUint256()) * pcvDelta) / 1e18;
+    }
+
     function _afterActionHook() private {
         if (marketGovernanceOracle != address(0)) {
             MarketGovernanceOracle(marketGovernanceOracle).updateActualRate(
@@ -310,61 +355,43 @@ contract PCVOracle is CoreRefV2 {
         }
     }
 
-    function _updateIlliquidBalance(int256 pcvDelta) private {
-        uint256 oldLiquidity = lastIlliquidBalance;
+    function _updateBalance(int256 pcvDeltaUSD, bool isLiquid) private {
+        uint256 oldLiquidity = isLiquid
+            ? lastLiquidBalance
+            : lastIlliquidBalance;
 
-        if (pcvDelta < 0) {
-            lastIlliquidBalance -= (pcvDelta * -1).toUint256();
+        uint256 newLiquidity;
+        if (pcvDeltaUSD < 0) {
+            newLiquidity = oldLiquidity - (pcvDeltaUSD * -1).toUint256();
         } else {
-            lastIlliquidBalance += pcvDelta.toUint256();
+            newLiquidity = oldLiquidity + pcvDeltaUSD.toUint256();
         }
+
+        if (isLiquid) lastLiquidBalance = newLiquidity;
+        else lastIlliquidBalance = newLiquidity;
 
         emit PCVUpdated(
             msg.sender,
-            true,
+            isLiquid,
             block.timestamp,
             oldLiquidity,
-            lastIlliquidBalance
+            newLiquidity
         );
     }
 
-    function _updateLiquidBalance(int256 pcvDelta) private {
-        uint256 oldLiquidity = lastLiquidBalance;
+    function _addVenue(address venue, bool isLiquid) private {
+        if (isLiquid) liquidVenues.add(venue);
+        else illiquidVenues.add(venue);
 
-        if (pcvDelta < 0) {
-            lastLiquidBalance -= (pcvDelta * -1).toUint256();
-        } else {
-            lastLiquidBalance += pcvDelta.toUint256();
-        }
-
-        emit PCVUpdated(
-            msg.sender,
-            false,
-            block.timestamp,
-            oldLiquidity,
-            lastLiquidBalance
-        );
+        emit VenueAdded(venue, isLiquid, block.timestamp);
     }
 
-    function _addIlliquidVenue(address illiquidVenue) private {
-        address token = PCVDeposit(illiquidVenue).balanceReportedIn();
-        address oracle = tokenToOracle[token];
-        require(oracle != address(0), "PCVO: No oracle configured");
+    function _removeVenue(address venue, bool isLiquid) private {
+        bool removed;
+        if (isLiquid) removed = liquidVenues.remove(venue);
+        else removed = illiquidVenues.remove(venue);
+        require(removed, "PCVO: venue not found");
 
-        illiquidVenues.add(illiquidVenue);
-        depositToToken[illiquidVenue] = token;
-
-        emit VenueAdded(illiquidVenue, true, block.timestamp);
-    }
-
-    function _addLiquidVenue(address liquidVenue) private {
-        address token = PCVDeposit(liquidVenue).balanceReportedIn();
-        address oracle = tokenToOracle[token];
-        require(oracle != address(0), "PCVO: No oracle configured");
-
-        liquidVenues.add(liquidVenue);
-        depositToToken[liquidVenue] = token;
-
-        emit VenueAdded(liquidVenue, false, block.timestamp);
+        emit VenueRemoved(venue, isLiquid, block.timestamp);
     }
 }
