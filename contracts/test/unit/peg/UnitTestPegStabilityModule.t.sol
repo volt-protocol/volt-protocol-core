@@ -20,15 +20,11 @@ import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {IGRLM, GlobalRateLimitedMinter} from "../../../minter/GlobalRateLimitedMinter.sol";
 import {getCoreV2, getAddresses, getLocalOracleSystem, VoltTestAddresses} from "./../../unit/utils/Fixtures.sol";
 
-/// Differential Test that compares current production PSM to the new PSM
-/// to ensure parity in behavior
-/// TODO use vm.deal to increase balance in DAI and VOLT,
-/// increase values for fuzzer for more realistic tests
-/// TODO make it work
+/// PSM Unit Test that tests new PSM to ensure proper behavior
 contract UnitTestPegStabilityModule is Test {
     using SafeCast for *;
     VoltTestAddresses public addresses = getAddresses();
-    /// @notice non custodial PSM to test redemptions against
+    /// @notice PSM to test redemptions against
     PegStabilityModule private psm;
 
     ICoreV2 private core;
@@ -167,7 +163,7 @@ contract UnitTestPegStabilityModule is Test {
         );
     }
 
-    function testMintFuzz(uint32 amountStableIn) public {
+    function testMintFuzz(uint72 amountStableIn) public {
         uint256 amountVoltOut = psm.getMintAmountOut(amountStableIn);
         uint256 startingVoltTotalSupply = volt.totalSupply();
         uint256 startingpsmBalance = psm.balance();
@@ -205,7 +201,7 @@ contract UnitTestPegStabilityModule is Test {
         psm.mint(address(this), amountStableIn, amountVoltOut + 1);
     }
 
-    function testRedeemFuzz(uint32 amountVoltIn) public {
+    function testRedeemFuzz(uint72 amountVoltIn) public {
         uint256 amountOut = psm.getRedeemAmountOut(amountVoltIn);
 
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
@@ -243,7 +239,7 @@ contract UnitTestPegStabilityModule is Test {
         );
     }
 
-    function testRedeemFuzzNotEnoughOut(uint32 amountVoltIn) public {
+    function testRedeemFuzzNotEnoughOut(uint96 amountVoltIn) public {
         uint256 amountOut = psm.getRedeemAmountOut(amountVoltIn);
 
         volt.approve(address(psm), amountVoltIn);
@@ -311,16 +307,84 @@ contract UnitTestPegStabilityModule is Test {
         assertEq(endingBalance - startingBalance, mintAmount);
     }
 
-    /// @notice withdraw fails without correct permissions
-    function testWithdrawFailure() public {
-        vm.expectRevert(bytes("CoreRef: Caller is not a PCV controller"));
-        psm.withdraw(address(this), 100);
+    function testSetOracleFloorPriceGovernorSucceeds() public {
+        uint128 currentPrice = uint128(
+            oraclePassThrough.getCurrentOraclePrice()
+        );
+        vm.prank(addresses.governorAddress);
+        psm.setOracleFloorPrice(currentPrice);
+        assertTrue(psm.isPriceValid());
     }
 
-    /// @notice withdraw erc20 fails without correct permissions
-    function testERC20WithdrawFailure() public {
-        vm.expectRevert(bytes("CoreRef: Caller is not a PCV controller"));
-        psm.withdrawERC20(address(underlyingToken), address(this), 100);
+    function testSetOracleCeilingPriceGovernorSucceeds() public {
+        uint128 currentPrice = uint128(
+            oraclePassThrough.getCurrentOraclePrice()
+        );
+        vm.prank(addresses.governorAddress);
+        psm.setOracleCeilingPrice(currentPrice + 1);
+        assertTrue(psm.isPriceValid());
+    }
+
+    function testSetOracleCeilingPriceGovernorLteFloorFails() public {
+        uint128 currentFloor = psm.floor();
+
+        vm.startPrank(addresses.governorAddress);
+
+        vm.expectRevert(
+            "PegStabilityModule: ceiling must be greater than floor"
+        );
+        psm.setOracleCeilingPrice(currentFloor);
+
+        vm.expectRevert(
+            "PegStabilityModule: ceiling must be greater than floor"
+        );
+        psm.setOracleCeilingPrice(currentFloor - 1);
+
+        vm.stopPrank();
+    }
+
+    function testSetOracleFloorPrice0GovernorFails() public {
+        vm.expectRevert("PegStabilityModule: invalid floor");
+        vm.prank(addresses.governorAddress);
+        psm.setOracleFloorPrice(0);
+    }
+
+    function testSetOracleFloorPriceGovernorSucceedsFuzz(
+        uint128 newFloorPrice
+    ) public {
+        vm.assume(newFloorPrice != 0);
+
+        uint128 currentPrice = uint128(
+            oraclePassThrough.getCurrentOraclePrice()
+        );
+        uint128 currentFloor = psm.floor();
+        uint128 currentCeiling = psm.ceiling();
+
+        if (newFloorPrice < currentFloor) {
+            vm.prank(addresses.governorAddress);
+            psm.setOracleFloorPrice(newFloorPrice);
+            assertTrue(psm.isPriceValid());
+            testMintFuzz(100_000);
+            testRedeemFuzz(100_000);
+        } else if (newFloorPrice >= currentCeiling) {
+            vm.expectRevert(
+                "PegStabilityModule: floor must be less than ceiling"
+            );
+            vm.prank(addresses.governorAddress);
+            psm.setOracleFloorPrice(newFloorPrice);
+            assertTrue(psm.isPriceValid());
+            testMintFuzz(100_000);
+            testRedeemFuzz(100_000);
+        } else if (newFloorPrice > currentPrice) {
+            vm.prank(addresses.governorAddress);
+            psm.setOracleFloorPrice(newFloorPrice);
+            assertTrue(!psm.isPriceValid());
+
+            vm.expectRevert("PegStabilityModule: price out of bounds");
+            psm.mint(address(this), 1, 0);
+            vm.expectRevert("PegStabilityModule: price out of bounds");
+            psm.redeem(address(this), 1, 0);
+        }
     }
 
     /// @notice withdraw erc20 succeeds with correct permissions
@@ -343,5 +407,29 @@ contract UnitTestPegStabilityModule is Test {
         psm.pause();
         vm.expectRevert("Pausable: paused");
         psm.deposit();
+    }
+
+    /// ----------- ACL TESTS -----------
+
+    /// @notice withdraw fails without correct permissions
+    function testWithdrawFailure() public {
+        vm.expectRevert(bytes("CoreRef: Caller is not a PCV controller"));
+        psm.withdraw(address(this), 100);
+    }
+
+    /// @notice withdraw erc20 fails without correct permissions
+    function testERC20WithdrawFailure() public {
+        vm.expectRevert(bytes("CoreRef: Caller is not a PCV controller"));
+        psm.withdrawERC20(address(underlyingToken), address(this), 100);
+    }
+
+    function testSetOracleFloorPriceNonGovernorFails() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        psm.setOracleFloorPrice(100);
+    }
+
+    function testSetOracleCeilingPriceNonGovernorFails() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        psm.setOracleCeilingPrice(100);
     }
 }
