@@ -65,8 +65,6 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
 
     // ----------- Governor Only State Changing API -----------
 
-    /// TODO test this
-
     /// @notice sets the new floor price
     /// @param newFloorPrice new floor price
     function setOracleFloorPrice(
@@ -91,8 +89,9 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
     function withdraw(
         address to,
         uint256 amount
-    ) external virtual override onlyPCVController globalReentrancyLockLevelOne {
+    ) external virtual override onlyPCVController globalLock(1) {
         _withdrawERC20(address(underlyingToken), to, amount);
+        /// TODO add hooks into PCV oracle
     }
 
     // ----------- Public State Changing API -----------
@@ -110,13 +109,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
         address to,
         uint256 amountVoltIn,
         uint256 minAmountOut
-    )
-        external
-        virtual
-        override
-        globalReentrancyLockLevelOne
-        returns (uint256 amountOut)
-    {
+    ) external virtual override globalLock(1) returns (uint256 amountOut) {
         /// ------- Checks -------
         /// 1. current price from oracle is correct
         /// 2. how much underlying token to receive
@@ -156,13 +149,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
         address to,
         uint256 amountIn,
         uint256 minAmountOut
-    )
-        external
-        virtual
-        override
-        globalReentrancyLockLevelOne
-        returns (uint256 amountVoltOut)
-    {
+    ) external virtual override globalLock(1) returns (uint256 amountVoltOut) {
         /// ------- Checks -------
         /// 1. current price from oracle is correct
         /// 2. how much volt to receive
