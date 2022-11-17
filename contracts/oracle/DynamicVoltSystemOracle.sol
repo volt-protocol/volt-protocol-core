@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {PCVOracle} from "./PCVOracle.sol";
@@ -17,7 +16,7 @@ import {DynamicVoltRateModel} from "./DynamicVoltRateModel.sol";
 /// start time updates, creating a new interpolation over 1 year.
 /// @author Eswak, Elliot Friedman
 contract DynamicVoltSystemOracle is CoreRefV2 {
-    using SafeCast for *;
+    /// ------------- Events ---------------
 
     /// @notice Event emitted when the Volt system oracle compounds.
     /// Emits the end time of the period that completed and the new oracle price.
@@ -48,11 +47,11 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
 
     /// @notice Acts as an accumulator for interest earned in previous periods
     /// returns the oracle price from the end of the last period.
-    uint256 public oraclePrice;
+    uint192 public oraclePrice;
 
     /// @notice Start time at which point interest will start accruing, and the
     /// current ScalingPriceOracle price will be snapshotted and saved.
-    uint256 public periodStartTime;
+    uint64 public periodStartTime;
 
     /// @notice Current amount that oracle price is inflating by (APR, 18 decimals).
     /// This is set by governance. This is not actual rate Volt increases by, as it
@@ -88,7 +87,7 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
         address _core,
         uint256 _baseChangeRate,
         uint256 _actualChangeRate,
-        uint256 _periodStartTime,
+        uint64 _periodStartTime,
         address _rateModel,
         address _oracle
     ) CoreRefV2(_core) {
@@ -96,7 +95,12 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
         actualChangeRate = _actualChangeRate;
         periodStartTime = _periodStartTime;
         rateModel = _rateModel;
-        oraclePrice = IVoltSystemOracle(_oracle).getCurrentOraclePrice();
+        // SafeCast not needed because max value of uint192 is 6e57
+        uint192 currentOraclePrice = uint192(
+            IVoltSystemOracle(_oracle).getCurrentOraclePrice()
+        );
+        oraclePrice = currentOraclePrice;
+        periodStartTime = _periodStartTime;
     }
 
     // ----------- Getters -----------
@@ -188,13 +192,13 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
     /// ------------- Helper Methods -------------
 
     function _compoundInterest() private {
-        /// first set Oracle Price to interpolated value
-        oraclePrice = getCurrentOraclePrice();
+        // first, read values
+        uint192 currentOraclePrice = uint192(getCurrentOraclePrice());
+        uint64 currentBlockTime = uint64(block.timestamp);
 
-        /// set periodStartTime to periodStartTime + timeframe,
-        /// this is equivalent to init timed, which wipes out all unaccumulated compounded interest
-        /// and cleanly sets the start time.
-        periodStartTime = block.timestamp;
+        // then, do SSTORE
+        oraclePrice = currentOraclePrice;
+        periodStartTime = currentBlockTime;
 
         emit InterestCompounded(periodStartTime, oraclePrice);
     }
