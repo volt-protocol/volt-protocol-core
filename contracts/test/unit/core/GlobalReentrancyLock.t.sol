@@ -495,6 +495,20 @@ contract UnitTestGlobalReentrancyLock is DSTest {
         vm.stopPrank();
     }
 
+    function testCannotLockLevel3() public {
+        vm.startPrank(addresses.governorAddress);
+        core.grantLocker(addresses.governorAddress);
+
+        vm.expectRevert("GlobalReentrancyLock: exceeds lock state");
+        core.lock(3);
+
+        assertTrue(!core.isLocked());
+        assertTrue(core.isUnlocked());
+        assertEq(core.lastSender(), address(0));
+
+        vm.stopPrank();
+    }
+
     function testUnlockFailsSystemNotEntered() public {
         vm.startPrank(addresses.governorAddress);
 
