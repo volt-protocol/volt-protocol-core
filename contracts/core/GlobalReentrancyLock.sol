@@ -35,17 +35,18 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
 
     /// ------------- System States ---------------
 
-    /// level 1 unlocked
+    /// system unlocked
     /// request level 2 locked
     /// level 2 locked, msg.sender stored
     /// level 2 unlocked, msg.sender checked to ensure same as locking
+    /// unlock down to level 0
     ///
-    /// level 1 unlocked
+    /// system unlocked
     /// request level 1 locked
     /// level 1 locked, msg.sender stored
     /// level 1 unlocked, msg.sender checked to ensure same as locking
     ///
-    /// level 1 locked
+    /// lock level 1, msg.sender is stored
     /// request level 2 locked
     /// level 2 locked, msg.sender not stored
     /// level 2 unlocked, msg.sender not checked
@@ -142,6 +143,11 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
             _lockLevel = toLock;
             _startingLockLevel = toLock;
         } else {
+            /// ------ increasing lock level flow ------
+            /// do not update sender, to ensure original sender gets checked on final unlock
+            /// do not update lastBlockEntered because it should be the same, if it isn't, revert
+            /// do not update startingLockLevel because the system is already entered and updating that
+            /// would put the contract into an invalid state
             /// if already entered, ensure entry happened this block
             require(
                 block.number == _lastBlockEntered,
@@ -177,6 +183,7 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
             "GlobalReentrancyLock: unlock level must be lower"
         );
 
+        /// if starting lock was level 2, only allow unlocking to level 0
         if (startingLockLevel == _ENTERED_LEVEL_TWO) {
             require(
                 toUnlock == _NOT_ENTERED,
