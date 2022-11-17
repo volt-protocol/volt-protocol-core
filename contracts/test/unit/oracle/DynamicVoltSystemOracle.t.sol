@@ -1,0 +1,360 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+pragma solidity ^0.8.4;
+
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
+
+import {Vm} from "./../utils/Vm.sol";
+import {ICore} from "../../../core/ICore.sol";
+import {DSTest} from "./../utils/DSTest.sol";
+import {ICoreV2} from "../../../core/ICoreV2.sol";
+import {Decimal} from "./../../../external/Decimal.sol";
+import {Constants} from "./../../../Constants.sol";
+import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
+import {DynamicVoltSystemOracle} from "../../../oracle/DynamicVoltSystemOracle.sol";
+import {DynamicVoltRateModel} from "../../../oracle/DynamicVoltRateModel.sol";
+import {getCoreV2, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
+
+contract DynamicVoltSystemOracleUnitTest is DSTest {
+    using Decimal for Decimal.D256;
+    using SafeCast for *;
+
+    ICoreV2 private core;
+    Vm public constant vm = Vm(HEVM_ADDRESS);
+    VoltTestAddresses public addresses = getAddresses();
+
+    /// @notice reference to the volt system oracle
+    DynamicVoltRateModel private rateModel;
+    DynamicVoltSystemOracle private systemOracle;
+
+    uint256 public constant TIMEFRAME = 365.25 days;
+    uint256 public constant initialOraclePrice = 1e18; // start price = 1.0$
+    uint256 public constant periodStartTime = 1000;
+    uint256 public constant baseChangeRate = 0.1e18; // 10% APR
+    uint256 public getLiquidVenuePercentage = 0.5e18; // 50% liquid reserves
+
+    // DynamicVoltSystemOracle events
+    event InterestCompounded(
+        uint64 periodStartTime,
+        uint192 periodStartOraclePrice
+    );
+    event BaseRateUpdated(
+        uint256 periodStart,
+        uint256 oldRate,
+        uint256 newRate
+    );
+    event ActualRateUpdated(
+        uint256 periodStart,
+        uint256 oldRate,
+        uint256 newRate
+    );
+    event PCVOracleUpdated(
+        uint256 blockTime,
+        address oldOracle,
+        address newOracle
+    );
+
+    // mock behavior of the previous system oracle
+    function getCurrentOraclePrice() external pure returns (uint256) {
+        return initialOraclePrice;
+    }
+
+    function setUp() public {
+        core = getCoreV2();
+
+        rateModel = new DynamicVoltRateModel();
+        systemOracle = new DynamicVoltSystemOracle(
+            address(core),
+            baseChangeRate,
+            baseChangeRate, // actualChangeRate is 0% boosted
+            uint64(periodStartTime),
+            address(rateModel),
+            address(this), // old volt system oracle
+            address(this) // pcv oracle
+        );
+
+        /// allow this contract to call in and update the actual rate
+        vm.prank(addresses.governorAddress);
+        systemOracle.setPcvOracle(address(this));
+    }
+
+    function testSetup() public {
+        assertEq(systemOracle.periodStartTime(), uint64(periodStartTime));
+        assertEq(
+            systemOracle.periodStartOraclePrice(),
+            uint192(initialOraclePrice)
+        );
+        assertEq(systemOracle.baseChangeRate(), baseChangeRate);
+        assertEq(systemOracle.actualChangeRate(), baseChangeRate);
+        assertEq(systemOracle.pcvOracle(), address(this));
+        assertEq(systemOracle.rateModel(), address(rateModel));
+        assertEq(systemOracle.TIMEFRAME(), TIMEFRAME);
+    }
+
+    function testOraclePriceGrowsOverPeriod() public {
+        uint256 changeRate = systemOracle.actualChangeRate();
+
+        // before periodStartTime, rate doesn't grow
+        assertEq(systemOracle.getCurrentOraclePrice(), initialOraclePrice);
+        vm.warp(periodStartTime / 2);
+        assertEq(systemOracle.getCurrentOraclePrice(), initialOraclePrice);
+        vm.warp(periodStartTime);
+        assertEq(systemOracle.getCurrentOraclePrice(), initialOraclePrice);
+        // after periodStartTime, rate grows linearly over the period of TIMEFRAME
+        vm.warp(periodStartTime + TIMEFRAME / 2);
+        assertEq(
+            systemOracle.getCurrentOraclePrice(),
+            initialOraclePrice + changeRate / 2
+        );
+        vm.warp(periodStartTime + TIMEFRAME);
+        assertEq(
+            systemOracle.getCurrentOraclePrice(),
+            initialOraclePrice + changeRate
+        );
+        // the rate doesn't grow after period end (periodStartTime + TIMEFRAME)
+        vm.warp(periodStartTime + TIMEFRAME * 2);
+        assertEq(
+            systemOracle.getCurrentOraclePrice(),
+            initialOraclePrice + changeRate
+        );
+    }
+
+    function testFuzzOraclePriceGrowsOverPeriod(uint256 currentTimestamp)
+        public
+    {
+        vm.assume(currentTimestamp <= TIMEFRAME * 2);
+        vm.warp(currentTimestamp);
+
+        uint256 changeRate = systemOracle.actualChangeRate();
+
+        // before periodStartTime, rate doesn't grow
+        if (currentTimestamp < periodStartTime) {
+            assertEq(systemOracle.getCurrentOraclePrice(), initialOraclePrice);
+        }
+        // the rate doesn't grow after period end (periodStartTime + TIMEFRAME)
+        else if (currentTimestamp > periodStartTime + TIMEFRAME) {
+            assertEq(
+                systemOracle.getCurrentOraclePrice(),
+                initialOraclePrice + changeRate
+            );
+        }
+        // after periodStartTime, rate grows linearly over the period of TIMEFRAME
+        // use different lerp implementation to double-check business logic
+        else {
+            uint256 expectedAccruedYield = _lerp(
+                currentTimestamp,
+                periodStartTime,
+                periodStartTime + TIMEFRAME,
+                0,
+                changeRate
+            );
+            assertEq(
+                systemOracle.getCurrentOraclePrice(),
+                initialOraclePrice + expectedAccruedYield
+            );
+        }
+    }
+
+    function testUpdateBaseRate() public {
+        getLiquidVenuePercentage = 0.5e18; // 50%, enough liquid reserves for 0 boost
+
+        // grow at default change rate for half of TIMEFRAME
+        vm.warp(periodStartTime + TIMEFRAME / 2);
+        assertEq(systemOracle.baseChangeRate(), baseChangeRate);
+        assertEq(systemOracle.actualChangeRate(), baseChangeRate); // 10% APR
+        assertEq(
+            systemOracle.getCurrentOraclePrice(),
+            initialOraclePrice + baseChangeRate / 2
+        ); // 1.05$
+        assertEq(systemOracle.periodStartTime(), uint64(periodStartTime));
+        assertEq(
+            systemOracle.periodStartOraclePrice(),
+            uint192(initialOraclePrice)
+        );
+
+        // set base rate to 3x the current base rate
+        uint256 newBaseRate = baseChangeRate * 3; // 30% APR
+        uint64 expectedNewPeriodStartTime = uint64(
+            periodStartTime + TIMEFRAME / 2
+        );
+        uint192 expectedNewPeriodStartOraclePrice = uint192(1.05e18);
+        // check events
+        vm.expectEmit(false, false, false, true, address(systemOracle));
+        emit InterestCompounded(
+            expectedNewPeriodStartTime,
+            expectedNewPeriodStartOraclePrice
+        );
+        vm.expectEmit(false, false, false, true, address(systemOracle));
+        emit BaseRateUpdated(
+            expectedNewPeriodStartTime,
+            baseChangeRate,
+            newBaseRate
+        );
+        vm.expectEmit(false, false, false, true, address(systemOracle));
+        emit ActualRateUpdated(
+            expectedNewPeriodStartTime,
+            baseChangeRate,
+            newBaseRate
+        );
+        // prank & update base rate
+        vm.prank(addresses.governorAddress);
+        systemOracle.updateBaseRate(newBaseRate);
+
+        // check updated rates
+        assertEq(systemOracle.baseChangeRate(), newBaseRate);
+        assertEq(systemOracle.actualChangeRate(), newBaseRate);
+
+        // should have started a new period
+        assertEq(
+            systemOracle.periodStartTime(),
+            uint64(periodStartTime + TIMEFRAME / 2)
+        );
+        assertEq(
+            systemOracle.periodStartOraclePrice(),
+            expectedNewPeriodStartOraclePrice
+        );
+        assertEq(
+            systemOracle.getCurrentOraclePrice(),
+            systemOracle.periodStartOraclePrice()
+        );
+
+        // grow at new change rate for half of TIMEFRAME
+        vm.warp(periodStartTime + TIMEFRAME);
+        assertEq(systemOracle.getCurrentOraclePrice(), 1.2075e18);
+
+        // still grow for half of TIMEFRAME because a new period has started
+        vm.warp(periodStartTime + (TIMEFRAME * 3) / 2);
+        assertEq(systemOracle.getCurrentOraclePrice(), 1.365e18);
+    }
+
+    function testUpdateBaseRateLowLiquidity() public {
+        getLiquidVenuePercentage = 0; // 0% => max boost
+        uint256 maxRate = rateModel.MAXIMUM_CHANGE_RATE();
+
+        vm.warp(periodStartTime);
+
+        // set base rate to 3x the current base rate
+        uint256 newBaseRate = baseChangeRate * 3;
+        // check events
+        vm.expectEmit(false, false, false, true, address(systemOracle));
+        emit InterestCompounded(uint64(periodStartTime), 1e18);
+        vm.expectEmit(false, false, false, true, address(systemOracle));
+        emit BaseRateUpdated(
+            uint64(periodStartTime),
+            baseChangeRate,
+            newBaseRate
+        );
+        vm.expectEmit(false, false, false, true, address(systemOracle));
+        emit ActualRateUpdated(
+            uint64(periodStartTime),
+            baseChangeRate,
+            maxRate
+        );
+        // prank & update base rate
+        vm.prank(addresses.governorAddress);
+        systemOracle.updateBaseRate(newBaseRate);
+
+        // check updated rates
+        assertEq(systemOracle.baseChangeRate(), newBaseRate);
+        assertEq(systemOracle.actualChangeRate(), maxRate);
+    }
+
+    function testUpdateBaseRateAcl() public {
+        vm.expectRevert(bytes("CoreRef: Caller is not a governor"));
+        systemOracle.updateBaseRate(0);
+    }
+
+    function testSetPcvOracle() public {
+        uint256 currentTimestamp = periodStartTime;
+        vm.warp(currentTimestamp);
+        assertEq(systemOracle.pcvOracle(), address(this));
+
+        // check events
+        vm.expectEmit(false, false, false, true, address(systemOracle));
+        emit PCVOracleUpdated(currentTimestamp, address(this), address(0));
+
+        // prank & call
+        vm.prank(addresses.governorAddress);
+        systemOracle.setPcvOracle(address(0));
+        assertEq(systemOracle.pcvOracle(), address(0));
+
+        // check events
+        vm.expectEmit(false, false, false, true, address(systemOracle));
+        emit PCVOracleUpdated(currentTimestamp, address(0), address(this));
+
+        // prank & call
+        vm.prank(addresses.governorAddress);
+        systemOracle.setPcvOracle(address(this));
+        assertEq(systemOracle.pcvOracle(), address(this));
+    }
+
+    function testSetPcvOracleAcl() public {
+        vm.expectRevert(bytes("CoreRef: Caller is not a governor"));
+        systemOracle.setPcvOracle(address(0));
+    }
+
+    function testUpdateActualRateFuzz(uint256 baseRate, uint256 liquidReserves)
+        public
+    {
+        vm.assume(baseRate < 100e18); // never set a base rate > 1000% APR
+        vm.assume(liquidReserves <= 1e18); // percent of liquid reserves can't be >100%
+
+        // initialize state with the fuzzed base rate
+        vm.warp(periodStartTime);
+        vm.prank(addresses.governorAddress);
+        systemOracle.updateBaseRate(baseRate);
+
+        // trust DynamicVotlRateModel.getRate to get the actualRate,
+        // see actual fuzz tests in DynamicVoltRateModel.t.sol for
+        // checks on the correctness of this value.
+        uint256 actualRate = rateModel.getRate(baseRate, liquidReserves);
+
+        // check events
+        vm.expectEmit(false, false, false, true, address(systemOracle));
+        emit InterestCompounded(
+            uint64(periodStartTime),
+            uint192(initialOraclePrice)
+        );
+        vm.expectEmit(false, false, false, true, address(systemOracle));
+        emit ActualRateUpdated(periodStartTime, baseRate, actualRate);
+        systemOracle.updateActualRate(liquidReserves);
+
+        // check state
+        assertEq(systemOracle.periodStartTime(), uint64(periodStartTime));
+        assertEq(
+            systemOracle.periodStartOraclePrice(),
+            uint192(initialOraclePrice)
+        );
+        assertEq(systemOracle.baseChangeRate(), baseRate);
+        assertEq(systemOracle.actualChangeRate(), actualRate);
+    }
+
+    function testUpdateActualRateAcl() public {
+        vm.prank(address(0));
+        vm.expectRevert(bytes("MGO: Not PCV Oracle"));
+        systemOracle.updateActualRate(1e18);
+    }
+
+    /// Linear Interpolation Formula
+    /// (y) = y1 + (x − x1) * ((y2 − y1) / (x2 − x1))
+    /// @notice calculate linear interpolation and return ending price
+    /// @param x is time value to calculate interpolation on
+    /// @param x1 is starting time to calculate interpolation from
+    /// @param x2 is ending time to calculate interpolation to
+    /// @param y1 is starting price to calculate interpolation from
+    /// @param y2 is ending price to calculate interpolation to
+    function _lerp(
+        uint256 x,
+        uint256 x1,
+        uint256 x2,
+        uint256 y1,
+        uint256 y2
+    ) internal pure returns (uint256 y) {
+        uint256 firstDeltaX = x - x1; /// will not overflow because x should always be gte x1
+        uint256 secondDeltaX = x2 - x1; /// will not overflow because x2 should always be gt x1
+        uint256 deltaY = y2 - y1; /// will not overflow because y2 should always be gt y1
+        uint256 product = (firstDeltaX * deltaY) / secondDeltaX;
+        y = product + y1;
+    }
+}

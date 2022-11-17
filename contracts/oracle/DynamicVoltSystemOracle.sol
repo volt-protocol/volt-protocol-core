@@ -20,7 +20,10 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
 
     /// @notice Event emitted when the Volt system oracle compounds.
     /// Emits the end time of the period that completed and the new oracle price.
-    event InterestCompounded(uint256 periodStart, uint256 newOraclePrice);
+    event InterestCompounded(
+        uint64 periodStartTime,
+        uint192 periodStartOraclePrice
+    );
 
     /// @notice Event emitted when the Volt system oracle base rate updates.
     event BaseRateUpdated(
@@ -45,13 +48,13 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
 
     /// ---------- Mutable Variables ----------
 
-    /// @notice Acts as an accumulator for interest earned in previous periods
-    /// returns the oracle price from the end of the last period.
-    uint192 public oraclePrice;
-
     /// @notice Start time at which point interest will start accruing, and the
     /// current ScalingPriceOracle price will be snapshotted and saved.
     uint64 public periodStartTime;
+
+    /// @notice Acts as an accumulator for interest earned in previous periods
+    /// returns the oracle price from the end of the last period.
+    uint192 public periodStartOraclePrice;
 
     /// @notice Current amount that oracle price is inflating by (APR, 18 decimals).
     /// This is set by governance. This is not actual rate Volt increases by, as it
@@ -83,24 +86,26 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
     /// @param _periodStartTime start time at which oracle starts interpolating prices
     /// @param _rateModel dynamic volt rate model to use to compute actualChangeRate
     /// @param _oracle to get the starting oracle price from
+    /// @param _pcvOracle reference to the volt system's pcv oracle
     constructor(
         address _core,
         uint256 _baseChangeRate,
         uint256 _actualChangeRate,
         uint64 _periodStartTime,
         address _rateModel,
-        address _oracle
+        address _oracle,
+        address _pcvOracle
     ) CoreRefV2(_core) {
         baseChangeRate = _baseChangeRate;
         actualChangeRate = _actualChangeRate;
-        periodStartTime = _periodStartTime;
         rateModel = _rateModel;
         // SafeCast not needed because max value of uint192 is 6e57
         uint192 currentOraclePrice = uint192(
             IVoltSystemOracle(_oracle).getCurrentOraclePrice()
         );
-        oraclePrice = currentOraclePrice;
         periodStartTime = _periodStartTime;
+        periodStartOraclePrice = currentOraclePrice;
+        pcvOracle = _pcvOracle;
     }
 
     // ----------- Getters -----------
@@ -112,10 +117,10 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
     function getCurrentOraclePrice() public view returns (uint256) {
         uint256 cachedStartTime = periodStartTime; /// save a single warm SLOAD if condition is false
         if (cachedStartTime >= block.timestamp) { /// only accrue interest after start time
-            return oraclePrice;
+            return periodStartOraclePrice;
         }
 
-        uint256 cachedOraclePrice = oraclePrice; /// save a single warm SLOAD by using the stack
+        uint256 cachedOraclePrice = periodStartOraclePrice; /// save a single warm SLOAD by using the stack
         uint256 timeDelta = Math.min(block.timestamp - cachedStartTime, TIMEFRAME);
         uint256 periodPriceChange = cachedOraclePrice * actualChangeRate;
         uint256 priceDelta = periodPriceChange * timeDelta / TIMEFRAME / 1e18;
@@ -197,9 +202,9 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
         uint64 currentBlockTime = uint64(block.timestamp);
 
         // then, do SSTORE
-        oraclePrice = currentOraclePrice;
         periodStartTime = currentBlockTime;
+        periodStartOraclePrice = currentOraclePrice;
 
-        emit InterestCompounded(periodStartTime, oraclePrice);
+        emit InterestCompounded(currentBlockTime, currentOraclePrice);
     }
 }

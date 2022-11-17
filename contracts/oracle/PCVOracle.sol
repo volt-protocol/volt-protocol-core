@@ -76,9 +76,6 @@ contract PCVOracle is CoreRefV2 {
     /// @notice last liquid balance
     uint256 public lastLiquidBalance;
 
-    /// @notice scale for percentage of liquid reserves
-    uint256 public constant SCALE = 1e18;
-
     /// @param _core reference to the core smart contract
     constructor(address _core) CoreRefV2(_core) {}
 
@@ -126,7 +123,7 @@ contract PCVOracle is CoreRefV2 {
     /// value is scaled up by 18 decimal places
     function getLiquidVenuePercentage() public view returns (uint256) {
         return
-            (SCALE * lastLiquidBalance) /
+            (1e18 * lastLiquidBalance) /
             (lastIlliquidBalance + lastLiquidBalance);
     }
 
