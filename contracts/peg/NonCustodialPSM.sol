@@ -14,7 +14,7 @@ import {IPCVDeposit} from "./../pcv/IPCVDeposit.sol";
 import {INonCustodialPSM} from "./INonCustodialPSM.sol";
 
 /// @notice this contract needs the PCV controller role to be able to pull funds
-/// from the PCV deposit smart contract. This contract also requires the NON_CUSTODIAL_PSM_ROLE
+/// from the PCV deposit smart contract. This contract also requires the VOLT_RATE_LIMITED_REDEEMER_ROLE
 /// in order to replenish the buffer in the GlobalRateLimitedMinter.
 contract NonCustodialPSM is INonCustodialPSM, OracleRef, PCVDeposit {
     using Decimal for Decimal.D256;
@@ -41,7 +41,7 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRef, PCVDeposit {
     /// @param doInvert invert oracle price
     /// @param underlyingTokenAddress this psm uses
     /// @param floorPrice minimum acceptable oracle price
-    /// @param ceilingPrice maximum  acceptable oracle price
+    /// @param ceilingPrice maximum acceptable oracle price
     constructor(
         address coreAddress,
         address oracleAddress,
@@ -104,7 +104,7 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRef, PCVDeposit {
     function withdraw(
         address to,
         uint256 amount
-    ) external virtual override onlyPCVController {
+    ) external virtual override onlyPCVController globalLock(1) {
         _withdrawERC20(address(underlyingToken), to, amount);
     }
 
@@ -123,13 +123,7 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRef, PCVDeposit {
         address to,
         uint256 amountVoltIn,
         uint256 minAmountOut
-    )
-        external
-        virtual
-        override
-        globalReentrancyLock
-        returns (uint256 amountOut)
-    {
+    ) external virtual override globalLock(1) returns (uint256 amountOut) {
         /// ------- Checks -------
         /// 1. current price from oracle is correct
         /// 2. how much underlying token to receive

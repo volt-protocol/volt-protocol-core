@@ -30,18 +30,17 @@ library VoltRoles {
     bytes32 internal constant VOLT_RATE_LIMITED_MINTER_ROLE =
         keccak256("VOLT_RATE_LIMITED_MINTER_ROLE");
 
+    /// @notice can redeem VOLT and replenish the GlobalRateLimitedMinter buffer
+    /// @notice non custodial PSM role.
+    bytes32 internal constant VOLT_RATE_LIMITED_REDEEMER_ROLE =
+        keccak256("VOLT_RATE_LIMITED_REDEEMER_ROLE");
+
     /// @notice is able to withdraw whitelisted PCV deposits to a safe address
     bytes32 internal constant PCV_GUARD = keccak256("PCV_GUARD_ROLE");
 
     /// @notice system state role can lock and unlock the global reentrancy
     /// lock. this allows for a system wide reentrancy lock.
-    bytes32 internal constant GLOBAL_LOCKER_ROLE =
-        keccak256("GLOBAL_LOCKER_ROLE");
-
-    /// @notice non custodial PSM role.
-    /// used in the GlobalRedeemBuffer contract to rate limit large redemptions
-    bytes32 internal constant NON_CUSTODIAL_PSM =
-        keccak256("NON_CUSTODIAL_PSM");
+    bytes32 internal constant LOCKER_ROLE = keccak256("LOCKER_ROLE");
 
     /*///////////////////////////////////////////////////////////////
                                  Admin Roles

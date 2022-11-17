@@ -79,7 +79,7 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
             voltCeilingPrice
         );
         vm.prank(addresses.governorAddress);
-        tmpCore.grantGlobalLocker(address(cleanPsm));
+        tmpCore.grantLocker(address(cleanPsm));
         grlm = new GlobalRateLimitedMinter(
             address(tmpCore),
             maxRateLimitPerSecondMinting,
@@ -91,7 +91,9 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
         tmpCore.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
         tmpCore.grantMinter(address(grlm));
         tmpCore.grantRateLimitedMinter(address(cleanPsm));
-        tmpCore.grantGlobalLocker(address(cleanPsm));
+        tmpCore.grantRateLimitedRedeemer(address(cleanPsm));
+        tmpCore.grantLocker(address(cleanPsm));
+        tmpCore.grantLocker(address(grlm));
         vm.stopPrank();
 
         vm.label(address(cleanPsm), "New PSM");
