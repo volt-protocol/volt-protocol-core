@@ -208,6 +208,7 @@ contract PCVOracle is CoreRefV2 {
     function updateLiquidBalance(int256 pcvDelta)
         public
         onlyVoltRole(VoltRoles.LIQUID_PCV_DEPOSIT_ROLE)
+        isGlobalReentrancyLocked
     {
         _updateBalance(_getUsdPcvDelta(msg.sender, pcvDelta), true);
         _afterActionHook();
@@ -220,6 +221,7 @@ contract PCVOracle is CoreRefV2 {
     function updateIlliquidBalance(int256 pcvDelta)
         public
         onlyVoltRole(VoltRoles.ILLIQUID_PCV_DEPOSIT_ROLE)
+        isGlobalReentrancyLocked
     {
         _updateBalance(_getUsdPcvDelta(msg.sender, pcvDelta), false);
         _afterActionHook();

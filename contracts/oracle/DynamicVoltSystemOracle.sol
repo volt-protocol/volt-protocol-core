@@ -174,6 +174,11 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
     /// @notice Only callable by the PCV Oracle, updates the actual rate.
     /// @param liquidPercentage the percentage of PCV that is liquid,
     /// expressed with 18 decimals.
+    /// @dev this function does not need the `isGlobalReentrancyLocked` modifier,
+    /// because it is only called from the PCVOracle, either through the functions
+    /// `updateLiquidBalance` or `updateIlliquidBalance`, that have the modifier,
+    /// or from `addVenues` that is a governor-only action that will only execute
+    /// during DAO proposals.
     function updateActualRate(uint256 liquidPercentage) external {
         require(msg.sender == pcvOracle, "MGO: Not PCV Oracle");
 
