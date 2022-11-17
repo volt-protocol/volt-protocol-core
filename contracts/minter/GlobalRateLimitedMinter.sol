@@ -45,7 +45,8 @@ contract GlobalRateLimitedMinter is IGRLM, RateLimitedV2 {
         volt().mint(to, amount); /// interactions
     }
 
-    /// @notice replenish buffer by amount of volt tokens burned
+    /// @notice replenish buffer by amount of Volt tokens burned
+    /// @param amount of Volt to replenish buffer by
     function replenishBuffer(
         uint256 amount
     )
