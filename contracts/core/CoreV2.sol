@@ -24,7 +24,7 @@ contract CoreV2 is ICoreV2, PermissionsV2, GlobalReentrancyLock {
 
     /// @notice construct CoreV2
     /// @param newVolt reference to the volt token
-    constructor(address newVolt) GlobalReentrancyLock() PermissionsV2() {
+    constructor(address newVolt) PermissionsV2() {
         volt = IVolt(newVolt);
 
         /// msg.sender already has the VOLT Minting abilities, so grant them governor as well

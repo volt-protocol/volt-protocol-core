@@ -1,0 +1,11 @@
+GlobalReentrancyLock:
++-----------------------------------------+----------------------------------------------+------+--------+
+|                   Name                  |                     Type                     | Slot | Offset |
++-----------------------------------------+----------------------------------------------+------+--------+
+|           AccessControl._roles          |  mapping(bytes32 => AccessControl.RoleData)  |  0   |   0    |
+|   AccessControlEnumerable._roleMembers  | mapping(bytes32 => EnumerableSet.AddressSet) |  1   |   0    |
+|       GlobalReentrancyLock._sender      |                   uint160                    |  2   |   0    |
+|  GlobalReentrancyLock._lastBlockEntered |                    uint80                    |  2   |   20   |
+|     GlobalReentrancyLock._lockLevel     |                    uint8                     |  2   |   30   |
+| GlobalReentrancyLock._startingLockLevel |                    uint8                     |  2   |   31   |
++-----------------------------------------+----------------------------------------------+------+--------+

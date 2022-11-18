@@ -22,12 +22,13 @@ abstract contract OracleRef is IOracleRef, CoreRefV2 {
     IOracle public override backupOracle;
 
     /// @notice number of decimals to scale oracle price by, i.e. multiplying by 10^(decimalsNormalizer)
-    int256 public override decimalsNormalizer;
+    int256 public immutable override decimalsNormalizer;
 
-    bool public override doInvert;
+    /// @notice bool flag to invert price read from oracle
+    bool public immutable override doInvert;
 
     /// @notice OracleRef constructor
-    /// @param _core Fei Core to reference
+    /// @param _core Volt Core to reference
     /// @param _oracle oracle to reference
     /// @param _backupOracle backup oracle to reference
     /// @param _decimalsNormalizer number of decimals to normalize the oracle feed if necessary
@@ -39,10 +40,10 @@ abstract contract OracleRef is IOracleRef, CoreRefV2 {
         int256 _decimalsNormalizer,
         bool _doInvert
     ) CoreRefV2(_core) {
+        doInvert = _doInvert;
+        decimalsNormalizer = _decimalsNormalizer;
         _setOracle(_oracle);
         _setBackupOracle(_backupOracle);
-        _setDoInvert(_doInvert);
-        _setDecimalsNormalizer(_decimalsNormalizer);
     }
 
     /// @notice sets the referenced oracle
@@ -81,7 +82,7 @@ abstract contract OracleRef is IOracleRef, CoreRefV2 {
 
     /// @notice the peg price of the referenced oracle
     /// @return the peg as a Decimal
-    /// @dev the peg is defined as FEI per X with X being ETH, dollars, etc
+    /// @dev the peg is defined as VOLT per X with X being ETH, dollars, etc
     function readOracle() public view override returns (Decimal.D256 memory) {
         (Decimal.D256 memory _peg, bool valid) = oracle.read();
         if (!valid && address(backupOracle) != address(0)) {
@@ -119,21 +120,5 @@ abstract contract OracleRef is IOracleRef, CoreRefV2 {
         address oldBackupOracle = address(backupOracle);
         backupOracle = IOracle(newBackupOracle);
         emit BackupOracleUpdate(oldBackupOracle, newBackupOracle);
-    }
-
-    function _setDoInvert(bool newDoInvert) private {
-        bool oldDoInvert = doInvert;
-        doInvert = newDoInvert;
-
-        emit InvertUpdate(oldDoInvert, newDoInvert);
-    }
-
-    function _setDecimalsNormalizer(int256 newDecimalsNormalizer) private {
-        int256 oldDecimalsNormalizer = decimalsNormalizer;
-        decimalsNormalizer = newDecimalsNormalizer;
-        emit DecimalsNormalizerUpdate(
-            oldDecimalsNormalizer,
-            newDecimalsNormalizer
-        );
     }
 }

@@ -65,8 +65,6 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
 
     // ----------- Governor Only State Changing API -----------
 
-    /// TODO test this
-
     /// @notice sets the new floor price
     /// @param newFloorPrice new floor price
     function setOracleFloorPrice(uint128 newFloorPrice)
@@ -97,8 +95,10 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
         virtual
         override
         onlyPCVController
+        globalLock(1)
     {
         _withdrawERC20(address(underlyingToken), to, amount);
+        /// TODO add hooks into PCV oracle
     }
 
     // ----------- Public State Changing API -----------
@@ -116,13 +116,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
         address to,
         uint256 amountVoltIn,
         uint256 minAmountOut
-    )
-        external
-        virtual
-        override
-        globalReentrancyLock
-        returns (uint256 amountOut)
-    {
+    ) external virtual override globalLock(1) returns (uint256 amountOut) {
         /// ------- Checks -------
         /// 1. current price from oracle is correct
         /// 2. how much underlying token to receive
@@ -157,18 +151,12 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
     /// of orders that would need to be executed.
     /// @param to recipient of the Volt
     /// @param amountIn amount of underlying tokens used to purchase Volt
-    /// @param minAmountOut minimum amount of Volt recipient to receive
+    /// @param minAmountVoltOut minimum amount of Volt recipient to receive
     function mint(
         address to,
         uint256 amountIn,
-        uint256 minAmountOut
-    )
-        external
-        virtual
-        override
-        globalReentrancyLock
-        returns (uint256 amountVoltOut)
-    {
+        uint256 minAmountVoltOut
+    ) external virtual override globalLock(1) returns (uint256 amountVoltOut) {
         /// ------- Checks -------
         /// 1. current price from oracle is correct
         /// 2. how much volt to receive
@@ -176,7 +164,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
 
         amountVoltOut = getMintAmountOut(amountIn);
         require(
-            amountVoltOut >= minAmountOut,
+            amountVoltOut >= minAmountVoltOut,
             "PegStabilityModule: Mint not enough out"
         );
 
@@ -302,7 +290,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
         uint128 oldCeiling = ceiling;
         ceiling = newCeilingPrice;
 
-        emit OracleCeilingUpdate(oldCeiling, ceiling);
+        emit OracleCeilingUpdate(oldCeiling, newCeilingPrice);
     }
 
     /// @notice helper function to set the floor in basis points
@@ -315,7 +303,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
         uint128 oldFloor = floor;
         floor = newFloorPrice;
 
-        emit OracleFloorUpdate(oldFloor, floor);
+        emit OracleFloorUpdate(oldFloor, newFloorPrice);
     }
 
     /// @notice helper function to determine if price is within a valid range

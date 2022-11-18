@@ -86,9 +86,13 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
 
         vm.startPrank(addresses.governorAddress);
         core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
+        core.grantLocker(address(grlm)); /// allow setting of reentrancy lock
         core.grantMinter(address(grlm));
+
+        core.grantRateLimitedRedeemer(address(psm));
         core.grantRateLimitedMinter(address(psm));
-        core.grantGlobalLocker(address(psm));
+        core.grantLocker(address(psm));
+
         vm.stopPrank();
 
         vm.prank(feiDaiPsm);

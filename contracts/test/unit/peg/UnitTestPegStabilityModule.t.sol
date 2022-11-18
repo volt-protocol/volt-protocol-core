@@ -5,7 +5,6 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import {Vm} from "./../../unit/utils/Vm.sol";
-import {Test} from "../../../../forge-std/src/Test.sol";
 import {DSTest} from "./../../unit/utils/DSTest.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
 import {ICoreV2} from "../../../core/ICoreV2.sol";
@@ -13,36 +12,35 @@ import {Constants} from "../../../Constants.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
 import {IVolt, Volt} from "../../../volt/Volt.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
+import {Test, console2} from "../../../../forge-std/src/Test.sol";
 import {NonCustodialPSM} from "../../../peg/NonCustodialPSM.sol";
+import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {IGRLM, GlobalRateLimitedMinter} from "../../../minter/GlobalRateLimitedMinter.sol";
-import {getCoreV2, getAddresses, VoltTestAddresses} from "./../../unit/utils/Fixtures.sol";
+import {getCoreV2, getAddresses, getLocalOracleSystem, VoltTestAddresses} from "./../../unit/utils/Fixtures.sol";
 
-/// Differential Test that compares current production PSM to the new PSM
-/// to ensure parity in behavior
-/// TODO use vm.deal to increase balance in DAI and VOLT,
-/// increase values for fuzzer for more realistic tests
+/// PSM Unit Test that tests new PSM to ensure proper behavior
 contract UnitTestPegStabilityModule is Test {
     using SafeCast for *;
-
     VoltTestAddresses public addresses = getAddresses();
 
-    /// @notice non custodial PSM to test redemptions against
-    NonCustodialPSM private priceBoundPsm;
-    PegStabilityModule private cleanPsm;
+    /// @notice PSM to test against
+    PegStabilityModule private psm;
 
     ICoreV2 private core;
     IVolt private volt;
     IERC20 private underlyingToken;
     GlobalRateLimitedMinter public grlm;
-
     uint256 public constant mintAmount = 10_000_000e18;
     uint256 public constant voltMintAmount = 10_000_000e18;
+    OraclePassThrough public oraclePassThrough;
+    VoltSystemOracle public oracle;
 
-    OraclePassThrough public oracle;
+    /// ---------- PRICE PARAMS ----------
 
     uint128 voltFloorPrice = 1.04e18;
+
     uint128 voltCeilingPrice = 1.1e18;
 
     /// ---------- GRLM PARAMS ----------
@@ -57,13 +55,15 @@ contract UnitTestPegStabilityModule is Test {
     uint128 public constant bufferCapMinting = uint128(voltMintAmount);
 
     function setUp() public {
+        underlyingToken = IERC20(address(new MockERC20()));
         core = getCoreV2();
         volt = core.volt();
+        (oracle, oraclePassThrough) = getLocalOracleSystem(voltFloorPrice);
 
         /// create PSM
-        cleanPsm = new PegStabilityModule(
+        psm = new PegStabilityModule(
             address(core),
-            address(oracle),
+            address(oraclePassThrough),
             address(0),
             0,
             false,
@@ -71,77 +71,53 @@ contract UnitTestPegStabilityModule is Test {
             voltFloorPrice,
             voltCeilingPrice
         );
+
         vm.prank(addresses.governorAddress);
-        core.grantGlobalLocker(address(cleanPsm));
         grlm = new GlobalRateLimitedMinter(
             address(core),
             maxRateLimitPerSecondMinting,
             rateLimitPerSecondMinting,
             bufferCapMinting
         );
-
         vm.startPrank(addresses.governorAddress);
         core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
         core.grantMinter(address(grlm));
-        core.grantRateLimitedMinter(address(cleanPsm));
-        core.grantGlobalLocker(address(cleanPsm));
+        core.grantRateLimitedRedeemer(address(psm));
+        core.grantRateLimitedMinter(address(psm));
+        core.grantLocker(address(psm));
+        core.grantLocker(address(grlm));
         vm.stopPrank();
 
-        vm.label(address(cleanPsm), "New PSM");
-        vm.label(address(priceBoundPsm), "Existing PSM");
+        vm.label(address(psm), "PSM");
+        vm.label(address(grlm), "GRLM");
+        vm.label(address(core), "CORE");
 
         /// mint VOLT to the user
-        volt.mint(address(priceBoundPsm), voltMintAmount);
-        volt.mint(address(this), voltMintAmount);
         volt.mint(address(this), voltMintAmount);
 
-        vm.stopPrank();
-
-        deal(address(underlyingToken), address(priceBoundPsm), mintAmount);
-        deal(address(underlyingToken), address(cleanPsm), mintAmount);
+        deal(address(underlyingToken), address(psm), mintAmount);
+        deal(address(underlyingToken), address(this), mintAmount);
     }
 
     /// @notice PSM is set up correctly
     function testSetUpCorrectly() public {
-        assertTrue(priceBoundPsm.doInvert());
-        assertTrue(priceBoundPsm.isPriceValid());
-        assertEq(address(priceBoundPsm.oracle()), address(oracle));
-        assertEq(address(priceBoundPsm.backupOracle()), address(0));
-        assertEq(priceBoundPsm.decimalsNormalizer(), 0);
-        assertEq(
-            address(priceBoundPsm.underlyingToken()),
-            address(underlyingToken)
-        );
-
-        assertTrue(!cleanPsm.doInvert());
-        assertEq(address(cleanPsm.oracle()), address(oracle));
-        assertEq(address(cleanPsm.backupOracle()), address(0));
-        assertEq(cleanPsm.decimalsNormalizer(), 0);
-        assertEq(address(cleanPsm.underlyingToken()), address(underlyingToken));
-        assertEq(cleanPsm.floor(), voltFloorPrice);
-        assertEq(cleanPsm.ceiling(), voltCeilingPrice);
+        assertTrue(!psm.doInvert());
+        assertEq(address(psm.oracle()), address(oraclePassThrough));
+        assertEq(address(psm.backupOracle()), address(0));
+        assertEq(psm.decimalsNormalizer(), 0);
+        assertEq(address(psm.underlyingToken()), address(underlyingToken));
+        assertEq(psm.floor(), voltFloorPrice);
+        assertEq(psm.ceiling(), voltCeilingPrice);
     }
 
     /// @notice PSM is set up correctly and redeem view function is working
     function testGetRedeemAmountOut(uint128 amountVoltIn) public {
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
-
         uint256 amountOut = (amountVoltIn * currentPegPrice) / 1e18;
 
         assertApproxEq(
-            priceBoundPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
+            psm.getRedeemAmountOut(amountVoltIn).toInt256(),
             amountOut.toInt256(),
-            0
-        );
-        assertApproxEq(
-            cleanPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
-            amountOut.toInt256(),
-            0
-        );
-
-        assertApproxEq(
-            cleanPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
-            priceBoundPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
             0
         );
     }
@@ -149,25 +125,17 @@ contract UnitTestPegStabilityModule is Test {
     /// @notice PSM is set up correctly and redeem view function is working
     function testGetRedeemAmountOutPpq(uint128 amountVoltIn) public {
         vm.assume(amountVoltIn > 1e8);
-
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
-
         uint256 amountOut = (amountVoltIn * currentPegPrice) / 1e18;
 
         assertApproxEq(
-            priceBoundPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
+            psm.getRedeemAmountOut(amountVoltIn).toInt256(),
             amountOut.toInt256(),
             0
         );
-        assertApproxEq(
-            cleanPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
-            amountOut.toInt256(),
-            0
-        );
-
         assertApproxEqPpq(
-            cleanPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
-            priceBoundPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
+            psm.getRedeemAmountOut(amountVoltIn).toInt256(),
+            amountOut.toInt256(),
             1_000_000_000
         );
     }
@@ -175,11 +143,9 @@ contract UnitTestPegStabilityModule is Test {
     /// @notice PSM is set up correctly and view functions are working
     function testGetMintAmountOut(uint128 amountDaiIn) public {
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
-
         uint256 amountOut = (uint256(amountDaiIn) * 1e18) / currentPegPrice;
-
         assertApproxEq(
-            cleanPsm.getMintAmountOut(amountDaiIn).toInt256(),
+            psm.getMintAmountOut(amountDaiIn).toInt256(),
             amountOut.toInt256(),
             0
         );
@@ -189,153 +155,112 @@ contract UnitTestPegStabilityModule is Test {
     function testGetMintAmountOutPpq(uint128 amountDaiIn) public {
         vm.assume(amountDaiIn > 1e8);
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
-
         uint256 amountOut = (uint256(amountDaiIn) * 1e18) / currentPegPrice;
-
         assertApproxEq(
-            cleanPsm.getMintAmountOut(amountDaiIn).toInt256(),
+            psm.getMintAmountOut(amountDaiIn).toInt256(),
             amountOut.toInt256(),
             0
         );
     }
 
-    function testMintFuzz(uint32 amountStableIn) public {
-        uint256 amountVoltOut = cleanPsm.getMintAmountOut(amountStableIn);
-
+    function testMintFuzz(uint72 amountStableIn) public {
+        uint256 amountVoltOut = psm.getMintAmountOut(amountStableIn);
         uint256 startingVoltTotalSupply = volt.totalSupply();
+        uint256 startingpsmBalance = psm.balance();
         uint256 startingUserVoltBalance = volt.balanceOf(address(this));
-        uint256 startingCleanPsmBalance = cleanPsm.balance();
+        uint256 startingBuffer = grlm.buffer();
 
-        underlyingToken.approve(address(cleanPsm), amountStableIn);
-        cleanPsm.mint(address(this), amountStableIn, amountVoltOut);
+        underlyingToken.approve(address(psm), amountStableIn);
+        psm.mint(address(this), amountStableIn, amountVoltOut);
 
         uint256 endingVoltTotalSupply = volt.totalSupply();
-        uint256 endingUserVoltBalance1 = volt.balanceOf(address(this));
-        uint256 endingPSMUnderlyingBalance = underlyingToken.balanceOf(
-            address(cleanPsm)
-        );
-        uint256 endingCleanPsmBalance = cleanPsm.balance();
+        uint256 endingUserVoltBalance = volt.balanceOf(address(this));
+        uint256 endingpsmBalance = psm.balance();
+        uint256 endingBuffer = grlm.buffer();
+
+        assertEq(startingBuffer - endingBuffer, amountVoltOut);
 
         assertEq(
             startingVoltTotalSupply + amountVoltOut,
             endingVoltTotalSupply
         );
 
-        /// assert psm receives amount stable in
         assertEq(
-            endingCleanPsmBalance - startingCleanPsmBalance,
-            amountStableIn
+            endingUserVoltBalance - amountVoltOut,
+            startingUserVoltBalance
         );
+
+        /// assert psm receives amount stable in
+        assertEq(endingpsmBalance - startingpsmBalance, amountStableIn);
     }
 
     function testMintFuzzNotEnoughIn(uint32 amountStableIn) public {
-        uint256 amountVoltOut = cleanPsm.getMintAmountOut(amountStableIn);
-
-        underlyingToken.approve(address(cleanPsm), amountStableIn);
+        uint256 amountVoltOut = psm.getMintAmountOut(amountStableIn);
+        underlyingToken.approve(address(psm), amountStableIn);
         vm.expectRevert("PegStabilityModule: Mint not enough out");
-        cleanPsm.mint(address(this), amountStableIn, amountVoltOut + 1);
+        psm.mint(address(this), amountStableIn, amountVoltOut + 1);
     }
 
-    function testRedeemFuzz(uint32 amountVoltIn) public {
-        uint256 amountOut = cleanPsm.getRedeemAmountOut(amountVoltIn);
+    function testRedeemFuzz(uint72 amountVoltIn) public {
+        uint256 amountOut = psm.getRedeemAmountOut(amountVoltIn);
 
-        uint256 underlyingOutPriceBound = priceBoundPsm.getRedeemAmountOut(
-            amountVoltIn
-        );
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
+        uint256 underlyingOutOracleAmount = (amountVoltIn * currentPegPrice) /
+            1e18;
 
         uint256 startingUserUnderlyingBalance = underlyingToken.balanceOf(
             address(this)
         );
-
-        uint256 startingPsmUnderlyingBalance = cleanPsm.balance();
+        uint256 startingPsmUnderlyingBalance = psm.balance();
         uint256 startingUserVoltBalance = volt.balanceOf(address(this));
 
-        volt.approve(address(cleanPsm), amountVoltIn);
-        cleanPsm.redeem(address(this), amountVoltIn, amountOut);
+        volt.approve(address(psm), amountVoltIn);
+        psm.redeem(address(this), amountVoltIn, amountOut);
 
         uint256 endingUserUnderlyingBalance1 = underlyingToken.balanceOf(
             address(this)
         );
-        uint256 endingUserVoltBalance = volt.balanceOf(address(this));
-        uint256 endingPsmUnderlyingBalance = cleanPsm.balance();
 
+        uint256 endingUserVoltBalance = volt.balanceOf(address(this));
+        uint256 endingPsmUnderlyingBalance = psm.balance();
         assertEq(
             startingPsmUnderlyingBalance - endingPsmUnderlyingBalance,
             amountOut
         );
         assertEq(startingUserVoltBalance - endingUserVoltBalance, amountVoltIn);
-
-        volt.approve(address(priceBoundPsm), amountVoltIn);
-        priceBoundPsm.redeem(
-            address(this),
-            amountVoltIn,
-            underlyingOutPriceBound
-        );
-
-        uint256 endingUserUnderlyingBalance2 = underlyingToken.balanceOf(
-            address(this)
-        );
-
-        uint256 endingPSMUnderlyingBalancePriceBound = volt.balanceOf(
-            address(priceBoundPsm)
-        );
-
         assertEq(
             endingUserUnderlyingBalance1,
             startingUserUnderlyingBalance + amountOut
         );
-        assertEq(
-            amountVoltIn,
-            endingPSMUnderlyingBalancePriceBound - voltMintAmount
-        );
-        assertEq(
-            endingUserUnderlyingBalance2 - endingUserUnderlyingBalance1,
-            underlyingOutPriceBound
-        );
         assertApproxEq(
-            underlyingOutPriceBound.toInt256(),
+            underlyingOutOracleAmount.toInt256(),
             amountOut.toInt256(),
             0
         );
     }
 
-    function testRedeemFuzzNotEnoughOut(uint32 amountVoltIn) public {
-        uint256 amountOut = cleanPsm.getRedeemAmountOut(amountVoltIn);
+    function testRedeemFuzzNotEnoughOut(uint96 amountVoltIn) public {
+        uint256 amountOut = psm.getRedeemAmountOut(amountVoltIn);
 
-        uint256 underlyingOutPriceBound = priceBoundPsm.getRedeemAmountOut(
-            amountVoltIn
-        );
-
-        volt.approve(address(cleanPsm), amountVoltIn);
+        volt.approve(address(psm), amountVoltIn);
         vm.expectRevert("PegStabilityModule: Redeem not enough out");
-        cleanPsm.redeem(address(this), amountVoltIn, amountOut + 1);
-
-        volt.approve(address(priceBoundPsm), amountVoltIn);
-        vm.expectRevert("PegStabilityModule: Redeem not enough out");
-        priceBoundPsm.redeem(
-            address(this),
-            amountVoltIn,
-            underlyingOutPriceBound + 1
-        );
+        psm.redeem(address(this), amountVoltIn, amountOut + 1);
     }
 
     /// @notice pcv deposit receives underlying token on mint
     function testSwapUnderlyingForVolt() public {
         uint256 amountStableIn = 101_000;
-        uint256 amountVoltOut = cleanPsm.getMintAmountOut(amountStableIn);
+        uint256 amountVoltOut = psm.getMintAmountOut(amountStableIn);
         uint256 startingUserVoltBalance = volt.balanceOf(address(this));
         uint256 startingPSMUnderlyingBalance = underlyingToken.balanceOf(
-            address(cleanPsm)
+            address(psm)
         );
-
-        underlyingToken.approve(address(cleanPsm), amountStableIn);
-        cleanPsm.mint(address(this), amountStableIn, amountVoltOut);
-
+        underlyingToken.approve(address(psm), amountStableIn);
+        psm.mint(address(this), amountStableIn, amountVoltOut);
         uint256 endingUserVoltBalance = volt.balanceOf(address(this));
         uint256 endingPSMUnderlyingBalance = underlyingToken.balanceOf(
-            address(cleanPsm)
+            address(psm)
         );
-
         assertEq(
             endingUserVoltBalance,
             startingUserVoltBalance + amountVoltOut
@@ -349,87 +274,162 @@ contract UnitTestPegStabilityModule is Test {
     /// @notice redeem fails without approval
     function testSwapVoltForunderlyingTokenFailsWithoutApproval() public {
         vm.expectRevert("ERC20: insufficient allowance");
-
-        cleanPsm.redeem(address(this), mintAmount, mintAmount);
+        psm.redeem(address(this), mintAmount, mintAmount);
     }
 
     function testMintFailsWhenMintExceedsBuffer() public {
-        underlyingToken.approve(address(cleanPsm), type(uint256).max);
-
+        underlyingToken.approve(address(psm), type(uint256).max);
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
         uint256 psmVoltBalance = grlm.buffer() + 1; /// try to mint 1 wei over buffer which causes failure
-
         /// we get the amount we want to put in by getting the
         /// total PSM balance and dividing by the current peg price
         /// this lets us get the maximum amount we can deposit
         uint256 amountIn = (psmVoltBalance * currentPegPrice) / 1e6;
-
         // this will revert (correctly) as the math above is less precise than the PSMs, therefore our amountIn
         // will slightly exceed the balance the PSM can give to us.
         vm.expectRevert("RateLimited: rate limit hit");
-
-        cleanPsm.mint(address(this), amountIn, psmVoltBalance);
+        psm.mint(address(this), amountIn, psmVoltBalance);
     }
 
     /// @notice mint fails without approval
     function testSwapUnderlyingForVoltFailsWithoutApproval() public {
-        vm.expectRevert("Dai/insufficient-allowance");
-
-        cleanPsm.mint(address(this), mintAmount, 0);
+        vm.expectRevert("ERC20: insufficient allowance");
+        psm.mint(address(this), mintAmount, 0);
     }
 
     /// @notice withdraw succeeds with correct permissions
     function testWithdrawSuccess() public {
         vm.prank(addresses.governorAddress);
         core.grantPCVController(address(this));
-
         uint256 startingBalance = underlyingToken.balanceOf(address(this));
-        cleanPsm.withdraw(address(this), mintAmount);
+        psm.withdraw(address(this), mintAmount);
         uint256 endingBalance = underlyingToken.balanceOf(address(this));
-
         assertEq(endingBalance - startingBalance, mintAmount);
     }
 
-    /// @notice withdraw fails without correct permissions
-    function testWithdrawFailure() public {
-        vm.expectRevert(bytes("CoreRef: Caller is not a PCV controller"));
-
-        cleanPsm.withdraw(address(this), 100);
+    function testSetOracleFloorPriceGovernorSucceeds() public {
+        uint128 currentPrice = uint128(
+            oraclePassThrough.getCurrentOraclePrice()
+        );
+        vm.prank(addresses.governorAddress);
+        psm.setOracleFloorPrice(currentPrice);
+        assertTrue(psm.isPriceValid());
     }
 
-    /// @notice withdraw erc20 fails without correct permissions
-    function testERC20WithdrawFailure() public {
-        vm.expectRevert(bytes("CoreRef: Caller is not a PCV controller"));
+    function testSetOracleCeilingPriceGovernorSucceeds() public {
+        uint128 currentPrice = uint128(
+            oraclePassThrough.getCurrentOraclePrice()
+        );
+        vm.prank(addresses.governorAddress);
+        psm.setOracleCeilingPrice(currentPrice + 1);
+        assertTrue(psm.isPriceValid());
+    }
 
-        cleanPsm.withdrawERC20(address(underlyingToken), address(this), 100);
+    function testSetOracleCeilingPriceGovernorLteFloorFails() public {
+        uint128 currentFloor = psm.floor();
+
+        vm.startPrank(addresses.governorAddress);
+
+        vm.expectRevert(
+            "PegStabilityModule: ceiling must be greater than floor"
+        );
+        psm.setOracleCeilingPrice(currentFloor);
+
+        vm.expectRevert(
+            "PegStabilityModule: ceiling must be greater than floor"
+        );
+        psm.setOracleCeilingPrice(currentFloor - 1);
+
+        vm.stopPrank();
+    }
+
+    function testSetOracleFloorPrice0GovernorFails() public {
+        vm.expectRevert("PegStabilityModule: invalid floor");
+        vm.prank(addresses.governorAddress);
+        psm.setOracleFloorPrice(0);
+    }
+
+    function testSetOracleFloorPriceGovernorSucceedsFuzz(uint128 newFloorPrice)
+        public
+    {
+        vm.assume(newFloorPrice != 0);
+
+        uint128 currentPrice = uint128(
+            oraclePassThrough.getCurrentOraclePrice()
+        );
+        uint128 currentFloor = psm.floor();
+        uint128 currentCeiling = psm.ceiling();
+
+        if (newFloorPrice < currentFloor) {
+            vm.prank(addresses.governorAddress);
+            psm.setOracleFloorPrice(newFloorPrice);
+            assertTrue(psm.isPriceValid());
+            testMintFuzz(100_000);
+            testRedeemFuzz(100_000);
+        } else if (newFloorPrice >= currentCeiling) {
+            vm.expectRevert(
+                "PegStabilityModule: floor must be less than ceiling"
+            );
+            vm.prank(addresses.governorAddress);
+            psm.setOracleFloorPrice(newFloorPrice);
+            assertTrue(psm.isPriceValid());
+            testMintFuzz(100_000);
+            testRedeemFuzz(100_000);
+        } else if (newFloorPrice > currentPrice) {
+            vm.prank(addresses.governorAddress);
+            psm.setOracleFloorPrice(newFloorPrice);
+            assertTrue(!psm.isPriceValid());
+
+            vm.expectRevert("PegStabilityModule: price out of bounds");
+            psm.mint(address(this), 1, 0);
+            vm.expectRevert("PegStabilityModule: price out of bounds");
+            psm.redeem(address(this), 1, 0);
+        }
     }
 
     /// @notice withdraw erc20 succeeds with correct permissions
     function testERC20WithdrawSuccess() public {
         vm.prank(addresses.governorAddress);
         core.grantPCVController(address(this));
-
         uint256 startingBalance = underlyingToken.balanceOf(address(this));
-        cleanPsm.withdrawERC20(
-            address(underlyingToken),
-            address(this),
-            mintAmount
-        );
+        psm.withdrawERC20(address(underlyingToken), address(this), mintAmount);
         uint256 endingBalance = underlyingToken.balanceOf(address(this));
-
         assertEq(endingBalance - startingBalance, mintAmount);
     }
 
     function testDepositNoOp() public {
-        cleanPsm.deposit();
+        psm.deposit();
     }
 
     /// @notice deposit fails when paused
     function testDepositFailsWhenPaused() public {
         vm.prank(addresses.governorAddress);
-        cleanPsm.pause();
-
+        psm.pause();
         vm.expectRevert("Pausable: paused");
-        cleanPsm.deposit();
+        psm.deposit();
+    }
+
+    /// ----------- ACL TESTS -----------
+
+    /// @notice withdraw fails without correct permissions
+    function testWithdrawFailure() public {
+        vm.expectRevert(bytes("CoreRef: Caller is not a PCV controller"));
+        psm.withdraw(address(this), 100);
+    }
+
+    /// @notice withdraw erc20 fails without correct permissions
+    function testERC20WithdrawFailure() public {
+        vm.expectRevert(bytes("CoreRef: Caller is not a PCV controller"));
+        psm.withdrawERC20(address(underlyingToken), address(this), 100);
+    }
+
+    function testSetOracleFloorPriceNonGovernorFails() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        psm.setOracleFloorPrice(100);
+    }
+
+    function testSetOracleCeilingPriceNonGovernorFails() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        psm.setOracleCeilingPrice(100);
     }
 }
