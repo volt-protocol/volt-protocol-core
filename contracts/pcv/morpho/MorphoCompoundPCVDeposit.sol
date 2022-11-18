@@ -223,21 +223,6 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         }
     }
 
-    /// @notice set the pcv oracle address
-    /// @param _pcvOracle new pcv oracle to reference
-    function setPCVOracle(address _pcvOracle) external override onlyGovernor {
-        address oldOracle = pcvOracle;
-        pcvOracle = _pcvOracle;
-
-        _recordPNL();
-
-        IPCVOracle(pcvOracle).updateLiquidBalance(
-            lastRecordedBalance.toInt256()
-        );
-
-        emit PCVOracleUpdated(oldOracle, _pcvOracle);
-    }
-
     /// @notice withdraw all tokens from Morpho
     /// non-reentrant as state changes and external calls are made
     /// @param to the address PCV will be sent to

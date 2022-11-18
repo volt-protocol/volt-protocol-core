@@ -70,8 +70,7 @@ contract DynamicVoltSystemOracleUnitTest is DSTest {
             baseChangeRate, // actualChangeRate is 0% boosted
             uint64(periodStartTime),
             address(rateModel),
-            address(this), // old volt system oracle
-            address(this) // pcv oracle
+            address(this) // old volt system oracle
         );
 
         /// allow this contract to call in and update the actual rate

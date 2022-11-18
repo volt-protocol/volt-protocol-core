@@ -64,9 +64,6 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
     /// derived from base rate volt price interpolates by this amount.
     uint256 public actualChangeRate;
 
-    /// @notice Reference to the PCV oracle smart contract.
-    address public pcvOracle;
-
     /// @notice Reference to the DynamicVoltRateModel smart contract.
     address public rateModel;
 
@@ -85,15 +82,13 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
     /// @param _periodStartTime start time at which oracle starts interpolating prices
     /// @param _rateModel dynamic volt rate model to use to compute actualChangeRate
     /// @param _previousOracle to get the starting oracle price from
-    /// @param _pcvOracle reference to the volt system's pcv oracle
     constructor(
         address _core,
         uint256 _baseChangeRate,
         uint256 _actualChangeRate,
         uint64 _periodStartTime,
         address _rateModel,
-        address _previousOracle,
-        address _pcvOracle
+        address _previousOracle
     ) CoreRefV2(_core) {
         baseChangeRate = _baseChangeRate;
         actualChangeRate = _actualChangeRate;
@@ -104,7 +99,6 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
         );
         periodStartTime = _periodStartTime;
         periodStartOraclePrice = currentOraclePrice;
-        pcvOracle = _pcvOracle;
     }
 
     // ----------- Getters -----------
