@@ -136,7 +136,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     /// @notice deposit ERC-20 tokens to Morpho-Compound
     /// non-reentrant to block malicious reentrant state changes
     /// to the lastRecordedBalance variable
-    function deposit() public whenNotPaused globalReentrancyLock {
+    function deposit() public whenNotPaused globalLock(2) {
         /// ------ Check ------
 
         uint256 amount = IERC20(token).balanceOf(address(this));
@@ -224,7 +224,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     function withdraw(address to, uint256 amount)
         external
         onlyPCVController
-        isGlobalReentrancyLocked
+        globalLockLevelTwo
     {
         int256 startingRecordedBalance = lastRecordedBalance.toInt256();
 

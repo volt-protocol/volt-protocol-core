@@ -23,7 +23,7 @@ contract ERC20CompoundPCVDeposit is CompoundPCVDepositBase {
     }
 
     /// @notice deposit ERC-20 tokens to Compound
-    function deposit() external override whenNotPaused globalReentrancyLock {
+    function deposit() external override whenNotPaused globalLock(2) {
         uint256 amount = token.balanceOf(address(this));
 
         token.approve(address(cToken), amount);

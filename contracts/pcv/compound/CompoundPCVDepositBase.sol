@@ -28,7 +28,7 @@ abstract contract CompoundPCVDepositBase is PCVDeposit {
         override
         onlyPCVController
         whenNotPaused
-        isGlobalReentrancyLocked
+        globalLockLevelTwo
     {
         require(
             cToken.redeemUnderlying(amountUnderlying) == 0,
