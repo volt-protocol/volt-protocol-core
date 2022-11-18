@@ -14,17 +14,29 @@ import {vip13} from "./vip/vip13.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {IPCVGuardian} from "../../pcv/IPCVGuardian.sol";
 import {stdError} from "../unit/utils/StdLib.sol";
+import {IGRLM, GlobalRateLimitedMinter} from "../../minter/GlobalRateLimitedMinter.sol";
 
 contract IntegrationTestVoltMigratorRouterTest is TimelockSimulation, vip13 {
     using SafeCast for *;
     ICore core = ICore(MainnetAddresses.CORE);
     IERC20 private usdc = IERC20(MainnetAddresses.USDC);
     IERC20 private dai = IERC20(MainnetAddresses.DAI);
+    uint224 public constant mintAmount = 100_000_000e18;
 
     OraclePassThrough public oracle =
         OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
-    uint224 public constant mintAmount = 100_000_000e18;
+    GlobalRateLimitedMinter public grlm;
+
+    /// ---------- GRLM PARAMS ----------
+
+    /// maximum rate limit per second is 100 VOLT
+    uint256 public constant maxRateLimitPerSecondMinting = 100e18;
+
+    /// replenish 500k VOLT per day
+    uint128 public constant rateLimitPerSecondMinting = 5.787e18;
+
+    uint128 public constant bufferCapMinting = uint128(mintAmount);
 
     function setUp() public {
         simulate(
@@ -47,7 +59,23 @@ contract IntegrationTestVoltMigratorRouterTest is TimelockSimulation, vip13 {
         dai.transfer(address(voltV2DaiPriceBoundPSM), balance);
 
         vm.startPrank(MainnetAddresses.GOVERNOR);
+        grlm = new GlobalRateLimitedMinter(
+            address(coreV2),
+            maxRateLimitPerSecondMinting,
+            rateLimitPerSecondMinting,
+            bufferCapMinting
+        );
+
+        coreV2.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
+        coreV2.grantMinter(address(grlm));
+        coreV2.grantRateLimitedRedeemer(address(voltV2DaiPriceBoundPSM));
+        coreV2.grantRateLimitedRedeemer(address(voltV2UsdcPriceBoundPSM));
+        coreV2.grantRateLimitedMinter(address(voltV2DaiPriceBoundPSM));
+        coreV2.grantRateLimitedMinter(address(voltV2UsdcPriceBoundPSM));
+        coreV2.grantLocker(address(grlm));
+
         core.grantMinter(MainnetAddresses.GOVERNOR);
+        coreV2.grantMinter(MainnetAddresses.GOVERNOR);
         oldVolt.mint(address(this), mintAmount);
         voltV2.mint(address(voltMigrator), mintAmount);
         vm.stopPrank();

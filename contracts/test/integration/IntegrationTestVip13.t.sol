@@ -11,13 +11,13 @@ import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {vip13} from "./vip/vip13.sol";
 import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
 import {IPCVGuardian} from "../../pcv/IPCVGuardian.sol";
-import {console} from "hardhat/console.sol";
+import {IGRLM, GlobalRateLimitedMinter} from "../../minter/GlobalRateLimitedMinter.sol";
 
 contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
     using SafeCast for *;
-    uint256 public constant mintAmountDai = 1_000_000e18;
-    uint256 public constant mintAmountUsdc = 1_000_000e6;
-    uint224 public constant voltMintAmount = 1_000_000e18;
+    uint256 public constant mintAmountDai = 10_000_000e18;
+    uint256 public constant mintAmountUsdc = 10_000_000e6;
+    uint224 public constant voltMintAmount = 10_000_000e18;
 
     IERC20 public dai = IERC20(MainnetAddresses.DAI);
     IERC20 public usdc = IERC20(MainnetAddresses.USDC);
@@ -25,6 +25,19 @@ contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
 
     OraclePassThrough public oracle =
         OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
+
+    GlobalRateLimitedMinter public grlm;
+
+    /// ---------- GRLM PARAMS ----------
+
+    /// maximum rate limit per second is 100 VOLT
+    uint256 public constant maxRateLimitPerSecondMinting = 100e18;
+
+    /// replenish 500k VOLT per day
+    uint128 public constant rateLimitPerSecondMinting = 5.787e18;
+
+    /// buffer cap of 10m VOLT
+    uint128 public constant bufferCapMinting = uint128(voltMintAmount);
 
     function setUp() public {
         /// We do not call mainnetSetup() here as the constructor in the simulator
@@ -39,25 +52,41 @@ contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
             false
         );
         mainnetValidate();
-        // console.log("hereerjkrn");
 
-        // vm.startPrank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
-        // dai.transfer(address(this), mintAmountDai);
-        // dai.transfer(address(voltV2DaiPriceBoundPSM), mintAmountDai * 2);
-        // vm.stopPrank();
+        vm.startPrank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
+        dai.transfer(address(this), mintAmountDai);
+        dai.transfer(address(voltV2DaiPriceBoundPSM), mintAmountDai * 2);
+        vm.stopPrank();
 
-        // uint256 balance = usdc.balanceOf(MainnetAddresses.KRAKEN_USDC_WHALE);
-        // vm.prank(MainnetAddresses.KRAKEN_USDC_WHALE);
-        // usdc.transfer(address(this), balance);
+        uint256 balance = usdc.balanceOf(MainnetAddresses.KRAKEN_USDC_WHALE);
+        vm.prank(MainnetAddresses.KRAKEN_USDC_WHALE);
+        usdc.transfer(address(this), balance);
 
-        // // vm.startPrank(MainnetAddresses.GOVERNOR);
-        // // core.grantMinter(MainnetAddresses.GOVERNOR);
-        // // voltV2.mint(address(voltV2UsdcPriceBoundPSM), voltMintAmount);
-        // // oldVolt.mint(address(this), voltMintAmount);
-        // // voltV2.mint(address(this), voltMintAmount);
-        // // vm.stopPrank();
+        vm.startPrank(MainnetAddresses.GOVERNOR);
+        grlm = new GlobalRateLimitedMinter(
+            address(coreV2),
+            maxRateLimitPerSecondMinting,
+            rateLimitPerSecondMinting,
+            bufferCapMinting
+        );
 
-        // usdc.transfer(address(voltV2UsdcPriceBoundPSM), balance / 2);
+        coreV2.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
+        coreV2.grantMinter(address(grlm));
+        coreV2.grantRateLimitedRedeemer(address(voltV2DaiPriceBoundPSM));
+        coreV2.grantRateLimitedRedeemer(address(voltV2UsdcPriceBoundPSM));
+        coreV2.grantRateLimitedMinter(address(voltV2DaiPriceBoundPSM));
+        coreV2.grantRateLimitedMinter(address(voltV2UsdcPriceBoundPSM));
+        coreV2.grantLocker(address(grlm));
+
+        core.grantMinter(MainnetAddresses.GOVERNOR);
+        coreV2.grantMinter(MainnetAddresses.GOVERNOR);
+        voltV2.mint(address(voltV2UsdcPriceBoundPSM), voltMintAmount);
+        oldVolt.mint(address(this), voltMintAmount);
+        voltV2.mint(address(this), voltMintAmount);
+
+        vm.stopPrank();
+
+        usdc.transfer(address(voltV2UsdcPriceBoundPSM), balance / 2);
     }
 
     function testSwapDaiForVolt() public {
@@ -66,6 +95,7 @@ contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
         uint256 minAmountOut = voltV2DaiPriceBoundPSM.getMintAmountOut(
             mintAmountDai
         );
+
         uint256 startingPSMUnderlyingBalance = dai.balanceOf(
             address(voltV2DaiPriceBoundPSM)
         );

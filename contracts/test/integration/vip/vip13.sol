@@ -82,6 +82,7 @@ contract vip13 is DSTest, IVIP {
 
         coreV2 = new CoreV2(address(0));
         coreV2.grantGovernor(MainnetAddresses.TIMELOCK_CONTROLLER);
+        coreV2.grantGovernor(MainnetAddresses.GOVERNOR);
 
         voltV2 = new VoltV2(address(coreV2));
 
@@ -154,6 +155,30 @@ contract vip13 is DSTest, IVIP {
                     MainnetAddresses.TIMELOCK_CONTROLLER
                 ),
                 description: "Remove minter role from timelock"
+            })
+        );
+
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: address(coreV2),
+                arguments: abi.encodeWithSignature(
+                    "grantLocker(address)",
+                    address(voltV2DaiPriceBoundPSM)
+                ),
+                description: "Give DAI PSM Locker Role"
+            })
+        );
+
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: address(coreV2),
+                arguments: abi.encodeWithSignature(
+                    "grantLocker(address)",
+                    address(voltV2UsdcPriceBoundPSM)
+                ),
+                description: "Give USDC PSM Locker Role"
             })
         );
 
@@ -562,7 +587,6 @@ contract vip13 is DSTest, IVIP {
                 MainnetAddresses.VOLT_DAI_PSM
             )
         );
-        console.log("here");
     }
 
     /// prevent errors by reverting on arbitrum proposal functions being called on this VIP
