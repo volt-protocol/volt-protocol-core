@@ -15,7 +15,6 @@ import {IPCVDeposit} from "../../../pcv/IPCVDeposit.sol";
 import {NonCustodialPSM} from "../../../peg/NonCustodialPSM.sol";
 import {MockPCVDepositV3} from "../../../mock/MockPCVDepositV3.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
-import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
 import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {IScalingPriceOracle} from "../../../oracle/IScalingPriceOracle.sol";
@@ -65,8 +64,7 @@ contract NonCustodialPSMUnitTest is Test {
     NonCustodialPSM private psm;
     PegStabilityModule private custodialPsm;
     MockPCVDepositV3 private pcvDeposit;
-    VoltSystemOracle private vso;
-    OraclePassThrough private opt;
+    VoltSystemOracle private oracle;
     GlobalRateLimitedMinter public grlm;
     address private voltAddress;
     address private coreAddress;
@@ -114,12 +112,11 @@ contract NonCustodialPSMUnitTest is Test {
         voltAddress = address(volt);
         coreAddress = address(core);
         dai = IERC20Mintable(address(new MockERC20()));
-        vso = new VoltSystemOracle(
+        oracle = new VoltSystemOracle(
             monthlyChangeRateBasisPoints,
             startTime,
             startPrice
         );
-        opt = new OraclePassThrough(IScalingPriceOracle(address(vso)));
         grlm = new GlobalRateLimitedMinter(
             coreAddress,
             maxRateLimitPerSecondMinting,
@@ -131,7 +128,7 @@ contract NonCustodialPSMUnitTest is Test {
 
         psm = new NonCustodialPSM(
             coreAddress,
-            address(opt),
+            address(oracle),
             address(0),
             0,
             false,
@@ -143,7 +140,7 @@ contract NonCustodialPSMUnitTest is Test {
 
         custodialPsm = new PegStabilityModule(
             coreAddress,
-            address(opt),
+            address(oracle),
             address(0),
             0,
             false,
@@ -189,10 +186,9 @@ contract NonCustodialPSMUnitTest is Test {
 
         assertEq(address(core.globalRateLimitedMinter()), address(grlm));
         assertEq(
-            vso.monthlyChangeRateBasisPoints(),
+            oracle.monthlyChangeRateBasisPoints(),
             monthlyChangeRateBasisPoints
         );
-        assertEq(address(opt.scalingPriceOracle()), address(vso));
 
         assertEq(psm.floor(), voltFloorPrice);
         assertEq(psm.ceiling(), voltCeilingPrice);
@@ -211,7 +207,7 @@ contract NonCustodialPSMUnitTest is Test {
 
     /// @notice PSM is set up correctly and redeem view function is working
     function testGetRedeemAmountOut(uint128 amountVoltIn) public {
-        uint256 currentPegPrice = opt.getCurrentOraclePrice();
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
         uint256 amountOut = (amountVoltIn * currentPegPrice) / 1e18;
 
         assertApproxEq(
@@ -224,7 +220,7 @@ contract NonCustodialPSMUnitTest is Test {
     /// @notice PSM is set up correctly and redeem view function is working
     function testGetRedeemAmountOutPpq(uint128 amountVoltIn) public {
         vm.assume(amountVoltIn > 1e8);
-        uint256 currentPegPrice = opt.getCurrentOraclePrice();
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
         uint256 amountOut = (amountVoltIn * currentPegPrice) / 1e18;
 
         assertApproxEq(
@@ -242,7 +238,7 @@ contract NonCustodialPSMUnitTest is Test {
     /// @notice PSM is set up correctly and redeem view function is working
     function testGetRedeemAmountOutDifferential(uint128 amountVoltIn) public {
         vm.assume(amountVoltIn > 1e8);
-        uint256 currentPegPrice = opt.getCurrentOraclePrice();
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
         uint256 amountOut = (amountVoltIn * currentPegPrice) / 1e18;
 
         assertApproxEq(
@@ -392,7 +388,7 @@ contract NonCustodialPSMUnitTest is Test {
     ) public {
         vm.assume(newFloorPrice != 0);
 
-        uint128 currentPrice = uint128(opt.getCurrentOraclePrice());
+        uint128 currentPrice = uint128(oracle.getCurrentOraclePrice());
         uint128 currentFloor = psm.floor();
         uint128 currentCeiling = psm.ceiling();
 

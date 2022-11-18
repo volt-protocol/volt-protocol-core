@@ -15,7 +15,6 @@ import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {Test, console2} from "../../../../forge-std/src/Test.sol";
 import {NonCustodialPSM} from "../../../peg/NonCustodialPSM.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
-import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {IGRLM, GlobalRateLimitedMinter} from "../../../minter/GlobalRateLimitedMinter.sol";
 import {getCoreV2, getAddresses, getLocalOracleSystem, VoltTestAddresses} from "./../../unit/utils/Fixtures.sol";
@@ -34,7 +33,6 @@ contract UnitTestPegStabilityModule is Test {
     GlobalRateLimitedMinter public grlm;
     uint256 public constant mintAmount = 10_000_000e18;
     uint256 public constant voltMintAmount = 10_000_000e18;
-    OraclePassThrough public oraclePassThrough;
     VoltSystemOracle public oracle;
 
     /// ---------- PRICE PARAMS ----------
@@ -58,12 +56,12 @@ contract UnitTestPegStabilityModule is Test {
         underlyingToken = IERC20(address(new MockERC20()));
         core = getCoreV2();
         volt = core.volt();
-        (oracle, oraclePassThrough) = getLocalOracleSystem(voltFloorPrice);
+        (oracle, ) = getLocalOracleSystem(voltFloorPrice);
 
         /// create PSM
         psm = new PegStabilityModule(
             address(core),
-            address(oraclePassThrough),
+            address(oracle),
             address(0),
             0,
             false,
@@ -102,7 +100,7 @@ contract UnitTestPegStabilityModule is Test {
     /// @notice PSM is set up correctly
     function testSetUpCorrectly() public {
         assertTrue(!psm.doInvert());
-        assertEq(address(psm.oracle()), address(oraclePassThrough));
+        assertEq(address(psm.oracle()), address(oracle));
         assertEq(address(psm.backupOracle()), address(0));
         assertEq(psm.decimalsNormalizer(), 0);
         assertEq(address(psm.underlyingToken()), address(underlyingToken));
@@ -308,18 +306,14 @@ contract UnitTestPegStabilityModule is Test {
     }
 
     function testSetOracleFloorPriceGovernorSucceeds() public {
-        uint128 currentPrice = uint128(
-            oraclePassThrough.getCurrentOraclePrice()
-        );
+        uint128 currentPrice = uint128(oracle.getCurrentOraclePrice());
         vm.prank(addresses.governorAddress);
         psm.setOracleFloorPrice(currentPrice);
         assertTrue(psm.isPriceValid());
     }
 
     function testSetOracleCeilingPriceGovernorSucceeds() public {
-        uint128 currentPrice = uint128(
-            oraclePassThrough.getCurrentOraclePrice()
-        );
+        uint128 currentPrice = uint128(oracle.getCurrentOraclePrice());
         vm.prank(addresses.governorAddress);
         psm.setOracleCeilingPrice(currentPrice + 1);
         assertTrue(psm.isPriceValid());
@@ -354,9 +348,7 @@ contract UnitTestPegStabilityModule is Test {
     ) public {
         vm.assume(newFloorPrice != 0);
 
-        uint128 currentPrice = uint128(
-            oraclePassThrough.getCurrentOraclePrice()
-        );
+        uint128 currentPrice = uint128(oracle.getCurrentOraclePrice());
         uint128 currentFloor = psm.floor();
         uint128 currentCeiling = psm.ceiling();
 

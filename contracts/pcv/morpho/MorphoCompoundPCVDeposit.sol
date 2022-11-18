@@ -42,13 +42,6 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     using SafeCast for *;
 
     /// ------------------------------------------
-    /// ----------------- Event ------------------
-    /// ------------------------------------------
-
-    /// @notice emitted when the PCV Oracle address is updated
-    event PCVOracleUpdated(address oldOracle, address newOracle);
-
-    /// ------------------------------------------
     /// ---------- Immutables/Constant -----------
     /// ------------------------------------------
 
@@ -78,12 +71,6 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     /// in the same block or transaction. This means the value is stale
     /// most of the time.
     uint256 public lastRecordedBalance;
-
-    /// @notice reference to the PCV Oracle. Settable by governance
-    /// if set, anytime PCV is updated, delta is sent in to update liquid
-    /// amount of PCV held
-    /// not set in the constructor
-    address public pcvOracle;
 
     /// @param _core reference to the core contract
     /// @param _cToken cToken this deposit references
@@ -236,6 +223,21 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         }
     }
 
+    /// @notice set the pcv oracle address
+    /// @param _pcvOracle new pcv oracle to reference
+    function setPCVOracle(address _pcvOracle) external override onlyGovernor {
+        address oldOracle = pcvOracle;
+        pcvOracle = _pcvOracle;
+
+        _recordPNL();
+
+        IPCVOracle(pcvOracle).updateLiquidBalance(
+            lastRecordedBalance.toInt256()
+        );
+
+        emit PCVOracleUpdated(oldOracle, _pcvOracle);
+    }
+
     /// @notice withdraw all tokens from Morpho
     /// non-reentrant as state changes and external calls are made
     /// @param to the address PCV will be sent to
@@ -256,21 +258,6 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
                 endingRecordedBalance - startingRecordedBalance
             );
         }
-    }
-
-    /// @notice set the pcv oracle address
-    /// @param _pcvOracle new pcv oracle to reference
-    function setPCVOracle(address _pcvOracle) external onlyGovernor {
-        address oldOracle = pcvOracle;
-        pcvOracle = _pcvOracle;
-
-        _recordPNL();
-
-        IPCVOracle(pcvOracle).updateLiquidBalance(
-            lastRecordedBalance.toInt256()
-        );
-
-        emit PCVOracleUpdated(oldOracle, _pcvOracle);
     }
 
     /// ------------------------------------------
