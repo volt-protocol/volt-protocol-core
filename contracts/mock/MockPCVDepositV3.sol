@@ -18,10 +18,9 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
 
     receive() external payable {}
 
-    function set(
-        uint256 _resistantBalance,
-        uint256 _resistantProtocolOwnedVolt
-    ) public {
+    function set(uint256 _resistantBalance, uint256 _resistantProtocolOwnedVolt)
+        public
+    {
         resistantBalance = _resistantBalance;
         resistantProtocolOwnedVolt = _resistantProtocolOwnedVolt;
     }
@@ -36,15 +35,18 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
         return (resistantBalance, resistantProtocolOwnedVolt);
     }
 
+    function accrue() external override {}
+
     // IPCVDeposit V1
     function deposit() external override globalLock(2) {
         resistantBalance = IERC20(balanceReportedIn).balanceOf(address(this));
     }
 
-    function withdraw(
-        address to,
-        uint256 amount
-    ) external override globalLockLevelTwo {
+    function withdraw(address to, uint256 amount)
+        external
+        override
+        globalLockLevelTwo
+    {
         IERC20(balanceReportedIn).transfer(to, amount);
         resistantBalance = IERC20(balanceReportedIn).balanceOf(address(this));
     }
@@ -57,10 +59,11 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
         IERC20(token).transfer(to, amount);
     }
 
-    function withdrawETH(
-        address payable to,
-        uint256 amount
-    ) external override onlyPCVController {
+    function withdrawETH(address payable to, uint256 amount)
+        external
+        override
+        onlyPCVController
+    {
         to.transfer(amount);
     }
 

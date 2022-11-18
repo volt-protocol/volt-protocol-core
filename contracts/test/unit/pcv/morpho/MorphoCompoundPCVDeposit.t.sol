@@ -163,9 +163,9 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
             uint256(profitAccrued).toInt256(),
             block.timestamp
         );
-        uint256 lastRecordedBalance = morphoDeposit.accrue();
+        morphoDeposit.accrue();
+        uint256 lastRecordedBalance = morphoDeposit.lastRecordedBalance();
         assertEq(lastRecordedBalance, sumDeposit + profitAccrued);
-        assertEq(lastRecordedBalance, morphoDeposit.lastRecordedBalance());
     }
 
     function testWithdraw(
@@ -282,9 +282,9 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         assertEq(oracle.pcvAmount(), sumDeposit.toInt256());
     }
 
-    function testEmergencyActionWithdrawSucceedsGovernor(
-        uint120 amount
-    ) public {
+    function testEmergencyActionWithdrawSucceedsGovernor(uint120 amount)
+        public
+    {
         token.mint(address(morphoDeposit), amount);
         morphoDeposit.deposit();
 

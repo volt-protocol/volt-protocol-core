@@ -5,7 +5,6 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {PCVOracle} from "./PCVOracle.sol";
 import {CoreRefV2} from "./../refs/CoreRefV2.sol";
-import {IVoltSystemOracle} from "./IVoltSystemOracle.sol";
 import {DynamicVoltRateModel} from "./DynamicVoltRateModel.sol";
 
 /// @notice contract that linearly interpolates VOLT rate over a year
@@ -85,7 +84,7 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
     /// @param _actualChangeRate monthly change rate in the Volt price scaled by 1e18
     /// @param _periodStartTime start time at which oracle starts interpolating prices
     /// @param _rateModel dynamic volt rate model to use to compute actualChangeRate
-    /// @param _oracle to get the starting oracle price from
+    /// @param _previousOracle to get the starting oracle price from
     /// @param _pcvOracle reference to the volt system's pcv oracle
     constructor(
         address _core,
@@ -93,7 +92,7 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
         uint256 _actualChangeRate,
         uint64 _periodStartTime,
         address _rateModel,
-        address _oracle,
+        address _previousOracle,
         address _pcvOracle
     ) CoreRefV2(_core) {
         baseChangeRate = _baseChangeRate;
@@ -101,7 +100,7 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
         rateModel = _rateModel;
         // SafeCast not needed because max value of uint192 is 6e57
         uint192 currentOraclePrice = uint192(
-            IVoltSystemOracle(_oracle).getCurrentOraclePrice()
+            DynamicVoltSystemOracle(_previousOracle).getCurrentOraclePrice()
         );
         periodStartTime = _periodStartTime;
         periodStartOraclePrice = currentOraclePrice;

@@ -202,7 +202,8 @@ contract PCVOracle is CoreRefV2 {
     /// ------------- PCV Deposit Only API -------------
 
     /// @notice update the cumulative and last updated times
-    /// only callable by a liquid pcv deposit
+    /// only callable by a liquid pcv deposit that has previously been listed
+    /// in the PCV Oracle, because an oracle has to be set for the msg.sender.
     /// this allows for lazy evaluation of the TWAPCV
     /// @param pcvDelta the amount of PCV change in the venue
     function updateLiquidBalance(int256 pcvDelta)
@@ -215,7 +216,8 @@ contract PCVOracle is CoreRefV2 {
     }
 
     /// @notice update the cumulative and last updated times
-    /// only callable by a liquid pcv deposit
+    /// only callable by an illiquid pcv deposit that has previously been listed
+    /// in the PCV Oracle, because an oracle has to be set for the msg.sender.
     /// this allows for lazy evaluation of the TWAPCV
     /// @param pcvDelta the amount of PCV change in the venue
     function updateIlliquidBalance(int256 pcvDelta)
@@ -254,6 +256,7 @@ contract PCVOracle is CoreRefV2 {
             _setOracle(venues[i], oracles[i]);
             _addVenue(venues[i], isLiquid[i]);
 
+            PCVDeposit(venues[i]).accrue();
             uint256 balance = PCVDeposit(venues[i]).balance();
             if (balance != 0) {
                 nonZeroBalances = true;

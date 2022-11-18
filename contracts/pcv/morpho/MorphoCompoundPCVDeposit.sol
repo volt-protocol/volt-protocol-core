@@ -195,8 +195,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     /// since the last contract interaction
     /// then writes the current amount of PCV tracked in this contract
     /// to lastRecordedBalance
-    /// @return the amount deposited after adding accrued interest or realizing losses
-    function accrue() external nonReentrant whenNotPaused returns (uint256) {
+    function accrue() external override nonReentrant whenNotPaused {
         int256 startingRecordedBalance = lastRecordedBalance.toInt256();
 
         _recordPNL(); /// update deposit amount and fire harvest event
@@ -209,8 +208,6 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
                 endingRecordedBalance - startingRecordedBalance
             );
         }
-
-        return lastRecordedBalance; /// return updated pcv amount
     }
 
     /// ------------------------------------------
@@ -221,10 +218,11 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     /// non-reentrant as state changes and external calls are made
     /// @param to the address PCV will be sent to
     /// @param amount of tokens withdrawn
-    function withdraw(
-        address to,
-        uint256 amount
-    ) external onlyPCVController nonReentrant {
+    function withdraw(address to, uint256 amount)
+        external
+        onlyPCVController
+        nonReentrant
+    {
         int256 startingRecordedBalance = lastRecordedBalance.toInt256();
 
         _withdraw(to, amount, true);
@@ -290,7 +288,11 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     /// @param amount to withdraw
     /// @param recordPnl whether or not to record PnL. Set to false in withdrawAll
     /// as the function _recordPNL() is already called before _withdraw
-    function _withdraw(address to, uint256 amount, bool recordPnl) private {
+    function _withdraw(
+        address to,
+        uint256 amount,
+        bool recordPnl
+    ) private {
         /// ------ Effects ------
 
         if (recordPnl) {

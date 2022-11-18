@@ -13,6 +13,9 @@ import {IPCVDeposit} from "./IPCVDeposit.sol";
 abstract contract PCVDeposit is IPCVDeposit, CoreRefV2 {
     using SafeERC20 for IERC20;
 
+    /// @notice accrue yield and update the last stored balance if applicable
+    function accrue() external virtual {}
+
     /// @notice withdraw ERC20 from the contract
     /// @param token address of the ERC20 to send
     /// @param to address destination of the ERC20
@@ -37,10 +40,12 @@ abstract contract PCVDeposit is IPCVDeposit, CoreRefV2 {
     /// @notice withdraw ETH from the contract
     /// @param to address to send ETH
     /// @param amountOut amount of ETH to send
-    function withdrawETH(
-        address payable to,
-        uint256 amountOut
-    ) external virtual override onlyPCVController {
+    function withdrawETH(address payable to, uint256 amountOut)
+        external
+        virtual
+        override
+        onlyPCVController
+    {
         Address.sendValue(to, amountOut);
         emit WithdrawETH(msg.sender, to, amountOut);
     }
