@@ -1,0 +1,130 @@
+CoreRefV2.emergencyAction(CoreRefV2.Call[]) (contracts/refs/CoreRefV2.sol#244-259) sends eth to arbitrary user
+	Dangerous calls:
+	- (success,returned) = target.call{value: value}(callData) (contracts/refs/CoreRefV2.sol#253-255)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#functions-that-send-ether-to-arbitrary-destinations
+Response: This is expected behavior because the governor needs to be able to 
+send ether as part of an emergency action.
+
+OracleRef.readOracle() (contracts/refs/OracleRef.sol#81-104) performs a multiplication on the result of a division:
+	- _peg = _peg.div(scalingFactor) (contracts/refs/OracleRef.sol#97)
+	- _peg = _peg.mul(scalingFactor) (contracts/refs/OracleRef.sol#100)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#divide-before-multiply
+Response: This is a false positive because those operations are inside different parts
+of an if else statement meaning you can only execute one or the other, but not both.
+
+GlobalReentrancyLock.lock(uint8) (contracts/core/GlobalReentrancyLock.sol#127-159) uses a dangerous strict equality:
+	- require(bool,string)(block.number == _lastBlockEntered,GlobalReentrancyLock: system not entered this block) (contracts/core/GlobalReentrancyLock.sol#152-155)
+GlobalReentrancyLock.unlock(uint8) (contracts/core/GlobalReentrancyLock.sol#169-230) uses a dangerous strict equality:
+	- require(bool,string)(uint80(block.number) == _lastBlockEntered,GlobalReentrancyLock: not entered this block) (contracts/core/GlobalReentrancyLock.sol#173-176)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#dangerous-strict-equalities
+Response: This equality is not dangerous because it is ensuring the block number that was 
+entered is the current block number.
+
+PegStabilityModule.constructor(address,address,address,int256,bool,IERC20,uint128,uint128).backupOracle (contracts/peg/PegStabilityModule.sol#46) shadows:
+	- OracleRef.backupOracle (contracts/refs/OracleRef.sol#22) (state variable)
+	- IOracleRef.backupOracle() (contracts/refs/IOracleRef.sol#39) (function)
+PegStabilityModule.constructor(address,address,address,int256,bool,IERC20,uint128,uint128).decimalsNormalizer (contracts/peg/PegStabilityModule.sol#47) shadows:
+	- OracleRef.decimalsNormalizer (contracts/refs/OracleRef.sol#25) (state variable)
+	- IOracleRef.decimalsNormalizer() (contracts/refs/IOracleRef.sol#43) (function)
+PegStabilityModule.constructor(address,address,address,int256,bool,IERC20,uint128,uint128).doInvert (contracts/peg/PegStabilityModule.sol#48) shadows:
+	- OracleRef.doInvert (contracts/refs/OracleRef.sol#28) (state variable)
+	- IOracleRef.doInvert() (contracts/refs/IOracleRef.sol#41) (function)
+OracleRef.constructor(address,address,address,int256,bool)._core (contracts/refs/OracleRef.sol#37) shadows:
+	- CoreRefV2._core (contracts/refs/CoreRefV2.sol#22) (state variable)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#local-variable-shadowing
+Response: Acknowledged, will not fix.
+
+CoreRefV2.emergencyAction(CoreRefV2.Call[]).target (contracts/refs/CoreRefV2.sol#249) lacks a zero-check on :
+		- (success,returned) = target.call{value: value}(callData) (contracts/refs/CoreRefV2.sol#253-255)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-zero-address-validation
+Response: Acknowledged, will not fix.
+
+CoreRefV2.emergencyAction(CoreRefV2.Call[]) (contracts/refs/CoreRefV2.sol#244-259) has external calls inside a loop: (success,returned) = target.call{value: value}(callData) (contracts/refs/CoreRefV2.sol#253-255)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation/#calls-inside-a-loop
+Response: Acknowledged, will not fix.
+
+Reentrancy in PCVDeposit._withdrawERC20(address,address,uint256) (contracts/pcv/PCVDeposit.sol#28-35):
+	External calls:
+	- IERC20(token).safeTransfer(to,amount) (contracts/pcv/PCVDeposit.sol#33)
+	Event emitted after the call(s):
+	- WithdrawERC20(msg.sender,token,to,amount) (contracts/pcv/PCVDeposit.sol#34)
+Reentrancy in PegStabilityModule.mint(address,uint256,uint256) (contracts/peg/PegStabilityModule.sol#148-174):
+	External calls:
+	- globalRateLimitedMinter().mintVolt(to,amountVoltOut) (contracts/peg/PegStabilityModule.sol#169)
+	- underlyingToken.safeTransferFrom(msg.sender,address(this),amountIn) (contracts/peg/PegStabilityModule.sol#171)
+	- globalLock(1) (contracts/peg/PegStabilityModule.sol#152)
+		- _core.lock(level) (contracts/refs/CoreRefV2.sol#37)
+		- _core.unlock(startingLevel) (contracts/refs/CoreRefV2.sol#39)
+	Event emitted after the call(s):
+	- Mint(to,amountIn,amountVoltOut) (contracts/peg/PegStabilityModule.sol#173)
+Reentrancy in PegStabilityModule.redeem(address,uint256,uint256) (contracts/peg/PegStabilityModule.sol#108-135):
+	External calls:
+	- volt().burnFrom(msg.sender,amountVoltIn) (contracts/peg/PegStabilityModule.sol#129)
+	- globalRateLimitedMinter().replenishBuffer(amountVoltIn) (contracts/peg/PegStabilityModule.sol#130)
+	- underlyingToken.safeTransfer(to,amountOut) (contracts/peg/PegStabilityModule.sol#132)
+	- globalLock(1) (contracts/peg/PegStabilityModule.sol#112)
+		- _core.lock(level) (contracts/refs/CoreRefV2.sol#37)
+		- _core.unlock(startingLevel) (contracts/refs/CoreRefV2.sol#39)
+	Event emitted after the call(s):
+	- Redeem(to,amountVoltIn,amountOut) (contracts/peg/PegStabilityModule.sol#134)
+Reentrancy in PCVDeposit.withdrawETH(address,uint256) (contracts/pcv/PCVDeposit.sol#40-46):
+	External calls:
+	- Address.sendValue(to,amountOut) (contracts/pcv/PCVDeposit.sol#44)
+	Event emitted after the call(s):
+	- WithdrawETH(msg.sender,to,amountOut) (contracts/pcv/PCVDeposit.sol#45)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-3
+Response: Event emitted after a call is not a security concern. We are only
+concerned with reentrancy that could lead to loss of system funds or other
+destructive actions on chain.
+
+Low level call in CoreRefV2.emergencyAction(CoreRefV2.Call[]) (contracts/refs/CoreRefV2.sol#244-259):
+	- (success,returned) = target.call{value: value}(callData) (contracts/refs/CoreRefV2.sol#253-255)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#low-level-calls
+Response: This is expected behavior, we need access to low level calls to be able to perform emergency actions
+with arbitrary calldata against arbitrary addresses and eth amounts as a governor.
+
+Function IPermissionsV2.GUARDIAN_ROLE() (contracts/core/IPermissionsV2.sol#73) is not in mixedCase
+Function IPermissionsV2.GOVERN_ROLE() (contracts/core/IPermissionsV2.sol#79) is not in mixedCase
+Function IPermissionsV2.MINTER_ROLE() (contracts/core/IPermissionsV2.sol#82) is not in mixedCase
+Function IPermissionsV2.PCV_CONTROLLER_ROLE() (contracts/core/IPermissionsV2.sol#86) is not in mixedCase
+Function IPermissionsV2.LOCKER_ROLE() (contracts/core/IPermissionsV2.sol#90) is not in mixedCase
+Function IPermissionsV2.VOLT_RATE_LIMITED_MINTER_ROLE() (contracts/core/IPermissionsV2.sol#94) is not in mixedCase
+Function IPermissionsV2.VOLT_RATE_LIMITED_REDEEMER_ROLE() (contracts/core/IPermissionsV2.sol#98) is not in mixedCase
+Parameter PermissionsV2.isMinter(address)._address (contracts/core/PermissionsV2.sol#217) is not in mixedCase
+Parameter PermissionsV2.isPCVController(address)._address (contracts/core/PermissionsV2.sol#227) is not in mixedCase
+Parameter PermissionsV2.isGovernor(address)._address (contracts/core/PermissionsV2.sol#237) is not in mixedCase
+Parameter PermissionsV2.isGuardian(address)._address (contracts/core/PermissionsV2.sol#247) is not in mixedCase
+Parameter PermissionsV2.isLocker(address)._address (contracts/core/PermissionsV2.sol#255) is not in mixedCase
+Parameter PermissionsV2.isPCVGuard(address)._address (contracts/core/PermissionsV2.sol#262) is not in mixedCase
+Parameter PermissionsV2.isRateLimitedMinter(address)._address (contracts/core/PermissionsV2.sol#270) is not in mixedCase
+Parameter PermissionsV2.isRateLimitedRedeemer(address)._address (contracts/core/PermissionsV2.sol#279) is not in mixedCase
+Function IRateLimitedV2.MAX_RATE_LIMIT_PER_SECOND() (contracts/utils/IRateLimitedV2.sol#11) is not in mixedCase
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#conformance-to-solidity-naming-conventions
+Response: Acknowledged, will not fix.
+
+Pragma version0.8.13 (contracts/Constants.sol#2) allows old versions
+Pragma version0.8.13 (contracts/core/CoreV2.sol#2) allows old versions
+Pragma version0.8.13 (contracts/core/GlobalReentrancyLock.sol#1) allows old versions
+Pragma version0.8.13 (contracts/core/ICoreV2.sol#2) allows old versions
+Pragma version0.8.13 (contracts/core/IGlobalReentrancyLock.sol#1) allows old versions
+Pragma version0.8.13 (contracts/core/IPermissionsV2.sol#2) allows old versions
+Pragma version0.8.13 (contracts/core/PermissionsV2.sol#2) allows old versions
+Pragma version0.8.13 (contracts/core/VoltRoles.sol#2) allows old versions
+Pragma version0.8.13 (contracts/external/Decimal.sol#15) allows old versions
+Pragma version0.8.13 (contracts/external/IWETH.sol#1) allows old versions
+Pragma version=0.8.13 (contracts/minter/IGRLM.sol#2) allows old versions
+Pragma version0.8.13 (contracts/oracle/IOracle.sol#2) allows old versions
+Pragma version0.8.13 (contracts/pcv/IPCVDeposit.sol#2) allows old versions
+Pragma version0.8.13 (contracts/pcv/IPCVDepositBalances.sol#2) allows old versions
+Pragma version0.8.13 (contracts/pcv/PCVDeposit.sol#2) allows old versions
+Pragma version0.8.13 (contracts/peg/INonCustodialPSM.sol#2) allows old versions
+Pragma version0.8.13 (contracts/peg/NonCustodialPSM.sol#2) allows old versions
+Pragma version0.8.13 (contracts/refs/CoreRefV2.sol#2) allows old versions
+Pragma version0.8.13 (contracts/refs/ICoreRefV2.sol#2) allows old versions
+Pragma version0.8.13 (contracts/refs/IOracleRef.sol#2) allows old versions
+Pragma version0.8.13 (contracts/refs/OracleRef.sol#2) allows old versions
+Pragma version=0.8.13 (contracts/utils/IRateLimitedV2.sol#2) allows old versions
+Pragma version0.8.13 (contracts/volt/IVolt.sol#2) allows old versions
+solc-0.8.13 is not recommended for deployment
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#incorrect-versions-of-solidity
+Response: Acknowledged, will not fix.

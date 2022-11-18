@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
+import {Vm} from "../../../../forge-std/src/Test.sol";
+import {CoreV2} from "../../../core/CoreV2.sol";
 import {MockERC20} from "./../../../mock/MockERC20.sol";
 import {Core, Vcon, Volt, IERC20, IVolt} from "../../../core/Core.sol";
-import {CoreV2} from "../../../core/CoreV2.sol";
-import {Vm} from "forge-std/Test.sol";
+import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
+import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
+import {IScalingPriceOracle} from "../../../oracle/IScalingPriceOracle.sol";
 
 struct VoltTestAddresses {
     address userAddress;
@@ -127,4 +130,49 @@ function getCoreV2() returns (CoreV2) {
 
     vm.stopPrank();
     return core;
+}
+
+function getVoltSystemOracle(
+    uint256 _monthlyChangeRateBasisPoints,
+    uint256 _periodStartTime,
+    uint256 _oraclePrice
+) returns (VoltSystemOracle) {
+    VoltSystemOracle oracle = new VoltSystemOracle(
+        _monthlyChangeRateBasisPoints,
+        _periodStartTime,
+        _oraclePrice
+    );
+
+    return oracle;
+}
+
+function getOraclePassThrough(
+    VoltSystemOracle oracle,
+    address owner
+) returns (OraclePassThrough opt) {
+    address HEVM_ADDRESS = address(
+        bytes20(uint160(uint256(keccak256("hevm cheat code"))))
+    );
+    Vm vm = Vm(HEVM_ADDRESS);
+
+    vm.prank(owner);
+    opt = new OraclePassThrough(IScalingPriceOracle(address(oracle)));
+}
+
+function getLocalOracleSystem()
+    returns (VoltSystemOracle oracle, OraclePassThrough opt)
+{
+    VoltTestAddresses memory addresses = getAddresses();
+
+    oracle = getVoltSystemOracle(100, block.timestamp, 1e18);
+    opt = getOraclePassThrough(oracle, addresses.governorAddress);
+}
+
+function getLocalOracleSystem(
+    uint256 startPrice
+) returns (VoltSystemOracle oracle, OraclePassThrough opt) {
+    VoltTestAddresses memory addresses = getAddresses();
+
+    oracle = getVoltSystemOracle(100, block.timestamp, startPrice);
+    opt = getOraclePassThrough(oracle, addresses.governorAddress);
 }

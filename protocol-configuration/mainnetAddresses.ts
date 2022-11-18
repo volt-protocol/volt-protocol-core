@@ -321,7 +321,7 @@ const MainnetAddresses: MainnetAddresses = {
   },
   arbitrumCore: {
     address: '0x31A38B79fDcFBC3095E3268CAFac1b9791796736',
-    artifactName: 'L2Core',
+    artifactName: 'Core',
     category: AddressCategory.Core,
     network: Network.Arbitrum
   },
