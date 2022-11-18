@@ -10,7 +10,18 @@ import {IPCVOracle} from "../../oracle/IPCVOracle.sol";
 import {PCVDeposit} from "../PCVDeposit.sol";
 import {IERC4626} from "./IERC4626.sol";
 
-/// @notice
+/// @notice Generic PCV Deposit for a ERC4626 "Tokenized Vault"
+/// - Implements the PCV Deposit interface to deposit and withdraw funds to/from a vault
+/// - Implements a specific function "withdrawMax", slightly changing from "withdrawAll"
+///   function that can be seen in other PCV Deposit. The reason is that the ERC4626 Vault
+///   can restrict the amount of withdrawable tokens but still report the total token held
+/// - Implements withdrawableBalance() which allow to get the amount of withdrawable tokens
+/// @dev The underlying token in the Deposit is named "token" but is named "asset" in the Vault.
+/// @dev The ERC4626 gives back "shares" when an asset is deposited. The shares are only used
+/// in the vault internal accounting. The PCV Deposit does not show any values in "shares"
+/// but always in "asset" (token) as explicitly stated in the function "balanceReportedIn()"
+/// It should be noted that the balance() function use the 'share' amount to compute the
+/// amount of token currently in possession of the PCV Deposit (with profit & loss)
 contract ERC4626PCVDeposit is PCVDeposit {
     using SafeERC20 for IERC20;
     using SafeCast for *;
