@@ -35,7 +35,7 @@ contract DynamicVoltRateModel {
         }
         // if current rate is already above maximum rate, do not boost the current rate
         // even if liquidity is low
-        if (baseRate > MAXIMUM_CHANGE_RATE) {
+        if (baseRate >= MAXIMUM_CHANGE_RATE) {
             return baseRate;
         }
 
