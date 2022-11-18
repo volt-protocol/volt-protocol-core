@@ -63,7 +63,10 @@ contract ERC4626PCVDeposit is PCVDeposit {
         vault = _vault;
 
         // check that the vault's asset is equal to the PCVDeposit token
-        require(IERC4626(vault).asset() == token, "ERC4626PCVDeposit: Underlying mismatch");
+        require(
+            IERC4626(vault).asset() == token,
+            "ERC4626PCVDeposit: Underlying mismatch"
+        );
     }
 
     /// ------------------------------------------
@@ -215,8 +218,7 @@ contract ERC4626PCVDeposit is PCVDeposit {
 
     /// @notice update the PCVOracle if the oracle is set and the updated value is not 0
     function _updateOracle(int256 delta) private {
-        if (pcvOracle != address(0)
-            && delta != 0) {
+        if (pcvOracle != address(0) && delta != 0) {
             IPCVOracle(pcvOracle).updateLiquidBalance(delta);
         }
     }

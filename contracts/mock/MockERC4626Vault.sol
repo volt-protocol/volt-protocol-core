@@ -20,22 +20,21 @@ contract MockERC4626Vault is MockERC20, IERC4626 {
     // this mapping tracks the locked shares for each vault users
     // we could imagine that the vault lock shares for some times
     // or that the user could stake some shares to earn more profit
-    // this will be simulated by the 'mockLockShares' and 
-    // 'mockUnlockShares' functions. Calculations of how much one client can 
+    // this will be simulated by the 'mockLockShares' and
+    // 'mockUnlockShares' functions. Calculations of how much one client can
     // withdraw will be calculated using totalShares(user) - lockedShares(user)
-    mapping(address => uint256) public lockedShares; 
+    mapping(address => uint256) public lockedShares;
 
-
-//    __  __               _              _     __                      _    _                    
-//   |  \/  |             | |            | |   / _|                    | |  (_)                   
-//   | \  / |  ___    ___ | | __ ___   __| |  | |_  _   _  _ __    ___ | |_  _   ___   _ __   ___ 
-//   | |\/| | / _ \  / __|| |/ // _ \ / _` |  |  _|| | | || '_ \  / __|| __|| | / _ \ | '_ \ / __|
-//   | |  | || (_) || (__ |   <|  __/| (_| |  | |  | |_| || | | || (__ | |_ | || (_) || | | |\__ \
-//   |_|  |_| \___/  \___||_|\_\\___| \__,_|  |_|   \__,_||_| |_| \___| \__||_| \___/ |_| |_||___/
-//                                                                                               
-//                                                                                               
-// the following functions are allowing to simulate profit and loss on the vault
-// and also some kind of "share lock" where all the value deposited cannot be redeemed instantly
+    //    __  __               _              _     __                      _    _
+    //   |  \/  |             | |            | |   / _|                    | |  (_)
+    //   | \  / |  ___    ___ | | __ ___   __| |  | |_  _   _  _ __    ___ | |_  _   ___   _ __   ___
+    //   | |\/| | / _ \  / __|| |/ // _ \ / _` |  |  _|| | | || '_ \  / __|| __|| | / _ \ | '_ \ / __|
+    //   | |  | || (_) || (__ |   <|  __/| (_| |  | |  | |_| || | | || (__ | |_ | || (_) || | | |\__ \
+    //   |_|  |_| \___/  \___||_|\_\\___| \__,_|  |_|   \__,_||_| |_| \___| \__||_| \___/ |_| |_||___/
+    //
+    //
+    // the following functions are allowing to simulate profit and loss on the vault
+    // and also some kind of "share lock" where all the value deposited cannot be redeemed instantly
 
     /// @notice simulate a loss of assets, not linked to withdrawals
     function mockLoseSome(uint256 lossAmount) public {
@@ -56,24 +55,23 @@ contract MockERC4626Vault is MockERC20, IERC4626 {
     /// @notice unlock some shares from a user
     function mockUnlockShares(uint256 unlockAmount, address user) public {
         uint256 currentlyLocked = lockedShares[user];
-        if(currentlyLocked > unlockAmount) {
+        if (currentlyLocked > unlockAmount) {
             lockedShares[user] -= unlockAmount;
         } else {
             lockedShares[user] = 0;
         }
-        
     }
 
-//   __      __            _  _      _____                    _                                _          _    _               
-//   \ \    / /           | || |    |_   _|                  | |                              | |        | |  (_)              
-//    \ \  / /__ _  _   _ | || |_     | |   _ __ ___   _ __  | |  ___  _ __ ___    ___  _ __  | |_  __ _ | |_  _   ___   _ __  *
-//     \ \/ // _` || | | || || __|    | |  | '_ ` _ \ | '_ \ | | / _ \| '_ ` _ \  / _ \| '_ \ | __|/ _` || __|| | / _ \ | '_ \ 
-//      \  /| (_| || |_| || || |_    _| |_ | | | | | || |_) || ||  __/| | | | | ||  __/| | | || |_| (_| || |_ | || (_) || | | |
-//       \/  \__,_| \__,_||_| \__|  |_____||_| |_| |_|| .__/ |_| \___||_| |_| |_| \___||_| |_| \__|\__,_| \__||_| \___/ |_| |_|
-//                                                   | |                                                                      
-//                                                   |_|                                                                      
+    //   __      __            _  _      _____                    _                                _          _    _
+    //   \ \    / /           | || |    |_   _|                  | |                              | |        | |  (_)
+    //    \ \  / /__ _  _   _ | || |_     | |   _ __ ___   _ __  | |  ___  _ __ ___    ___  _ __  | |_  __ _ | |_  _   ___   _ __  *
+    //     \ \/ // _` || | | || || __|    | |  | '_ ` _ \ | '_ \ | | / _ \| '_ ` _ \  / _ \| '_ \ | __|/ _` || __|| | / _ \ | '_ \
+    //      \  /| (_| || |_| || || |_    _| |_ | | | | | || |_) || ||  __/| | | | | ||  __/| | | || |_| (_| || |_ | || (_) || | | |
+    //       \/  \__,_| \__,_||_| \__|  |_____||_| |_| |_|| .__/ |_| \___||_| |_| |_| \___||_| |_| \__|\__,_| \__||_| \___/ |_| |_|
+    //                                                   | |
+    //                                                   |_|
 
-// * copied from openzeppelin, without the rounding up/down. Might need it later
+    // * copied from openzeppelin, without the rounding up/down. Might need it later
 
     /**
      * @dev Set the underlying asset contract. This must be an ERC20-compatible contract (ERC20 or ERC777).
@@ -94,17 +92,35 @@ contract MockERC4626Vault is MockERC20, IERC4626 {
     }
 
     /** @dev See {IERC4626-convertToShares}. */
-    function convertToShares(uint256 assets) public view virtual override returns (uint256) {
+    function convertToShares(uint256 assets)
+        public
+        view
+        virtual
+        override
+        returns (uint256)
+    {
         return _convertToShares(assets);
     }
 
     /** @dev See {IERC4626-convertToAssets}. */
-    function convertToAssets(uint256 shares) public view virtual override returns (uint256) {
+    function convertToAssets(uint256 shares)
+        public
+        view
+        virtual
+        override
+        returns (uint256)
+    {
         return _convertToAssets(shares);
     }
 
     /** @dev See {IERC4626-maxDeposit}. */
-    function maxDeposit(address) public view virtual override returns (uint256) {
+    function maxDeposit(address)
+        public
+        view
+        virtual
+        override
+        returns (uint256)
+    {
         return _isVaultHealthy() ? type(uint256).max : 0;
     }
 
@@ -114,38 +130,82 @@ contract MockERC4626Vault is MockERC20, IERC4626 {
     }
 
     /** @dev See {IERC4626-maxWithdraw}. */
-    function maxWithdraw(address owner) public view virtual override returns (uint256) {
+    function maxWithdraw(address owner)
+        public
+        view
+        virtual
+        override
+        returns (uint256)
+    {
         return _convertToAssets(balanceOf(owner) - lockedShares[owner]);
     }
 
     /** @dev See {IERC4626-maxRedeem}. */
-    function maxRedeem(address owner) public view virtual override returns (uint256) {
+    function maxRedeem(address owner)
+        public
+        view
+        virtual
+        override
+        returns (uint256)
+    {
         return balanceOf(owner) - lockedShares[owner];
     }
 
     /** @dev See {IERC4626-previewDeposit}. */
-    function previewDeposit(uint256 assets) public view virtual override returns (uint256) {
+    function previewDeposit(uint256 assets)
+        public
+        view
+        virtual
+        override
+        returns (uint256)
+    {
         return _convertToShares(assets);
     }
 
     /** @dev See {IERC4626-previewMint}. */
-    function previewMint(uint256 shares) public view virtual override returns (uint256) {
+    function previewMint(uint256 shares)
+        public
+        view
+        virtual
+        override
+        returns (uint256)
+    {
         return _convertToAssets(shares);
     }
 
     /** @dev See {IERC4626-previewWithdraw}. */
-    function previewWithdraw(uint256 assets) public view virtual override returns (uint256) {
+    function previewWithdraw(uint256 assets)
+        public
+        view
+        virtual
+        override
+        returns (uint256)
+    {
         return _convertToShares(assets);
     }
 
     /** @dev See {IERC4626-previewRedeem}. */
-    function previewRedeem(uint256 shares) public view virtual override returns (uint256) {
+    function previewRedeem(uint256 shares)
+        public
+        view
+        virtual
+        override
+        returns (uint256)
+    {
         return _convertToAssets(shares);
     }
 
     /** @dev See {IERC4626-deposit}. */
-    function deposit(uint256 assets, address receiver) public virtual override returns (uint256) {
-        require(assets <= maxDeposit(receiver), "ERC4626: deposit more than max");
+    function deposit(uint256 assets, address receiver)
+        public
+        virtual
+        override
+        returns (uint256)
+    {
+        require(
+            assets <= maxDeposit(receiver),
+            "ERC4626: deposit more than max"
+        );
 
         uint256 shares = previewDeposit(assets);
         _deposit(_msgSender(), receiver, assets, shares);
@@ -154,7 +214,12 @@ contract MockERC4626Vault is MockERC20, IERC4626 {
     }
 
     /** @dev See {IERC4626-mint}. */
-    function mint(uint256 shares, address receiver) public virtual override returns (uint256) {
+    function mint(uint256 shares, address receiver)
+        public
+        virtual
+        override
+        returns (uint256)
+    {
         require(shares <= maxMint(receiver), "ERC4626: mint more than max");
 
         uint256 assets = previewMint(shares);
@@ -169,7 +234,10 @@ contract MockERC4626Vault is MockERC20, IERC4626 {
         address receiver,
         address owner
     ) public virtual override returns (uint256) {
-        require(assets <= maxWithdraw(owner), "ERC4626: withdraw more than max");
+        require(
+            assets <= maxWithdraw(owner),
+            "ERC4626: withdraw more than max"
+        );
 
         uint256 shares = previewWithdraw(assets);
         _withdraw(_msgSender(), receiver, owner, assets, shares);
@@ -197,7 +265,12 @@ contract MockERC4626Vault is MockERC20, IERC4626 {
      * Will revert if assets > 0, totalSupply > 0 and totalAssets = 0. That corresponds to a case where any asset
      * would represent an infinite amount of shares.
      */
-    function _convertToShares(uint256 assets) internal view virtual returns (uint256) {
+    function _convertToShares(uint256 assets)
+        internal
+        view
+        virtual
+        returns (uint256)
+    {
         uint256 supply = totalSupply();
         return
             (assets == 0 || supply == 0)
@@ -210,19 +283,29 @@ contract MockERC4626Vault is MockERC20, IERC4626 {
      *
      * NOTE: Make sure to keep this function consistent with {_initialConvertToAssets} when overriding it.
      */
-    function _initialConvertToShares(
-        uint256 assets
-    ) internal view virtual returns (uint256 shares) {
+    function _initialConvertToShares(uint256 assets)
+        internal
+        view
+        virtual
+        returns (uint256 shares)
+    {
         return assets;
     }
 
     /**
      * @dev Internal conversion function (from shares to assets) with support for rounding direction.
      */
-    function _convertToAssets(uint256 shares) internal view virtual returns (uint256) {
+    function _convertToAssets(uint256 shares)
+        internal
+        view
+        virtual
+        returns (uint256)
+    {
         uint256 supply = totalSupply();
         return
-            (supply == 0) ? _initialConvertToAssets(shares) : shares.mul(totalAssets()).div(supply);
+            (supply == 0)
+                ? _initialConvertToAssets(shares)
+                : shares.mul(totalAssets()).div(supply);
     }
 
     /**
@@ -230,9 +313,12 @@ contract MockERC4626Vault is MockERC20, IERC4626 {
      *
      * NOTE: Make sure to keep this function consistent with {_initialConvertToShares} when overriding it.
      */
-    function _initialConvertToAssets(
-        uint256 shares
-    ) internal view virtual returns (uint256) {
+    function _initialConvertToAssets(uint256 shares)
+        internal
+        view
+        virtual
+        returns (uint256)
+    {
         return shares;
     }
 
