@@ -8,7 +8,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {CoreRefV2} from "../../refs/CoreRefV2.sol";
 import {IPCVOracle} from "../../oracle/IPCVOracle.sol";
 import {PCVDeposit} from "../PCVDeposit.sol";
-import {IERC4626} from "../../../forge-std/src/interfaces/IERC4626.sol";
+import {IERC4626} from "./IERC4626.sol";
 
 /// @notice
 contract ERC4626PCVDeposit is PCVDeposit {
@@ -61,6 +61,9 @@ contract ERC4626PCVDeposit is PCVDeposit {
     ) CoreRefV2(_core) {
         token = _underlying;
         vault = _vault;
+
+        // check that the vault's asset is equal to the PCVDeposit token
+        require(IERC4626(vault).asset() == token, "ERC4626PCVDeposit: Underlying mismatch");
     }
 
     /// ------------------------------------------
@@ -93,7 +96,7 @@ contract ERC4626PCVDeposit is PCVDeposit {
     /// ----------- Permissionless API -----------
     /// ------------------------------------------
 
-    /// @notice deposit ERC-20 tokens to the ERC4626-Vault
+    /// @notice deposit an ERC-20 tokens to the ERC4626-Vault
     /// @dev TODO ADD NON REENTRANT PROTECTION WHEN AVAILABLE
     function deposit() public whenNotPaused {
         /// ------ Check ------
@@ -210,10 +213,11 @@ contract ERC4626PCVDeposit is PCVDeposit {
     /// ------------- Helper Methods -------------
     /// ------------------------------------------
 
-    /// @notice update the PCVOracle if the oracle is set
-    function _updateOracle(int256 updatedValue) private {
-        if (pcvOracle != address(0)) {
-            IPCVOracle(pcvOracle).updateLiquidBalance(updatedValue);
+    /// @notice update the PCVOracle if the oracle is set and the updated value is not 0
+    function _updateOracle(int256 delta) private {
+        if (pcvOracle != address(0)
+            && delta != 0) {
+            IPCVOracle(pcvOracle).updateLiquidBalance(delta);
         }
     }
 
