@@ -9,14 +9,15 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Decimal} from "../external/Decimal.sol";
 import {Constants} from "../Constants.sol";
 import {OracleRef} from "./../refs/OracleRef.sol";
-import {PCVDeposit} from "./../pcv/PCVDeposit.sol";
 import {IPCVDeposit} from "./../pcv/IPCVDeposit.sol";
 import {INonCustodialPSM} from "./INonCustodialPSM.sol";
 
 /// @notice this contract needs the PCV controller role to be able to pull funds
-/// from the PCV deposit smart contract. This contract also requires the NON_CUSTODIAL_PSM_ROLE
+/// from the PCV deposit smart contract. This contract also requires the VOLT_RATE_LIMITED_REDEEMER_ROLE
 /// in order to replenish the buffer in the GlobalRateLimitedMinter.
-contract NonCustodialPSM is INonCustodialPSM, OracleRef, PCVDeposit {
+/// This PSM is not a PCV deposit because it never holds funds, it only has permissions
+/// to pull funds from a pcv deposit and replenish a global buffer.
+contract NonCustodialPSM is INonCustodialPSM, OracleRef {
     using Decimal for Decimal.D256;
     using SafeERC20 for IERC20;
     using SafeCast for *;
@@ -41,7 +42,7 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRef, PCVDeposit {
     /// @param doInvert invert oracle price
     /// @param underlyingTokenAddress this psm uses
     /// @param floorPrice minimum acceptable oracle price
-    /// @param ceilingPrice maximum  acceptable oracle price
+    /// @param ceilingPrice maximum acceptable oracle price
     constructor(
         address coreAddress,
         address oracleAddress,
@@ -69,8 +70,6 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRef, PCVDeposit {
 
     // ----------- Governor Only State Changing API -----------
 
-    /// TODO test this
-
     /// @notice sets the new floor price
     /// @param newFloorPrice new floor price
     function setOracleFloorPrice(
@@ -96,18 +95,6 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRef, PCVDeposit {
         _setPCVDeposit(newTarget);
     }
 
-    // ----------- PCV Controller Only State Changing API -----------
-
-    /// @notice withdraw assets from PSM to an external address
-    /// @param to recipient
-    /// @param amount of tokens to withdraw
-    function withdraw(
-        address to,
-        uint256 amount
-    ) external virtual override onlyPCVController {
-        _withdrawERC20(address(underlyingToken), to, amount);
-    }
-
     // ----------- Public State Changing API -----------
 
     /// @notice function to redeem VOLT for an underlying asset
@@ -123,13 +110,7 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRef, PCVDeposit {
         address to,
         uint256 amountVoltIn,
         uint256 minAmountOut
-    )
-        external
-        virtual
-        override
-        globalReentrancyLock
-        returns (uint256 amountOut)
-    {
+    ) external virtual override globalLock(1) returns (uint256 amountOut) {
         /// ------- Checks -------
         /// 1. current price from oracle is correct
         /// 2. how much underlying token to receive
@@ -149,14 +130,12 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRef, PCVDeposit {
         volt().burnFrom(msg.sender, amountVoltIn); /// Check and Interaction -- trusted contract
         globalRateLimitedMinter().replenishBuffer(amountVoltIn); /// Effect -- trusted contract
 
-        pcvDeposit.withdraw(to, amountOut); /// Interaction -- untrusted contract
+        /// Interaction -- pcv deposit is trusted,
+        /// however interacts with external untrusted contracts
+        pcvDeposit.withdraw(to, amountOut);
 
         emit Redeem(to, amountVoltIn, amountOut);
     }
-
-    /// @notice no-op to maintain backwards compatability with IPCVDeposit
-    /// pauseable to stop integration if this contract is deprecated
-    function deposit() external override whenNotPaused {}
 
     /// ----------- Public View-Only API ----------
 
@@ -185,27 +164,6 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRef, PCVDeposit {
         /// amountTokenOut = oraclePrice * amountVoltIn / 1e18
         /// = 1.05e6 USDC out
         amountTokenOut = oraclePrice.mul(amountVoltIn).asUint256();
-    }
-
-    /// @notice function from PCVDeposit that must be overriden
-    /// always returns 0 because no minting is allowed in NonCustodialPSM
-    function balance() public view virtual override returns (uint256) {
-        return 0;
-    }
-
-    /// @notice returns address of token this contracts balance is reported in
-    function balanceReportedIn() public view override returns (address) {
-        return address(underlyingToken);
-    }
-
-    /// @notice override default behavior of not checking Volt balance
-    function resistantBalanceAndVolt()
-        public
-        view
-        override
-        returns (uint256, uint256)
-    {
-        return (balance(), voltBalance());
     }
 
     /// @notice returns whether or not the current price is valid
