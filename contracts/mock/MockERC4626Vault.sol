@@ -1,7 +1,6 @@
 pragma solidity 0.8.13;
 
 import "./MockERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import {IERC4626} from "../pcv/ERC4626/IERC4626.sol";
@@ -10,8 +9,8 @@ import {IERC4626} from "../pcv/ERC4626/IERC4626.sol";
 ///         it features a "lock" system where users can lock shares
 ///         the lock system simulates some kind of staking or lock a real vault could do
 ///         example: for Maple, shares could be locked because the underlying assets are lent
-/// @dev this implementation does not have the particularities of round up or down
-/// when calculating amount of shares or assets. It might be needed later to be more precise
+/// @dev this implementation does not have the particularities of round up or down when calculating
+/// the amount of shares or assets. It might be needed later to be more precise
 contract MockERC4626Vault is MockERC20, IERC4626 {
     using SafeMath for uint256;
 
@@ -35,7 +34,8 @@ contract MockERC4626Vault is MockERC20, IERC4626 {
 //   |_|  |_| \___/  \___||_|\_\\___| \__,_|  |_|   \__,_||_| |_| \___| \__||_| \___/ |_| |_||___/
 //                                                                                               
 //                                                                                               
-// the folowing functions are allowing to simulate profit and loss on the vault
+// the following functions are allowing to simulate profit and loss on the vault
+// and also some kind of "share lock" where all the value deposited cannot be redeemed instantly
 
     /// @notice simulate a loss of assets, not linked to withdrawals
     function mockLoseSome(uint256 lossAmount) public {
@@ -64,12 +64,12 @@ contract MockERC4626Vault is MockERC20, IERC4626 {
         
     }
 
-//   __      __            _  _     _____                    _                                _          _    _               
-//   \ \    / /           | || |   |_   _|                  | |                              | |        | |  (_)              
-//    \ \  / /__ _  _   _ | || |_    | |   _ __ ___   _ __  | |  ___  _ __ ___    ___  _ __  | |_  __ _ | |_  _   ___   _ __  *
-//     \ \/ // _` || | | || || __|   | |  | '_ ` _ \ | '_ \ | | / _ \| '_ ` _ \  / _ \| '_ \ | __|/ _` || __|| | / _ \ | '_ \ 
-//      \  /| (_| || |_| || || |_   _| |_ | | | | | || |_) || ||  __/| | | | | ||  __/| | | || |_| (_| || |_ | || (_) || | | |
-//       \/  \__,_| \__,_||_| \__| |_____||_| |_| |_|| .__/ |_| \___||_| |_| |_| \___||_| |_| \__|\__,_| \__||_| \___/ |_| |_|
+//   __      __            _  _      _____                    _                                _          _    _               
+//   \ \    / /           | || |    |_   _|                  | |                              | |        | |  (_)              
+//    \ \  / /__ _  _   _ | || |_     | |   _ __ ___   _ __  | |  ___  _ __ ___    ___  _ __  | |_  __ _ | |_  _   ___   _ __  *
+//     \ \/ // _` || | | || || __|    | |  | '_ ` _ \ | '_ \ | | / _ \| '_ ` _ \  / _ \| '_ \ | __|/ _` || __|| | / _ \ | '_ \ 
+//      \  /| (_| || |_| || || |_    _| |_ | | | | | || |_) || ||  __/| | | | | ||  __/| | | || |_| (_| || |_ | || (_) || | | |
+//       \/  \__,_| \__,_||_| \__|  |_____||_| |_| |_|| .__/ |_| \___||_| |_| |_| \___||_| |_| \__|\__,_| \__||_| \___/ |_| |_|
 //                                                   | |                                                                      
 //                                                   |_|                                                                      
 

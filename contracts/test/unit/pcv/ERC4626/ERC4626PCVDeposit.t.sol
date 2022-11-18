@@ -20,6 +20,8 @@ contract UnitTestERC4626PCVDeposit is DSTest {
 
     event Harvest(address indexed _token, int256 _profit, uint256 _timestamp);
 
+    event PCVOracleUpdated(address oldOracle, address newOracle);
+
     event Withdrawal(
         address indexed _caller,
         address indexed _to,
@@ -176,321 +178,121 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         assertEq(tokenizedVaultPCVDeposit.withdrawableBalance(), uint256(amountToDeposit - amountToLock));
     }
 
-
-
-
-
-
-/*
-    function testWithdrawAll(uint120[4] calldata depositAmount) public {
-        testDeposits(depositAmount);
-
-        uint256 sumDeposit;
-        for (uint256 i = 0; i < 4; i++) {
-            sumDeposit += depositAmount[i];
-        }
-
-        assertEq(token.balanceOf(address(this)), 0);
-
-        vm.prank(addresses.pcvControllerAddress);
-        vm.expectEmit(true, true, false, true, address(morphoDeposit));
-        emit Withdrawal(
-            addresses.pcvControllerAddress,
-            address(this),
-            sumDeposit
-        );
-        morphoDeposit.withdrawAll(address(this));
-
-        assertEq(token.balanceOf(address(this)), sumDeposit);
-        assertEq(morphoDeposit.balance(), 0);
-        assertEq(morphoDeposit.lastRecordedBalance(), 0);
-    }
-
-    function testAccrue(
-        uint120[4] calldata depositAmount,
-        uint120 profitAccrued
-    ) public {
-        testDeposits(depositAmount);
-
-        uint256 sumDeposit;
-        for (uint256 i = 0; i < 4; i++) {
-            sumDeposit += depositAmount[i];
-        }
-        morpho.setBalance(address(morphoDeposit), sumDeposit + profitAccrued);
-
-        vm.expectEmit(true, false, false, true, address(morphoDeposit));
-        emit Harvest(
-            address(token),
-            uint256(profitAccrued).toInt256(),
-            block.timestamp
-        );
-        uint256 lastRecordedBalance = morphoDeposit.accrue();
-        assertEq(lastRecordedBalance, sumDeposit + profitAccrued);
-        assertEq(lastRecordedBalance, morphoDeposit.lastRecordedBalance());
-    }
-
-    function testWithdraw(
-        uint120[4] calldata depositAmount,
-        uint248[10] calldata withdrawAmount,
-        uint120 profitAccrued,
-        address to
-    ) public {
-        vm.assume(to != address(0));
-        testAccrue(depositAmount, profitAccrued);
-        token.mint(address(morpho), profitAccrued); /// top up balance so withdraws don't revert
-
-        uint256 sumDeposit = uint256(depositAmount[0]) +
-            uint256(depositAmount[1]) +
-            uint256(depositAmount[2]) +
-            uint256(depositAmount[3]) +
-            uint256(profitAccrued);
-
-        for (uint256 i = 0; i < 10; i++) {
-            uint256 amountToWithdraw = withdrawAmount[i];
-            if (amountToWithdraw > sumDeposit) {
-                /// skip if not enough to withdraw
-                continue;
-            }
-
-            sumDeposit -= amountToWithdraw;
-
-            uint256 balance = morphoDeposit.balance();
-            uint256 lastRecordedBalance = morphoDeposit.lastRecordedBalance();
-
-            vm.prank(addresses.pcvControllerAddress);
-
-            vm.expectEmit(true, true, false, true, address(morphoDeposit));
-            emit Withdrawal(
-                addresses.pcvControllerAddress,
-                to,
-                amountToWithdraw
-            );
-
-            if (balance != 0 || lastRecordedBalance != 0) {
-                emit Harvest(address(token), 0, block.timestamp); /// no profits as already accrued
-            }
-
-            morphoDeposit.withdraw(to, amountToWithdraw);
-
-            assertEq(morphoDeposit.lastRecordedBalance(), sumDeposit);
-            assertEq(
-                morphoDeposit.lastRecordedBalance(),
-                morpho.balances(address(morphoDeposit))
-            );
-        }
-    }
-
-    function testSetPCVOracleSucceedsAndHookCalledSuccessfully(
-        uint120[4] calldata depositAmount,
-        uint248[10] calldata withdrawAmount,
-        uint120 profitAccrued,
-        address to
-    ) public {
-        MockPCVOracle oracle = new MockPCVOracle();
-
-        vm.prank(addresses.governorAddress);
-        morphoDeposit.setPCVOracle(address(oracle));
-
-        assertEq(morphoDeposit.pcvOracle(), address(oracle));
-
-        vm.assume(to != address(0));
-        testWithdraw(depositAmount, withdrawAmount, profitAccrued, to);
-
-        uint256 sumDeposit = uint256(depositAmount[0]) +
-            uint256(depositAmount[1]) +
-            uint256(depositAmount[2]) +
-            uint256(depositAmount[3]) +
-            uint256(profitAccrued);
-
-        for (uint256 i = 0; i < 10; i++) {
-            if (withdrawAmount[i] > sumDeposit) {
-                continue;
-            }
-            sumDeposit -= withdrawAmount[i];
-        }
-        morphoDeposit.accrue();
-
-        assertEq(oracle.pcvAmount(), sumDeposit.toInt256());
-    }
-
-    function testSetPCVOracleSucceedsAndHookCalledSuccessfullyAfterDeposit(
-        uint120[4] calldata depositAmount,
-        uint248[10] calldata withdrawAmount,
-        uint120 profitAccrued,
-        address to
-    ) public {
-        vm.assume(to != address(0));
-        testWithdraw(depositAmount, withdrawAmount, profitAccrued, to);
-
-        uint256 sumDeposit = uint256(depositAmount[0]) +
-            uint256(depositAmount[1]) +
-            uint256(depositAmount[2]) +
-            uint256(depositAmount[3]) +
-            uint256(profitAccrued);
-
-        for (uint256 i = 0; i < 10; i++) {
-            if (withdrawAmount[i] > sumDeposit) {
-                continue;
-            }
-            sumDeposit -= withdrawAmount[i];
-        }
-
-        MockPCVOracle oracle = new MockPCVOracle();
-        vm.prank(addresses.governorAddress);
-        morphoDeposit.setPCVOracle(address(oracle));
-        assertEq(morphoDeposit.pcvOracle(), address(oracle));
-
-        assertEq(oracle.pcvAmount(), sumDeposit.toInt256());
-    }
-
-    function testEmergencyActionWithdrawSucceedsGovernor(
-        uint120 amount
-    ) public {
-        token.mint(address(morphoDeposit), amount);
-        morphoDeposit.deposit();
-
-        MorphoCompoundPCVDeposit.Call[]
-            memory calls = new MorphoCompoundPCVDeposit.Call[](1);
-        calls[0].callData = abi.encodeWithSignature(
-            "withdraw(address,uint256)",
-            address(this),
-            amount
-        );
-        calls[0].target = address(morpho);
-
-        vm.prank(addresses.governorAddress);
-        morphoDeposit.emergencyAction(calls);
-
-        assertEq(morphoDeposit.lastRecordedBalance(), amount);
-        assertEq(morphoDeposit.balance(), 0);
-    }
-
-    function testEmergencyActionSucceedsGovernorDeposit(uint120 amount) public {
-        vm.assume(amount != 0);
-        token.mint(address(morphoDeposit), amount);
-
-        MorphoCompoundPCVDeposit.Call[]
-            memory calls = new MorphoCompoundPCVDeposit.Call[](2);
-        calls[0].callData = abi.encodeWithSignature(
-            "approve(address,uint256)",
-            address(morphoDeposit.morpho()),
-            amount
-        );
-        calls[0].target = address(token);
-        calls[1].callData = abi.encodeWithSignature(
-            "supply(address,address,uint256)",
-            address(morphoDeposit),
-            address(morphoDeposit),
-            amount
-        );
-        calls[1].target = address(morpho);
-
-        vm.prank(addresses.governorAddress);
-        morphoDeposit.emergencyAction(calls);
-
-        assertEq(morphoDeposit.lastRecordedBalance(), 0);
-        assertEq(morphoDeposit.balance(), amount);
-    }
-
-    function testWithdrawFailsOverAmountHeld() public {
-        vm.prank(addresses.pcvControllerAddress);
-        vm.expectRevert(stdError.arithmeticError); /// reverts with underflow when trying to withdraw more than balance
-        morphoDeposit.withdraw(address(this), 1);
-    }
-
-    //// paused
-
-    function testDepositWhenPausedFails() public {
-        vm.prank(addresses.governorAddress);
-        morphoDeposit.pause();
-        vm.expectRevert("Pausable: paused");
-        morphoDeposit.deposit();
-    }
-
-    function testAccrueWhenPausedFails() public {
-        vm.prank(addresses.governorAddress);
-        morphoDeposit.pause();
-        vm.expectRevert("Pausable: paused");
-        morphoDeposit.accrue();
-    }
-
-    function testSetPCVOracleSucceedsGovernor() public {
-        MockPCVOracle oracle = new MockPCVOracle();
-        vm.prank(addresses.governorAddress);
-        morphoDeposit.setPCVOracle(address(oracle));
-        assertEq(morphoDeposit.pcvOracle(), address(oracle));
-    }
-
-    //// access controls
-
-    function testEmergencyActionFailsNonGovernor() public {
-        MorphoCompoundPCVDeposit.Call[]
-            memory calls = new MorphoCompoundPCVDeposit.Call[](1);
-        calls[0].callData = abi.encodeWithSignature(
-            "withdraw(address,uint256)",
-            address(this),
-            100
-        );
-        calls[0].target = address(morpho);
-
-        vm.expectRevert("CoreRef: Caller is not a governor");
-        morphoDeposit.emergencyAction(calls);
-    }
-
-    function testWithdrawFailsNonGovernor() public {
+    /// @notice checks that only PCV Controller role can withdraw
+    function testWithdrawOnlyPCVController(uint120 withdrawAmount) public {
+        address pcvReceiver = address(100);
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
-        morphoDeposit.withdraw(address(this), 100);
+        tokenizedVaultPCVDeposit.withdraw(pcvReceiver, withdrawAmount);
     }
 
-    function testWithdrawAllFailsNonGovernor() public {
-        vm.expectRevert("CoreRef: Caller is not a PCV controller");
-        morphoDeposit.withdrawAll(address(this));
+    /// @notice checks that withdraw works when withdrawing valid amount
+    function testWithdrawValidAmount(uint120 withdrawAmount) public {
+        utilDepositTokens(withdrawAmount);
+        assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), withdrawAmount);
+        address pcvReceiver = address(100);
+        vm.prank(addresses.pcvControllerAddress);
+        vm.expectEmit(true, false, false, true, address(tokenizedVaultPCVDeposit));
+        emit Withdrawal(addresses.pcvControllerAddress, pcvReceiver, withdrawAmount);
+        tokenizedVaultPCVDeposit.withdraw(pcvReceiver, withdrawAmount);
+        assertEq(token.balanceOf(pcvReceiver), withdrawAmount);
+        assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), 0);
     }
 
-    function testSetPCVOracleFailsNonGovernor() public {
+    /// @notice checks that withdraw works when withdrawing valid amount
+    function testWithdrawPartialValidAmount(uint120 depositAmount, uint120 withdrawAmount) public {
+        vm.assume(depositAmount > withdrawAmount);
+        utilDepositTokens(depositAmount);
+        assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), depositAmount);
+        address pcvReceiver = address(100);
+        vm.prank(addresses.pcvControllerAddress);
+        vm.expectEmit(true, false, false, true, address(tokenizedVaultPCVDeposit));
+        emit Withdrawal(addresses.pcvControllerAddress, pcvReceiver, withdrawAmount);
+        tokenizedVaultPCVDeposit.withdraw(pcvReceiver, withdrawAmount);
+        assertEq(token.balanceOf(pcvReceiver), withdrawAmount);
+        assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), depositAmount - withdrawAmount);
+    }
+
+    /// @notice checks that if shares are locked, you cannot withdraw full deposit
+    /// this test locks the total amount of shares in the vault before trying to withdraw
+    function testWithdrawMoreThanAvailable(uint120 withdrawAmount) public {
+        vm.assume(withdrawAmount > 0);
+        utilDepositTokens(withdrawAmount);
+        tokenizedVault.mockLockShares(withdrawAmount, address(tokenizedVaultPCVDeposit));
+        assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), withdrawAmount);
+        address pcvReceiver = address(100);
+        vm.prank(addresses.pcvControllerAddress);
+        vm.expectRevert("ERC4626: withdraw more than max");
+        tokenizedVaultPCVDeposit.withdraw(pcvReceiver, withdrawAmount);
+    }
+
+    /// @notice checks the function withdrawMax withdraw all tokens if no shares locked
+    function testWithdrawMaxWhenNoLock(uint120 withdrawAmount) public {
+        vm.assume(withdrawAmount > 0);
+        utilDepositTokens(withdrawAmount);
+        assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), withdrawAmount);
+        address pcvReceiver = address(100);
+        vm.prank(addresses.pcvControllerAddress);
+        vm.expectEmit(true, false, false, true, address(tokenizedVaultPCVDeposit));
+        emit Withdrawal(addresses.pcvControllerAddress, pcvReceiver, withdrawAmount);
+        tokenizedVaultPCVDeposit.withdrawMax(pcvReceiver);
+        assertEq(token.balanceOf(pcvReceiver), withdrawAmount);
+        assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), 0);
+    }
+
+    /// @notice checks the function withdrawMax withdraw all available tokens 
+    /// when some shares are locked in the vault
+    function testWithdrawMaxWhenLock(uint120 depositAmount, uint120 lockAmount) public {
+        vm.assume(depositAmount > 0);
+        vm.assume(lockAmount > 0);
+        vm.assume(lockAmount < depositAmount);
+        utilDepositTokens(depositAmount);
+        tokenizedVault.mockLockShares(lockAmount, address(tokenizedVaultPCVDeposit));
+        assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), depositAmount);
+        address pcvReceiver = address(100);
+        uint256 withdrawableAmount = depositAmount - lockAmount;
+        vm.prank(addresses.pcvControllerAddress);
+        vm.expectEmit(true, false, false, true, address(tokenizedVaultPCVDeposit));
+        emit Withdrawal(addresses.pcvControllerAddress, pcvReceiver, withdrawableAmount);
+        tokenizedVaultPCVDeposit.withdrawMax(pcvReceiver);
+        assertEq(token.balanceOf(pcvReceiver), withdrawableAmount);
+        assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), depositAmount - withdrawableAmount);
+    }
+
+    /// @notice checks that the oracle can only be set by governor
+    function testSetPCVOracleOnlyGovernor() public {
+        MockPCVOracle oracle = new MockPCVOracle();
         vm.expectRevert("CoreRef: Caller is not a governor");
-        morphoDeposit.setPCVOracle(address(this));
+        tokenizedVaultPCVDeposit.setPCVOracle(address(oracle));
     }
 
-    //// reentrancy
-
-    function _reentrantSetup() private {
-        morphoDeposit = new MorphoCompoundPCVDeposit(
-            address(core),
-            address(maliciousMorpho), /// cToken is not used in mock morpho deposit
-            address(token),
-            address(maliciousMorpho),
-            address(maliciousMorpho)
-        );
-
-        maliciousMorpho.setMorphoCompoundPCVDeposit(address(morphoDeposit));
+    /// @notice checks that the PCVOracle can be replaced
+    function testSetPCVOracle() public {
+        address oldOracle = tokenizedVaultPCVDeposit.pcvOracle();
+        MockPCVOracle oracle = new MockPCVOracle();
+        vm.prank(addresses.governorAddress);
+        vm.expectEmit(true, false, false, true, address(tokenizedVaultPCVDeposit));
+        emit PCVOracleUpdated(oldOracle, address(oracle));
+        tokenizedVaultPCVDeposit.setPCVOracle(address(oracle));
+        assertEq(tokenizedVaultPCVDeposit.pcvOracle(), address(oracle));
     }
 
-    function testReentrantAccrueFails() public {
-        _reentrantSetup();
-        vm.expectRevert("ReentrancyGuard: reentrant call");
-        morphoDeposit.accrue();
-    }
+    /// @notice checks that the PCVOracle, when replaced, update the lastRecordedBalance
+    function testSetPCVOracle(uint120 deposit1, uint120 profit) public {
+        vm.assume(deposit1 > 0);
+        vm.assume(profit > 0);
+        utilDepositTokens(deposit1);
+        assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), deposit1);
+        tokenizedVault.mockGainSome(profit);
+        // here, after the profit, we do not call accrue() so the lastRecordedBalance does not change
+        assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), deposit1);
 
-    function testReentrantDepositFails() public {
-        _reentrantSetup();
-        token.mint(address(morphoDeposit), 100);
-        vm.expectRevert("ReentrancyGuard: reentrant call");
-        morphoDeposit.deposit();
+        address oldOracle = tokenizedVaultPCVDeposit.pcvOracle();
+        MockPCVOracle oracle = new MockPCVOracle();
+        vm.prank(addresses.governorAddress);
+        vm.expectEmit(true, false, false, true, address(tokenizedVaultPCVDeposit));
+        emit PCVOracleUpdated(oldOracle, address(oracle));
+        tokenizedVaultPCVDeposit.setPCVOracle(address(oracle));
+        assertEq(tokenizedVaultPCVDeposit.pcvOracle(), address(oracle));
+        assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), uint256(deposit1) + uint256(profit));
     }
-
-    function testReentrantWithdrawFails() public {
-        _reentrantSetup();
-        vm.prank(addresses.pcvControllerAddress);
-        vm.expectRevert("ReentrancyGuard: reentrant call");
-        morphoDeposit.withdraw(address(this), 10);
-    }
-
-    function testReentrantWithdrawAllFails() public {
-        _reentrantSetup();
-        vm.prank(addresses.pcvControllerAddress);
-        vm.expectRevert("ReentrancyGuard: reentrant call");
-        morphoDeposit.withdrawAll(address(this));
-    }
-    */
 }
