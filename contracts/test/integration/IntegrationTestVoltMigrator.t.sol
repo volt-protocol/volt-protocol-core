@@ -309,7 +309,6 @@ contract IntegrationTestVoltMigratorTest is TimelockSimulation, vip13 {
         usdc.transfer(address(voltMigrator), amountToTransfer);
 
         vm.expectRevert("CoreRef: Caller is not a governor");
-
         voltMigrator.sweep(
             address(usdc),
             MainnetAddresses.TIMELOCK_CONTROLLER,

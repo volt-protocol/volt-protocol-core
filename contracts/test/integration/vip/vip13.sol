@@ -83,6 +83,7 @@ contract vip13 is DSTest, IVIP {
         coreV2 = new CoreV2(address(0));
         coreV2.grantGovernor(MainnetAddresses.TIMELOCK_CONTROLLER);
         coreV2.grantGovernor(MainnetAddresses.GOVERNOR);
+        coreV2.revokeGovernor(address(this));
 
         voltV2 = new VoltV2(address(coreV2));
 
