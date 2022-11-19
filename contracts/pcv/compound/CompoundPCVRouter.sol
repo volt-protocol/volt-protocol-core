@@ -60,15 +60,14 @@ contract CompoundPCVRouter is CoreRefV2 {
     /// @notice Function to swap cUSDC for cDAI
     /// @param amountUsdcIn the amount of USDC sold to the DAI PSM
     /// reverts if there are any fees on redemption
-    function swapUsdcForDai(
-        uint256 amountUsdcIn
-    )
+    function swapUsdcForDai(uint256 amountUsdcIn)
         external
         hasAnyOfThreeRoles(
             VoltRoles.GOVERNOR,
             VoltRoles.PCV_CONTROLLER,
             VoltRoles.PCV_GUARD
         )
+        globalLock(1)
     {
         require(daiPSM.tin() == 0, "CompoundPCVRouter: maker fee not 0");
 
@@ -81,15 +80,14 @@ contract CompoundPCVRouter is CoreRefV2 {
     /// @notice Function to swap cDAI for cUSDC
     /// @param amountDaiIn the amount of DAI sold to the DAI PSM in exchange for USDC
     /// reverts if there are any fees on minting
-    function swapDaiForUsdc(
-        uint256 amountDaiIn
-    )
+    function swapDaiForUsdc(uint256 amountDaiIn)
         external
         hasAnyOfThreeRoles(
             VoltRoles.GOVERNOR,
             VoltRoles.PCV_CONTROLLER,
             VoltRoles.PCV_GUARD
         )
+        globalLock(1)
     {
         require(daiPSM.tout() == 0, "CompoundPCVRouter: maker fee not 0");
 

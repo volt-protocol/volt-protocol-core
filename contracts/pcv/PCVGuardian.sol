@@ -50,9 +50,12 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
 
     /// @notice returns true if the the provided address is a valid destination to withdraw funds from
     /// @param pcvDeposit the pcvDeposit address to check if whitelisted
-    function isWhitelistAddress(
-        address pcvDeposit
-    ) public view override returns (bool) {
+    function isWhitelistAddress(address pcvDeposit)
+        public
+        view
+        override
+        returns (bool)
+    {
         return whitelistAddresses.contains(pcvDeposit);
     }
 
@@ -70,9 +73,11 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
 
     /// @notice governor-only method to change the safe address
     /// @param newSafeAddress new safe address
-    function setSafeAddress(
-        address newSafeAddress
-    ) external override onlyGovernor {
+    function setSafeAddress(address newSafeAddress)
+        external
+        override
+        onlyGovernor
+    {
         address oldSafeAddress = safeAddress;
 
         safeAddress = newSafeAddress;
@@ -82,17 +87,21 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
 
     /// @notice governor-only method to whitelist a pcvDeposit address to withdraw funds from
     /// @param pcvDeposit the address to whitelist
-    function addWhitelistAddress(
-        address pcvDeposit
-    ) external override onlyGovernor {
+    function addWhitelistAddress(address pcvDeposit)
+        external
+        override
+        onlyGovernor
+    {
         _addWhitelistAddress(pcvDeposit);
     }
 
     /// @notice batch version of addWhiteListaddress
     /// @param _whitelistAddresses the addresses to whitelist, as calldata
-    function addWhitelistAddresses(
-        address[] calldata _whitelistAddresses
-    ) external override onlyGovernor {
+    function addWhitelistAddresses(address[] calldata _whitelistAddresses)
+        external
+        override
+        onlyGovernor
+    {
         // improbable to ever overflow
         unchecked {
             for (uint256 i = 0; i < _whitelistAddresses.length; i++) {
@@ -105,17 +114,21 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
 
     /// @notice governor-or-guardian-only method to remove pcvDeposit address from the whitelist to withdraw funds from
     /// @param pcvDeposit the address to remove from whitelist
-    function removeWhitelistAddress(
-        address pcvDeposit
-    ) external override onlyGuardianOrGovernor {
+    function removeWhitelistAddress(address pcvDeposit)
+        external
+        override
+        onlyGuardianOrGovernor
+    {
         _removeWhitelistAddress(pcvDeposit);
     }
 
     /// @notice batch version of removeWhitelistAddress
     /// @param _whitelistAddresses the addresses to remove from whitelist
-    function removeWhitelistAddresses(
-        address[] calldata _whitelistAddresses
-    ) external override onlyGuardianOrGovernor {
+    function removeWhitelistAddresses(address[] calldata _whitelistAddresses)
+        external
+        override
+        onlyGuardianOrGovernor
+    {
         // improbable to ever overflow
         unchecked {
             for (uint256 i = 0; i < _whitelistAddresses.length; i++) {
@@ -127,10 +140,7 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
     /// @notice governor-or-guardian-or-pcv-guard method to withdraw funds from a pcv deposit, by calling the withdraw() method on it
     /// @param pcvDeposit the address of the pcv deposit contract
     /// @param amount the amount to withdraw
-    function withdrawToSafeAddress(
-        address pcvDeposit,
-        uint256 amount
-    )
+    function withdrawToSafeAddress(address pcvDeposit, uint256 amount)
         external
         override
         hasAnyOfThreeRoles(
@@ -145,9 +155,7 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
 
     /// @notice governor-or-guardian-or-pcv-guard method to withdraw all at once funds from a pcv deposit, by calling the withdraw() method on it
     /// @param pcvDeposit the address of the pcv deposit contract
-    function withdrawAllToSafeAddress(
-        address pcvDeposit
-    )
+    function withdrawAllToSafeAddress(address pcvDeposit)
         external
         override
         hasAnyOfThreeRoles(
@@ -184,10 +192,7 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
     /// @notice governor-or-guardian-or-pcv-guard method to withdraw all of an ERC20 balance from a pcv deposit, by calling the withdrawERC20() method on it
     /// @param pcvDeposit the deposit to pull funds from
     /// @param token the address of the token to withdraw
-    function withdrawAllERC20ToSafeAddress(
-        address pcvDeposit,
-        address token
-    )
+    function withdrawAllERC20ToSafeAddress(address pcvDeposit, address token)
         external
         override
         hasAnyOfThreeRoles(
@@ -206,10 +211,10 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
 
     // ---------- Internal Functions ----------
 
-    function _withdrawToSafeAddress(
-        address pcvDeposit,
-        uint256 amount
-    ) internal {
+    function _withdrawToSafeAddress(address pcvDeposit, uint256 amount)
+        internal
+        globalLock(1)
+    {
         if (pcvDeposit._paused()) {
             pcvDeposit._unpause();
             IPCVDeposit(pcvDeposit).withdraw(safeAddress, amount);
@@ -225,7 +230,7 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
         address pcvDeposit,
         address token,
         uint256 amount
-    ) internal {
+    ) internal globalLock(1) {
         IPCVDeposit(pcvDeposit).withdrawERC20(token, safeAddress, amount);
         emit PCVGuardianERC20Withdrawal(pcvDeposit, token, amount);
     }
