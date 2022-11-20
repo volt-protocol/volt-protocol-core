@@ -14,7 +14,7 @@ import {IVolt, Volt} from "../../volt/Volt.sol";
 import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {MockPCVDepositV2} from "../../mock/MockPCVDepositV2.sol";
-import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
+import {IOraclePassThrough} from "../../oracle/IOraclePassThrough.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 import {IGRLM, GlobalRateLimitedMinter} from "../../minter/GlobalRateLimitedMinter.sol";
@@ -40,8 +40,8 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     uint256 public constant voltMintAmount = 10_000_000e18;
 
     /// @notice Oracle Pass Through contract
-    OraclePassThrough public oracle =
-        OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
+    IOraclePassThrough public oracle =
+        IOraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 

@@ -16,7 +16,6 @@ import {ERC20Allocator} from "../pcv/utils/ERC20Allocator.sol";
 import {NonCustodialPSM} from "../peg/NonCustodialPSM.sol";
 import {VoltSystemOracle} from "../oracle/VoltSystemOracle.sol";
 import {MainnetAddresses} from "../test/integration/fixtures/MainnetAddresses.sol";
-import {OraclePassThrough} from "../oracle/OraclePassThrough.sol";
 import {CompoundPCVRouter} from "../pcv/compound/CompoundPCVRouter.sol";
 import {PegStabilityModule} from "../peg/PegStabilityModule.sol";
 import {IScalingPriceOracle} from "../oracle/IScalingPriceOracle.sol";
@@ -70,7 +69,6 @@ contract SystemDeploy {
     ERC20Allocator private allocator;
     CompoundPCVRouter private router;
     VoltSystemOracle private vso;
-    OraclePassThrough private opt;
     TimelockController public timelockController;
     GlobalRateLimitedMinter public grlm;
     address private coreAddress;
@@ -128,7 +126,6 @@ contract SystemDeploy {
             startTime,
             startPrice
         );
-        opt = new OraclePassThrough(IScalingPriceOracle(address(vso)));
         grlm = new GlobalRateLimitedMinter(
             coreAddress,
             maxRateLimitPerSecondMinting,
@@ -138,7 +135,7 @@ contract SystemDeploy {
 
         usdcpsm = new PegStabilityModule(
             coreAddress,
-            address(opt),
+            address(vso),
             address(0),
             -12,
             false,
@@ -149,7 +146,7 @@ contract SystemDeploy {
 
         daipsm = new PegStabilityModule(
             coreAddress,
-            address(opt),
+            address(vso),
             address(0),
             0,
             false,
@@ -175,7 +172,7 @@ contract SystemDeploy {
 
         usdcNonCustodialPsm = new NonCustodialPSM(
             coreAddress,
-            address(opt),
+            address(vso),
             address(0),
             -12,
             false,
@@ -186,7 +183,7 @@ contract SystemDeploy {
         );
         daiNonCustodialPsm = new NonCustodialPSM(
             coreAddress,
-            address(opt),
+            address(vso),
             address(0),
             0,
             false,
@@ -232,12 +229,6 @@ contract SystemDeploy {
             coreAddress,
             PCVDeposit(address(daiPcvDeposit)),
             PCVDeposit(address(usdcPcvDeposit))
-        );
-
-        opt.transferOwnership(address(timelockController));
-        timelockController.renounceRole(
-            timelockController.TIMELOCK_ADMIN_ROLE(),
-            address(this)
         );
     }
 
@@ -286,5 +277,10 @@ contract SystemDeploy {
         allocator.connectDeposit(address(daipsm), address(daiPcvDeposit));
 
         core.revokeGovernor(deployer); /// remove governor from deployer
+
+        timelockController.renounceRole(
+            timelockController.TIMELOCK_ADMIN_ROLE(),
+            address(this)
+        );
     }
 }

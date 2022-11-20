@@ -12,7 +12,7 @@ import {DSTest} from "./../../unit/utils/DSTest.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
 import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
-import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
+import {IOraclePassThrough} from "../../../oracle/IOraclePassThrough.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {ITimelockSimulation} from "../utils/ITimelockSimulation.sol";
 import {ERC20CompoundPCVDeposit} from "../../../pcv/compound/ERC20CompoundPCVDeposit.sol";
@@ -24,10 +24,10 @@ contract vip11 is DSTest, IVIP {
     address private fei = MainnetAddresses.FEI;
     address private core = MainnetAddresses.CORE;
 
-    OraclePassThrough private mainnetOPT =
-        OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
-    OraclePassThrough private arbitrumOPT =
-        OraclePassThrough(ArbitrumAddresses.ORACLE_PASS_THROUGH);
+    IOraclePassThrough private mainnetOPT =
+        IOraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
+    IOraclePassThrough private arbitrumOPT =
+        IOraclePassThrough(ArbitrumAddresses.ORACLE_PASS_THROUGH);
 
     ITimelockSimulation.action[] private mainnetProposal;
 

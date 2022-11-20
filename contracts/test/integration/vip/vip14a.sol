@@ -14,7 +14,7 @@ import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {IPCVDeposit} from "../../../pcv/IPCVDeposit.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
-import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
+import {IOraclePassThrough} from "../../../oracle/IOraclePassThrough.sol";
 import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {ITimelockSimulation} from "../utils/ITimelockSimulation.sol";
@@ -50,8 +50,8 @@ contract vip14a is DSTest, IVIP {
     PCVGuardian public immutable pcvGuardian =
         PCVGuardian(ArbitrumAddresses.PCV_GUARDIAN);
 
-    OraclePassThrough public immutable opt =
-        OraclePassThrough(ArbitrumAddresses.ORACLE_PASS_THROUGH);
+    IOraclePassThrough public immutable opt =
+        IOraclePassThrough(ArbitrumAddresses.ORACLE_PASS_THROUGH);
 
     constructor() {
         if (block.chainid == 1) {
@@ -119,7 +119,7 @@ contract vip14a is DSTest, IVIP {
         /// oracle pass through points to new scaling price oracle
         assertEq(
             address(
-                OraclePassThrough(ArbitrumAddresses.ORACLE_PASS_THROUGH)
+                IOraclePassThrough(ArbitrumAddresses.ORACLE_PASS_THROUGH)
                     .scalingPriceOracle()
             ),
             address(oracle)
