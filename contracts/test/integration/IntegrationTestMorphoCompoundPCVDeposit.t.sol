@@ -98,11 +98,12 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
         core.grantLocker(address(entry));
         core.grantLocker(address(daiDeposit));
         core.grantLocker(address(usdcDeposit));
+        core.grantLocker(address(pcvGuardian));
 
         vm.stopPrank();
 
-        usdcDeposit.deposit();
-        daiDeposit.deposit();
+        entry.deposit(address(daiDeposit));
+        entry.deposit(address(usdcDeposit));
 
         vm.roll(block.number + 1); /// fast forward 1 block so that profit is positive
     }
@@ -143,10 +144,14 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     }
 
     function testWithdraw() public {
-        vm.startPrank(MainnetAddresses.GOVERNOR);
-        usdcDeposit.withdraw(address(this), usdcDeposit.balance());
-        daiDeposit.withdraw(address(this), daiDeposit.balance());
-        vm.stopPrank();
+        pcvGuardian.withdrawToSafeAddress(
+            address(usdcDeposit),
+            usdcDeposit.balance()
+        );
+        pcvGuardian.withdrawToSafeAddress(
+            address(daiDeposit),
+            daiDeposit.balance()
+        );
 
         assertApproxEq(
             dai.balanceOf(address(this)).toInt256(),
@@ -185,7 +190,6 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
         vm.assume(amount >= 1e9);
         vm.assume(amount <= targetDaiBalance);
 
-        vm.prank(MainnetAddresses.GOVERNOR);
         pcvGuardian.withdrawToSafeAddress(address(daiDeposit), amount);
 
         assertEq(dai.balanceOf(address(this)), amount);
@@ -230,18 +234,25 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     }
 
     function testDepositNoFundsSucceeds() public {
-        usdcDeposit.deposit();
-        daiDeposit.deposit();
+        entry.deposit(address(usdcDeposit));
+        entry.deposit(address(daiDeposit));
+    }
+
+    function testAccrueNoFundsSucceeds() public {
+        entry.accrue(address(usdcDeposit));
+        entry.accrue(address(daiDeposit));
     }
 
     function testDepositWhenPausedFails() public {
-        vm.prank(MainnetAddresses.GOVERNOR);
+        vm.prank(addresses.governorAddress);
         usdcDeposit.pause();
+
         vm.expectRevert("Pausable: paused");
         entry.deposit(address(usdcDeposit));
 
-        vm.prank(MainnetAddresses.GOVERNOR);
+        vm.prank(addresses.governorAddress);
         daiDeposit.pause();
+
         vm.expectRevert("Pausable: paused");
         entry.deposit(address(daiDeposit));
     }

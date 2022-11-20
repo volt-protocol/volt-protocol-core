@@ -52,6 +52,7 @@ contract IntegrationTestPCVGuardian is DSTest {
 
         /// grant it to the 'guard' address
         core.grantRole(VoltRoles.PCV_GUARD, guard);
+        core.grantRole(VoltRoles.PCV_GUARD, address(this));
         vm.stopPrank();
     }
 
@@ -100,12 +101,10 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testGovernorWithdrawAllToSafeAddress() public {
-        vm.startPrank(MainnetAddresses.GOVERNOR);
         assertEq(fei.balanceOf(address(this)), 0);
 
         uint256 amountToWithdraw = pcvDeposit.balance();
         pcvGuardian.withdrawAllToSafeAddress(address(pcvDeposit));
-        vm.stopPrank();
 
         assertEq(fei.balanceOf(address(this)), amountToWithdraw);
     }
@@ -122,13 +121,10 @@ contract IntegrationTestPCVGuardian is DSTest {
     }
 
     function testGuardianWithdrawAllToSafeAddress() public {
-        vm.startPrank(MainnetAddresses.PCV_GUARDIAN);
-
         assertEq(fei.balanceOf(address(this)), 0);
         uint256 amountToWithdraw = pcvDeposit.balance();
 
         pcvGuardian.withdrawAllToSafeAddress(address(pcvDeposit));
-        vm.stopPrank();
 
         assertEq(fei.balanceOf(address(this)), amountToWithdraw);
     }
@@ -137,6 +133,7 @@ contract IntegrationTestPCVGuardian is DSTest {
         vm.startPrank(guard);
         assertEq(fei.balanceOf(address(this)), 0);
         pcvGuardian.withdrawToSafeAddress(address(pcvDeposit), withdrawAmount);
+        vm.stopPrank();
 
         assertEq(fei.balanceOf(address(this)), withdrawAmount);
     }
