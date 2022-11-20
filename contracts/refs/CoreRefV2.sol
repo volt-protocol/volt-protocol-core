@@ -8,6 +8,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IGRLM} from "../minter/IGRLM.sol";
 import {VoltRoles} from "./../core/VoltRoles.sol";
 import {ICoreRefV2} from "./ICoreRefV2.sol";
+import {IPCVOracle} from "./../pcv/morpho/IPCVOracle.sol";
 import {CoreV2, ICoreV2} from "./../core/CoreV2.sol";
 import {IVolt, IVoltBurn} from "./../volt/IVolt.sol";
 import {IGlobalReentrancyLock} from "./../core/IGlobalReentrancyLock.sol";
@@ -20,6 +21,12 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
 
     /// @notice reference to Core
     CoreV2 private _core;
+
+    /// @notice reference to the PCV Oracle. Settable by governance
+    /// if set, anytime PCV is updated, delta is sent in to update liquid
+    /// amount of PCV held
+    /// not set in the constructor
+    address public pcvOracle;
 
     constructor(address coreAddress) {
         _core = CoreV2(coreAddress);
@@ -198,6 +205,10 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         return vcon().balanceOf(address(this));
     }
 
+    /// ------------------------------------------
+    /// ----------- Governor Only API ------------
+    /// ------------------------------------------
+
     /// @notice WARNING CALLING THIS FUNCTION CAN POTENTIALLY
     /// BRICK A CONTRACT IF CORE IS SET INCORRECTLY
     /// @notice set new reference to core
@@ -221,6 +232,15 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         uint256 amount
     ) external onlyGovernor {
         IERC20(token).safeTransfer(to, amount);
+    }
+
+    /// @notice set the pcv oracle address
+    /// @param _pcvOracle new pcv oracle to reference
+    function setPCVOracle(address _pcvOracle) external virtual onlyGovernor {
+        address oldOracle = pcvOracle;
+        pcvOracle = _pcvOracle;
+
+        emit PCVOracleUpdated(oldOracle, _pcvOracle);
     }
 
     /// ------------------------------------------
@@ -255,6 +275,28 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
             );
             require(success);
             returnData[i] = returned;
+        }
+    }
+
+    /// ------------------------------------------
+    /// ------- PCV Oracle Helper Methods --------
+    /// ------------------------------------------
+
+    /// @notice hook into the pcv oracle, calls into pcv oracle with delta
+    /// if pcv oracle is not set to address 0, and updates the liquid balance
+    function _liquidPcvOracleHook(int256 delta) internal {
+        if (pcvOracle != address(0)) {
+            /// if any amount of PCV is withdrawn and no gains, delta is negative
+            IPCVOracle(pcvOracle).updateLiquidBalance(delta);
+        }
+    }
+
+    /// @notice hook into the pcv oracle, calls into pcv oracle with delta
+    /// if pcv oracle is not set to address 0, and updates the illiquid balance
+    function _illiquidPcvOracleHook(int256 delta) internal {
+        if (pcvOracle != address(0)) {
+            /// if any amount of PCV is withdrawn and no gains, delta is negative
+            IPCVOracle(pcvOracle).updateIlliquidBalance(delta);
         }
     }
 }

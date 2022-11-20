@@ -134,6 +134,8 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRef {
         /// however interacts with external untrusted contracts
         pcvDeposit.withdraw(to, amountOut);
 
+        /// No PCV Oracle hooks needed here as PCV deposit will update PCV Oracle
+
         emit Redeem(to, amountVoltIn, amountOut);
     }
 

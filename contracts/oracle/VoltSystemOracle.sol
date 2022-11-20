@@ -2,8 +2,9 @@
 pragma solidity 0.8.13;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
+import {Decimal} from "../external/Decimal.sol";
 import {Constants} from "./../Constants.sol";
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {IVoltSystemOracle} from "./IVoltSystemOracle.sol";
 
 /// @notice contract that receives a fixed interest rate upon construction,
@@ -14,6 +15,8 @@ import {IVoltSystemOracle} from "./IVoltSystemOracle.sol";
 /// is 6192 years, which is more than enough for this use case.
 /// @author Elliot Friedman
 contract VoltSystemOracle is IVoltSystemOracle {
+    using Decimal for Decimal.D256;
+
     /// ---------- Mutable Variables ----------
 
     /// @notice acts as an accumulator for interest earned in previous periods
@@ -64,6 +67,18 @@ contract VoltSystemOracle is IVoltSystemOracle {
         uint256 priceDelta = pricePercentageChange * timeDelta / TIMEFRAME;
 
         return cachedOraclePrice + priceDelta;
+    }
+
+    /// @notice function to get the current oracle price for the OracleRef contract
+    function read()
+        external
+        view
+        returns (Decimal.D256 memory price, bool valid)
+    {
+        uint256 currentPrice = getCurrentOraclePrice();
+
+        price = Decimal.from(currentPrice).div(1e18);
+        valid = true;
     }
 
     /// ------------- Public State Changing API -------------
