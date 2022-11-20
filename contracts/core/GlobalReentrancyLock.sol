@@ -15,8 +15,8 @@ import {IGlobalReentrancyLock} from "./IGlobalReentrancyLock.sol";
 /// @notice explanation on data types used in contract
 
 /// @dev block number can be safely downcasted without a check on exceeding
-/// uint80 max because the sun will explode before this statement is true:
-/// block.number > 2^80 - 1
+/// uint88 max because the sun will explode before this statement is true:
+/// block.number > 2^88 - 1
 /// address can be stored in a uint160 because an address is only 20 bytes
 
 /// @dev in the EVM. 160bits / 8 bits per byte = 20 bytes
@@ -71,13 +71,10 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// if last block entered was in the past and status
     /// is entered, the system is in an invalid state
     /// which means that actions should be allowed
-    uint80 private _lastBlockEntered;
+    uint88 private _lastBlockEntered;
 
     /// @notice system lock level
     uint8 private _lockLevel;
-
-    /// @notice starting system lock level
-    uint8 private _startingLockLevel;
 
     /// @notice only level 1 locker role is allowed to call
     /// in and set entered or not entered for status level one
@@ -92,7 +89,7 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// ---------- View Only APIs ----------
 
     /// @notice view only function to return the last block entered
-    function lastBlockEntered() external view returns (uint80) {
+    function lastBlockEntered() external view returns (uint88) {
         return _lastBlockEntered;
     }
 
@@ -127,7 +124,10 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     function lock(uint8 toLock) external override onlyLocker {
         uint8 currentLevel = _lockLevel; /// cache to save 1 warm SLOAD
 
-        require(toLock > currentLevel, "GlobalReentrancyLock: system locked");
+        require(
+            toLock == currentLevel + 1,
+            "GlobalReentrancyLock: invalid lock level"
+        );
         require(
             toLock <= _ENTERED_LEVEL_TWO,
             "GlobalReentrancyLock: exceeds lock state"
@@ -135,13 +135,12 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
 
         /// only store the sender and startingLockLevel if first caller
         if (currentLevel == _NOT_ENTERED) {
-            uint80 blockEntered = uint80(block.number);
+            uint88 blockEntered = uint88(block.number);
             uint160 sender = uint160(msg.sender);
 
             _sender = sender;
             _lastBlockEntered = blockEntered;
             _lockLevel = toLock;
-            _startingLockLevel = toLock;
         } else {
             /// ------ increasing lock level flow ------
             /// do not update sender, to ensure original sender gets checked on final unlock
@@ -168,10 +167,9 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// currentLevel cannot be _NOT_ENTERED when this function is called
     function unlock(uint8 toUnlock) external override onlyLocker {
         uint8 currentLevel = _lockLevel;
-        uint8 startingLockLevel = _startingLockLevel;
 
         require(
-            uint80(block.number) == _lastBlockEntered,
+            uint88(block.number) == _lastBlockEntered,
             "GlobalReentrancyLock: not entered this block"
         );
         require(
@@ -183,26 +181,14 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
             "GlobalReentrancyLock: unlock level must be lower"
         );
 
-        /// if starting lock was level 2, only allow unlocking to level 0
-        if (startingLockLevel == _ENTERED_LEVEL_TWO) {
-            require(
-                toUnlock == _NOT_ENTERED,
-                "GlobalReentrancyLock: invalid system state"
-            );
-        }
-
         /// if started at level 1, locked up to level 2,
         /// and trying to lock down to level 0,
         /// fail as that puts us in an invalid state
-        if (
-            startingLockLevel == _ENTERED_LEVEL_ONE &&
-            currentLevel == _ENTERED_LEVEL_TWO
-        ) {
-            require(
-                toUnlock == _ENTERED_LEVEL_ONE,
-                "GlobalReentrancyLock: invalid system unlock"
-            );
-        }
+
+        require(
+            toUnlock == currentLevel - 1,
+            "GlobalReentrancyLock: unlock level must be 1 lower"
+        );
 
         /// level 1 locked, sender calls in, sender is stored
         /// level 2 locked, sender is not stored
@@ -213,20 +199,16 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
         /// level 2 unlock, sender is checked, status level unlocked
 
         /// level 2 locked from completley unlocked,
-        /// level 1 unlock is called from sender,
-        /// call reverts with message "GlobalReentrancyLock: invalid system state"
+        /// call reverts with message "GlobalReentrancyLock: invalid lock level"
 
         if (toUnlock == _NOT_ENTERED) {
             require(
                 uint160(msg.sender) == _sender,
                 "GlobalReentrancyLock: caller is not locker"
             );
-
-            _lockLevel = _NOT_ENTERED;
-            _startingLockLevel = _NOT_ENTERED;
-        } else {
-            _lockLevel = toUnlock;
         }
+
+        _lockLevel = toUnlock;
     }
 
     /// ---------- Governor Only State Changing API ----------
