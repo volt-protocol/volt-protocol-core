@@ -235,7 +235,6 @@ contract SystemUnitTest is Test {
         core.grantLocker(address(daipsm));
         core.grantLocker(address(usdcpsm));
 
-        /// grant level two locker to grlm
         core.grantLocker(address(grlm));
 
         core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
