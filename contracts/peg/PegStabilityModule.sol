@@ -89,7 +89,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
     function withdraw(
         address to,
         uint256 amount
-    ) external virtual override onlyPCVController globalLock(1) {
+    ) external virtual override onlyPCVController globalLock(2) {
         _withdrawERC20(address(underlyingToken), to, amount);
         _liquidPcvOracleHook(-(amount.toInt256()));
     }
@@ -179,7 +179,18 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
 
     /// @notice no-op to maintain backwards compatability with IPCVDeposit
     /// pauseable to stop integration if this contract is deprecated
-    function deposit() external override whenNotPaused {}
+    function deposit() external override globalLock(2) whenNotPaused {}
+
+    /// @notice no-op to maintain compatability with IPCVDepositV2
+    /// pauseable to stop integration if this contract is deprecated
+    /// @return balance of underlying token
+    function accrue() external globalLock(2) whenNotPaused returns (uint256) {
+        return balance();
+    }
+
+    /// @notice no-op to maintain backwards compatability with IPCVDepositV2
+    /// pauseable to stop integration if this contract is deprecated
+    function harvest() external globalLock(2) whenNotPaused {}
 
     /// ----------- Public View-Only API ----------
 
