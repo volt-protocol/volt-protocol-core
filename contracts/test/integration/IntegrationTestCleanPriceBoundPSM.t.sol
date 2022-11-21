@@ -32,7 +32,7 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
     PegStabilityModule private cleanPsm;
 
     ICoreV2 private core = ICoreV2(MainnetAddresses.CORE);
-    ICoreV2 private tmpCore;
+    CoreV2 private tmpCore;
     IVolt private tmpVolt;
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
     IERC20 private usdc = IERC20(MainnetAddresses.USDC);
@@ -470,6 +470,9 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
 
     /// @notice withdraw succeeds with correct permissions
     function testWithdrawSuccess() public {
+        vm.prank(address(grlm));
+        tmpCore.lock(1);
+
         vm.prank(addresses.governorAddress);
         tmpCore.grantPCVController(address(this));
 

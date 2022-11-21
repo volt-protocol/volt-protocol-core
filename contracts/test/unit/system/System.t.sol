@@ -231,6 +231,7 @@ contract SystemUnitTest is Test {
         core.grantRateLimitedRedeemer(address(daipsm));
         core.grantRateLimitedRedeemer(address(usdcpsm));
 
+        core.grantLocker(address(pcvGuardian));
         core.grantLocker(address(allocator));
         core.grantLocker(address(daipsm));
         core.grantLocker(address(usdcpsm));
@@ -401,10 +402,12 @@ contract SystemUnitTest is Test {
 
     function testPCVGuardWithdrawAllToSafeAddress() public {
         vm.startPrank(addresses.userAddress);
-        pcvGuardian.withdrawAllToSafeAddress(address(pcvDepositDai));
-        pcvGuardian.withdrawAllToSafeAddress(address(pcvDepositUsdc));
+
         pcvGuardian.withdrawAllToSafeAddress(address(daipsm));
         pcvGuardian.withdrawAllToSafeAddress(address(usdcpsm));
+        pcvGuardian.withdrawAllToSafeAddress(address(pcvDepositDai));
+        pcvGuardian.withdrawAllToSafeAddress(address(pcvDepositUsdc));
+
         vm.stopPrank();
 
         assertEq(
@@ -491,9 +494,9 @@ contract SystemUnitTest is Test {
         assertEq(volt.balanceOf(address(daipsm)), voltAmountOut);
     }
 
-    function testMintRedeemSamePriceLosesOrBreaksEvenUsdc(
-        uint80 mintAmount
-    ) public {
+    function testMintRedeemSamePriceLosesOrBreaksEvenUsdc(uint80 mintAmount)
+        public
+    {
         vm.assume(mintAmount != 0);
 
         uint256 voltAmountOut = usdcpsm.getMintAmountOut(mintAmount);

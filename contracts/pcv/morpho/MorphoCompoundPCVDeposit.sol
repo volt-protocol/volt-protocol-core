@@ -123,7 +123,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     /// @notice deposit ERC-20 tokens to Morpho-Compound
     /// non-reentrant to block malicious reentrant state changes
     /// to the lastRecordedBalance variable
-    function deposit() public whenNotPaused nonReentrant {
+    function deposit() public whenNotPaused globalLock(2) {
         /// ------ Check ------
 
         uint256 amount = IERC20(token).balanceOf(address(this));
@@ -168,7 +168,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     /// @notice claim COMP rewards for supplying to Morpho.
     /// Does not require reentrancy lock as no smart contract state is mutated
     /// in this function.
-    function harvest() external {
+    function harvest() external globalLock(2) {
         address[] memory cTokens = new address[](1);
         cTokens[0] = cToken;
 
@@ -182,7 +182,8 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     /// since the last contract interaction
     /// then writes the current amount of PCV tracked in this contract
     /// to lastRecordedBalance
-    function accrue() external override nonReentrant whenNotPaused {
+    /// @return the amount deposited after adding accrued interest or realizing losses
+    function accrue() external globalLock(2) whenNotPaused returns (uint256) {
         int256 startingRecordedBalance = lastRecordedBalance.toInt256();
 
         _recordPNL(); /// update deposit amount and fire harvest event
@@ -208,7 +209,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     function withdraw(address to, uint256 amount)
         external
         onlyPCVController
-        nonReentrant
+        globalLock(2)
     {
         int256 startingRecordedBalance = lastRecordedBalance.toInt256();
 
@@ -223,10 +224,25 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         }
     }
 
+    /// @notice set the pcv oracle address
+    /// @param _pcvOracle new pcv oracle to reference
+    function setPCVOracle(address _pcvOracle) external override onlyGovernor {
+        address oldOracle = pcvOracle;
+        pcvOracle = _pcvOracle;
+
+        _recordPNL();
+
+        IPCVOracle(pcvOracle).updateLiquidBalance(
+            lastRecordedBalance.toInt256()
+        );
+
+        emit PCVOracleUpdated(oldOracle, _pcvOracle);
+    }
+
     /// @notice withdraw all tokens from Morpho
     /// non-reentrant as state changes and external calls are made
     /// @param to the address PCV will be sent to
-    function withdrawAll(address to) external onlyPCVController nonReentrant {
+    function withdrawAll(address to) external onlyPCVController globalLock(2) {
         int256 startingRecordedBalance = lastRecordedBalance.toInt256();
 
         /// compute profit from interest accrued and emit an event

@@ -12,6 +12,7 @@ import {MockERC20} from "../../../mock/MockERC20.sol";
 import {PCVDeposit} from "../../../pcv/PCVDeposit.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {IPCVDeposit} from "../../../pcv/IPCVDeposit.sol";
+import {SystemEntry} from "../../../entry/SystemEntry.sol";
 import {NonCustodialPSM} from "../../../peg/NonCustodialPSM.sol";
 import {MockPCVDepositV3} from "../../../mock/MockPCVDepositV3.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
@@ -61,15 +62,17 @@ contract NonCustodialPSMUnitTest is Test {
     VoltAddresses public guardianAddresses = getVoltAddresses();
 
     ICoreV2 private core;
-    NonCustodialPSM private psm;
-    PegStabilityModule private custodialPsm;
-    MockPCVDepositV3 private pcvDeposit;
-    VoltSystemOracle private oracle;
-    GlobalRateLimitedMinter public grlm;
-    address private voltAddress;
-    address private coreAddress;
+    SystemEntry private entry;
     IERC20Mintable private dai;
     IERC20Mintable private volt;
+    NonCustodialPSM private psm;
+    VoltSystemOracle private oracle;
+    GlobalRateLimitedMinter private grlm;
+    MockPCVDepositV3 private pcvDeposit;
+    PegStabilityModule private custodialPsm;
+
+    address private voltAddress;
+    address private coreAddress;
 
     uint256 public constant timelockDelay = 600;
     uint248 public constant usdcTargetBalance = 100_000e6;
@@ -111,6 +114,7 @@ contract NonCustodialPSMUnitTest is Test {
         volt = IERC20Mintable(address(core.volt()));
         voltAddress = address(volt);
         coreAddress = address(core);
+        entry = new SystemEntry(address(core));
         dai = IERC20Mintable(address(new MockERC20()));
         oracle = new VoltSystemOracle(
             monthlyChangeRateBasisPoints,
@@ -157,6 +161,7 @@ contract NonCustodialPSMUnitTest is Test {
         core.grantRateLimitedRedeemer(address(psm));
         core.grantRateLimitedRedeemer(address(custodialPsm));
 
+        core.grantLocker(address(entry));
         core.grantLocker(address(psm));
         core.grantLocker(address(custodialPsm));
         core.grantLocker(address(pcvDeposit));
@@ -169,7 +174,7 @@ contract NonCustodialPSMUnitTest is Test {
         /// top up contracts with tokens for testing
         dai.mint(address(pcvDeposit), daiTargetBalance);
         dai.mint(address(custodialPsm), daiTargetBalance);
-        pcvDeposit.deposit();
+        entry.deposit(address(pcvDeposit));
 
         vm.label(address(psm), "psm");
         vm.label(address(pcvDeposit), "pcvDeposit");
@@ -383,9 +388,9 @@ contract NonCustodialPSMUnitTest is Test {
         assertEq(volt.balanceOf(address(psm)), 0);
     }
 
-    function testSetOracleFloorPriceGovernorSucceedsFuzz(
-        uint128 newFloorPrice
-    ) public {
+    function testSetOracleFloorPriceGovernorSucceedsFuzz(uint128 newFloorPrice)
+        public
+    {
         vm.assume(newFloorPrice != 0);
 
         uint128 currentPrice = uint128(oracle.getCurrentOraclePrice());

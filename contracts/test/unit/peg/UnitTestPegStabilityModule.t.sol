@@ -12,6 +12,7 @@ import {Constants} from "../../../Constants.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
 import {IVolt, Volt} from "../../../volt/Volt.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
+import {SystemEntry} from "../../../entry/SystemEntry.sol";
 import {Test, console2} from "../../../../forge-std/src/Test.sol";
 import {NonCustodialPSM} from "../../../peg/NonCustodialPSM.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
@@ -27,13 +28,16 @@ contract UnitTestPegStabilityModule is Test {
     /// @notice PSM to test against
     PegStabilityModule private psm;
 
-    ICoreV2 private core;
     IVolt private volt;
+    ICoreV2 private core;
+    SystemEntry private entry;
     IERC20 private underlyingToken;
-    GlobalRateLimitedMinter public grlm;
+    VoltSystemOracle private oracle;
+    PCVGuardian private pcvGuardian;
+    GlobalRateLimitedMinter private grlm;
+
     uint256 public constant mintAmount = 10_000_000e18;
     uint256 public constant voltMintAmount = 10_000_000e18;
-    VoltSystemOracle public oracle;
 
     /// ---------- PRICE PARAMS ----------
 
@@ -77,13 +81,35 @@ contract UnitTestPegStabilityModule is Test {
             rateLimitPerSecondMinting,
             bufferCapMinting
         );
+        entry = new SystemEntry(address(core));
+
+        address[] memory toWhitelist = new address[](1);
+        toWhitelist[0] = address(psm);
+
+        pcvGuardian = new PCVGuardian(
+            address(core),
+            address(this),
+            toWhitelist
+        );
+
         vm.startPrank(addresses.governorAddress);
+
+        core.grantPCVController(address(pcvGuardian));
         core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
         core.grantMinter(address(grlm));
+
         core.grantRateLimitedRedeemer(address(psm));
         core.grantRateLimitedMinter(address(psm));
+
+        core.grantGuardian(address(pcvGuardian));
+
+        core.grantPCVGuard(address(this));
+
         core.grantLocker(address(psm));
         core.grantLocker(address(grlm));
+        core.grantLocker(address(entry));
+        core.grantLocker(address(pcvGuardian));
+
         vm.stopPrank();
 
         vm.label(address(psm), "PSM");
@@ -297,10 +323,8 @@ contract UnitTestPegStabilityModule is Test {
 
     /// @notice withdraw succeeds with correct permissions
     function testWithdrawSuccess() public {
-        vm.prank(addresses.governorAddress);
-        core.grantPCVController(address(this));
         uint256 startingBalance = underlyingToken.balanceOf(address(this));
-        psm.withdraw(address(this), mintAmount);
+        pcvGuardian.withdrawToSafeAddress(address(psm), mintAmount);
         uint256 endingBalance = underlyingToken.balanceOf(address(this));
         assertEq(endingBalance - startingBalance, mintAmount);
     }
@@ -343,9 +367,9 @@ contract UnitTestPegStabilityModule is Test {
         psm.setOracleFloorPrice(0);
     }
 
-    function testSetOracleFloorPriceGovernorSucceedsFuzz(
-        uint128 newFloorPrice
-    ) public {
+    function testSetOracleFloorPriceGovernorSucceedsFuzz(uint128 newFloorPrice)
+        public
+    {
         vm.assume(newFloorPrice != 0);
 
         uint128 currentPrice = uint128(oracle.getCurrentOraclePrice());
@@ -390,7 +414,7 @@ contract UnitTestPegStabilityModule is Test {
     }
 
     function testDepositNoOp() public {
-        psm.deposit();
+        entry.deposit(address(psm));
     }
 
     /// @notice deposit fails when paused
@@ -398,7 +422,7 @@ contract UnitTestPegStabilityModule is Test {
         vm.prank(addresses.governorAddress);
         psm.pause();
         vm.expectRevert("Pausable: paused");
-        psm.deposit();
+        entry.deposit(address(psm));
     }
 
     /// ----------- ACL TESTS -----------
