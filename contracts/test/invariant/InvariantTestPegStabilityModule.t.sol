@@ -9,6 +9,7 @@ import {DSTest} from "../unit/utils/DSTest.sol";
 import {ICoreV2} from "../../core/ICoreV2.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
 import {MockMorpho} from "../../mock/MockMorpho.sol";
+import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
 import {MockPCVOracle} from "../../mock/MockPCVOracle.sol";
 import {DSInvariantTest} from "../unit/utils/DSInvariantTest.sol";
 import {VoltSystemOracle} from "../../oracle/VoltSystemOracle.sol";
@@ -23,16 +24,18 @@ import {getCoreV2, getAddresses, VoltTestAddresses} from "../unit/utils/Fixtures
 contract InvariantTestPegStabilityModule is DSTest, DSInvariantTest {
     using SafeCast for *;
 
-    MorphoPCVDepositTest public morphoTest;
-    MockPCVOracle public pcvOracle;
     ICoreV2 public core;
-    PegStabilityModule public psm;
-    MockMorpho public morpho;
     MockERC20 public token;
-    Vm private vm = Vm(HEVM_ADDRESS);
-    VoltTestAddresses public addresses = getAddresses();
+    MockMorpho public morpho;
+    PegStabilityModule public psm;
+    PCVGuardian public pcvGuardian;
+    MockPCVOracle public pcvOracle;
     VoltSystemOracle private oracle;
     GlobalRateLimitedMinter public grlm;
+    PegStabilityModuleTest public morphoTest;
+
+    Vm private vm = Vm(HEVM_ADDRESS);
+    VoltTestAddresses public addresses = getAddresses();
 
     /// ---------- PSM PARAMS ----------
 
@@ -65,11 +68,23 @@ contract InvariantTestPegStabilityModule is DSTest, DSInvariantTest {
             voltFloorPrice,
             voltCeilingPrice
         );
-        morphoTest = new MorphoPCVDepositTest(
+
+        address[] memory toWhitelist = new address[](1);
+        toWhitelist[0] = address(psm);
+
+        pcvGuardian = new PCVGuardian(
+            address(core),
+            address(this),
+            toWhitelist
+        );
+
+        morphoTest = new PegStabilityModuleTest(
             psm,
             token,
-            MockERC20(address(core.volt()))
+            MockERC20(address(core.volt())),
+            pcvGuardian
         );
+
         vm.prank(addresses.governorAddress);
         psm.setPCVOracle(address(pcvOracle));
 
@@ -83,10 +98,14 @@ contract InvariantTestPegStabilityModule is DSTest, DSInvariantTest {
         vm.startPrank(addresses.governorAddress);
 
         core.grantMinter(address(grlm));
-        core.grantLocker(address(grlm));
+
         core.grantLocker(address(psm));
+        core.grantLocker(address(grlm));
+        core.grantLocker(address(pcvGuardian));
+
         core.grantRateLimitedMinter(address(psm));
         core.grantRateLimitedRedeemer(address(psm));
+        core.grantPCVController(address(pcvGuardian));
         core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
 
         vm.stopPrank();
@@ -103,18 +122,26 @@ contract InvariantTestPegStabilityModule is DSTest, DSInvariantTest {
     }
 }
 
-contract MorphoPCVDepositTest is DSTest {
-    VoltTestAddresses public addresses = getAddresses();
-    Vm private vm = Vm(HEVM_ADDRESS);
+contract PegStabilityModuleTest is DSTest {
+    MockERC20 public volt;
+    MockERC20 public token;
     uint256 public totalDeposited;
     PegStabilityModule public psm;
-    MockERC20 public token;
-    MockERC20 public volt;
+    PCVGuardian public pcvGuardian;
 
-    constructor(PegStabilityModule _psm, MockERC20 _token, MockERC20 _volt) {
+    Vm private vm = Vm(HEVM_ADDRESS);
+    VoltTestAddresses public addresses = getAddresses();
+
+    constructor(
+        PegStabilityModule _psm,
+        MockERC20 _token,
+        MockERC20 _volt,
+        PCVGuardian _pcvGuardian
+    ) {
         psm = _psm;
         token = _token;
         volt = _volt;
+        pcvGuardian = _pcvGuardian;
     }
 
     function mint(uint96 amount) public {
@@ -146,7 +173,7 @@ contract MorphoPCVDepositTest is DSTest {
 
     function withdraw(uint96 amount) public {
         vm.prank(addresses.pcvControllerAddress);
-        psm.withdraw(address(this), amount);
+        pcvGuardian.withdrawToSafeAddress(address(psm), amount);
         unchecked {
             totalDeposited -= amount;
         }
