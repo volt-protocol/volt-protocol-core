@@ -74,11 +74,10 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     /// @param role the new role id
     /// @param adminRole the admin role id for `role`
     /// @dev can also be used to update admin of existing role
-    function createRole(bytes32 role, bytes32 adminRole)
-        external
-        override
-        onlyGovernor
-    {
+    function createRole(
+        bytes32 role,
+        bytes32 adminRole
+    ) external override onlyGovernor {
         _setRoleAdmin(role, adminRole);
     }
 
@@ -90,11 +89,9 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
 
     /// @notice grants controller role to address
     /// @param pcvController new controller
-    function grantPCVController(address pcvController)
-        external
-        override
-        onlyGovernor
-    {
+    function grantPCVController(
+        address pcvController
+    ) external override onlyGovernor {
         _grantRole(PCV_CONTROLLER_ROLE, pcvController);
     }
 
@@ -112,11 +109,9 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
 
     /// @notice grants level one locker role to address
     /// @param levelOneLocker new level one locker address
-    function grantLocker(address levelOneLocker)
-        external
-        override
-        onlyGovernor
-    {
+    function grantLocker(
+        address levelOneLocker
+    ) external override onlyGovernor {
         _grantRole(LOCKER_ROLE, levelOneLocker);
     }
 
@@ -128,21 +123,17 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
 
     /// @notice grants ability to mint Volt through the global rate limited minter
     /// @param rateLimitedMinter address to add as a minter in global rate limited minter
-    function grantRateLimitedMinter(address rateLimitedMinter)
-        external
-        override
-        onlyGovernor
-    {
+    function grantRateLimitedMinter(
+        address rateLimitedMinter
+    ) external override onlyGovernor {
         _grantRole(VOLT_RATE_LIMITED_MINTER_ROLE, rateLimitedMinter);
     }
 
     /// @notice grants ability to replenish buffer for minting Volt through the global rate limited minter
     /// @param rateLimitedRedeemer address to add as a redeemer in global rate limited minter
-    function grantRateLimitedRedeemer(address rateLimitedRedeemer)
-        external
-        override
-        onlyGovernor
-    {
+    function grantRateLimitedRedeemer(
+        address rateLimitedRedeemer
+    ) external override onlyGovernor {
         _grantRole(VOLT_RATE_LIMITED_REDEEMER_ROLE, rateLimitedRedeemer);
     }
 
@@ -154,11 +145,9 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
 
     /// @notice revokes pcvController role from address
     /// @param pcvController ex pcvController
-    function revokePCVController(address pcvController)
-        external
-        override
-        onlyGovernor
-    {
+    function revokePCVController(
+        address pcvController
+    ) external override onlyGovernor {
         _revokeRole(PCV_CONTROLLER_ROLE, pcvController);
     }
 
@@ -176,11 +165,9 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
 
     /// @notice revokes global locker role from address
     /// @param levelOneLocker ex globalLocker
-    function revokeLocker(address levelOneLocker)
-        external
-        override
-        onlyGovernor
-    {
+    function revokeLocker(
+        address levelOneLocker
+    ) external override onlyGovernor {
         _revokeRole(LOCKER_ROLE, levelOneLocker);
     }
 
@@ -192,32 +179,27 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
 
     /// @notice revokes ability to mint Volt through the global rate limited minter
     /// @param rateLimitedMinter ex minter in global rate limited minter
-    function revokeRateLimitedMinter(address rateLimitedMinter)
-        external
-        override
-        onlyGovernor
-    {
+    function revokeRateLimitedMinter(
+        address rateLimitedMinter
+    ) external override onlyGovernor {
         _revokeRole(VOLT_RATE_LIMITED_MINTER_ROLE, rateLimitedMinter);
     }
 
     /// @notice revokes ability to replenish buffer for minting Volt through the global rate limited minter
     /// @param rateLimitedRedeemer ex redeemer in global rate limited minter
-    function revokeRateLimitedRedeemer(address rateLimitedRedeemer)
-        external
-        override
-        onlyGovernor
-    {
+    function revokeRateLimitedRedeemer(
+        address rateLimitedRedeemer
+    ) external override onlyGovernor {
         _revokeRole(VOLT_RATE_LIMITED_REDEEMER_ROLE, rateLimitedRedeemer);
     }
 
     /// @notice revokes a role from address
     /// @param role the role to revoke
     /// @param account the address to revoke the role from
-    function revokeOverride(bytes32 role, address account)
-        external
-        override
-        onlyGuardian
-    {
+    function revokeOverride(
+        bytes32 role,
+        address account
+    ) external override onlyGuardian {
         require(
             role != GOVERN_ROLE,
             "Permissions: Guardian cannot revoke governor"
@@ -231,13 +213,9 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     /// @param _address address to check
     /// @return true _address is a minter
     // only virtual for testing mock override
-    function isMinter(address _address)
-        external
-        view
-        virtual
-        override
-        returns (bool)
-    {
+    function isMinter(
+        address _address
+    ) external view virtual override returns (bool) {
         return hasRole(MINTER_ROLE, _address);
     }
 
@@ -245,13 +223,9 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     /// @param _address address to check
     /// @return true _address is a controller
     // only virtual for testing mock override
-    function isPCVController(address _address)
-        external
-        view
-        virtual
-        override
-        returns (bool)
-    {
+    function isPCVController(
+        address _address
+    ) external view virtual override returns (bool) {
         return hasRole(PCV_CONTROLLER_ROLE, _address);
     }
 
@@ -259,13 +233,9 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     /// @param _address address to check
     /// @return true _address is a governor
     // only virtual for testing mock override
-    function isGovernor(address _address)
-        public
-        view
-        virtual
-        override
-        returns (bool)
-    {
+    function isGovernor(
+        address _address
+    ) public view virtual override returns (bool) {
         return hasRole(GOVERN_ROLE, _address);
     }
 
@@ -273,13 +243,9 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     /// @param _address address to check
     /// @return true _address is a guardian
     // only virtual for testing mock override
-    function isGuardian(address _address)
-        public
-        view
-        virtual
-        override
-        returns (bool)
-    {
+    function isGuardian(
+        address _address
+    ) public view virtual override returns (bool) {
         return hasRole(GUARDIAN_ROLE, _address);
     }
 
@@ -300,24 +266,18 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     /// @notice checks if address has Volt Minter Role
     /// @param _address address to check
     /// @return true if _address has Volt Minter Role
-    function isRateLimitedMinter(address _address)
-        public
-        view
-        override
-        returns (bool)
-    {
+    function isRateLimitedMinter(
+        address _address
+    ) public view override returns (bool) {
         return hasRole(VOLT_RATE_LIMITED_MINTER_ROLE, _address);
     }
 
     /// @notice checks if address has Volt Redeemer Role
     /// @param _address address to check
     /// @return true if _address has Volt Redeemer Role
-    function isRateLimitedRedeemer(address _address)
-        public
-        view
-        override
-        returns (bool)
-    {
+    function isRateLimitedRedeemer(
+        address _address
+    ) public view override returns (bool) {
         return hasRole(VOLT_RATE_LIMITED_REDEEMER_ROLE, _address);
     }
 }

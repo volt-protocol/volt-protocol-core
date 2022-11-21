@@ -37,8 +37,9 @@ interface ICoreV2 is IPermissionsV2 {
 
     /// @notice governor only function to set the Global Rate Limited Minter
     /// @param newGlobalRateLimitedMinter new volt global rate limited minter
-    function setGlobalRateLimitedMinter(IGRLM newGlobalRateLimitedMinter)
-        external;
+    function setGlobalRateLimitedMinter(
+        IGRLM newGlobalRateLimitedMinter
+    ) external;
 
     /// @notice governor only function to set the VOLT token
     /// @param newVolt new volt token

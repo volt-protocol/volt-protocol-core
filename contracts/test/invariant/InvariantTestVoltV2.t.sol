@@ -113,11 +113,7 @@ contract BalanceSum is DSTest {
         checkpointUser(to);
     }
 
-    function transferFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) public {
+    function transferFrom(address from, address to, uint256 amount) public {
         volt.transferFrom(from, to, amount);
 
         checkpointUser(to);

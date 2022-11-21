@@ -154,21 +154,16 @@ abstract contract CoreRef is ICoreRef, Pausable {
     }
 
     /// @notice sets a new admin role for this contract
-    function setContractAdminRole(bytes32 newContractAdminRole)
-        external
-        override
-        onlyGovernor
-    {
+    function setContractAdminRole(
+        bytes32 newContractAdminRole
+    ) external override onlyGovernor {
         _setContractAdminRole(newContractAdminRole);
     }
 
     /// @notice returns whether a given address has the admin role for this contract
-    function isContractAdmin(address _admin)
-        public
-        view
-        override
-        returns (bool)
-    {
+    function isContractAdmin(
+        address _admin
+    ) public view override returns (bool) {
         return _core.hasRole(CONTRACT_ADMIN_ROLE, _admin);
     }
 

@@ -133,11 +133,7 @@ contract VoltTester is DSTest {
     address[] public allUsers;
     uint256 public sum;
 
-    constructor(
-        VoltV2 _volt,
-        MockDAO _mockDAO,
-        uint256 _proposalId
-    ) {
+    constructor(VoltV2 _volt, MockDAO _mockDAO, uint256 _proposalId) {
         volt = _volt;
         mockDAO = _mockDAO;
         proposalId = _proposalId;

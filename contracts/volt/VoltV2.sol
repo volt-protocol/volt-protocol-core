@@ -149,11 +149,10 @@ contract VoltV2 is CoreRefV2 {
     /// @param owner The address of the account holding the funds
     /// @param spender The address of the account spending the funds
     /// @return The number of tokens approved
-    function allowance(address owner, address spender)
-        external
-        view
-        returns (uint256)
-    {
+    function allowance(
+        address owner,
+        address spender
+    ) external view returns (uint256) {
         return allowances[owner][spender];
     }
 
@@ -305,11 +304,10 @@ contract VoltV2 is CoreRefV2 {
     /// @param account The address of the account to check
     /// @param blockNumber The block number to get the vote balance at
     /// @return The number of votes the account had as of the given block
-    function getPastVotes(address account, uint256 blockNumber)
-        external
-        view
-        returns (uint256)
-    {
+    function getPastVotes(
+        address account,
+        uint256 blockNumber
+    ) external view returns (uint256) {
         require(blockNumber < block.number, "Volt: not yet determined");
 
         uint32 nCheckpoints = numCheckpoints[account];

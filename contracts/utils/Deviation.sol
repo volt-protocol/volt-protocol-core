@@ -11,11 +11,10 @@ library Deviation {
     using SafeCast for *;
 
     /// @notice return the percent deviation between a and b in parts per quintrillion terms
-    function calculateDeviationThresholdPPQ(int256 a, int256 b)
-        internal
-        pure
-        returns (uint256)
-    {
+    function calculateDeviationThresholdPPQ(
+        int256 a,
+        int256 b
+    ) internal pure returns (uint256) {
         int256 delta = a - b;
         int256 partsPerQuintrillion = (delta * 1e18) / a;
 
@@ -40,11 +39,10 @@ library Deviation {
     }
 
     /// @notice return the percent deviation between a and b in basis points terms
-    function calculateDeviationThresholdBasisPoints(int256 a, int256 b)
-        internal
-        pure
-        returns (uint256)
-    {
+    function calculateDeviationThresholdBasisPoints(
+        int256 a,
+        int256 b
+    ) internal pure returns (uint256) {
         int256 delta = a - b;
         int256 basisPoints = (delta * Constants.BP_INT) / a;
 

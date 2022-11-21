@@ -54,11 +54,9 @@ abstract contract RateLimited is CoreRefV2 {
     }
 
     /// @notice set the rate limit per second
-    function setRateLimitPerSecond(uint256 newRateLimitPerSecond)
-        external
-        virtual
-        onlyGovernor
-    {
+    function setRateLimitPerSecond(
+        uint256 newRateLimitPerSecond
+    ) external virtual onlyGovernor {
         require(
             newRateLimitPerSecond <= MAX_RATE_LIMIT_PER_SECOND,
             "RateLimited: rateLimitPerSecond too high"

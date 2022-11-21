@@ -62,10 +62,9 @@ interface IPermissionsV2 is IAccessControl {
 
     function isRateLimitedMinter(address _address) external view returns (bool);
 
-    function isRateLimitedRedeemer(address _address)
-        external
-        view
-        returns (bool);
+    function isRateLimitedRedeemer(
+        address _address
+    ) external view returns (bool);
 
     // ----------- Predefined Roles -----------
 

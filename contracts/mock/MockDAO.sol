@@ -13,7 +13,10 @@ contract MockDAO is
     GovernorVotes,
     GovernorTimelockControl
 {
-    constructor(IVotes _token, TimelockController _timelock)
+    constructor(
+        IVotes _token,
+        TimelockController _timelock
+    )
         Governor("MockGovernor")
         GovernorVotes(_token)
         GovernorTimelockControl(_timelock)
@@ -33,25 +36,22 @@ contract MockDAO is
 
     // The functions below are overrides required by Solidity.
 
-    function quorum(uint256 blockNumber)
-        public
-        pure
-        override
-        returns (uint256)
-    {
+    function quorum(
+        uint256 blockNumber
+    ) public pure override returns (uint256) {
         return 1_000_000e18;
     }
 
-    function getVotes(address account, uint256 blockNumber)
-        public
-        view
-        override(IGovernor, Governor)
-        returns (uint256)
-    {
+    function getVotes(
+        address account,
+        uint256 blockNumber
+    ) public view override(IGovernor, Governor) returns (uint256) {
         return super.getVotes(account, blockNumber);
     }
 
-    function state(uint256 proposalId)
+    function state(
+        uint256 proposalId
+    )
         public
         view
         override(Governor, IGovernor, GovernorTimelockControl)
@@ -101,7 +101,9 @@ contract MockDAO is
         return super._executor();
     }
 
-    function supportsInterface(bytes4 interfaceId)
+    function supportsInterface(
+        bytes4 interfaceId
+    )
         public
         view
         override(Governor, IERC165, GovernorTimelockControl)

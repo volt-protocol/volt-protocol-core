@@ -30,7 +30,10 @@ contract GlobalRateLimitedMinter is IGRLM, RateLimitedV2 {
     /// Pausable and depletes the global buffer
     /// @param to the recipient address of the minted VOLT
     /// @param amount the amount of VOLT to mint
-    function mintVolt(address to, uint256 amount)
+    function mintVolt(
+        address to,
+        uint256 amount
+    )
         external
         /// checks
         onlyVoltRole(VoltRoles.VOLT_RATE_LIMITED_MINTER_ROLE)
@@ -44,7 +47,9 @@ contract GlobalRateLimitedMinter is IGRLM, RateLimitedV2 {
 
     /// @notice replenish buffer by amount of Volt tokens burned
     /// @param amount of Volt to replenish buffer by
-    function replenishBuffer(uint256 amount)
+    function replenishBuffer(
+        uint256 amount
+    )
         external
         /// checks
         onlyVoltRole(VoltRoles.VOLT_RATE_LIMITED_REDEEMER_ROLE)

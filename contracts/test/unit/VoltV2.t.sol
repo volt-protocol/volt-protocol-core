@@ -551,9 +551,10 @@ contract UnitTestVoltV2 is DSTest {
         );
     }
 
-    function _testMintSupplyIncrease(address account, uint256 voltToTransfer)
-        public
-    {
+    function _testMintSupplyIncrease(
+        address account,
+        uint256 voltToTransfer
+    ) public {
         uint256 startingBalance = volt.balanceOf(account);
         uint256 startingTotalSupply = volt.totalSupply();
         vm.prank(addresses.minterAddress);

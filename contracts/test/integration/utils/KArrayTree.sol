@@ -20,10 +20,10 @@ library KArrayTree {
     /// @notice function that inserts a new node at the given node
     /// @param self the element to add another node to
     /// @param keyToAdd the key in the new element
-    function insert(Node storage self, bytes32 keyToAdd)
-        internal
-        returns (bool, Node storage)
-    {
+    function insert(
+        Node storage self,
+        bytes32 keyToAdd
+    ) internal returns (bool, Node storage) {
         require(!exists(self, keyToAdd), "cannot insert duplicate");
 
         uint256 index = self.childArray.length; /// index of the new element
@@ -59,11 +59,10 @@ library KArrayTree {
     /// @param root pointer to the root node
     /// @param key the role being searched for within the tree
     /// @return true and pointer to first key found, return false and incorrect pointer if not
-    function traverse(Node storage root, bytes32 key)
-        internal
-        view
-        returns (bool, Node storage)
-    {
+    function traverse(
+        Node storage root,
+        bytes32 key
+    ) internal view returns (bool, Node storage) {
         if (root.role == key) {
             return (true, root);
         }
@@ -85,11 +84,9 @@ library KArrayTree {
     /// @notice return all immediate children
     /// @param root the node to return all children from
     /// @return all immediate children of the root
-    function getAllChildRoles(Node storage root)
-        internal
-        view
-        returns (bytes32[] memory)
-    {
+    function getAllChildRoles(
+        Node storage root
+    ) internal view returns (bytes32[] memory) {
         uint256 len = root.childArray.length;
 
         bytes32[] memory allChildNodes = new bytes32[](len);
@@ -102,22 +99,19 @@ library KArrayTree {
 
     /// @notice return number of all immediate children
     /// @param root the node to return length of all immediate children from
-    function getCountImmediateChildren(Node storage root)
-        internal
-        view
-        returns (uint256)
-    {
+    function getCountImmediateChildren(
+        Node storage root
+    ) internal view returns (uint256) {
         return root.childArray.length;
     }
 
     /// @notice check whether a node exists in the given tree
     /// @param root the node to start traversal from
     /// @param key to search for in tree
-    function exists(Node storage root, bytes32 key)
-        internal
-        view
-        returns (bool)
-    {
+    function exists(
+        Node storage root,
+        bytes32 key
+    ) internal view returns (bool) {
         (bool found, ) = traverse(root, key);
         return found;
     }
@@ -130,11 +124,10 @@ library KArrayTree {
     /// @param root the node to return the depth from
     /// @param currentDepth the current recorded tree depth
     /// @return the depth of the tree
-    function treeDepth(Node storage root, uint256 currentDepth)
-        internal
-        view
-        returns (uint256)
-    {
+    function treeDepth(
+        Node storage root,
+        uint256 currentDepth
+    ) internal view returns (uint256) {
         uint256 len = root.childArray.length;
 
         if (len == 0) {

@@ -49,10 +49,9 @@ interface INonCustodialPSM {
     function ceiling() external view returns (uint128);
 
     /// @notice calculate the amount of underlying out for a given `amountVoltIn` of VOLT
-    function getRedeemAmountOut(uint256 amountVoltIn)
-        external
-        view
-        returns (uint256 amountOut);
+    function getRedeemAmountOut(
+        uint256 amountVoltIn
+    ) external view returns (uint256 amountOut);
 
     /// @notice the underlying token exchanged for VOLT
     function underlyingToken() external view returns (IERC20);

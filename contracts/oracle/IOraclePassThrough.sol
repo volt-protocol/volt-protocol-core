@@ -27,8 +27,9 @@ interface IOraclePassThrough {
 
     /// @notice function to update the pointer to the scaling price oracle
     /// requires approval from both VOLT and FRAX governance to sign off on the change
-    function updateScalingPriceOracle(IScalingPriceOracle newScalingPriceOracle)
-        external;
+    function updateScalingPriceOracle(
+        IScalingPriceOracle newScalingPriceOracle
+    ) external;
 
     /// @notice event emitted when the scaling price oracle is updated
     event ScalingPriceOracleUpdate(

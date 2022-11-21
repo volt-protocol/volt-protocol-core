@@ -50,9 +50,10 @@ contract RoleHierarchy is DSTest {
     }
 
     /// load up number of roles from Core and ensure that they match up with numbers here
-    function _testGovernorRevokesSubordinates(address governor, Core core)
-        internal
-    {
+    function _testGovernorRevokesSubordinates(
+        address governor,
+        Core core
+    ) internal {
         bytes32[] memory subordinateRoles = roleHierarchy.getAllChildRoles();
 
         vm.startPrank(governor);
@@ -80,9 +81,10 @@ contract RoleHierarchy is DSTest {
         vm.stopPrank();
     }
 
-    function _revokeSubordinates(KArrayTree.Node storage root, Core core)
-        internal
-    {
+    function _revokeSubordinates(
+        KArrayTree.Node storage root,
+        Core core
+    ) internal {
         bytes32[] memory subordinateRoles = root.getAllChildRoles();
         if (subordinateRoles.length == 0) {
             return;

@@ -51,10 +51,9 @@ contract CoreV2 is ICoreV2, PermissionsV2, GlobalReentrancyLock {
 
     /// @notice governor only function to set the Global Rate Limited Minter
     /// @param newGlobalRateLimitedMinter new volt global rate limited minter
-    function setGlobalRateLimitedMinter(IGRLM newGlobalRateLimitedMinter)
-        external
-        onlyGovernor
-    {
+    function setGlobalRateLimitedMinter(
+        IGRLM newGlobalRateLimitedMinter
+    ) external onlyGovernor {
         address oldGrlm = address(globalRateLimitedMinter);
         globalRateLimitedMinter = newGlobalRateLimitedMinter;
 
