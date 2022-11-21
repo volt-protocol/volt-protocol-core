@@ -5,29 +5,32 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Vm} from "../unit/utils/Vm.sol";
-import {Core} from "../../core/Core.sol";
 import {IVolt} from "../../volt/IVolt.sol";
+import {CoreV2} from "../../core/CoreV2.sol";
 import {DSTest} from "../unit/utils/DSTest.sol";
 import {IDSSPSM} from "../../pcv/maker/IDSSPSM.sol";
 import {Constants} from "../../Constants.sol";
 import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
+import {SystemEntry} from "../../entry/SystemEntry.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 import {MorphoCompoundPCVDeposit} from "../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
+import {getCoreV2, getAddresses, VoltTestAddresses} from "./../unit/utils/Fixtures.sol";
 
 contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     using SafeCast for *;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
+    VoltTestAddresses public addresses = getAddresses();
 
+    CoreV2 private core;
+    SystemEntry public entry;
     MorphoCompoundPCVDeposit private daiDeposit;
     MorphoCompoundPCVDeposit private usdcDeposit;
 
-    PCVGuardian private immutable pcvGuardian =
-        PCVGuardian(MainnetAddresses.PCV_GUARDIAN);
+    PCVGuardian private pcvGuardian;
 
-    Core private core = Core(MainnetAddresses.CORE);
     PegStabilityModule private daiPSM =
         PegStabilityModule(MainnetAddresses.VOLT_DAI_PSM);
 
@@ -44,6 +47,7 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     uint256 public constant epochLength = 100 days;
 
     function setUp() public {
+        core = getCoreV2();
         daiDeposit = new MorphoCompoundPCVDeposit(
             address(core),
             MainnetAddresses.CDAI,
@@ -60,6 +64,18 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
             MainnetAddresses.MORPHO_LENS
         );
 
+        entry = new SystemEntry(address(core));
+
+        address[] memory toWhitelist = new address[](2);
+        toWhitelist[0] = address(usdcDeposit);
+        toWhitelist[1] = address(daiDeposit);
+
+        pcvGuardian = new PCVGuardian(
+            address(core),
+            address(this),
+            toWhitelist
+        );
+
         vm.label(address(daiDeposit), "Morpho DAI Compound PCV Deposit");
         vm.label(address(usdcDeposit), "Morpho USDC Compound PCV Deposit");
         vm.label(address(MainnetAddresses.CDAI), "CDAI");
@@ -74,8 +90,20 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
         usdc.transfer(address(usdcDeposit), targetUsdcBalance);
         vm.stopPrank();
 
-        usdcDeposit.deposit();
-        daiDeposit.deposit();
+        vm.startPrank(addresses.governorAddress);
+
+        core.grantPCVGuard(address(this));
+        core.grantPCVController(address(pcvGuardian));
+
+        core.grantLocker(address(entry));
+        core.grantLocker(address(daiDeposit));
+        core.grantLocker(address(usdcDeposit));
+        core.grantLocker(address(pcvGuardian));
+
+        vm.stopPrank();
+
+        entry.deposit(address(daiDeposit));
+        entry.deposit(address(usdcDeposit));
 
         vm.roll(block.number + 1); /// fast forward 1 block so that profit is positive
     }
@@ -116,10 +144,14 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     }
 
     function testWithdraw() public {
-        vm.startPrank(MainnetAddresses.GOVERNOR);
-        usdcDeposit.withdraw(address(this), usdcDeposit.balance());
-        daiDeposit.withdraw(address(this), daiDeposit.balance());
-        vm.stopPrank();
+        pcvGuardian.withdrawToSafeAddress(
+            address(usdcDeposit),
+            usdcDeposit.balance()
+        );
+        pcvGuardian.withdrawToSafeAddress(
+            address(daiDeposit),
+            daiDeposit.balance()
+        );
 
         assertApproxEq(
             dai.balanceOf(address(this)).toInt256(),
@@ -139,8 +171,10 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
 
         uint256 startingCompBalance = comp.balanceOf(address(usdcDeposit)) +
             comp.balanceOf(address(daiDeposit));
-        usdcDeposit.harvest();
-        daiDeposit.harvest();
+
+        entry.harvest(address(usdcDeposit));
+        entry.harvest(address(daiDeposit));
+
         uint256 endingCompBalance = comp.balanceOf(address(usdcDeposit)) +
             comp.balanceOf(address(daiDeposit));
 
@@ -156,8 +190,7 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
         vm.assume(amount >= 1e9);
         vm.assume(amount <= targetDaiBalance);
 
-        vm.prank(MainnetAddresses.GOVERNOR);
-        daiDeposit.withdraw(address(this), amount);
+        pcvGuardian.withdrawToSafeAddress(address(daiDeposit), amount);
 
         assertEq(dai.balanceOf(address(this)), amount);
 
@@ -172,8 +205,7 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
         vm.assume(amount != 0);
         vm.assume(amount <= targetUsdcBalance);
 
-        vm.prank(MainnetAddresses.GOVERNOR);
-        usdcDeposit.withdraw(address(this), amount);
+        pcvGuardian.withdrawToSafeAddress(address(usdcDeposit), amount);
 
         assertEq(usdc.balanceOf(address(this)), amount);
 
@@ -185,10 +217,8 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     }
 
     function testWithdrawAll() public {
-        vm.startPrank(MainnetAddresses.GOVERNOR);
-        usdcDeposit.withdrawAll(address(this));
-        daiDeposit.withdrawAll(address(this));
-        vm.stopPrank();
+        pcvGuardian.withdrawAllToSafeAddress(address(usdcDeposit));
+        pcvGuardian.withdrawAllToSafeAddress(address(daiDeposit));
 
         assertApproxEq(
             dai.balanceOf(address(this)).toInt256(),
@@ -204,23 +234,35 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     }
 
     function testDepositNoFundsSucceeds() public {
-        usdcDeposit.deposit();
-        daiDeposit.deposit();
+        entry.deposit(address(usdcDeposit));
+        entry.deposit(address(daiDeposit));
+    }
+
+    function testAccrueNoFundsSucceeds() public {
+        entry.accrue(address(usdcDeposit));
+        entry.accrue(address(daiDeposit));
     }
 
     function testDepositWhenPausedFails() public {
-        vm.prank(MainnetAddresses.GOVERNOR);
+        vm.prank(addresses.governorAddress);
         usdcDeposit.pause();
-        vm.expectRevert("Pausable: paused");
-        usdcDeposit.deposit();
 
-        vm.prank(MainnetAddresses.GOVERNOR);
-        daiDeposit.pause();
         vm.expectRevert("Pausable: paused");
-        daiDeposit.deposit();
+        entry.deposit(address(usdcDeposit));
+
+        vm.prank(addresses.governorAddress);
+        daiDeposit.pause();
+
+        vm.expectRevert("Pausable: paused");
+        entry.deposit(address(daiDeposit));
     }
 
     function testWithdrawNonPCVControllerFails() public {
+        vm.startPrank(addresses.governorAddress);
+        core.grantLocker(addresses.governorAddress);
+        core.lock(1);
+        vm.stopPrank();
+
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
         usdcDeposit.withdraw(address(this), targetUsdcBalance);
 
@@ -229,6 +271,11 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     }
 
     function testWithdrawAllNonPCVControllerFails() public {
+        vm.startPrank(addresses.governorAddress);
+        core.grantLocker(addresses.governorAddress);
+        core.lock(1);
+        vm.stopPrank();
+
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
         usdcDeposit.withdrawAll(address(this));
 

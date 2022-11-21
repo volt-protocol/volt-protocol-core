@@ -138,6 +138,7 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
             VoltRoles.GUARDIAN,
             VoltRoles.PCV_GUARD
         )
+        globalLock(1)
         onlyWhitelist(pcvDeposit)
     {
         _withdrawToSafeAddress(pcvDeposit, amount);
@@ -155,6 +156,7 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
             VoltRoles.GUARDIAN,
             VoltRoles.PCV_GUARD
         )
+        globalLock(1)
         onlyWhitelist(pcvDeposit)
     {
         _withdrawToSafeAddress(pcvDeposit, IPCVDeposit(pcvDeposit).balance());
@@ -176,6 +178,7 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
             VoltRoles.GUARDIAN,
             VoltRoles.PCV_GUARD
         )
+        globalLock(1)
         onlyWhitelist(pcvDeposit)
     {
         _withdrawERC20ToSafeAddress(pcvDeposit, token, amount);
@@ -195,6 +198,7 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
             VoltRoles.GUARDIAN,
             VoltRoles.PCV_GUARD
         )
+        globalLock(1)
         onlyWhitelist(pcvDeposit)
     {
         _withdrawERC20ToSafeAddress(
