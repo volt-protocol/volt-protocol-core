@@ -24,11 +24,10 @@ contract DynamicVoltRateModel {
     /// @param liquidPercentage the percentage of PCV that is liquid, with 18 decimals.
     /// @return actualRate the actual rate of the system to set for the given
     /// liquidPercentage, expressed as an APR with 18 decimals.
-    function getRate(uint256 baseRate, uint256 liquidPercentage)
-        external
-        pure
-        returns (uint256 actualRate)
-    {
+    function getRate(
+        uint256 baseRate,
+        uint256 liquidPercentage
+    ) external pure returns (uint256 actualRate) {
         // if liquidity is fine, do not boost the current rate
         if (liquidPercentage > LIQUIDITY_JUMP_TARGET) {
             return baseRate;

@@ -130,11 +130,9 @@ contract PCVOracle is CoreRefV2 {
     /// @notice check if a venue is in the list of illiquid venues
     /// @param illiquidVenue address to check
     /// @return boolean whether or not the illiquidVenue is in the illiquid venue list
-    function isIlliquidVenue(address illiquidVenue)
-        external
-        view
-        returns (bool)
-    {
+    function isIlliquidVenue(
+        address illiquidVenue
+    ) external view returns (bool) {
         return illiquidVenues.contains(illiquidVenue);
     }
 
@@ -157,11 +155,7 @@ contract PCVOracle is CoreRefV2 {
     function getTotalPcv()
         external
         view
-        returns (
-            uint256 liquidPcv,
-            uint256 illiquidPcv,
-            uint256 totalPcv
-        )
+        returns (uint256 liquidPcv, uint256 illiquidPcv, uint256 totalPcv)
     {
         uint256 liquidVenueLength = liquidVenues.length();
         uint256 illiquidVenueLength = illiquidVenues.length();
@@ -206,7 +200,9 @@ contract PCVOracle is CoreRefV2 {
     /// in the PCV Oracle, because an oracle has to be set for the msg.sender.
     /// this allows for lazy evaluation of the TWAPCV
     /// @param pcvDelta the amount of PCV change in the venue
-    function updateLiquidBalance(int256 pcvDelta)
+    function updateLiquidBalance(
+        int256 pcvDelta
+    )
         public
         onlyVoltRole(VoltRoles.LIQUID_PCV_DEPOSIT_ROLE)
         isGlobalReentrancyLocked
@@ -220,7 +216,9 @@ contract PCVOracle is CoreRefV2 {
     /// in the PCV Oracle, because an oracle has to be set for the msg.sender.
     /// this allows for lazy evaluation of the TWAPCV
     /// @param pcvDelta the amount of PCV change in the venue
-    function updateIlliquidBalance(int256 pcvDelta)
+    function updateIlliquidBalance(
+        int256 pcvDelta
+    )
         public
         onlyVoltRole(VoltRoles.ILLIQUID_PCV_DEPOSIT_ROLE)
         isGlobalReentrancyLocked
@@ -276,10 +274,10 @@ contract PCVOracle is CoreRefV2 {
 
     /// @notice remove venues from the oracle
     /// only callable by the governor
-    function removeVenues(address[] calldata venues, bool[] calldata isLiquid)
-        external
-        onlyGovernor
-    {
+    function removeVenues(
+        address[] calldata venues,
+        bool[] calldata isLiquid
+    ) external onlyGovernor {
         uint256 length = venues.length;
         require(isLiquid.length == length, "PCVO: invalid isLiquid length");
         bool nonZeroBalances = false;
@@ -327,11 +325,10 @@ contract PCVOracle is CoreRefV2 {
         emit VenueOracleUpdated(venue, oldOracle, newOracle);
     }
 
-    function _getUsdPcvDelta(address venue, int256 pcvDelta)
-        private
-        view
-        returns (int256)
-    {
+    function _getUsdPcvDelta(
+        address venue,
+        int256 pcvDelta
+    ) private view returns (int256) {
         address oracle = venueToOracle[venue];
         require(oracle != address(0), "PCVO: invalid caller deposit");
         (Decimal.D256 memory oracleValue, bool oracleValid) = IOracle(oracle)

@@ -494,9 +494,9 @@ contract SystemUnitTest is Test {
         assertEq(volt.balanceOf(address(daipsm)), voltAmountOut);
     }
 
-    function testMintRedeemSamePriceLosesOrBreaksEvenUsdc(uint80 mintAmount)
-        public
-    {
+    function testMintRedeemSamePriceLosesOrBreaksEvenUsdc(
+        uint80 mintAmount
+    ) public {
         vm.assume(mintAmount != 0);
 
         uint256 voltAmountOut = usdcpsm.getMintAmountOut(mintAmount);

@@ -303,9 +303,9 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         assertEq(oracle.pcvAmount(), sumDeposit.toInt256());
     }
 
-    function testEmergencyActionWithdrawSucceedsGovernor(uint120 amount)
-        public
-    {
+    function testEmergencyActionWithdrawSucceedsGovernor(
+        uint120 amount
+    ) public {
         token.mint(address(morphoDeposit), amount);
         entry.deposit(address(morphoDeposit));
 

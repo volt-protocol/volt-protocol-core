@@ -206,11 +206,10 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     /// non-reentrant as state changes and external calls are made
     /// @param to the address PCV will be sent to
     /// @param amount of tokens withdrawn
-    function withdraw(address to, uint256 amount)
-        external
-        onlyPCVController
-        globalLock(2)
-    {
+    function withdraw(
+        address to,
+        uint256 amount
+    ) external onlyPCVController globalLock(2) {
         int256 startingRecordedBalance = lastRecordedBalance.toInt256();
 
         _withdraw(to, amount, true);
@@ -276,11 +275,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
     /// @param amount to withdraw
     /// @param recordPnl whether or not to record PnL. Set to false in withdrawAll
     /// as the function _recordPNL() is already called before _withdraw
-    function _withdraw(
-        address to,
-        uint256 amount,
-        bool recordPnl
-    ) private {
+    function _withdraw(address to, uint256 amount, bool recordPnl) private {
         /// ------ Effects ------
 
         if (recordPnl) {

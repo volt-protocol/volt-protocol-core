@@ -12,11 +12,9 @@ contract SystemEntry is CoreRefV2 {
     /// @notice lock the system to level 1, then call accrue
     /// @param pcvDeposit to call accrue
     /// @return the balance of the PCV Deposit being called
-    function accrue(address pcvDeposit)
-        external
-        globalLock(1)
-        returns (uint256)
-    {
+    function accrue(
+        address pcvDeposit
+    ) external globalLock(1) returns (uint256) {
         return IPCVDepositV2(pcvDeposit).accrue();
     }
 

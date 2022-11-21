@@ -367,9 +367,9 @@ contract UnitTestPegStabilityModule is Test {
         psm.setOracleFloorPrice(0);
     }
 
-    function testSetOracleFloorPriceGovernorSucceedsFuzz(uint128 newFloorPrice)
-        public
-    {
+    function testSetOracleFloorPriceGovernorSucceedsFuzz(
+        uint128 newFloorPrice
+    ) public {
         vm.assume(newFloorPrice != 0);
 
         uint128 currentPrice = uint128(oracle.getCurrentOraclePrice());

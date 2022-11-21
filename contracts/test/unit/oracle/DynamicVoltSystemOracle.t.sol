@@ -119,9 +119,9 @@ contract DynamicVoltSystemOracleUnitTest is DSTest {
         );
     }
 
-    function testFuzzOraclePriceGrowsOverPeriod(uint256 currentTimestamp)
-        public
-    {
+    function testFuzzOraclePriceGrowsOverPeriod(
+        uint256 currentTimestamp
+    ) public {
         vm.assume(currentTimestamp <= TIMEFRAME * 2);
         vm.warp(currentTimestamp);
 
@@ -293,9 +293,10 @@ contract DynamicVoltSystemOracleUnitTest is DSTest {
         systemOracle.setPcvOracle(address(0));
     }
 
-    function testUpdateActualRateFuzz(uint256 baseRate, uint256 liquidReserves)
-        public
-    {
+    function testUpdateActualRateFuzz(
+        uint256 baseRate,
+        uint256 liquidReserves
+    ) public {
         vm.assume(baseRate < 100e18); // never set a base rate > 1000% APR
         vm.assume(liquidReserves <= 1e18); // percent of liquid reserves can't be >100%
 

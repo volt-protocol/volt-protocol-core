@@ -440,9 +440,9 @@ contract UnitTestPCVGuardian is DSTest {
         pcvGuardian.addWhitelistAddresses(toWhitelist);
     }
 
-    function testAddWhiteListAddressesGovernorSucceeds(address newDeposit)
-        public
-    {
+    function testAddWhiteListAddressesGovernorSucceeds(
+        address newDeposit
+    ) public {
         vm.assume(!pcvGuardian.isWhitelistAddress(newDeposit));
 
         address[] memory toWhitelist = new address[](1);

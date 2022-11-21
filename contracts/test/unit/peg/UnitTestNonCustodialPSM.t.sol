@@ -388,9 +388,9 @@ contract NonCustodialPSMUnitTest is Test {
         assertEq(volt.balanceOf(address(psm)), 0);
     }
 
-    function testSetOracleFloorPriceGovernorSucceedsFuzz(uint128 newFloorPrice)
-        public
-    {
+    function testSetOracleFloorPriceGovernorSucceedsFuzz(
+        uint128 newFloorPrice
+    ) public {
         vm.assume(newFloorPrice != 0);
 
         uint128 currentPrice = uint128(oracle.getCurrentOraclePrice());

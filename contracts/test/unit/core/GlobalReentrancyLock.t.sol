@@ -94,9 +94,10 @@ contract UnitTestGlobalReentrancyLock is DSTest {
         }
     }
 
-    function testLockSucceedsWithRole(uint8 numRuns, address[8] memory lockers)
-        public
-    {
+    function testLockSucceedsWithRole(
+        uint8 numRuns,
+        address[8] memory lockers
+    ) public {
         for (uint256 i = 0; i < numRuns; i++) {
             assertTrue(core.isUnlocked());
             assertTrue(!core.isLocked());

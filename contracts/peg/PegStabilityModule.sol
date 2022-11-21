@@ -67,21 +67,17 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
 
     /// @notice sets the new floor price
     /// @param newFloorPrice new floor price
-    function setOracleFloorPrice(uint128 newFloorPrice)
-        external
-        override
-        onlyGovernor
-    {
+    function setOracleFloorPrice(
+        uint128 newFloorPrice
+    ) external override onlyGovernor {
         _setFloor(newFloorPrice);
     }
 
     /// @notice sets the new ceiling price
     /// @param newCeilingPrice new ceiling price
-    function setOracleCeilingPrice(uint128 newCeilingPrice)
-        external
-        override
-        onlyGovernor
-    {
+    function setOracleCeilingPrice(
+        uint128 newCeilingPrice
+    ) external override onlyGovernor {
         _setCeiling(newCeilingPrice);
     }
 
@@ -90,13 +86,10 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
     /// @notice withdraw assets from PSM to an external address
     /// @param to recipient
     /// @param amount of tokens to withdraw
-    function withdraw(address to, uint256 amount)
-        external
-        virtual
-        override
-        onlyPCVController
-        globalLock(2)
-    {
+    function withdraw(
+        address to,
+        uint256 amount
+    ) external virtual override onlyPCVController globalLock(2) {
         _withdrawERC20(address(underlyingToken), to, amount);
         _liquidPcvOracleHook(-(amount.toInt256()));
     }
@@ -208,12 +201,9 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
     /// @param amountIn amount of underlying token in
     /// @return amountVoltOut the amount of Volt out
     /// @dev reverts if price is out of allowed range
-    function getMintAmountOut(uint256 amountIn)
-        public
-        view
-        override
-        returns (uint256 amountVoltOut)
-    {
+    function getMintAmountOut(
+        uint256 amountIn
+    ) public view override returns (uint256 amountVoltOut) {
         Decimal.D256 memory oraclePrice = readOracle();
         _validatePriceRange(oraclePrice);
 
@@ -239,12 +229,9 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
     /// Then figure out how many dollars that amount in is worth by multiplying price * amount.
     /// ensure decimals are normalized if on underlying they are not 18
     /// @dev reverts if price is out of allowed range
-    function getRedeemAmountOut(uint256 amountVoltIn)
-        public
-        view
-        override
-        returns (uint256 amountTokenOut)
-    {
+    function getRedeemAmountOut(
+        uint256 amountVoltIn
+    ) public view override returns (uint256 amountTokenOut) {
         Decimal.D256 memory oraclePrice = readOracle();
         _validatePriceRange(oraclePrice);
 
@@ -323,11 +310,9 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
 
     /// @notice helper function to determine if price is within a valid range
     /// @param price oracle price expressed as a decimal
-    function _validPrice(Decimal.D256 memory price)
-        private
-        view
-        returns (bool valid)
-    {
+    function _validPrice(
+        Decimal.D256 memory price
+    ) private view returns (bool valid) {
         uint256 oraclePrice = price.value;
         valid = oraclePrice >= floor && oraclePrice <= ceiling;
     }
