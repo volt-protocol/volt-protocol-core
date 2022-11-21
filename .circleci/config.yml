@@ -3,13 +3,13 @@ jobs:
   build:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:14
+      - image: cimg/node:16.18.1
     resource_class: xlarge
     steps:
       - checkout
       - run:
           name: 'Update NPM'
-          command: sudo npm install -g npm@6.13.4
+          command: sudo npm install -g npm@9.1.2
       - run:
           name: Install dependencies
           command: npm install
@@ -21,7 +21,7 @@ jobs:
   lint:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:14
+      - image: cimg/node:16.18.1
     steps:
       - restore_cache:
           keys:
@@ -33,7 +33,7 @@ jobs:
   test-forge:
     working_directory: ~/repo
     docker:
-      - image: cimg/node:16.14
+      - image: cimg/node:16.18.1
     resource_class: xlarge
     steps:
       - checkout
