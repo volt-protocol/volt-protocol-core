@@ -46,6 +46,11 @@ contract VoltSystemOracleUnitTest is DSTest {
         assertEq(voltSystemOracle.getCurrentOraclePrice(), startPrice);
     }
 
+    function testReadValidIsTrue() public {
+        (, bool valid) = voltSystemOracle.read();
+        assertTrue(valid);
+    }
+
     function testCompoundBeforePeriodStartFails() public {
         vm.expectRevert("VoltSystemOracle: not past end time");
         voltSystemOracle.compoundInterest();
@@ -116,6 +121,8 @@ contract VoltSystemOracleUnitTest is DSTest {
         voltSystemOracle.compoundInterest();
         vm.warp(block.timestamp + voltSystemOracle.TIMEFRAME());
 
+        (Decimal.D256 memory oraclePrice, ) = voltSystemOracle.read();
+
         assertEq(periodOneEndPrice, voltSystemOracle.oraclePrice());
         assertEq(
             previousStartTime + voltSystemOracle.TIMEFRAME(),
@@ -125,6 +132,7 @@ contract VoltSystemOracleUnitTest is DSTest {
             voltSystemOracle.getCurrentOraclePrice(),
             1087317204541558333 /// oracle value after 2 periods at 2% increase, compounded annually
         );
+        assertEq(voltSystemOracle.getCurrentOraclePrice(), oraclePrice.value);
     }
 
     /// assert that price cannot increase before block.timestamp of 100,000
@@ -172,6 +180,8 @@ contract VoltSystemOracleUnitTest is DSTest {
         );
         uint256 cachedOraclePrice = voltSystemOracle.oraclePrice();
 
+        (Decimal.D256 memory oraclePrice, ) = voltSystemOracle.read();
+        assertEq(voltSystemOracle.getCurrentOraclePrice(), oraclePrice.value);
         if (timeIncrease >= voltSystemOracle.TIMEFRAME()) {
             assertEq(
                 voltSystemOracle.getCurrentOraclePrice(),
@@ -334,12 +344,17 @@ contract VoltSystemOracleUnitTest is DSTest {
                 cachedOraclePrice;
             uint256 priceDelta = (priceChangeOverPeriod * timeDelta) /
                 voltSystemOracle.TIMEFRAME();
+            (Decimal.D256 memory oraclePrice, ) = voltSystemOracle.read();
 
             assertEq(
                 voltSystemOracle.getCurrentOraclePrice(),
                 priceDelta + cachedOraclePrice
             );
             assertEq(priceDelta + cachedOraclePrice, expectedOraclePrice);
+            assertEq(
+                voltSystemOracle.getCurrentOraclePrice(),
+                oraclePrice.value
+            );
 
             bool isTimeEnded = block.timestamp >=
                 voltSystemOracle.periodStartTime() + duration;

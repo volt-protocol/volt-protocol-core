@@ -4,10 +4,10 @@ pragma solidity 0.8.13;
 import {Vm} from "../../../../forge-std/src/Test.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
 import {MockERC20} from "./../../../mock/MockERC20.sol";
-import {Core, Vcon, Volt, IERC20, IVolt} from "../../../core/Core.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
-import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
+import {IOraclePassThrough} from "../../../oracle/IOraclePassThrough.sol";
 import {IScalingPriceOracle} from "../../../oracle/IScalingPriceOracle.sol";
+import {Core, Vcon, Volt, IERC20, IVolt} from "../../../core/Core.sol";
 
 struct VoltTestAddresses {
     address userAddress;
@@ -146,20 +146,15 @@ function getVoltSystemOracle(
     return oracle;
 }
 
-function getOraclePassThrough(VoltSystemOracle oracle, address owner)
-    returns (OraclePassThrough opt)
-{
-    address HEVM_ADDRESS = address(
-        bytes20(uint160(uint256(keccak256("hevm cheat code"))))
-    );
-    Vm vm = Vm(HEVM_ADDRESS);
-
-    vm.prank(owner);
-    opt = new OraclePassThrough(IScalingPriceOracle(address(oracle)));
+function getOraclePassThrough(
+    VoltSystemOracle oracle,
+    address
+) pure returns (IOraclePassThrough) {
+    return IOraclePassThrough(address(oracle));
 }
 
 function getLocalOracleSystem()
-    returns (VoltSystemOracle oracle, OraclePassThrough opt)
+    returns (VoltSystemOracle oracle, IOraclePassThrough opt)
 {
     VoltTestAddresses memory addresses = getAddresses();
 
@@ -167,9 +162,9 @@ function getLocalOracleSystem()
     opt = getOraclePassThrough(oracle, addresses.governorAddress);
 }
 
-function getLocalOracleSystem(uint256 startPrice)
-    returns (VoltSystemOracle oracle, OraclePassThrough opt)
-{
+function getLocalOracleSystem(
+    uint256 startPrice
+) returns (VoltSystemOracle oracle, IOraclePassThrough opt) {
     VoltTestAddresses memory addresses = getAddresses();
 
     oracle = getVoltSystemOracle(100, block.timestamp, startPrice);

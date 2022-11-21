@@ -14,6 +14,9 @@ interface ICoreRefV2 {
 
     event CoreUpdate(address indexed oldCore, address indexed newCore);
 
+    /// @notice emitted when the PCV Oracle address is updated
+    event PCVOracleUpdated(address oldOracle, address newOracle);
+
     // ----------- Governor or Guardian only state changing api -----------
 
     function pause() external;

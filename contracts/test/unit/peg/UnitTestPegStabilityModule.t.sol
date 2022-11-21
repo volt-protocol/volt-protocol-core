@@ -12,10 +12,10 @@ import {Constants} from "../../../Constants.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
 import {IVolt, Volt} from "../../../volt/Volt.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
+import {SystemEntry} from "../../../entry/SystemEntry.sol";
 import {Test, console2} from "../../../../forge-std/src/Test.sol";
 import {NonCustodialPSM} from "../../../peg/NonCustodialPSM.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
-import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {IGRLM, GlobalRateLimitedMinter} from "../../../minter/GlobalRateLimitedMinter.sol";
 import {getCoreV2, getAddresses, getLocalOracleSystem, VoltTestAddresses} from "./../../unit/utils/Fixtures.sol";
@@ -28,14 +28,16 @@ contract UnitTestPegStabilityModule is Test {
     /// @notice PSM to test against
     PegStabilityModule private psm;
 
-    ICoreV2 private core;
     IVolt private volt;
+    ICoreV2 private core;
+    SystemEntry private entry;
     IERC20 private underlyingToken;
-    GlobalRateLimitedMinter public grlm;
+    VoltSystemOracle private oracle;
+    PCVGuardian private pcvGuardian;
+    GlobalRateLimitedMinter private grlm;
+
     uint256 public constant mintAmount = 10_000_000e18;
     uint256 public constant voltMintAmount = 10_000_000e18;
-    OraclePassThrough public oraclePassThrough;
-    VoltSystemOracle public oracle;
 
     /// ---------- PRICE PARAMS ----------
 
@@ -58,12 +60,12 @@ contract UnitTestPegStabilityModule is Test {
         underlyingToken = IERC20(address(new MockERC20()));
         core = getCoreV2();
         volt = core.volt();
-        (oracle, oraclePassThrough) = getLocalOracleSystem(voltFloorPrice);
+        (oracle, ) = getLocalOracleSystem(voltFloorPrice);
 
         /// create PSM
         psm = new PegStabilityModule(
             address(core),
-            address(oraclePassThrough),
+            address(oracle),
             address(0),
             0,
             false,
@@ -79,13 +81,35 @@ contract UnitTestPegStabilityModule is Test {
             rateLimitPerSecondMinting,
             bufferCapMinting
         );
+        entry = new SystemEntry(address(core));
+
+        address[] memory toWhitelist = new address[](1);
+        toWhitelist[0] = address(psm);
+
+        pcvGuardian = new PCVGuardian(
+            address(core),
+            address(this),
+            toWhitelist
+        );
+
         vm.startPrank(addresses.governorAddress);
+
+        core.grantPCVController(address(pcvGuardian));
         core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
         core.grantMinter(address(grlm));
+
         core.grantRateLimitedRedeemer(address(psm));
         core.grantRateLimitedMinter(address(psm));
+
+        core.grantGuardian(address(pcvGuardian));
+
+        core.grantPCVGuard(address(this));
+
         core.grantLocker(address(psm));
         core.grantLocker(address(grlm));
+        core.grantLocker(address(entry));
+        core.grantLocker(address(pcvGuardian));
+
         vm.stopPrank();
 
         vm.label(address(psm), "PSM");
@@ -102,7 +126,7 @@ contract UnitTestPegStabilityModule is Test {
     /// @notice PSM is set up correctly
     function testSetUpCorrectly() public {
         assertTrue(!psm.doInvert());
-        assertEq(address(psm.oracle()), address(oraclePassThrough));
+        assertEq(address(psm.oracle()), address(oracle));
         assertEq(address(psm.backupOracle()), address(0));
         assertEq(psm.decimalsNormalizer(), 0);
         assertEq(address(psm.underlyingToken()), address(underlyingToken));
@@ -299,27 +323,21 @@ contract UnitTestPegStabilityModule is Test {
 
     /// @notice withdraw succeeds with correct permissions
     function testWithdrawSuccess() public {
-        vm.prank(addresses.governorAddress);
-        core.grantPCVController(address(this));
         uint256 startingBalance = underlyingToken.balanceOf(address(this));
-        psm.withdraw(address(this), mintAmount);
+        pcvGuardian.withdrawToSafeAddress(address(psm), mintAmount);
         uint256 endingBalance = underlyingToken.balanceOf(address(this));
         assertEq(endingBalance - startingBalance, mintAmount);
     }
 
     function testSetOracleFloorPriceGovernorSucceeds() public {
-        uint128 currentPrice = uint128(
-            oraclePassThrough.getCurrentOraclePrice()
-        );
+        uint128 currentPrice = uint128(oracle.getCurrentOraclePrice());
         vm.prank(addresses.governorAddress);
         psm.setOracleFloorPrice(currentPrice);
         assertTrue(psm.isPriceValid());
     }
 
     function testSetOracleCeilingPriceGovernorSucceeds() public {
-        uint128 currentPrice = uint128(
-            oraclePassThrough.getCurrentOraclePrice()
-        );
+        uint128 currentPrice = uint128(oracle.getCurrentOraclePrice());
         vm.prank(addresses.governorAddress);
         psm.setOracleCeilingPrice(currentPrice + 1);
         assertTrue(psm.isPriceValid());
@@ -349,14 +367,12 @@ contract UnitTestPegStabilityModule is Test {
         psm.setOracleFloorPrice(0);
     }
 
-    function testSetOracleFloorPriceGovernorSucceedsFuzz(uint128 newFloorPrice)
-        public
-    {
+    function testSetOracleFloorPriceGovernorSucceedsFuzz(
+        uint128 newFloorPrice
+    ) public {
         vm.assume(newFloorPrice != 0);
 
-        uint128 currentPrice = uint128(
-            oraclePassThrough.getCurrentOraclePrice()
-        );
+        uint128 currentPrice = uint128(oracle.getCurrentOraclePrice());
         uint128 currentFloor = psm.floor();
         uint128 currentCeiling = psm.ceiling();
 
@@ -398,7 +414,7 @@ contract UnitTestPegStabilityModule is Test {
     }
 
     function testDepositNoOp() public {
-        psm.deposit();
+        entry.deposit(address(psm));
     }
 
     /// @notice deposit fails when paused
@@ -406,7 +422,7 @@ contract UnitTestPegStabilityModule is Test {
         vm.prank(addresses.governorAddress);
         psm.pause();
         vm.expectRevert("Pausable: paused");
-        psm.deposit();
+        entry.deposit(address(psm));
     }
 
     /// ----------- ACL TESTS -----------

@@ -35,7 +35,7 @@ contract UnitTestCoreRefV2 is DSTest {
         assertEq(address(coreRef.volt()), address(core.volt()));
         assertEq(address(coreRef.vcon()), address(core.vcon()));
         assertEq(address(coreRef.core()), address(core));
-        assertEq(address(coreRef.core()), address(core));
+        assertEq(coreRef.pcvOracle(), address(0));
         assertEq(coreRef.voltBalance(), 0);
         assertEq(coreRef.vconBalance(), 0);
     }
@@ -229,9 +229,9 @@ contract UnitTestCoreRefV2 is DSTest {
         assertEq(coreRef.volt().balanceOf(address(this)), mintAmount);
     }
 
-    function testEmergencyActionSucceedsGovernorSendEth(uint128 sendAmount)
-        public
-    {
+    function testEmergencyActionSucceedsGovernorSendEth(
+        uint128 sendAmount
+    ) public {
         uint256 startingEthBalance = address(this).balance;
 
         MockCoreRefV2.Call[] memory calls = new MockCoreRefV2.Call[](1);
@@ -248,9 +248,9 @@ contract UnitTestCoreRefV2 is DSTest {
         assertEq(address(coreRef).balance, 0);
     }
 
-    function testEmergencyActionSucceedsGovernorSendsEth(uint128 sendAmount)
-        public
-    {
+    function testEmergencyActionSucceedsGovernorSendsEth(
+        uint128 sendAmount
+    ) public {
         MockCoreRefV2.Call[] memory calls = new MockCoreRefV2.Call[](1);
         calls[0].target = addresses.governorAddress;
         calls[0].value = sendAmount;
@@ -265,6 +265,12 @@ contract UnitTestCoreRefV2 is DSTest {
         assertEq(address(coreRef).balance, 0);
     }
 
+    function testSetPcvOracleSucceedsGovernor() public {
+        vm.prank(addresses.governorAddress);
+        coreRef.setPCVOracle(address(1));
+        assertEq(coreRef.pcvOracle(), address(1));
+    }
+
     /// ---------- ACL ----------
 
     function testPauseSucceedsGovernor() public {
@@ -277,6 +283,11 @@ contract UnitTestCoreRefV2 is DSTest {
     function testPauseFailsNonGovernor() public {
         vm.expectRevert("CoreRef: Caller is not a guardian or governor");
         coreRef.pause();
+    }
+
+    function testSetPcvOracleFailsNonGovernor() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        coreRef.setPCVOracle(address(0));
     }
 
     receive() external payable {}

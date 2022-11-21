@@ -6,7 +6,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {ICore} from "../../core/ICore.sol";
 import {IVolt} from "../../volt/Volt.sol";
-import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
+import {VoltSystemOracle} from "../../oracle/VoltSystemOracle.sol";
 import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
 import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
@@ -23,8 +23,8 @@ contract IntegrationTestVoltMigratorRouterTest is TimelockSimulation, vip13 {
     IERC20 private dai = IERC20(MainnetAddresses.DAI);
     uint224 public constant mintAmount = 100_000_000e18;
 
-    OraclePassThrough public oracle =
-        OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
+    VoltSystemOracle public oracle =
+        VoltSystemOracle(MainnetAddresses.ORACLE_PASS_THROUGH);
 
     GlobalRateLimitedMinter public grlm;
 

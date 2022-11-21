@@ -72,32 +72,26 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRef {
 
     /// @notice sets the new floor price
     /// @param newFloorPrice new floor price
-    function setOracleFloorPrice(uint128 newFloorPrice)
-        external
-        override
-        onlyGovernor
-    {
+    function setOracleFloorPrice(
+        uint128 newFloorPrice
+    ) external override onlyGovernor {
         _setFloor(newFloorPrice);
     }
 
     /// @notice sets the new ceiling price
     /// @param newCeilingPrice new ceiling price
-    function setOracleCeilingPrice(uint128 newCeilingPrice)
-        external
-        override
-        onlyGovernor
-    {
+    function setOracleCeilingPrice(
+        uint128 newCeilingPrice
+    ) external override onlyGovernor {
         _setCeiling(newCeilingPrice);
     }
 
     /// @notice set the target for sending all PCV
     /// @param newTarget new PCV Deposit target for this PSM
     /// enforces that underlying on this PSM and new Deposit are the same
-    function setPCVDeposit(IPCVDeposit newTarget)
-        external
-        override
-        onlyGovernor
-    {
+    function setPCVDeposit(
+        IPCVDeposit newTarget
+    ) external override onlyGovernor {
         _setPCVDeposit(newTarget);
     }
 
@@ -140,6 +134,8 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRef {
         /// however interacts with external untrusted contracts
         pcvDeposit.withdraw(to, amountOut);
 
+        /// No PCV Oracle hooks needed here as PCV deposit will update PCV Oracle
+
         emit Redeem(to, amountVoltIn, amountOut);
     }
 
@@ -150,12 +146,9 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRef {
     /// Then figure out how many dollars that amount in is worth by multiplying price * amount.
     /// ensure decimals are normalized if on underlying they are not 18
     /// @dev reverts if price is out of allowed range
-    function getRedeemAmountOut(uint256 amountVoltIn)
-        public
-        view
-        override
-        returns (uint256 amountTokenOut)
-    {
+    function getRedeemAmountOut(
+        uint256 amountVoltIn
+    ) public view override returns (uint256 amountTokenOut) {
         Decimal.D256 memory oraclePrice = readOracle();
         _validatePriceRange(oraclePrice);
 
@@ -222,11 +215,9 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRef {
 
     /// @notice helper function to determine if price is within a valid range
     /// @param price oracle price expressed as a decimal
-    function _validPrice(Decimal.D256 memory price)
-        private
-        view
-        returns (bool valid)
-    {
+    function _validPrice(
+        Decimal.D256 memory price
+    ) private view returns (bool valid) {
         uint256 oraclePrice = price.value;
         valid = oraclePrice >= floor && oraclePrice <= ceiling;
     }

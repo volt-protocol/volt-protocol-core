@@ -12,7 +12,7 @@ import {Constants} from "../../Constants.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
-import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
+import {IOraclePassThrough} from "../../oracle/IOraclePassThrough.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {IGRLM, GlobalRateLimitedMinter} from "../../minter/GlobalRateLimitedMinter.sol";
 import {getCoreV2, getAddresses, VoltTestAddresses} from "./../unit/utils/Fixtures.sol";
@@ -32,7 +32,7 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
     PegStabilityModule private cleanPsm;
 
     ICoreV2 private core = ICoreV2(MainnetAddresses.CORE);
-    ICoreV2 private tmpCore;
+    CoreV2 private tmpCore;
     IVolt private tmpVolt;
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
     IERC20 private usdc = IERC20(MainnetAddresses.USDC);
@@ -42,8 +42,8 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
     uint256 public constant mintAmount = 10_000_000e6;
     uint256 public constant voltMintAmount = 10_000_000e18;
 
-    OraclePassThrough public oracle =
-        OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
+    IOraclePassThrough public oracle =
+        IOraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
     PCVGuardian public pcvGuardian = PCVGuardian(MainnetAddresses.PCV_GUARDIAN);
 
@@ -470,6 +470,9 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
 
     /// @notice withdraw succeeds with correct permissions
     function testWithdrawSuccess() public {
+        vm.prank(address(grlm));
+        tmpCore.lock(1);
+
         vm.prank(addresses.governorAddress);
         tmpCore.grantPCVController(address(this));
 

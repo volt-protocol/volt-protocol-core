@@ -7,6 +7,7 @@ import {ICoreV2} from "../../../core/ICoreV2.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
+import {SystemEntry} from "../../../entry/SystemEntry.sol";
 import {MockPCVDepositV2} from "../../../mock/MockPCVDepositV2.sol";
 import {getCoreV2, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
 
@@ -16,11 +17,12 @@ contract UnitTestPCVGuardian is DSTest {
         address indexed newSafeAddress
     );
 
+    ICoreV2 private core;
+    SystemEntry public entry;
+    MockERC20 public rewardToken;
     PCVGuardian private pcvGuardian;
     MockERC20 public underlyingToken;
-    MockERC20 public rewardToken;
     MockPCVDepositV2 public pcvDeposit;
-    ICoreV2 private core;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
     VoltTestAddresses public addresses = getAddresses();
@@ -32,6 +34,7 @@ contract UnitTestPCVGuardian is DSTest {
 
     function setUp() public {
         core = getCoreV2();
+        entry = new SystemEntry(address(core));
 
         // acts as the underlying token in the pcv depost
         underlyingToken = new MockERC20();
@@ -59,16 +62,23 @@ contract UnitTestPCVGuardian is DSTest {
         core.grantPCVController(address(pcvGuardian));
         core.grantGuardian(address(pcvGuardian));
 
+        core.grantLocker(address(entry));
+        core.grantLocker(address(pcvDeposit));
+        core.grantLocker(address(pcvGuardian));
+
         /// grant the PCV guard role to the 'guard' address
         core.grantPCVGuard(guard);
 
         underlyingToken.mint(address(pcvDeposit), mintAmount);
         rewardToken.mint(address(pcvDeposit), mintAmount);
-        pcvDeposit.deposit();
+        entry.deposit(address(pcvDeposit));
         vm.stopPrank();
     }
 
     function testPCVGuardianRoles() public {
+        assertTrue(core.isLocker(address(entry)));
+        assertTrue(core.isLocker(address(pcvDeposit)));
+        assertTrue(core.isLocker(address(pcvGuardian)));
         assertTrue(core.isGuardian(address(pcvGuardian)));
         assertTrue(core.isPCVController(address(pcvGuardian)));
     }
@@ -430,9 +440,9 @@ contract UnitTestPCVGuardian is DSTest {
         pcvGuardian.addWhitelistAddresses(toWhitelist);
     }
 
-    function testAddWhiteListAddressesGovernorSucceeds(address newDeposit)
-        public
-    {
+    function testAddWhiteListAddressesGovernorSucceeds(
+        address newDeposit
+    ) public {
         vm.assume(!pcvGuardian.isWhitelistAddress(newDeposit));
 
         address[] memory toWhitelist = new address[](1);

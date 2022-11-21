@@ -11,8 +11,9 @@ import {ICoreV2} from "../../core/ICoreV2.sol";
 import {Constants} from "../../Constants.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
+import {SystemEntry} from "../../entry/SystemEntry.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
-import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
+import {IOraclePassThrough} from "../../oracle/IOraclePassThrough.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {IGRLM, GlobalRateLimitedMinter} from "../../minter/GlobalRateLimitedMinter.sol";
 import {getCoreV2, getAddresses, VoltTestAddresses} from "./../unit/utils/Fixtures.sol";
@@ -31,19 +32,20 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
         PegStabilityModule(MainnetAddresses.VOLT_DAI_PSM);
     PegStabilityModule private cleanPsm;
 
-    ICoreV2 private tmpCore;
     IVolt private tmpVolt;
-    ICoreV2 private core = ICoreV2(MainnetAddresses.CORE);
+    CoreV2 private tmpCore;
+    SystemEntry public entry;
+    GlobalRateLimitedMinter public grlm;
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
     IERC20 private dai = IERC20(MainnetAddresses.DAI);
     IERC20 private underlyingToken = dai;
-    GlobalRateLimitedMinter public grlm;
+    ICoreV2 private core = ICoreV2(MainnetAddresses.CORE);
 
     uint256 public constant mintAmount = 10_000_000e18;
     uint256 public constant voltMintAmount = 10_000_000e18;
 
-    OraclePassThrough public oracle =
-        OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
+    IOraclePassThrough public oracle =
+        IOraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
     PCVGuardian public pcvGuardian = PCVGuardian(MainnetAddresses.PCV_GUARDIAN);
 
@@ -86,14 +88,18 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
             rateLimitPerSecondMinting,
             bufferCapMinting
         );
+        entry = new SystemEntry(address(tmpCore));
 
         vm.startPrank(addresses.governorAddress);
+
         tmpCore.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
         tmpCore.grantMinter(address(grlm));
         tmpCore.grantRateLimitedMinter(address(cleanPsm));
         tmpCore.grantRateLimitedRedeemer(address(cleanPsm));
         tmpCore.grantLocker(address(cleanPsm));
         tmpCore.grantLocker(address(grlm));
+        tmpCore.grantLocker(address(entry));
+
         vm.stopPrank();
 
         vm.label(address(cleanPsm), "New PSM");
@@ -489,6 +495,9 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
 
     /// @notice withdraw succeeds with correct permissions
     function testWithdrawSuccess() public {
+        vm.prank(address(cleanPsm));
+        tmpCore.lock(1);
+
         vm.prank(addresses.governorAddress);
         tmpCore.grantPCVController(address(this));
 
@@ -530,7 +539,7 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
     }
 
     function testDepositNoOp() public {
-        cleanPsm.deposit();
+        entry.deposit(address(cleanPsm));
     }
 
     /// @notice deposit fails when paused
@@ -539,6 +548,6 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
         cleanPsm.pause();
 
         vm.expectRevert("Pausable: paused");
-        cleanPsm.deposit();
+        entry.deposit(address(cleanPsm));
     }
 }

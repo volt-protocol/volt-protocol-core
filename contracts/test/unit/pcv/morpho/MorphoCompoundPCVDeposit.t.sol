@@ -3,18 +3,20 @@ pragma solidity =0.8.13;
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {Vm} from "./../../utils/Vm.sol";
-import {ICore} from "../../../../core/ICore.sol";
 import {DSTest} from "./../../utils/DSTest.sol";
+import {CoreV2} from "../../../../core/CoreV2.sol";
 import {stdError} from "../../../unit/utils/StdLib.sol";
 import {MockERC20} from "../../../../mock/MockERC20.sol";
 import {MockCToken} from "../../../../mock/MockCToken.sol";
 import {MockMorpho} from "../../../../mock/MockMorpho.sol";
 import {IPCVDeposit} from "../../../../pcv/IPCVDeposit.sol";
+import {PCVGuardian} from "../../../../pcv/PCVGuardian.sol";
+import {SystemEntry} from "../../../../entry/SystemEntry.sol";
 import {MockPCVOracle} from "../../../../mock/MockPCVOracle.sol";
 import {MockERC20, IERC20} from "../../../../mock/MockERC20.sol";
 import {MorphoCompoundPCVDeposit} from "../../../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {MockMorphoMaliciousReentrancy} from "../../../../mock/MockMorphoMaliciousReentrancy.sol";
-import {getCore, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.sol";
+import {getCoreV2, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.sol";
 
 contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     using SafeCast for *;
@@ -29,10 +31,11 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         uint256 _amount
     );
 
-    ICore private core;
-
-    MorphoCompoundPCVDeposit private morphoDeposit;
+    CoreV2 private core;
+    SystemEntry public entry;
     MockMorpho private morpho;
+    PCVGuardian private pcvGuardian;
+    MorphoCompoundPCVDeposit private morphoDeposit;
     MockMorphoMaliciousReentrancy private maliciousMorpho;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
@@ -43,8 +46,9 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     MockERC20 private token;
 
     function setUp() public {
-        core = getCore();
+        core = getCoreV2();
         token = new MockERC20();
+        entry = new SystemEntry(address(core));
         morpho = new MockMorpho(IERC20(address(token)));
         maliciousMorpho = new MockMorphoMaliciousReentrancy(
             IERC20(address(token))
@@ -57,6 +61,23 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
             address(morpho),
             address(morpho)
         );
+        address[] memory toWhitelist = new address[](1);
+        toWhitelist[0] = address(morphoDeposit);
+
+        pcvGuardian = new PCVGuardian(
+            address(core),
+            address(this),
+            toWhitelist
+        );
+
+        vm.startPrank(addresses.governorAddress);
+        core.grantLocker(address(entry));
+        core.grantLocker(address(pcvGuardian));
+        core.grantLocker(address(morphoDeposit));
+        core.grantLocker(address(maliciousMorpho));
+        core.grantPCVController(address(pcvGuardian));
+        core.grantPCVGuard(address(this));
+        vm.stopPrank();
 
         vm.label(address(morpho), "Morpho");
         vm.label(address(token), "Token");
@@ -90,7 +111,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         assertEq(morphoDeposit.lastRecordedBalance(), 0);
         token.mint(address(morphoDeposit), depositAmount);
 
-        morphoDeposit.deposit();
+        entry.deposit(address(morphoDeposit));
 
         assertEq(morphoDeposit.lastRecordedBalance(), depositAmount);
     }
@@ -107,9 +128,9 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
                 if (morphoDeposit.balance() != 0) {
                     emit Harvest(address(token), 0, block.timestamp);
                 }
-                emit Deposit(address(this), depositAmount[i]);
+                emit Deposit(address(entry), depositAmount[i]);
             }
-            morphoDeposit.deposit();
+            entry.deposit(address(morphoDeposit));
 
             sumDeposit += depositAmount[i];
             assertEq(morphoDeposit.lastRecordedBalance(), sumDeposit);
@@ -131,14 +152,9 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
 
         assertEq(token.balanceOf(address(this)), 0);
 
-        vm.prank(addresses.pcvControllerAddress);
         vm.expectEmit(true, true, false, true, address(morphoDeposit));
-        emit Withdrawal(
-            addresses.pcvControllerAddress,
-            address(this),
-            sumDeposit
-        );
-        morphoDeposit.withdrawAll(address(this));
+        emit Withdrawal(address(pcvGuardian), address(this), sumDeposit);
+        pcvGuardian.withdrawAllToSafeAddress(address(morphoDeposit));
 
         assertEq(token.balanceOf(address(this)), sumDeposit);
         assertEq(morphoDeposit.balance(), 0);
@@ -157,13 +173,18 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         }
         morpho.setBalance(address(morphoDeposit), sumDeposit + profitAccrued);
 
-        vm.expectEmit(true, false, false, true, address(morphoDeposit));
-        emit Harvest(
-            address(token),
-            uint256(profitAccrued).toInt256(),
-            block.timestamp
-        );
-        uint256 lastRecordedBalance = morphoDeposit.accrue();
+        if (
+            morphoDeposit.balance() != 0 ||
+            morphoDeposit.lastRecordedBalance() != 0
+        ) {
+            vm.expectEmit(true, false, false, true, address(morphoDeposit));
+            emit Harvest(
+                address(token),
+                uint256(profitAccrued).toInt256(),
+                block.timestamp
+            );
+        }
+        uint256 lastRecordedBalance = entry.accrue(address(morphoDeposit));
         assertEq(lastRecordedBalance, sumDeposit + profitAccrued);
         assertEq(lastRecordedBalance, morphoDeposit.lastRecordedBalance());
     }
@@ -196,12 +217,10 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
             uint256 balance = morphoDeposit.balance();
             uint256 lastRecordedBalance = morphoDeposit.lastRecordedBalance();
 
-            vm.prank(addresses.pcvControllerAddress);
-
             vm.expectEmit(true, true, false, true, address(morphoDeposit));
             emit Withdrawal(
-                addresses.pcvControllerAddress,
-                to,
+                address(pcvGuardian),
+                address(this),
                 amountToWithdraw
             );
 
@@ -209,7 +228,10 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
                 emit Harvest(address(token), 0, block.timestamp); /// no profits as already accrued
             }
 
-            morphoDeposit.withdraw(to, amountToWithdraw);
+            pcvGuardian.withdrawToSafeAddress(
+                address(morphoDeposit),
+                amountToWithdraw
+            );
 
             assertEq(morphoDeposit.lastRecordedBalance(), sumDeposit);
             assertEq(
@@ -247,7 +269,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
             }
             sumDeposit -= withdrawAmount[i];
         }
-        morphoDeposit.accrue();
+        entry.accrue(address(morphoDeposit));
 
         assertEq(oracle.pcvAmount(), sumDeposit.toInt256());
     }
@@ -282,11 +304,11 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         assertEq(oracle.pcvAmount(), sumDeposit.toInt256());
     }
 
-    function testEmergencyActionWithdrawSucceedsGovernor(uint120 amount)
-        public
-    {
+    function testEmergencyActionWithdrawSucceedsGovernor(
+        uint120 amount
+    ) public {
         token.mint(address(morphoDeposit), amount);
-        morphoDeposit.deposit();
+        entry.deposit(address(morphoDeposit));
 
         MorphoCompoundPCVDeposit.Call[]
             memory calls = new MorphoCompoundPCVDeposit.Call[](1);
@@ -332,9 +354,8 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     }
 
     function testWithdrawFailsOverAmountHeld() public {
-        vm.prank(addresses.pcvControllerAddress);
         vm.expectRevert(stdError.arithmeticError); /// reverts with underflow when trying to withdraw more than balance
-        morphoDeposit.withdraw(address(this), 1);
+        pcvGuardian.withdrawToSafeAddress(address(morphoDeposit), 1);
     }
 
     //// paused
@@ -343,14 +364,14 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         vm.prank(addresses.governorAddress);
         morphoDeposit.pause();
         vm.expectRevert("Pausable: paused");
-        morphoDeposit.deposit();
+        entry.deposit(address(morphoDeposit));
     }
 
     function testAccrueWhenPausedFails() public {
         vm.prank(addresses.governorAddress);
         morphoDeposit.pause();
         vm.expectRevert("Pausable: paused");
-        morphoDeposit.accrue();
+        entry.accrue(address(morphoDeposit));
     }
 
     function testSetPCVOracleSucceedsGovernor() public {
@@ -402,33 +423,36 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
             address(maliciousMorpho)
         );
 
+        vm.prank(addresses.governorAddress);
+        core.grantLocker(address(morphoDeposit));
+
         maliciousMorpho.setMorphoCompoundPCVDeposit(address(morphoDeposit));
     }
 
     function testReentrantAccrueFails() public {
         _reentrantSetup();
-        vm.expectRevert("ReentrancyGuard: reentrant call");
-        morphoDeposit.accrue();
+        vm.expectRevert("CoreRef: cannot lock less than current level");
+        entry.accrue(address(morphoDeposit));
     }
 
     function testReentrantDepositFails() public {
         _reentrantSetup();
         token.mint(address(morphoDeposit), 100);
-        vm.expectRevert("ReentrancyGuard: reentrant call");
-        morphoDeposit.deposit();
+        vm.expectRevert("CoreRef: cannot lock less than current level");
+        entry.deposit(address(morphoDeposit));
     }
 
     function testReentrantWithdrawFails() public {
         _reentrantSetup();
         vm.prank(addresses.pcvControllerAddress);
-        vm.expectRevert("ReentrancyGuard: reentrant call");
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
         morphoDeposit.withdraw(address(this), 10);
     }
 
     function testReentrantWithdrawAllFails() public {
         _reentrantSetup();
         vm.prank(addresses.pcvControllerAddress);
-        vm.expectRevert("ReentrancyGuard: reentrant call");
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
         morphoDeposit.withdrawAll(address(this));
     }
 }

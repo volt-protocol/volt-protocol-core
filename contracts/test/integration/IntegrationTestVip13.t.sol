@@ -5,7 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {ICore} from "../../core/ICore.sol";
-import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
+import {VoltSystemOracle} from "../../oracle/VoltSystemOracle.sol";
 import {IVolt} from "../../volt/Volt.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {vip13} from "./vip/vip13.sol";
@@ -23,8 +23,8 @@ contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
     IERC20 public usdc = IERC20(MainnetAddresses.USDC);
     ICore private core = ICore(MainnetAddresses.CORE);
 
-    OraclePassThrough public oracle =
-        OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
+    VoltSystemOracle public oracle =
+        VoltSystemOracle(MainnetAddresses.ORACLE_PASS_THROUGH);
 
     GlobalRateLimitedMinter public grlm;
 

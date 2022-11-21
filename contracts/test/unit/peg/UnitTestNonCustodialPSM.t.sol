@@ -12,10 +12,10 @@ import {MockERC20} from "../../../mock/MockERC20.sol";
 import {PCVDeposit} from "../../../pcv/PCVDeposit.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {IPCVDeposit} from "../../../pcv/IPCVDeposit.sol";
+import {SystemEntry} from "../../../entry/SystemEntry.sol";
 import {NonCustodialPSM} from "../../../peg/NonCustodialPSM.sol";
 import {MockPCVDepositV3} from "../../../mock/MockPCVDepositV3.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
-import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
 import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {IScalingPriceOracle} from "../../../oracle/IScalingPriceOracle.sol";
@@ -62,16 +62,17 @@ contract NonCustodialPSMUnitTest is Test {
     VoltAddresses public guardianAddresses = getVoltAddresses();
 
     ICoreV2 private core;
-    NonCustodialPSM private psm;
-    PegStabilityModule private custodialPsm;
-    MockPCVDepositV3 private pcvDeposit;
-    VoltSystemOracle private vso;
-    OraclePassThrough private opt;
-    GlobalRateLimitedMinter public grlm;
-    address private voltAddress;
-    address private coreAddress;
+    SystemEntry private entry;
     IERC20Mintable private dai;
     IERC20Mintable private volt;
+    NonCustodialPSM private psm;
+    VoltSystemOracle private oracle;
+    GlobalRateLimitedMinter private grlm;
+    MockPCVDepositV3 private pcvDeposit;
+    PegStabilityModule private custodialPsm;
+
+    address private voltAddress;
+    address private coreAddress;
 
     uint256 public constant timelockDelay = 600;
     uint248 public constant usdcTargetBalance = 100_000e6;
@@ -113,13 +114,13 @@ contract NonCustodialPSMUnitTest is Test {
         volt = IERC20Mintable(address(core.volt()));
         voltAddress = address(volt);
         coreAddress = address(core);
+        entry = new SystemEntry(address(core));
         dai = IERC20Mintable(address(new MockERC20()));
-        vso = new VoltSystemOracle(
+        oracle = new VoltSystemOracle(
             monthlyChangeRateBasisPoints,
             startTime,
             startPrice
         );
-        opt = new OraclePassThrough(IScalingPriceOracle(address(vso)));
         grlm = new GlobalRateLimitedMinter(
             coreAddress,
             maxRateLimitPerSecondMinting,
@@ -131,7 +132,7 @@ contract NonCustodialPSMUnitTest is Test {
 
         psm = new NonCustodialPSM(
             coreAddress,
-            address(opt),
+            address(oracle),
             address(0),
             0,
             false,
@@ -143,7 +144,7 @@ contract NonCustodialPSMUnitTest is Test {
 
         custodialPsm = new PegStabilityModule(
             coreAddress,
-            address(opt),
+            address(oracle),
             address(0),
             0,
             false,
@@ -160,6 +161,7 @@ contract NonCustodialPSMUnitTest is Test {
         core.grantRateLimitedRedeemer(address(psm));
         core.grantRateLimitedRedeemer(address(custodialPsm));
 
+        core.grantLocker(address(entry));
         core.grantLocker(address(psm));
         core.grantLocker(address(custodialPsm));
         core.grantLocker(address(pcvDeposit));
@@ -172,7 +174,7 @@ contract NonCustodialPSMUnitTest is Test {
         /// top up contracts with tokens for testing
         dai.mint(address(pcvDeposit), daiTargetBalance);
         dai.mint(address(custodialPsm), daiTargetBalance);
-        pcvDeposit.deposit();
+        entry.deposit(address(pcvDeposit));
 
         vm.label(address(psm), "psm");
         vm.label(address(pcvDeposit), "pcvDeposit");
@@ -189,10 +191,9 @@ contract NonCustodialPSMUnitTest is Test {
 
         assertEq(address(core.globalRateLimitedMinter()), address(grlm));
         assertEq(
-            vso.monthlyChangeRateBasisPoints(),
+            oracle.monthlyChangeRateBasisPoints(),
             monthlyChangeRateBasisPoints
         );
-        assertEq(address(opt.scalingPriceOracle()), address(vso));
 
         assertEq(psm.floor(), voltFloorPrice);
         assertEq(psm.ceiling(), voltCeilingPrice);
@@ -211,7 +212,7 @@ contract NonCustodialPSMUnitTest is Test {
 
     /// @notice PSM is set up correctly and redeem view function is working
     function testGetRedeemAmountOut(uint128 amountVoltIn) public {
-        uint256 currentPegPrice = opt.getCurrentOraclePrice();
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
         uint256 amountOut = (amountVoltIn * currentPegPrice) / 1e18;
 
         assertApproxEq(
@@ -224,7 +225,7 @@ contract NonCustodialPSMUnitTest is Test {
     /// @notice PSM is set up correctly and redeem view function is working
     function testGetRedeemAmountOutPpq(uint128 amountVoltIn) public {
         vm.assume(amountVoltIn > 1e8);
-        uint256 currentPegPrice = opt.getCurrentOraclePrice();
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
         uint256 amountOut = (amountVoltIn * currentPegPrice) / 1e18;
 
         assertApproxEq(
@@ -242,7 +243,7 @@ contract NonCustodialPSMUnitTest is Test {
     /// @notice PSM is set up correctly and redeem view function is working
     function testGetRedeemAmountOutDifferential(uint128 amountVoltIn) public {
         vm.assume(amountVoltIn > 1e8);
-        uint256 currentPegPrice = opt.getCurrentOraclePrice();
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
         uint256 amountOut = (amountVoltIn * currentPegPrice) / 1e18;
 
         assertApproxEq(
@@ -387,12 +388,12 @@ contract NonCustodialPSMUnitTest is Test {
         assertEq(volt.balanceOf(address(psm)), 0);
     }
 
-    function testSetOracleFloorPriceGovernorSucceedsFuzz(uint128 newFloorPrice)
-        public
-    {
+    function testSetOracleFloorPriceGovernorSucceedsFuzz(
+        uint128 newFloorPrice
+    ) public {
         vm.assume(newFloorPrice != 0);
 
-        uint128 currentPrice = uint128(opt.getCurrentOraclePrice());
+        uint128 currentPrice = uint128(oracle.getCurrentOraclePrice());
         uint128 currentFloor = psm.floor();
         uint128 currentCeiling = psm.ceiling();
 

@@ -6,8 +6,7 @@ import {MockOracle} from "../../../mock/MockOracle.sol";
 import {MockOracleRef} from "../../../mock/MockOracleRef.sol";
 import {Test, console2} from "../../../../forge-std/src/Test.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
-import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
-import {getCoreV2, getAddresses, getLocalOracleSystem, VoltTestAddresses} from "./../../unit/utils/Fixtures.sol";
+import {getCoreV2, getAddresses, getVoltSystemOracle, VoltTestAddresses} from "./../../unit/utils/Fixtures.sol";
 
 contract UnitTestOracleRef is Test {
     uint128 voltStartingPrice = 1.01e18;
@@ -15,13 +14,13 @@ contract UnitTestOracleRef is Test {
     ICoreV2 private core;
     MockOracleRef private oracleRef;
     VoltTestAddresses public addresses = getAddresses();
-    OraclePassThrough public oracle;
+    VoltSystemOracle public oracle;
     bool public constant doInvert = false;
     int256 public constant decimalsNormalizer = 0;
 
     function setUp() public {
         core = getCoreV2();
-        (, oracle) = getLocalOracleSystem(voltStartingPrice);
+        oracle = getVoltSystemOracle(0, block.timestamp, voltStartingPrice);
         oracleRef = new MockOracleRef(
             address(core),
             address(oracle),
@@ -38,10 +37,6 @@ contract UnitTestOracleRef is Test {
         assertEq(oracleRef.readOracle().value, voltStartingPrice);
         assertEq(address(oracleRef.backupOracle()), address(0));
         assertEq(address(oracleRef.oracle()), address(oracle));
-    }
-
-    function testUpdateOracleNoOp() public {
-        oracleRef.updateOracle();
     }
 
     function testInvalidPriceReverts() public {
