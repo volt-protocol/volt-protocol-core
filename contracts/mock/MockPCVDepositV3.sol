@@ -37,7 +37,9 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
     }
 
     function accrue() external returns (uint256) {
-        return balance();
+        uint256 _balance = balance();
+        resistantBalance = _balance;
+        return _balance;
     }
 
     // IPCVDeposit V1

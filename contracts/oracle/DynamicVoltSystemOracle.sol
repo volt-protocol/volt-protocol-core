@@ -142,7 +142,7 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
         /// if too few liquid reserves, adjust rate up
         uint256 newActualChangeRate = DynamicVoltRateModel(rateModel).getRate(
             newBaseChangeRate,
-            PCVOracle(pcvOracle).getLiquidVenuePercentage()
+            PCVOracle(pcvOracle).lastLiquidVenuePercentage()
         );
         uint256 oldActualChangeRate = actualChangeRate; // SLOAD
         actualChangeRate = newActualChangeRate; // SSTORE

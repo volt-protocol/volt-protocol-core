@@ -121,10 +121,11 @@ contract PCVOracle is CoreRefV2 {
     /// using stale values and not factoring any interest or losses sustained
     /// but not realized within the system
     /// value is scaled up by 18 decimal places
-    function getLiquidVenuePercentage() public view returns (uint256) {
-        return
-            (1e18 * lastLiquidBalance) /
-            (lastIlliquidBalance + lastLiquidBalance);
+    function lastLiquidVenuePercentage() public view returns (uint256) {
+        uint256 _lastLiquidBalance = lastLiquidBalance;
+        uint256 totalBalance = _lastLiquidBalance + lastIlliquidBalance;
+        if (totalBalance == 0) return 1e18; // by convention, 100% liquid if empty
+        return (1e18 * _lastLiquidBalance) / totalBalance;
     }
 
     /// @notice check if a venue is in the list of illiquid venues
@@ -171,7 +172,7 @@ contract PCVOracle is CoreRefV2 {
                 require(oracleValid, "PCVO: invalid oracle value");
 
                 liquidPcv +=
-                    (oracleValue.asUint256() *
+                    (oracleValue.mul(1e18).asUint256() *
                         IPCVDepositV2(depositAddress).balance()) /
                     1e18;
             }
@@ -184,7 +185,7 @@ contract PCVOracle is CoreRefV2 {
                 require(oracleValid, "PCVO: invalid oracle value");
 
                 illiquidPcv +=
-                    (oracleValue.asUint256() *
+                    (oracleValue.mul(1e18).asUint256() *
                         IPCVDepositV2(depositAddress).balance()) /
                     1e18;
             }
@@ -241,11 +242,13 @@ contract PCVOracle is CoreRefV2 {
 
     /// @notice add venues to the oracle
     /// only callable by the governor
+    /// This locks system at level 1, because it needs to accrue
+    /// on the added PCV Deposits (that locks at level 2).
     function addVenues(
         address[] calldata venues,
         address[] calldata oracles,
         bool[] calldata isLiquid
-    ) external onlyGovernor {
+    ) external onlyGovernor globalLock(1) {
         uint256 length = venues.length;
         require(oracles.length == length, "PCVO: invalid oracles length");
         require(isLiquid.length == length, "PCVO: invalid isLiquid length");
@@ -254,11 +257,11 @@ contract PCVOracle is CoreRefV2 {
             require(venues[i] != address(0), "PCVO: invalid venue");
             require(oracles[i] != address(0), "PCVO: invalid oracle");
 
+            // add venue in state
             _setVenueOracle(venues[i], oracles[i]);
             _addVenue(venues[i], isLiquid[i]);
 
-            IPCVDepositV2(venues[i]).accrue();
-            uint256 balance = IPCVDepositV2(venues[i]).balance();
+            uint256 balance = IPCVDepositV2(venues[i]).accrue();
             if (balance != 0) {
                 nonZeroBalances = true;
                 // no need for safe cast here because balance is always > 0
@@ -277,20 +280,19 @@ contract PCVOracle is CoreRefV2 {
 
     /// @notice remove venues from the oracle
     /// only callable by the governor
+    /// This locks system at level 1, because it needs to accrue
+    /// on the added PCV Deposits (that locks at level 2).
     function removeVenues(
         address[] calldata venues,
         bool[] calldata isLiquid
-    ) external onlyGovernor {
+    ) external onlyGovernor globalLock(1) {
         uint256 length = venues.length;
         require(isLiquid.length == length, "PCVO: invalid isLiquid length");
         bool nonZeroBalances = false;
         for (uint256 i = 0; i < length; ) {
             require(venues[i] != address(0), "PCVO: invalid venue");
 
-            _setVenueOracle(venues[i], address(0));
-            _removeVenue(venues[i], isLiquid[i]);
-
-            uint256 balance = IPCVDepositV2(venues[i]).balance();
+            uint256 balance = IPCVDepositV2(venues[i]).accrue();
             if (balance != 0) {
                 nonZeroBalances = true;
                 // no need for safe cast here because balance is always > 0
@@ -299,6 +301,10 @@ contract PCVOracle is CoreRefV2 {
                     isLiquid[i]
                 );
             }
+
+            // remove venue from state
+            _setVenueOracle(venues[i], address(0));
+            _removeVenue(venues[i], isLiquid[i]);
 
             unchecked {
                 ++i;
@@ -337,13 +343,13 @@ contract PCVOracle is CoreRefV2 {
         (Decimal.D256 memory oracleValue, bool oracleValid) = IOracle(oracle)
             .read();
         require(oracleValid, "PCVO: invalid oracle value");
-        return (int256(oracleValue.asUint256()) * pcvDelta) / 1e18;
+        return (int256(oracleValue.mul(1e18).asUint256()) * pcvDelta) / 1e18;
     }
 
     function _afterActionHook() private {
         if (voltOracle != address(0)) {
             DynamicVoltSystemOracle(voltOracle).updateActualRate(
-                getLiquidVenuePercentage()
+                lastLiquidVenuePercentage()
             );
         }
     }

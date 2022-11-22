@@ -3,8 +3,9 @@ pragma solidity 0.8.13;
 
 import {Vm} from "./../utils/Vm.sol";
 import {DSTest} from "./../utils/DSTest.sol";
-import {ICoreV2} from "../../../core/ICoreV2.sol";
+import {CoreV2} from "../../../core/CoreV2.sol";
 import {PCVOracle} from "../../../oracle/PCVOracle.sol";
+import {SystemEntry} from "../../../entry/SystemEntry.sol";
 import {MockPCVDepositV3} from "../../../mock/MockPCVDepositV3.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
 import {MockOracle} from "../../../mock/MockOracle.sol";
@@ -12,7 +13,8 @@ import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {getCoreV2, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
 
 contract PCVOracleUnitTest is DSTest {
-    ICoreV2 private core;
+    CoreV2 private core;
+    SystemEntry public entry;
     Vm public constant vm = Vm(HEVM_ADDRESS);
     VoltTestAddresses public addresses = getAddresses();
 
@@ -59,8 +61,9 @@ contract PCVOracleUnitTest is DSTest {
 
     function setUp() public {
         // volt system
-        core = getCoreV2();
+        core = CoreV2(address(getCoreV2()));
         pcvOracle = new PCVOracle(address(core));
+        entry = new SystemEntry(address(core));
 
         // mock utils
         oracle1 = new MockOracle();
@@ -71,8 +74,12 @@ contract PCVOracleUnitTest is DSTest {
         deposit2 = new MockPCVDepositV3(address(core), address(token2));
 
         // grant role
-        vm.prank(addresses.governorAddress);
+        vm.startPrank(addresses.governorAddress);
+        core.grantLocker(address(entry));
         core.grantLocker(address(pcvOracle));
+        core.grantLocker(address(deposit1));
+        core.grantLocker(address(deposit2));
+        vm.stopPrank();
     }
 
     function testSetup() public {
@@ -82,7 +89,7 @@ contract PCVOracleUnitTest is DSTest {
         assertEq(pcvOracle.getLiquidVenues().length, 0);
         assertEq(pcvOracle.getIlliquidVenues().length, 0);
         assertEq(pcvOracle.getAllVenues().length, 0);
-        assertEq(pcvOracle.getLiquidVenuePercentage(), 1e18);
+        assertEq(pcvOracle.lastLiquidVenuePercentage(), 1e18);
         (uint256 liquidPcv, uint256 illiquidPcv, uint256 totalPcv) = pcvOracle
             .getTotalPcv();
         assertEq(liquidPcv, 0);
@@ -249,6 +256,61 @@ contract PCVOracleUnitTest is DSTest {
         assertEq(pcvOracle.venueToOracle(address(deposit2)), address(0));
     }
 
+    function testAddNonEmptyVenuesRevertsIfOracleIsInvalid() public {
+        uint256 currentTimestamp = 12345;
+        vm.warp(currentTimestamp);
+
+        // make deposit1 non-empty
+        token1.mint(address(deposit1), 100e18);
+        entry.deposit(address(deposit1));
+
+        // set invalid oracle
+        oracle1.setValues(1e18, false);
+
+        // prepare add
+        address[] memory venues = new address[](1);
+        venues[0] = address(deposit1);
+        address[] memory oracles = new address[](1);
+        oracles[0] = address(oracle1);
+        bool[] memory isLiquid = new bool[](1);
+        isLiquid[0] = true;
+        // add
+        vm.prank(addresses.governorAddress);
+        vm.expectRevert(bytes("PCVO: invalid oracle value"));
+        pcvOracle.addVenues(venues, oracles, isLiquid);
+    }
+
+    function testRemoveNonEmptyVenuesRevertsIfOracleIsInvalid() public {
+        uint256 currentTimestamp = 12345;
+        vm.warp(currentTimestamp);
+
+        // make deposit1 non-empty
+        token1.mint(address(deposit1), 100e18);
+        entry.deposit(address(deposit1));
+
+        // set valid oracle
+        oracle1.setValues(1e18, true);
+
+        // prepare add
+        address[] memory venues = new address[](1);
+        venues[0] = address(deposit1);
+        address[] memory oracles = new address[](1);
+        oracles[0] = address(oracle1);
+        bool[] memory isLiquid = new bool[](1);
+        isLiquid[0] = true;
+        // add
+        vm.prank(addresses.governorAddress);
+        pcvOracle.addVenues(venues, oracles, isLiquid);
+
+        // set invalid oracle
+        oracle1.setValues(1e18, false);
+
+        // remove
+        vm.prank(addresses.governorAddress);
+        vm.expectRevert(bytes("PCVO: invalid oracle value"));
+        pcvOracle.removeVenues(venues, isLiquid);
+    }
+
     // ---------------- Access Control -----------------
 
     function testSetVenueOracleAcl() public {
@@ -277,10 +339,67 @@ contract PCVOracleUnitTest is DSTest {
     // Accounting Checks
     // -------------------------------------------------
 
+    function testTrackDepositValueOnAddAndRemove() public {
+        // make deposit1 non-empty
+        token1.mint(address(deposit1), 100e18);
+        entry.deposit(address(deposit1));
+
+        // set oracle values
+        oracle1.setValues(1e18, true); // simulating "DAI" (1$ coin, 18 decimals)
+
+        // add venue
+        address[] memory venues = new address[](1);
+        venues[0] = address(deposit1);
+        address[] memory oracles = new address[](1);
+        oracles[0] = address(oracle1);
+        bool[] memory isLiquid = new bool[](1);
+        isLiquid[0] = true;
+        vm.prank(addresses.governorAddress);
+        pcvOracle.addVenues(venues, oracles, isLiquid);
+
+        // check getPcv()
+        (
+            uint256 liquidPcv1,
+            uint256 illiquidPcv1,
+            uint256 totalPcv1
+        ) = pcvOracle.getTotalPcv();
+        assertEq(liquidPcv1, 100e18); // 100$ liquid
+        assertEq(illiquidPcv1, 0); // 0$ illiquid
+        assertEq(totalPcv1, 100e18); // 100$ total
+
+        // initial add already persisted in state
+        assertEq(pcvOracle.lastIlliquidBalance(), 0);
+        assertEq(pcvOracle.lastLiquidBalance(), 100e18);
+        assertEq(pcvOracle.lastLiquidVenuePercentage(), 1e18); // 100%
+
+        // remove venue
+        vm.prank(addresses.governorAddress);
+        pcvOracle.removeVenues(venues, isLiquid);
+
+        // check getPcv()
+        (
+            uint256 liquidPcv2,
+            uint256 illiquidPcv2,
+            uint256 totalPcv2
+        ) = pcvOracle.getTotalPcv();
+        assertEq(liquidPcv2, 0); // 0$ liquid
+        assertEq(illiquidPcv2, 0); // 0$ illiquid
+        assertEq(totalPcv2, 0); // 0$ total
+
+        // removed from state
+        assertEq(pcvOracle.lastIlliquidBalance(), 0);
+        assertEq(pcvOracle.lastLiquidBalance(), 0);
+        assertEq(pcvOracle.lastLiquidVenuePercentage(), 1e18); // 100% by convention
+    }
+
     function testAccountingOnHook() public {
         // make deposit1 non-empty
-        token1.mint(address(deposit1), 1e18);
-        deposit1.deposit();
+        token1.mint(address(deposit1), 100e18);
+        entry.deposit(address(deposit1));
+
+        // set oracle values
+        oracle1.setValues(1e18, true); // simulating "DAI" (1$ coin, 18 decimals)
+        oracle2.setValues(1e18 * 1e12, true); // simulating "USDC" (1$ coin, 6 decimals)
 
         // add venues
         address[] memory venues = new address[](2);
@@ -295,6 +414,25 @@ contract PCVOracleUnitTest is DSTest {
         vm.prank(addresses.governorAddress);
         pcvOracle.addVenues(venues, oracles, isLiquid);
 
+        // check getPcv()
+        (
+            uint256 liquidPcv1,
+            uint256 illiquidPcv1,
+            uint256 totalPcv1
+        ) = pcvOracle.getTotalPcv();
+        assertEq(liquidPcv1, 100e18); // 100$ liquid
+        assertEq(illiquidPcv1, 0); // 0$ illiquid
+        assertEq(totalPcv1, 100e18); // 100$ total
+
+        // the balances have not persisted in the state yet,
+        // except for the initial 1$ liquid that was already here
+        // when the liquid pcvdeposit was added to the oracle,
+        // because there has been no hook calls from PCVdeposits
+        // or addition/removal of venues in the PCV Oracle's state.
+        assertEq(pcvOracle.lastIlliquidBalance(), 0);
+        assertEq(pcvOracle.lastLiquidBalance(), 100e18);
+        assertEq(pcvOracle.lastLiquidVenuePercentage(), 1e18); // 100%
+
         // grant roles to pcv deposits
         vm.startPrank(addresses.governorAddress);
         core.createRole(VoltRoles.LIQUID_PCV_DEPOSIT_ROLE, VoltRoles.GOVERNOR);
@@ -304,42 +442,79 @@ contract PCVOracleUnitTest is DSTest {
             VoltRoles.GOVERNOR
         );
         core.grantRole(VoltRoles.ILLIQUID_PCV_DEPOSIT_ROLE, address(deposit2));
-        core.createRole(VoltRoles.LOCKER_ROLE, VoltRoles.GOVERNOR);
-        core.grantRole(VoltRoles.LOCKER_ROLE, address(deposit1));
-        core.grantRole(VoltRoles.LOCKER_ROLE, address(deposit2));
         vm.stopPrank();
 
-        // set oracle values
-        oracle1.setValues(1e18, true); // simulating "DAI" (1$ coin, 18 decimals)
-        oracle2.setValues(1e18 * 1e12, true); // simulating "USDC" (1$ coin, 6 decimals)
-
-        // deposit 1 has 123$
-        token1.mint(address(deposit1), 123e18);
-        deposit1.deposit();
-        // deposit 2 has 456$
-        token2.mint(address(deposit2), 456e6);
-        deposit2.deposit();
+        // deposit 1 has 100$ + 300$
+        token1.mint(address(deposit1), 300e18);
+        entry.deposit(address(deposit1));
+        // deposit 2 has 400$
+        token2.mint(address(deposit2), 400e6);
+        entry.deposit(address(deposit2));
 
         // check getPcv()
-        (uint256 liquidPcv, uint256 illiquidPcv, uint256 totalPcv) = pcvOracle
-            .getTotalPcv();
-        assertEq(liquidPcv, 123e18); // 123$ liquid
-        assertEq(illiquidPcv, 456e18); // 456$ illiquid
-        assertEq(totalPcv, 579e18); // 579$ total
+        (
+            uint256 liquidPcv2,
+            uint256 illiquidPcv2,
+            uint256 totalPcv2
+        ) = pcvOracle.getTotalPcv();
+        assertEq(liquidPcv2, 100e18 + 300e18); // 400$ liquid
+        assertEq(illiquidPcv2, 400e18); // 400$ illiquid
+        assertEq(totalPcv2, 800e18); // 800$ total
 
-        // the balances have not persisted in the state yet
+        // the balances have not persisted in the state yet,
+        // except for the initial 100$ liquid that was already here
+        // when the liquid pcvdeposit was added to the oracle,
         // because there has been no hook calls from PCVdeposits
         // or addition/removal of venues in the PCV Oracle's state.
         assertEq(pcvOracle.lastIlliquidBalance(), 0);
-        assertEq(pcvOracle.lastLiquidBalance(), 0);
-        assertEq(pcvOracle.getLiquidVenuePercentage(), 1e18);
+        assertEq(pcvOracle.lastLiquidBalance(), 100e18);
+        assertEq(pcvOracle.lastLiquidVenuePercentage(), 1e18); // 100%
 
         // A call from an illiquid PCVDeposit refreshes the state
-        vm.prank(address(deposit2));
-        pcvOracle.updateIlliquidBalance(int256(456e6));
-        assertEq(pcvOracle.lastIlliquidBalance(), 456e18);
-        assertEq(pcvOracle.lastLiquidBalance(), 0);
-        assertEq(pcvOracle.getLiquidVenuePercentage(), 0);
+        vm.startPrank(address(deposit2));
+        core.lock(1);
+        pcvOracle.updateIlliquidBalance(int256(400e6));
+        core.unlock(0);
+        vm.stopPrank();
+        assertEq(pcvOracle.lastIlliquidBalance(), 400e18); // 400$ illiquid
+        assertEq(pcvOracle.lastLiquidBalance(), 100e18); // 100$ liquid
+        assertEq(pcvOracle.lastLiquidVenuePercentage(), 0.2e18); // 20% liquid
+
+        // A call from a liquid PCVDeposit refreshes the state
+        vm.startPrank(address(deposit1));
+        core.lock(1);
+        pcvOracle.updateLiquidBalance(int256(300e18));
+        core.unlock(0);
+        vm.stopPrank();
+        assertEq(pcvOracle.lastIlliquidBalance(), 400e18); // 400$ illiquid
+        assertEq(pcvOracle.lastLiquidBalance(), 400e18); // 400$ liquid
+        assertEq(pcvOracle.lastLiquidVenuePercentage(), 0.5e18); // 50% liquid
+    }
+
+    function testGetPcvRevertIfOracleInvalid() public {
+        // make deposit1 non-empty
+        token1.mint(address(deposit1), 100e18);
+        entry.deposit(address(deposit1));
+
+        // set oracle values
+        oracle1.setValues(123456, true); // oracle valid
+
+        // add venues
+        address[] memory venues = new address[](1);
+        venues[0] = address(deposit1);
+        address[] memory oracles = new address[](1);
+        oracles[0] = address(oracle1);
+        bool[] memory isLiquid = new bool[](1);
+        isLiquid[0] = true;
+        vm.prank(addresses.governorAddress);
+        pcvOracle.addVenues(venues, oracles, isLiquid);
+
+        // set oracle values
+        oracle1.setValues(123456, false); // oracle unvalid
+
+        // getPcv() reverts because oracle is invalid
+        vm.expectRevert(bytes("PCVO: invalid oracle value"));
+        pcvOracle.getTotalPcv();
     }
 
     // -------------------------------------------------
