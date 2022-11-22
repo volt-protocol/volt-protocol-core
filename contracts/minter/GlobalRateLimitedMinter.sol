@@ -39,7 +39,7 @@ contract GlobalRateLimitedMinter is IGRLM, RateLimitedV2 {
         onlyVoltRole(VoltRoles.VOLT_RATE_LIMITED_MINTER_ROLE)
         /// system must be level 1 locked before this function can execute
         /// asserts system is inside PSM mint when this function is called
-        globalLockLevelTwo
+        globalLock(2)
     {
         _depleteBuffer(amount); /// check and effects
         volt().mint(to, amount); /// interactions
@@ -55,7 +55,7 @@ contract GlobalRateLimitedMinter is IGRLM, RateLimitedV2 {
         onlyVoltRole(VoltRoles.VOLT_RATE_LIMITED_REDEEMER_ROLE)
         /// system must be level 1 locked before this function can execute
         /// asserts system is inside PSM redeem when this function is called
-        globalLockLevelTwo
+        globalLock(2)
     {
         _replenishBuffer(amount); /// effects
     }

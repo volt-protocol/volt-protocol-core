@@ -1,18 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.8.13;
 
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {ILens} from "./ILens.sol";
+import {ICToken} from "./ICompound.sol";
 import {IMorpho} from "./IMorpho.sol";
 import {CoreRefV2} from "../../refs/CoreRefV2.sol";
 import {Constants} from "../../Constants.sol";
 import {IPCVOracle} from "./IPCVOracle.sol";
 import {PCVDeposit} from "../PCVDeposit.sol";
-import {ICompoundOracle, ICToken} from "./ICompound.sol";
 
 /// @notice PCV Deposit for Morpho-Compound V2.
 /// Implements the PCV Deposit interface to deposit and withdraw funds in Morpho
@@ -37,7 +36,7 @@ import {ICompoundOracle, ICToken} from "./ICompound.sol";
 /// and protocol engineers are forced to choose who to round in favor of.
 /// Engineers must round in favor of the protocol to avoid deposits of 0 giving
 /// the user a balance.
-contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
+contract MorphoCompoundPCVDeposit is PCVDeposit {
     using SafeERC20 for IERC20;
     using SafeCast for *;
 
@@ -83,7 +82,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit, ReentrancyGuard {
         address _underlying,
         address _morpho,
         address _lens
-    ) CoreRefV2(_core) ReentrancyGuard() {
+    ) CoreRefV2(_core) {
         if (_underlying != address(Constants.WETH)) {
             require(
                 ICToken(_cToken).underlying() == _underlying,
