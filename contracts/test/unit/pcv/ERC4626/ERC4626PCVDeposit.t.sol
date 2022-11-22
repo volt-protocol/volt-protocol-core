@@ -3,15 +3,18 @@ pragma solidity =0.8.13;
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {Vm} from "./../../utils/Vm.sol";
-import {ICore} from "../../../../core/ICore.sol";
+import {CoreV2} from "../../../../core/CoreV2.sol";
 import {DSTest} from "./../../utils/DSTest.sol";
 import {stdError} from "../../../unit/utils/StdLib.sol";
 import {IPCVDeposit} from "../../../../pcv/IPCVDeposit.sol";
 import {MockPCVOracle} from "../../../../mock/MockPCVOracle.sol";
+import {SystemEntry} from "../../../../entry/SystemEntry.sol";
+import {PCVGuardian} from "../../../../pcv/PCVGuardian.sol";
 import {MockERC20, IERC20} from "../../../../mock/MockERC20.sol";
 import {MockERC4626Vault} from "../../../../mock/MockERC4626Vault.sol";
 import {ERC4626PCVDeposit} from "../../../../pcv/ERC4626/ERC4626PCVDeposit.sol";
-import {getCore, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.sol";
+import {getCoreV2, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.sol";
+import "../../../../mock/MockERC4626VaultMaliciousReentrancy.sol";
 
 contract UnitTestERC4626PCVDeposit is DSTest {
     using SafeCast for *;
@@ -28,10 +31,13 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         uint256 _amount
     );
 
-    ICore private core;
+    address public safeAddress = address(1000);
+    CoreV2 private core;
+    SystemEntry public entry;
 
     ERC4626PCVDeposit private tokenizedVaultPCVDeposit;
     MockERC4626Vault private tokenizedVault;
+    PCVGuardian private pcvGuardian;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
@@ -40,10 +46,16 @@ contract UnitTestERC4626PCVDeposit is DSTest {
     /// @notice token to deposit in the vault
     MockERC20 private token;
 
+    MockERC4626VaultMaliciousReentrancy private maliciousVault;
+
     function setUp() public {
-        core = getCore();
+        core = getCoreV2();
         token = new MockERC20();
+        entry = new SystemEntry(address(core));
         tokenizedVault = new MockERC4626Vault(MockERC20(address(token)));
+        maliciousVault = new MockERC4626VaultMaliciousReentrancy(
+            MockERC20(address(token))
+        );
 
         tokenizedVaultPCVDeposit = new ERC4626PCVDeposit(
             address(core),
@@ -51,13 +63,29 @@ contract UnitTestERC4626PCVDeposit is DSTest {
             address(tokenizedVault)
         );
 
+        address[] memory toWhitelist = new address[](1);
+        toWhitelist[0] = address(tokenizedVaultPCVDeposit);
+        pcvGuardian = new PCVGuardian(address(core), safeAddress, toWhitelist);
+
+        vm.startPrank(addresses.governorAddress);
+        core.grantLocker(address(entry));
+        core.grantLocker(address(pcvGuardian));
+        core.grantLocker(address(tokenizedVaultPCVDeposit));
+        core.grantPCVController(address(pcvGuardian));
+        // core.grantLocker(address(maliciousVault));
+        core.grantPCVGuard(address(this));
+        vm.stopPrank();
+
         vm.label(address(tokenizedVault), "Vault");
         vm.label(address(token), "Token");
+
+        maliciousVault.setERC4626PCVDeposit(address(tokenizedVaultPCVDeposit));
     }
 
     function testSetup() public {
         assertEq(tokenizedVault.asset(), address(token));
         assertEq(tokenizedVaultPCVDeposit.vault(), address(tokenizedVault));
+        assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), 0);
     }
 
     /// @notice utility function to deposit tokens to the vault from the PCV deposit
@@ -66,7 +94,7 @@ contract UnitTestERC4626PCVDeposit is DSTest {
             address(tokenizedVault)
         );
         token.mint(address(tokenizedVaultPCVDeposit), amountToDeposit);
-        tokenizedVaultPCVDeposit.deposit();
+        entry.deposit(address(tokenizedVaultPCVDeposit));
         assertEq(
             tokenizedVaultPCVDeposit.lastRecordedBalance(),
             amountToDeposit
@@ -117,7 +145,7 @@ contract UnitTestERC4626PCVDeposit is DSTest {
             depositAmount
         );
 
-        tokenizedVaultPCVDeposit.deposit();
+        entry.deposit(address(tokenizedVaultPCVDeposit));
 
         // assert that all tokens have been sent to the vault
         assertEq(token.balanceOf(address(tokenizedVaultPCVDeposit)), 0);
@@ -144,7 +172,7 @@ contract UnitTestERC4626PCVDeposit is DSTest {
             depositAmount
         );
 
-        tokenizedVaultPCVDeposit.deposit();
+        entry.deposit(address(tokenizedVaultPCVDeposit));
 
         // assert that all tokens have been sent to the vault
         assertEq(token.balanceOf(address(tokenizedVaultPCVDeposit)), 0);
@@ -176,9 +204,9 @@ contract UnitTestERC4626PCVDeposit is DSTest {
                 if (tokenizedVaultPCVDeposit.balance() != 0) {
                     emit Harvest(address(token), 0, block.timestamp);
                 }
-                emit Deposit(address(this), depositAmount[i]);
+                emit Deposit(address(entry), depositAmount[i]);
             }
-            tokenizedVaultPCVDeposit.deposit();
+            entry.deposit(address(tokenizedVaultPCVDeposit));
 
             sumDeposit += depositAmount[i];
             assertEq(
@@ -199,7 +227,7 @@ contract UnitTestERC4626PCVDeposit is DSTest {
     function testAccrueWhenNoChangeShouldNotChangeAnything() public {
         utilDepositTokens(10000 * 1e18);
         assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), 10000 * 1e18);
-        tokenizedVaultPCVDeposit.accrue();
+        entry.accrue(address(tokenizedVaultPCVDeposit));
         assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), 10000 * 1e18);
     }
 
@@ -209,7 +237,7 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         utilDepositTokens(10000 * 1e18);
         assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), 10000 * 1e18);
         tokenizedVault.mockGainSome(profit);
-        tokenizedVaultPCVDeposit.accrue();
+        entry.accrue(address(tokenizedVaultPCVDeposit));
         assertEq(
             tokenizedVaultPCVDeposit.lastRecordedBalance(),
             uint256(profit) + 10000 * 1e18
@@ -225,7 +253,7 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         utilDepositTokens(10000 * 1e18);
         assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), 10000 * 1e18);
         tokenizedVault.mockGainSome(profitAmount);
-        tokenizedVaultPCVDeposit.accrue();
+        entry.accrue(address(tokenizedVaultPCVDeposit));
         assertApproxEq(
             tokenizedVaultPCVDeposit.lastRecordedBalance().toInt256(),
             (uint256(10000 * 1e18) + uint256(profitAmount / 2)).toInt256(),
@@ -241,7 +269,7 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         utilDepositTokens(10000 * 1e18);
         assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), 10000 * 1e18);
         tokenizedVault.mockLoseSome(lossAmount);
-        tokenizedVaultPCVDeposit.accrue();
+        entry.accrue(address(tokenizedVaultPCVDeposit));
         assertEq(
             tokenizedVaultPCVDeposit.lastRecordedBalance(),
             10000 * 1e18 - uint256(lossAmount)
@@ -259,11 +287,11 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         utilDepositTokens(10000 * 1e18);
         assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), 10000 * 1e18);
         tokenizedVault.mockLoseSome(lossAmount);
-        tokenizedVaultPCVDeposit.accrue();
+        entry.accrue(address(tokenizedVaultPCVDeposit));
         assertApproxEq(
             tokenizedVaultPCVDeposit.lastRecordedBalance().toInt256(),
             (uint256(10000 * 1e18) - uint256(lossAmount / 2)).toInt256(),
-            0
+            10
         );
     }
 
@@ -306,11 +334,37 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         );
     }
 
-    /// @notice checks that only PCV Controller role can withdraw
-    function testWithdrawOnlyPCVController(uint120 withdrawAmount) public {
-        address pcvReceiver = address(100);
+    /// @notice checks that the withdraw function cannot be used if called is not PCV Controller
+    function testCannotWithdrawIfNotPCVController(uint120 withdrawAmount)
+        public
+    {
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
-        tokenizedVaultPCVDeposit.withdraw(pcvReceiver, withdrawAmount);
+        tokenizedVaultPCVDeposit.withdraw(address(45), withdrawAmount);
+    }
+
+    /// @notice checks that the withdraw function cannot be called directly
+    /// even by a pcv controller
+    function testCannotWithdrawDirectly(uint120 withdrawAmount) public {
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        vm.prank(addresses.pcvControllerAddress);
+        tokenizedVaultPCVDeposit.withdraw(address(45), withdrawAmount);
+    }
+
+    /// @notice checks that the deposit function cannot be called directly
+    function testCannotDepositDirectly() public {
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        tokenizedVaultPCVDeposit.deposit();
+    }
+
+    /// @notice checks that only authorized can withdraw
+    function testWithdrawOnlyForAuthorized(uint120 withdrawAmount) public {
+        vm.expectRevert("UNAUTHORIZED");
+        address randomAddress = address(45);
+        vm.prank(randomAddress);
+        pcvGuardian.withdrawToSafeAddress(
+            address(tokenizedVaultPCVDeposit),
+            withdrawAmount
+        );
     }
 
     /// @notice checks that withdraw works when withdrawing valid amount
@@ -320,8 +374,6 @@ contract UnitTestERC4626PCVDeposit is DSTest {
             tokenizedVaultPCVDeposit.lastRecordedBalance(),
             withdrawAmount
         );
-        address pcvReceiver = address(100);
-        vm.prank(addresses.pcvControllerAddress);
         vm.expectEmit(
             true,
             false,
@@ -329,13 +381,13 @@ contract UnitTestERC4626PCVDeposit is DSTest {
             true,
             address(tokenizedVaultPCVDeposit)
         );
-        emit Withdrawal(
-            addresses.pcvControllerAddress,
-            pcvReceiver,
+        emit Withdrawal(address(pcvGuardian), safeAddress, withdrawAmount);
+
+        pcvGuardian.withdrawToSafeAddress(
+            address(tokenizedVaultPCVDeposit),
             withdrawAmount
         );
-        tokenizedVaultPCVDeposit.withdraw(pcvReceiver, withdrawAmount);
-        assertEq(token.balanceOf(pcvReceiver), withdrawAmount);
+        assertEq(token.balanceOf(safeAddress), withdrawAmount);
         assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), 0);
     }
 
@@ -347,8 +399,6 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         vm.assume(depositAmount > withdrawAmount);
         utilDepositTokens(depositAmount);
         assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), depositAmount);
-        address pcvReceiver = address(100);
-        vm.prank(addresses.pcvControllerAddress);
         vm.expectEmit(
             true,
             false,
@@ -356,13 +406,15 @@ contract UnitTestERC4626PCVDeposit is DSTest {
             true,
             address(tokenizedVaultPCVDeposit)
         );
-        emit Withdrawal(
-            addresses.pcvControllerAddress,
-            pcvReceiver,
+
+        emit Withdrawal(address(pcvGuardian), safeAddress, withdrawAmount);
+
+        pcvGuardian.withdrawToSafeAddress(
+            address(tokenizedVaultPCVDeposit),
             withdrawAmount
         );
-        tokenizedVaultPCVDeposit.withdraw(pcvReceiver, withdrawAmount);
-        assertEq(token.balanceOf(pcvReceiver), withdrawAmount);
+
+        assertEq(token.balanceOf(safeAddress), withdrawAmount);
         assertEq(
             tokenizedVaultPCVDeposit.lastRecordedBalance(),
             depositAmount - withdrawAmount
@@ -382,10 +434,11 @@ contract UnitTestERC4626PCVDeposit is DSTest {
             tokenizedVaultPCVDeposit.lastRecordedBalance(),
             withdrawAmount
         );
-        address pcvReceiver = address(100);
-        vm.prank(addresses.pcvControllerAddress);
         vm.expectRevert("ERC4626: withdraw more than max");
-        tokenizedVaultPCVDeposit.withdraw(pcvReceiver, withdrawAmount);
+        pcvGuardian.withdrawToSafeAddress(
+            address(tokenizedVaultPCVDeposit),
+            withdrawAmount
+        );
     }
 
     /// @notice checks the function withdrawMax withdraw all tokens if no shares locked
@@ -397,6 +450,13 @@ contract UnitTestERC4626PCVDeposit is DSTest {
             withdrawAmount
         );
         address pcvReceiver = address(100);
+
+        // lock level 1 directly to be able to call withdrawMax function
+        // could be removed when/if the pcvGuardian implements withdrawMax function one day
+        vm.prank(addresses.governorAddress);
+        core.grantLocker(address(this));
+        core.lock(1);
+
         vm.prank(addresses.pcvControllerAddress);
         vm.expectEmit(
             true,
@@ -428,6 +488,12 @@ contract UnitTestERC4626PCVDeposit is DSTest {
             withdrawAmount
         );
         address pcvReceiver = address(100);
+
+        // lock level 1 directly to be able to call withdrawMax function
+        // could be removed when/if the pcvGuardian implements withdrawMax function one day
+        vm.prank(addresses.governorAddress);
+        core.grantLocker(address(this));
+        core.lock(1);
         vm.prank(addresses.pcvControllerAddress);
         vm.expectEmit(
             true,
@@ -462,6 +528,12 @@ contract UnitTestERC4626PCVDeposit is DSTest {
             withdrawAmount
         );
         address pcvReceiver = address(100);
+        // lock level 1 directly to be able to call withdrawMax function
+        // could be removed when/if the pcvGuardian implements withdrawMax function one day
+        vm.prank(addresses.governorAddress);
+        core.grantLocker(address(this));
+        core.lock(1);
+
         vm.prank(addresses.pcvControllerAddress);
         vm.expectEmit(
             true,
@@ -499,6 +571,13 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), depositAmount);
         address pcvReceiver = address(100);
         uint256 withdrawableAmount = depositAmount - lockAmount;
+
+        // lock level 1 directly to be able to call withdrawMax function
+        // could be removed when/if the pcvGuardian implements withdrawMax function one day
+        vm.prank(addresses.governorAddress);
+        core.grantLocker(address(this));
+        core.lock(1);
+
         vm.prank(addresses.pcvControllerAddress);
         vm.expectEmit(
             true,
