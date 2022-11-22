@@ -65,8 +65,6 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
 
     // ----------- Governor Only State Changing API -----------
 
-    /// TODO test this
-
     /// @notice sets the new floor price
     /// @param newFloorPrice new floor price
     function setOracleFloorPrice(
@@ -91,8 +89,9 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
     function withdraw(
         address to,
         uint256 amount
-    ) external virtual override onlyPCVController {
+    ) external virtual override onlyPCVController globalLock(2) {
         _withdrawERC20(address(underlyingToken), to, amount);
+        _liquidPcvOracleHook(-(amount.toInt256()));
     }
 
     // ----------- Public State Changing API -----------
@@ -110,13 +109,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
         address to,
         uint256 amountVoltIn,
         uint256 minAmountOut
-    )
-        external
-        virtual
-        override
-        globalReentrancyLock
-        returns (uint256 amountOut)
-    {
+    ) external virtual override globalLock(1) returns (uint256 amountOut) {
         /// ------- Checks -------
         /// 1. current price from oracle is correct
         /// 2. how much underlying token to receive
@@ -138,6 +131,8 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
 
         underlyingToken.safeTransfer(to, amountOut); /// Interaction -- untrusted contract
 
+        _liquidPcvOracleHook(-(amountOut.toInt256()));
+
         emit Redeem(to, amountVoltIn, amountOut);
     }
 
@@ -151,18 +146,12 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
     /// of orders that would need to be executed.
     /// @param to recipient of the Volt
     /// @param amountIn amount of underlying tokens used to purchase Volt
-    /// @param minAmountOut minimum amount of Volt recipient to receive
+    /// @param minAmountVoltOut minimum amount of Volt recipient to receive
     function mint(
         address to,
         uint256 amountIn,
-        uint256 minAmountOut
-    )
-        external
-        virtual
-        override
-        globalReentrancyLock
-        returns (uint256 amountVoltOut)
-    {
+        uint256 minAmountVoltOut
+    ) external virtual override globalLock(1) returns (uint256 amountVoltOut) {
         /// ------- Checks -------
         /// 1. current price from oracle is correct
         /// 2. how much volt to receive
@@ -170,7 +159,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
 
         amountVoltOut = getMintAmountOut(amountIn);
         require(
-            amountVoltOut >= minAmountOut,
+            amountVoltOut >= minAmountVoltOut,
             "PegStabilityModule: Mint not enough out"
         );
 
@@ -183,12 +172,25 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
 
         underlyingToken.safeTransferFrom(msg.sender, address(this), amountIn); /// Interaction -- untrusted contract
 
+        _liquidPcvOracleHook(amountIn.toInt256());
+
         emit Mint(to, amountIn, amountVoltOut);
     }
 
     /// @notice no-op to maintain backwards compatability with IPCVDeposit
     /// pauseable to stop integration if this contract is deprecated
-    function deposit() external override whenNotPaused {}
+    function deposit() external override globalLock(2) whenNotPaused {}
+
+    /// @notice no-op to maintain compatability with IPCVDepositV2
+    /// pauseable to stop integration if this contract is deprecated
+    /// @return balance of underlying token
+    function accrue() external globalLock(2) whenNotPaused returns (uint256) {
+        return balance();
+    }
+
+    /// @notice no-op to maintain backwards compatability with IPCVDepositV2
+    /// pauseable to stop integration if this contract is deprecated
+    function harvest() external globalLock(2) whenNotPaused {}
 
     /// ----------- Public View-Only API ----------
 
@@ -290,7 +292,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
         uint128 oldCeiling = ceiling;
         ceiling = newCeilingPrice;
 
-        emit OracleCeilingUpdate(oldCeiling, ceiling);
+        emit OracleCeilingUpdate(oldCeiling, newCeilingPrice);
     }
 
     /// @notice helper function to set the floor in basis points
@@ -303,7 +305,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
         uint128 oldFloor = floor;
         floor = newFloorPrice;
 
-        emit OracleFloorUpdate(oldFloor, floor);
+        emit OracleFloorUpdate(oldFloor, newFloorPrice);
     }
 
     /// @notice helper function to determine if price is within a valid range

@@ -15,15 +15,12 @@ contract MockCoreRefV2 is CoreRefV2 {
 
     function testGuardian() public onlyGuardianOrGovernor {}
 
-    function testSystemState()
-        public
-        onlyVoltRole(VoltRoles.GLOBAL_LOCKER_ROLE)
-    {}
+    function testSystemState() public onlyVoltRole(VoltRoles.LOCKER_ROLE) {}
 
     function testStateGovernorMinter()
         public
         hasAnyOfThreeRoles(
-            VoltRoles.GLOBAL_LOCKER_ROLE,
+            VoltRoles.LOCKER_ROLE,
             VoltRoles.GOVERNOR,
             VoltRoles.MINTER
         )

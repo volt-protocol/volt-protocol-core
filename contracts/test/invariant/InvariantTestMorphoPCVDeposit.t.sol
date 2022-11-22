@@ -5,14 +5,16 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {Vm} from "../unit/utils/Vm.sol";
-import {ICore} from "../../core/ICore.sol";
+import {CoreV2} from "../../core/CoreV2.sol";
 import {DSTest} from "../unit/utils/DSTest.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
 import {MockMorpho} from "../../mock/MockMorpho.sol";
+import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
+import {SystemEntry} from "../../entry/SystemEntry.sol";
 import {MockPCVOracle} from "../../mock/MockPCVOracle.sol";
 import {DSInvariantTest} from "../unit/utils/DSInvariantTest.sol";
 import {MorphoCompoundPCVDeposit} from "../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
-import {getCore, getAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
+import {getCoreV2, getAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
 
 /// note all variables have to be public and not immutable otherwise foundry
 /// will not run invariant tests
@@ -21,19 +23,22 @@ import {getCore, getAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.s
 contract InvariantTestMorphoCompoundPCVDeposit is DSTest, DSInvariantTest {
     using SafeCast for *;
 
-    MorphoPCVDepositTest public morphoTest;
-    MockPCVOracle public pcvOracle;
-    ICore public core;
-    MorphoCompoundPCVDeposit public morphoDeposit;
-    MockMorpho public morpho;
+    CoreV2 public core;
     MockERC20 public token;
+    MockMorpho public morpho;
+    SystemEntry public entry;
+    PCVGuardian public pcvGuardian;
+    MockPCVOracle public pcvOracle;
+    MorphoPCVDepositTest public morphoTest;
+    MorphoCompoundPCVDeposit public morphoDeposit;
+
     Vm private vm = Vm(HEVM_ADDRESS);
     VoltTestAddresses public addresses = getAddresses();
 
     function setUp() public {
-        pcvOracle = new MockPCVOracle();
-        core = getCore();
+        core = getCoreV2();
         token = new MockERC20();
+        pcvOracle = new MockPCVOracle();
         morpho = new MockMorpho(IERC20(address(token)));
         morphoDeposit = new MorphoCompoundPCVDeposit(
             address(core),
@@ -42,10 +47,36 @@ contract InvariantTestMorphoCompoundPCVDeposit is DSTest, DSInvariantTest {
             address(morpho),
             address(morpho)
         );
-        morphoTest = new MorphoPCVDepositTest(morphoDeposit, token, morpho);
 
-        vm.prank(addresses.governorAddress);
+        address[] memory toWhitelist = new address[](1);
+        toWhitelist[0] = address(morphoDeposit);
+
+        pcvGuardian = new PCVGuardian(
+            address(core),
+            address(this),
+            toWhitelist
+        );
+
+        entry = new SystemEntry(address(core));
+        morphoTest = new MorphoPCVDepositTest(
+            morphoDeposit,
+            token,
+            morpho,
+            entry,
+            pcvGuardian
+        );
+
+        vm.startPrank(addresses.governorAddress);
+
         morphoDeposit.setPCVOracle(address(pcvOracle));
+
+        core.grantPCVGuard(address(morphoTest));
+        core.grantPCVController(address(pcvGuardian));
+
+        core.grantLocker(address(pcvGuardian));
+        core.grantLocker(address(morphoDeposit));
+
+        vm.stopPrank();
 
         addTargetContract(address(morphoTest));
     }
@@ -78,24 +109,33 @@ contract InvariantTestMorphoCompoundPCVDeposit is DSTest, DSInvariantTest {
 contract MorphoPCVDepositTest is DSTest {
     VoltTestAddresses public addresses = getAddresses();
     Vm private vm = Vm(HEVM_ADDRESS);
+
     uint256 public totalDeposited;
-    MorphoCompoundPCVDeposit public morphoDeposit;
+
     MockERC20 public token;
     MockMorpho public morpho;
+    SystemEntry public entry;
+    PCVGuardian public pcvGuardian;
+    MorphoCompoundPCVDeposit public morphoDeposit;
 
     constructor(
         MorphoCompoundPCVDeposit _morphoDeposit,
         MockERC20 _token,
-        MockMorpho _morpho
+        MockMorpho _morpho,
+        SystemEntry _entry,
+        PCVGuardian _pcvGuardian
     ) {
         morphoDeposit = _morphoDeposit;
         token = _token;
         morpho = _morpho;
+        entry = _entry;
+        pcvGuardian = _pcvGuardian;
     }
 
     function increaseBalance(uint256 amount) public {
         token.mint(address(morphoDeposit), amount);
-        morphoDeposit.deposit();
+        entry.deposit(address(morphoDeposit));
+
         unchecked {
             /// unchecked because token or MockMorpho will revert
             /// from an integer overflow
@@ -106,8 +146,7 @@ contract MorphoPCVDepositTest is DSTest {
     function decreaseBalance(uint256 amount) public {
         if (amount > totalDeposited) return;
 
-        vm.prank(addresses.pcvControllerAddress);
-        morphoDeposit.withdraw(address(this), amount);
+        pcvGuardian.withdrawToSafeAddress(address(morphoDeposit), amount);
         unchecked {
             /// unchecked because amount is always less than or equal
             /// to totalDeposited
@@ -116,8 +155,7 @@ contract MorphoPCVDepositTest is DSTest {
     }
 
     function withdrawEntireBalance() public {
-        vm.prank(addresses.pcvControllerAddress);
-        morphoDeposit.withdrawAll(address(this));
+        pcvGuardian.withdrawAllToSafeAddress(address(morphoDeposit));
         totalDeposited = 0;
     }
 
@@ -127,7 +165,7 @@ contract MorphoPCVDepositTest is DSTest {
             address(morphoDeposit),
             totalDeposited + interestAmount
         );
-        morphoDeposit.accrue(); /// accrue interest so morpho and pcv deposit are synced
+        entry.accrue(address(morphoDeposit)); /// accrue interest so morpho and pcv deposit are synced
         unchecked {
             /// unchecked because token or MockMorpho will revert
             /// from an integer overflow

@@ -11,7 +11,7 @@ import {IVIP} from "./IVIP.sol";
 import {DSTest} from "./../../unit/utils/DSTest.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
-import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
+import {IOraclePassThrough} from "../../../oracle/IOraclePassThrough.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {ITimelockSimulation} from "../utils/ITimelockSimulation.sol";
 import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
@@ -25,8 +25,8 @@ contract vip12 is DSTest, IVIP {
     address private usdc = MainnetAddresses.USDC;
     address private core = MainnetAddresses.CORE;
 
-    OraclePassThrough private mainnetOPT =
-        OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
+    IOraclePassThrough private mainnetOPT =
+        IOraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
     ITimelockSimulation.action[] private mainnetProposal;
     address public immutable compoundPCVRouter =

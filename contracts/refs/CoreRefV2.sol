@@ -6,9 +6,10 @@ import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IGRLM} from "../minter/IGRLM.sol";
-import {ICoreV2} from "./../core/ICoreV2.sol";
 import {VoltRoles} from "./../core/VoltRoles.sol";
 import {ICoreRefV2} from "./ICoreRefV2.sol";
+import {IPCVOracle} from "./../pcv/morpho/IPCVOracle.sol";
+import {CoreV2, ICoreV2} from "./../core/CoreV2.sol";
 import {IVolt, IVoltBurn} from "./../volt/IVolt.sol";
 import {IGlobalReentrancyLock} from "./../core/IGlobalReentrancyLock.sol";
 
@@ -19,19 +20,42 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     using SafeERC20 for IERC20;
 
     /// @notice reference to Core
-    ICoreV2 private _core;
+    CoreV2 private _core;
+
+    /// @notice reference to the PCV Oracle. Settable by governance
+    /// if set, anytime PCV is updated, delta is sent in to update liquid
+    /// amount of PCV held
+    /// not set in the constructor
+    address public pcvOracle;
 
     constructor(address coreAddress) {
-        _core = ICoreV2(coreAddress);
+        _core = CoreV2(coreAddress);
     }
 
     /// 1. call core and lock the lock
     /// 2. execute the code
     /// 3. call core and unlock the lock
-    modifier globalReentrancyLock() {
-        IGlobalReentrancyLock(address(_core)).lock();
+    modifier globalLock(uint8 level) {
+        uint8 startingLevel = _core.lockLevel();
+        require(
+            startingLevel < level,
+            "CoreRef: cannot lock less than current level"
+        );
+        _core.lock(level);
         _;
-        IGlobalReentrancyLock(address(_core)).unlock();
+        _core.unlock(startingLevel);
+    }
+
+    /// 1. validate system is already at level 1 locked
+    /// 2. call core and lock the lock to level 2
+    /// 3. execute the code
+    /// 4. call core and unlock the lock to level 2
+    modifier globalLockLevelTwo() {
+        uint8 currentLevel = _core.lockLevel();
+        require(currentLevel == 1, "CoreRef: restricted lock");
+        _core.lock(2);
+        _;
+        _core.unlock(1);
     }
 
     modifier isGlobalReentrancyLocked() {
@@ -148,7 +172,7 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     /// @notice address of the Core contract referenced
     /// @return ICore implementation address
     function core() public view override returns (ICoreV2) {
-        return _core;
+        return ICoreV2(address(_core));
     }
 
     /// @notice address of the Volt contract referenced by Core
@@ -181,6 +205,10 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         return vcon().balanceOf(address(this));
     }
 
+    /// ------------------------------------------
+    /// ----------- Governor Only API ------------
+    /// ------------------------------------------
+
     /// @notice WARNING CALLING THIS FUNCTION CAN POTENTIALLY
     /// BRICK A CONTRACT IF CORE IS SET INCORRECTLY
     /// @notice set new reference to core
@@ -188,7 +216,7 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     /// @param newCore to reference
     function setCore(address newCore) external onlyGovernor {
         address oldCore = address(_core);
-        _core = ICoreV2(newCore);
+        _core = CoreV2(newCore);
 
         emit CoreUpdate(oldCore, newCore);
     }
@@ -204,6 +232,15 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         uint256 amount
     ) external onlyGovernor {
         IERC20(token).safeTransfer(to, amount);
+    }
+
+    /// @notice set the pcv oracle address
+    /// @param _pcvOracle new pcv oracle to reference
+    function setPCVOracle(address _pcvOracle) external virtual onlyGovernor {
+        address oldOracle = pcvOracle;
+        pcvOracle = _pcvOracle;
+
+        emit PCVOracleUpdated(oldOracle, _pcvOracle);
     }
 
     /// ------------------------------------------
@@ -238,6 +275,28 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
             );
             require(success);
             returnData[i] = returned;
+        }
+    }
+
+    /// ------------------------------------------
+    /// ------- PCV Oracle Helper Methods --------
+    /// ------------------------------------------
+
+    /// @notice hook into the pcv oracle, calls into pcv oracle with delta
+    /// if pcv oracle is not set to address 0, and updates the liquid balance
+    function _liquidPcvOracleHook(int256 delta) internal {
+        if (pcvOracle != address(0)) {
+            /// if any amount of PCV is withdrawn and no gains, delta is negative
+            IPCVOracle(pcvOracle).updateLiquidBalance(delta);
+        }
+    }
+
+    /// @notice hook into the pcv oracle, calls into pcv oracle with delta
+    /// if pcv oracle is not set to address 0, and updates the illiquid balance
+    function _illiquidPcvOracleHook(int256 delta) internal {
+        if (pcvOracle != address(0)) {
+            /// if any amount of PCV is withdrawn and no gains, delta is negative
+            IPCVOracle(pcvOracle).updateIlliquidBalance(delta);
         }
     }
 }

@@ -14,10 +14,8 @@ import {PCVDeposit} from "../../../pcv/PCVDeposit.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {MockCoreRefV2} from "../../../mock/MockCoreRefV2.sol";
 import {ERC20Allocator} from "../../../pcv/utils/ERC20Allocator.sol";
-import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {MockPCVDepositV2} from "../../../mock/MockPCVDepositV2.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
-import {OraclePassThrough} from "../../../oracle/OraclePassThrough.sol";
 import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {IScalingPriceOracle} from "../../../oracle/IScalingPriceOracle.sol";
@@ -75,8 +73,7 @@ contract SystemUnitTest is Test {
     PCVGuardian private pcvGuardian;
     ERC20Allocator private allocator;
     CompoundPCVRouter private router;
-    VoltSystemOracle private vso;
-    OraclePassThrough private opt;
+    VoltSystemOracle private oracle;
     TimelockController public timelockController;
     GlobalRateLimitedMinter public grlm;
     address private voltAddress;
@@ -130,12 +127,11 @@ contract SystemUnitTest is Test {
         coreAddress = address(core);
         dai = IERC20Mintable(address(new MockERC20()));
         usdc = IERC20Mintable(address(new MockERC20()));
-        vso = new VoltSystemOracle(
+        oracle = new VoltSystemOracle(
             monthlyChangeRateBasisPoints,
             startTime,
             startPrice
         );
-        opt = new OraclePassThrough(IScalingPriceOracle(address(vso)));
         grlm = new GlobalRateLimitedMinter(
             coreAddress,
             maxRateLimitPerSecondMinting,
@@ -145,7 +141,7 @@ contract SystemUnitTest is Test {
 
         usdcpsm = new PegStabilityModule(
             coreAddress,
-            address(opt),
+            address(oracle),
             address(0),
             -12,
             false,
@@ -156,7 +152,7 @@ contract SystemUnitTest is Test {
 
         daipsm = new PegStabilityModule(
             coreAddress,
-            address(opt),
+            address(oracle),
             address(0),
             0,
             false,
@@ -211,7 +207,6 @@ contract SystemUnitTest is Test {
             PCVDeposit(address(pcvDepositUsdc))
         );
 
-        opt.transferOwnership(address(timelockController));
         timelockController.renounceRole(
             timelockController.TIMELOCK_ADMIN_ROLE(),
             address(this)
@@ -233,10 +228,15 @@ contract SystemUnitTest is Test {
         core.grantMinter(address(grlm));
         core.grantRateLimitedMinter(address(daipsm));
         core.grantRateLimitedMinter(address(usdcpsm));
+        core.grantRateLimitedRedeemer(address(daipsm));
+        core.grantRateLimitedRedeemer(address(usdcpsm));
 
-        core.grantGlobalLocker(address(allocator));
-        core.grantGlobalLocker(address(daipsm));
-        core.grantGlobalLocker(address(usdcpsm));
+        core.grantLocker(address(pcvGuardian));
+        core.grantLocker(address(allocator));
+        core.grantLocker(address(daipsm));
+        core.grantLocker(address(usdcpsm));
+
+        core.grantLocker(address(grlm));
 
         core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
 
@@ -270,9 +270,9 @@ contract SystemUnitTest is Test {
     }
 
     function testSetup() public {
-        assertTrue(core.isGlobalLocker(address(usdcpsm)));
-        assertTrue(core.isGlobalLocker(address(daipsm)));
-        assertTrue(core.isGlobalLocker(address(allocator)));
+        assertTrue(core.isLocker(address(usdcpsm)));
+        assertTrue(core.isLocker(address(daipsm)));
+        assertTrue(core.isLocker(address(allocator)));
 
         assertTrue(
             !timelockController.hasRole(
@@ -353,12 +353,10 @@ contract SystemUnitTest is Test {
         assertEq(pcvGuardian.safeAddress(), address(timelockController));
         assertEq(address(router.daiPcvDeposit()), address(pcvDepositDai));
         assertEq(address(router.usdcPcvDeposit()), address(pcvDepositUsdc));
-        assertEq(opt.owner(), address(timelockController));
         assertEq(
-            vso.monthlyChangeRateBasisPoints(),
+            oracle.monthlyChangeRateBasisPoints(),
             monthlyChangeRateBasisPoints
         );
-        assertEq(address(opt.scalingPriceOracle()), address(vso));
 
         {
             (
@@ -404,10 +402,12 @@ contract SystemUnitTest is Test {
 
     function testPCVGuardWithdrawAllToSafeAddress() public {
         vm.startPrank(addresses.userAddress);
-        pcvGuardian.withdrawAllToSafeAddress(address(pcvDepositDai));
-        pcvGuardian.withdrawAllToSafeAddress(address(pcvDepositUsdc));
+
         pcvGuardian.withdrawAllToSafeAddress(address(daipsm));
         pcvGuardian.withdrawAllToSafeAddress(address(usdcpsm));
+        pcvGuardian.withdrawAllToSafeAddress(address(pcvDepositDai));
+        pcvGuardian.withdrawAllToSafeAddress(address(pcvDepositUsdc));
+
         vm.stopPrank();
 
         assertEq(

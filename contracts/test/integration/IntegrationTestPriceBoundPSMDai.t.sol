@@ -7,7 +7,7 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
 import {MockPCVDepositV2} from "../../mock/MockPCVDepositV2.sol";
 import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
-import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
+import {IOraclePassThrough} from "../../oracle/IOraclePassThrough.sol";
 import {ICore} from "../../core/ICore.sol";
 import {Core} from "../../core/Core.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
@@ -31,8 +31,8 @@ contract IntegrationTestPriceBoundPSMDaiTest is TimelockSimulation, vip7 {
     IVolt private underlyingToken = dai;
 
     uint256 public constant mintAmount = 1_000_000e18;
-    OraclePassThrough public oracle =
-        OraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
+    IOraclePassThrough public oracle =
+        IOraclePassThrough(MainnetAddresses.ORACLE_PASS_THROUGH);
 
     uint128 voltFloorPrice = 9_000; /// 1 volt for .9 dai is the max allowable price
     uint128 voltCeilingPrice = 10_000; /// 1 volt for 1 dai is the minimum price

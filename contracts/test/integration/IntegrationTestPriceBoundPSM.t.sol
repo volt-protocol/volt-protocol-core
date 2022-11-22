@@ -15,7 +15,7 @@ import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {MockPCVDepositV2} from "../../mock/MockPCVDepositV2.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
-import {OraclePassThrough} from "../../oracle/OraclePassThrough.sol";
+import {IOraclePassThrough} from "../../oracle/IOraclePassThrough.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 import {IGRLM, GlobalRateLimitedMinter} from "../../minter/GlobalRateLimitedMinter.sol";
@@ -42,8 +42,8 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     address public immutable feiDaiPsm = MainnetAddresses.FINAL_FEI_DAI_PSM;
 
     /// @notice Oracle Pass Through contract
-    OraclePassThrough public oracle =
-        OraclePassThrough(MainnetAddresses.DEPRECATED_ORACLE_PASS_THROUGH);
+    IOraclePassThrough public oracle =
+        IOraclePassThrough(MainnetAddresses.DEPRECATED_ORACLE_PASS_THROUGH);
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
@@ -86,9 +86,13 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
 
         vm.startPrank(addresses.governorAddress);
         core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
+        core.grantLocker(address(grlm)); /// allow setting of reentrancy lock
         core.grantMinter(address(grlm));
+
+        core.grantRateLimitedRedeemer(address(psm));
         core.grantRateLimitedMinter(address(psm));
-        core.grantGlobalLocker(address(psm));
+        core.grantLocker(address(psm));
+
         vm.stopPrank();
 
         vm.prank(feiDaiPsm);
