@@ -187,16 +187,16 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
 
         _recordPNL(); /// update deposit amount and fire harvest event
 
-        uint256 endingRecordedBalance = lastRecordedBalance;
+        int256 endingRecordedBalance = lastRecordedBalance.toInt256();
 
         if (pcvOracle != address(0)) {
             /// if any amount of PCV is withdrawn and no gains, delta is negative
             IPCVOracle(pcvOracle).updateLiquidBalance(
-                endingRecordedBalance.toInt256() - startingRecordedBalance
+                endingRecordedBalance - startingRecordedBalance
             );
         }
 
-        return endingRecordedBalance; /// return updated pcv amount
+        return lastRecordedBalance; /// return updated pcv amount
     }
 
     /// ------------------------------------------
