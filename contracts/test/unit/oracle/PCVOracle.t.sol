@@ -1,16 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
-
 import {Vm} from "./../utils/Vm.sol";
-import {ICore} from "../../../core/ICore.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {ICoreV2} from "../../../core/ICoreV2.sol";
-import {Decimal} from "./../../../external/Decimal.sol";
-import {Constants} from "./../../../Constants.sol";
 import {PCVOracle} from "../../../oracle/PCVOracle.sol";
 import {MockPCVDepositV3} from "../../../mock/MockPCVDepositV3.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
@@ -19,9 +12,6 @@ import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {getCoreV2, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
 
 contract PCVOracleUnitTest is DSTest {
-    using Decimal for Decimal.D256;
-    using SafeCast for *;
-
     ICoreV2 private core;
     Vm public constant vm = Vm(HEVM_ADDRESS);
     VoltTestAddresses public addresses = getAddresses();
