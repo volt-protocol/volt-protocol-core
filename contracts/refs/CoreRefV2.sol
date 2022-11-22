@@ -46,18 +46,6 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         _core.unlock(startingLevel);
     }
 
-    /// 1. validate system is already at level 1 locked
-    /// 2. call core and lock the lock to level 2
-    /// 3. execute the code
-    /// 4. call core and unlock the lock to level 2
-    modifier globalLockLevelTwo() {
-        uint8 currentLevel = _core.lockLevel();
-        require(currentLevel == 1, "CoreRef: restricted lock");
-        _core.lock(2);
-        _;
-        _core.unlock(1);
-    }
-
     modifier isGlobalReentrancyLocked() {
         require(
             IGlobalReentrancyLock(address(_core)).isLocked(),

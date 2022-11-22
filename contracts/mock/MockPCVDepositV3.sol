@@ -44,7 +44,7 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
     function withdraw(
         address to,
         uint256 amount
-    ) external override globalLockLevelTwo {
+    ) external override globalLock(2) {
         IERC20(balanceReportedIn).transfer(to, amount);
         resistantBalance = IERC20(balanceReportedIn).balanceOf(address(this));
     }

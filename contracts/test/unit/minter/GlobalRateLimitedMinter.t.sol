@@ -100,13 +100,13 @@ contract GlobalRateLimitedMinterUnitTest is Test {
     }
 
     function testMintAsMinterFailsWhenNotLocked() public {
-        vm.expectRevert("CoreRef: restricted lock");
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
         vm.prank(guardianAddresses.pcvGuardAddress1);
         grlm.mintVolt(address(this), 0);
     }
 
     function testReplenishAsMinterFailsWhenNotLocked() public {
-        vm.expectRevert("CoreRef: restricted lock");
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
         vm.prank(guardianAddresses.pcvGuardAddress1);
         grlm.replenishBuffer(0);
     }
