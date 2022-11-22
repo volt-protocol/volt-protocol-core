@@ -8,7 +8,7 @@ import {Decimal} from "../external/Decimal.sol";
 import {IOracle} from "./IOracle.sol";
 import {VoltRoles} from "../core/VoltRoles.sol";
 import {CoreRefV2} from "../refs/CoreRefV2.sol";
-import {PCVDeposit} from "../pcv/PCVDeposit.sol";
+import {IPCVDepositV2} from "../pcv/IPCVDepositV2.sol";
 import {DynamicVoltSystemOracle} from "./DynamicVoltSystemOracle.sol";
 
 /// @notice Contract to centralize information about PCV in the Volt system.
@@ -172,7 +172,7 @@ contract PCVOracle is CoreRefV2 {
 
                 liquidPcv +=
                     (oracleValue.asUint256() *
-                        PCVDeposit(depositAddress).balance()) /
+                        IPCVDepositV2(depositAddress).balance()) /
                     1e18;
             }
 
@@ -185,7 +185,7 @@ contract PCVOracle is CoreRefV2 {
 
                 illiquidPcv +=
                     (oracleValue.asUint256() *
-                        PCVDeposit(depositAddress).balance()) /
+                        IPCVDepositV2(depositAddress).balance()) /
                     1e18;
             }
 
@@ -232,8 +232,11 @@ contract PCVOracle is CoreRefV2 {
     /// @notice set the oracle for a given venue, used to normalize
     /// balances into USD values, and correct for exceptional gains
     /// and losses that are not properly reported by the PCVDeposit
-    function setOracle(address venue, address newOracle) external onlyGovernor {
-        _setOracle(venue, newOracle);
+    function setVenueOracle(
+        address venue,
+        address newOracle
+    ) external onlyGovernor {
+        _setVenueOracle(venue, newOracle);
     }
 
     /// @notice add venues to the oracle
@@ -251,11 +254,11 @@ contract PCVOracle is CoreRefV2 {
             require(venues[i] != address(0), "PCVO: invalid venue");
             require(oracles[i] != address(0), "PCVO: invalid oracle");
 
-            _setOracle(venues[i], oracles[i]);
+            _setVenueOracle(venues[i], oracles[i]);
             _addVenue(venues[i], isLiquid[i]);
 
-            PCVDeposit(venues[i]).accrue();
-            uint256 balance = PCVDeposit(venues[i]).balance();
+            IPCVDepositV2(venues[i]).accrue();
+            uint256 balance = IPCVDepositV2(venues[i]).balance();
             if (balance != 0) {
                 nonZeroBalances = true;
                 // no need for safe cast here because balance is always > 0
@@ -284,10 +287,10 @@ contract PCVOracle is CoreRefV2 {
         for (uint256 i = 0; i < length; ) {
             require(venues[i] != address(0), "PCVO: invalid venue");
 
-            _setOracle(venues[i], address(0));
+            _setVenueOracle(venues[i], address(0));
             _removeVenue(venues[i], isLiquid[i]);
 
-            uint256 balance = PCVDeposit(venues[i]).balance();
+            uint256 balance = IPCVDepositV2(venues[i]).balance();
             if (balance != 0) {
                 nonZeroBalances = true;
                 // no need for safe cast here because balance is always > 0
@@ -316,7 +319,7 @@ contract PCVOracle is CoreRefV2 {
 
     /// ------------- Helper Methods -------------
 
-    function _setOracle(address venue, address newOracle) private {
+    function _setVenueOracle(address venue, address newOracle) private {
         // add oracle to the map(PCVDepositAddress) => OracleAddress
         address oldOracle = venueToOracle[venue];
         venueToOracle[venue] = newOracle;

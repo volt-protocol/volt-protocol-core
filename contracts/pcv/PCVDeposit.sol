@@ -13,9 +13,6 @@ import {IPCVDeposit} from "./IPCVDeposit.sol";
 abstract contract PCVDeposit is IPCVDeposit, CoreRefV2 {
     using SafeERC20 for IERC20;
 
-    /// @notice accrue yield and update the last stored balance if applicable
-    function accrue() external virtual {}
-
     /// @notice withdraw ERC20 from the contract
     /// @param token address of the ERC20 to send
     /// @param to address destination of the ERC20

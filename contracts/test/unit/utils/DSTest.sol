@@ -75,6 +75,15 @@ contract DSTest {
         }
     }
 
+    function assertEq(bool a, bool b) internal {
+        if (a != b) {
+            emit log("Error: a == b not satisfied [bool]");
+            emit log(b ? "  Expected True" : "  Expected False");
+            emit log(a ? "    Actual True" : "    Actual False");
+            fail();
+        }
+    }
+
     function assertEq(address a, address b) internal {
         if (a != b) {
             emit log("Error: a == b not satisfied [address]");

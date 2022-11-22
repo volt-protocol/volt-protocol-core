@@ -33,8 +33,6 @@ interface IPCVDeposit is IPCVDepositBalances {
 
     // ----------- State changing api -----------
 
-    function accrue() external;
-
     function deposit() external;
 
     function withdraw(address to, uint256 amount) external;
