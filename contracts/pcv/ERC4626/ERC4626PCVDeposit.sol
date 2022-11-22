@@ -27,13 +27,6 @@ contract ERC4626PCVDeposit is PCVDeposit {
     using SafeCast for *;
 
     /// ------------------------------------------
-    /// ----------------- Event ------------------
-    /// ------------------------------------------
-
-    /// @notice emitted when the PCV Oracle address is updated
-    event PCVOracleUpdated(address oldOracle, address newOracle);
-
-    /// ------------------------------------------
     /// ---------- Immutables/Constant -----------
     /// ------------------------------------------
 
@@ -55,12 +48,6 @@ contract ERC4626PCVDeposit is PCVDeposit {
     /// in the same block or transaction. This means the value is stale
     /// most of the time.
     uint256 public lastRecordedBalance;
-
-    /// @notice reference to the PCV Oracle. Settable by governance
-    /// if set, anytime PCV is updated, delta is sent in to update liquid
-    /// amount of PCV held
-    /// not set in the constructor
-    address public pcvOracle;
 
     /// @param _core reference to the core contract
     /// @param _underlying Token denomination of this deposit
@@ -111,8 +98,7 @@ contract ERC4626PCVDeposit is PCVDeposit {
     /// ------------------------------------------
 
     /// @notice deposit an ERC-20 tokens to the ERC4626-Vault
-    /// @dev TODO ADD NON REENTRANT PROTECTION WHEN AVAILABLE
-    function deposit() public whenNotPaused {
+    function deposit() public whenNotPaused globalLock(2) {
         /// ------ Check ------
 
         uint256 amount = IERC20(token).balanceOf(address(this));
@@ -153,9 +139,8 @@ contract ERC4626PCVDeposit is PCVDeposit {
     ///         since the last contract interaction
     ///         then writes the current amount of PCV tracked in this contract
     ///         to lastRecordedBalance
-    /// @dev TODO ADD NON REENTRANT PROTECTION WHEN AVAILABLE
     /// @return the amount deposited after adding accrued interest or realizing losses
-    function accrue() external whenNotPaused returns (uint256) {
+    function accrue() external whenNotPaused globalLock(2) returns (uint256) {
         int256 startingRecordedBalance = lastRecordedBalance.toInt256();
 
         _recordPNL(); /// update deposit amount and fire harvest event
@@ -173,10 +158,13 @@ contract ERC4626PCVDeposit is PCVDeposit {
 
     /// @notice withdraw tokens from the PCV allocation
     /// non-reentrant as state changes and external calls are made
-    /// @dev TODO ADD NON REENTRANT PROTECTION WHEN AVAILABLE
     /// @param to the address PCV will be sent to
     /// @param amount of tokens withdrawn
-    function withdraw(address to, uint256 amount) external onlyPCVController {
+    function withdraw(address to, uint256 amount)
+        external
+        onlyPCVController
+        globalLock(2)
+    {
         int256 startingRecordedBalance = lastRecordedBalance.toInt256();
 
         /// compute profit from interest accrued and emit an event
@@ -190,13 +178,12 @@ contract ERC4626PCVDeposit is PCVDeposit {
     }
 
     /// @notice withdraw all withdrawable tokens from the vault
-    ///         This is slightly different than a withdrawAll function
-    ///         as the vault might not let the PCVDeposit to redeem all
-    ///         its shares directly. Example if a Maple Vault does not have
-    ///         enough liquidity because most of it has been borrowed
-    /// @dev TODO ADD NON REENTRANT PROTECTION WHEN AVAILABLE
+    /// This is slightly different than a withdrawAll function
+    /// as the vault might not let the PCVDeposit to redeem all
+    /// its shares directly. Example if a Maple Vault does not have
+    /// enough liquidity because most of it has been borrowed
     /// @param to the address PCV will be sent to
-    function withdrawMax(address to) external onlyPCVController {
+    function withdrawMax(address to) external onlyPCVController globalLock(2) {
         int256 startingRecordedBalance = lastRecordedBalance.toInt256();
 
         /// compute profit from interest accrued and emit an event
@@ -212,7 +199,7 @@ contract ERC4626PCVDeposit is PCVDeposit {
 
     /// @notice set the pcv oracle address
     /// @param _pcvOracle new pcv oracle to reference
-    function setPCVOracle(address _pcvOracle) external onlyGovernor {
+    function setPCVOracle(address _pcvOracle) external override onlyGovernor {
         address oldOracle = pcvOracle;
         pcvOracle = _pcvOracle;
 

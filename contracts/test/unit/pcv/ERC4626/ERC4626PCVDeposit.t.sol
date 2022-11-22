@@ -129,7 +129,10 @@ contract UnitTestERC4626PCVDeposit is DSTest {
 
     /// @notice checks that deposit also works when the PCVDeposit is not the only user in the vault
     /// this checks that the accounting in the PCV Deposit is done right
-    function testDepositWhenNotAlone(uint120 otherUserAmount, uint120 depositAmount) public {
+    function testDepositWhenNotAlone(
+        uint120 otherUserAmount,
+        uint120 depositAmount
+    ) public {
         utilDepositTokensFromAnotherUser(otherUserAmount);
         assertEq(token.balanceOf(address(tokenizedVault)), otherUserAmount);
 
@@ -145,7 +148,10 @@ contract UnitTestERC4626PCVDeposit is DSTest {
 
         // assert that all tokens have been sent to the vault
         assertEq(token.balanceOf(address(tokenizedVaultPCVDeposit)), 0);
-        assertEq(token.balanceOf(address(tokenizedVault)), uint256(depositAmount) + uint256(otherUserAmount));
+        assertEq(
+            token.balanceOf(address(tokenizedVault)),
+            uint256(depositAmount) + uint256(otherUserAmount)
+        );
 
         // assert that the last recorded balance variable has been updated
         assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), depositAmount);
@@ -212,7 +218,9 @@ contract UnitTestERC4626PCVDeposit is DSTest {
 
     /// @notice same as "testAccrueWhenProfitShouldSaveProfit" but add another user to the vault
     /// to check that the accounting is done right and the share are shared between vault users
-    function testAccrueWhenProfitWithOtherUserShouldShareProfit(uint120 profitAmount) public {
+    function testAccrueWhenProfitWithOtherUserShouldShareProfit(
+        uint120 profitAmount
+    ) public {
         utilDepositTokensFromAnotherUser(10000 * 1e18);
         utilDepositTokens(10000 * 1e18);
         assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), 10000 * 1e18);
@@ -220,7 +228,7 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         tokenizedVaultPCVDeposit.accrue();
         assertApproxEq(
             tokenizedVaultPCVDeposit.lastRecordedBalance().toInt256(),
-            (uint256(10000 * 1e18) + uint256(profitAmount/2)).toInt256(),
+            (uint256(10000 * 1e18) + uint256(profitAmount / 2)).toInt256(),
             0
         );
     }
@@ -240,10 +248,11 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         );
     }
 
-    
     /// @notice same as "testAccrueWhenLossShouldSaveLoss" but add another user to the vault
     /// to check that the accounting is done right and the loss are shared between vault users
-    function testAccrueWhenLossWithOtherUserShouldShareLoss(uint120 lossAmount) public {
+    function testAccrueWhenLossWithOtherUserShouldShareLoss(uint120 lossAmount)
+        public
+    {
         // assume that the vault cannot lose more than the two deposited values
         vm.assume(lossAmount < 20000 * 1e18);
         utilDepositTokensFromAnotherUser(10000 * 1e18);
@@ -253,7 +262,7 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         tokenizedVaultPCVDeposit.accrue();
         assertApproxEq(
             tokenizedVaultPCVDeposit.lastRecordedBalance().toInt256(),
-            (uint256(10000 * 1e18) - uint256(lossAmount/2)).toInt256(),
+            (uint256(10000 * 1e18) - uint256(lossAmount / 2)).toInt256(),
             0
         );
     }
@@ -405,9 +414,12 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         assertEq(token.balanceOf(pcvReceiver), withdrawAmount);
         assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), 0);
     }
-    
+
     /// @notice checks the function withdrawMax withdraw all tokens if no shares locked
-    function testWithdrawMaxWhenProfit(uint120 withdrawAmount, uint120 profitAmount) public {
+    function testWithdrawMaxWhenProfit(
+        uint120 withdrawAmount,
+        uint120 profitAmount
+    ) public {
         vm.assume(withdrawAmount > 0);
         utilDepositTokens(withdrawAmount);
         tokenizedVault.mockGainSome(profitAmount);
@@ -430,13 +442,17 @@ contract UnitTestERC4626PCVDeposit is DSTest {
             uint256(withdrawAmount) + uint256(profitAmount)
         );
         tokenizedVaultPCVDeposit.withdrawMax(pcvReceiver);
-        assertEq(token.balanceOf(pcvReceiver), uint256(withdrawAmount) + uint256(profitAmount));
+        assertEq(
+            token.balanceOf(pcvReceiver),
+            uint256(withdrawAmount) + uint256(profitAmount)
+        );
         assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), 0);
     }
 
-    
     /// @notice checks the function withdrawMax withdraw all tokens if no shares locked
-    function testWithdrawMaxWhenLoss(uint120 withdrawAmount, uint120 lossAmount) public {
+    function testWithdrawMaxWhenLoss(uint120 withdrawAmount, uint120 lossAmount)
+        public
+    {
         vm.assume(withdrawAmount > 0);
         vm.assume(lossAmount < withdrawAmount);
         utilDepositTokens(withdrawAmount);
@@ -460,10 +476,12 @@ contract UnitTestERC4626PCVDeposit is DSTest {
             uint256(withdrawAmount) - uint256(lossAmount)
         );
         tokenizedVaultPCVDeposit.withdrawMax(pcvReceiver);
-        assertEq(token.balanceOf(pcvReceiver), uint256(withdrawAmount) - uint256(lossAmount));
+        assertEq(
+            token.balanceOf(pcvReceiver),
+            uint256(withdrawAmount) - uint256(lossAmount)
+        );
         assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), 0);
     }
-
 
     /// @notice checks the function withdrawMax withdraw all available tokens
     /// when some shares are locked in the vault
