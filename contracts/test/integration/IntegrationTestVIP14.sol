@@ -43,6 +43,20 @@ contract IntegrationTestVIP14 is TimelockSimulation, vip14 {
         );
         mainnetValidate();
 
+        // deal small amounts of DAI/USDC to ensure deposits are not empty
+        // (onchain conditions might change and the tests reverts if one
+        // or both of the deposits is empty)
+        address holder = 0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7; // 3pool
+        vm.deal(holder, 1 ether);
+        // USDC
+        vm.prank(holder);
+        IERC20(MainnetAddresses.USDC).transfer(address(usdcDeposit), 1000e6);
+        usdcDeposit.deposit();
+        // DAI
+        vm.prank(holder);
+        IERC20(MainnetAddresses.DAI).transfer(address(daiDeposit), 1000e18);
+        daiDeposit.deposit();
+
         vm.label(address(usdcDeposit), "USDC Deposit");
         vm.label(address(daiDeposit), "DAI Deposit");
         vm.label(address(allocator), "Allocator");

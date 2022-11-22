@@ -17,7 +17,7 @@ import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
 import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
 import {MorphoCompoundPCVDeposit} from "../../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
 
-contract CompoundPCVRouterIntegrationTest is DSTest {
+contract IntegrationTestCompoundPCVRouter is DSTest {
     using SafeCast for *;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
@@ -58,6 +58,20 @@ contract CompoundPCVRouterIntegrationTest is DSTest {
     function setUp() public {
         cDai.accrueInterest();
         cUsdc.accrueInterest();
+
+        // deal small amounts of DAI/USDC to ensure deposits are not empty
+        // (onchain conditions might change and the tests reverts if one
+        // or both of the deposits is empty)
+        address holder = 0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7; // 3pool
+        vm.deal(holder, 1 ether);
+        // USDC
+        vm.prank(holder);
+        usdc.transfer(address(usdcDeposit), 1000e6);
+        usdcDeposit.deposit();
+        // DAI
+        vm.prank(holder);
+        dai.transfer(address(daiDeposit), 1000e18);
+        daiDeposit.deposit();
     }
 
     function testSetup() public {
