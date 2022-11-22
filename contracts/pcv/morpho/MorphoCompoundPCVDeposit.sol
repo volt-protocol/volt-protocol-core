@@ -10,7 +10,7 @@ import {ICToken} from "./ICompound.sol";
 import {IMorpho} from "./IMorpho.sol";
 import {CoreRefV2} from "../../refs/CoreRefV2.sol";
 import {Constants} from "../../Constants.sol";
-import {IPCVOracle} from "./IPCVOracle.sol";
+import {IPCVOracle} from "../../oracle/IPCVOracle.sol";
 import {PCVDeposit} from "../PCVDeposit.sol";
 
 /// @notice PCV Deposit for Morpho-Compound V2.
