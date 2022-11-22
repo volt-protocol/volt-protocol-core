@@ -23,25 +23,19 @@ contract MockERC4626VaultMaliciousReentrancy {
         erc4626vaultPCVDeposit = ERC4626PCVDeposit(pcvDeposit);
     }
 
-    /** @notice test reentrancy on accrue and deposit */
+    function balanceOf(address) external {
+        erc4626vaultPCVDeposit.accrue();
+    }
+
     function withdraw(address, uint256 amount) external {
-        if (amount % 2 == 0) {
-            erc4626vaultPCVDeposit.accrue();
-        } else {
-            erc4626vaultPCVDeposit.deposit();
-        }
+        erc4626vaultPCVDeposit.withdraw(address(this), amount);
     }
 
-    /** @notice test reentrancy on withdraw and withdrawMax */
-    function deposit(uint256 amount, address) external {
-        if (amount % 2 == 0) {
-            erc4626vaultPCVDeposit.withdraw(address(this), 1000 * 1e18);
-        } else {
-            erc4626vaultPCVDeposit.withdrawMax(address(this));
-        }
+    function withdrawMax(address, uint256) external {
+        erc4626vaultPCVDeposit.withdrawMax(address(this));
     }
 
-    // function setBalance(address to, uint256 amount) external {
-    //     balances[to] = amount;
-    // }
+    function deposit(uint256, address) external {
+        erc4626vaultPCVDeposit.deposit();
+    }
 }

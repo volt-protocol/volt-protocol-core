@@ -82,6 +82,31 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         maliciousVault.setERC4626PCVDeposit(address(tokenizedVaultPCVDeposit));
     }
 
+    function _reentrantSetup() private {
+        tokenizedVaultPCVDeposit = new ERC4626PCVDeposit(
+            address(core),
+            address(token),
+            address(maliciousVault)
+        );
+
+        vm.prank(addresses.governorAddress);
+        core.grantLocker(address(tokenizedVaultPCVDeposit));
+
+        maliciousVault.setERC4626PCVDeposit(address(tokenizedVaultPCVDeposit));
+
+        address[] memory toWhitelist = new address[](1);
+        toWhitelist[0] = address(tokenizedVaultPCVDeposit);
+        pcvGuardian = new PCVGuardian(address(core), safeAddress, toWhitelist);
+
+        vm.startPrank(addresses.governorAddress);
+        core.grantLocker(address(entry));
+        core.grantLocker(address(pcvGuardian));
+        core.grantLocker(address(tokenizedVaultPCVDeposit));
+        core.grantPCVController(address(pcvGuardian));
+        core.grantPCVGuard(address(this));
+        vm.stopPrank();
+    }
+
     function testSetup() public {
         assertEq(tokenizedVault.asset(), address(token));
         assertEq(tokenizedVaultPCVDeposit.vault(), address(tokenizedVault));
@@ -134,6 +159,21 @@ contract UnitTestERC4626PCVDeposit is DSTest {
             address(depositToken),
             address(vault)
         );
+    }
+
+    /// @notice checks that the deposit function cannot be called directly
+    function testCannotDepositDirectly() public {
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        tokenizedVaultPCVDeposit.deposit();
+    }
+
+    /// @notice checks that one cannot use the deposit when paused
+    function testCannotDepositWhenPaused() public {
+        vm.prank(addresses.governorAddress);
+        tokenizedVaultPCVDeposit.pause();
+
+        vm.expectRevert("Pausable: paused");
+        tokenizedVaultPCVDeposit.deposit();
     }
 
     /// @notice checks that when using the PCVDeposit deposit function, all tokens should be sent to the vault
@@ -223,6 +263,21 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         );
     }
 
+    /// @notice checks that one cannot use the accrue function directly
+    function testCannotAccrueDirectly() public {
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        tokenizedVaultPCVDeposit.accrue();
+    }
+
+    /// @notice checks that one cannot use the deposit when paused
+    function testCannotAccrueWhenPaused() public {
+        vm.prank(addresses.governorAddress);
+        tokenizedVaultPCVDeposit.pause();
+
+        vm.expectRevert("Pausable: paused");
+        tokenizedVaultPCVDeposit.accrue();
+    }
+
     /// @notice checks that the function accrue, when nothing changes, does not change anything
     function testAccrueWhenNoChangeShouldNotChangeAnything() public {
         utilDepositTokens(10000 * 1e18);
@@ -273,25 +328,6 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         assertEq(
             tokenizedVaultPCVDeposit.lastRecordedBalance(),
             10000 * 1e18 - uint256(lossAmount)
-        );
-    }
-
-    /// @notice same as "testAccrueWhenLossShouldSaveLoss" but add another user to the vault
-    /// to check that the accounting is done right and the loss are shared between vault users
-    function testAccrueWhenLossWithOtherUserShouldShareLoss(uint120 lossAmount)
-        public
-    {
-        // assume that the vault cannot lose more than the two deposited values
-        vm.assume(lossAmount < 20000 * 1e18);
-        utilDepositTokensFromAnotherUser(10000 * 1e18);
-        utilDepositTokens(10000 * 1e18);
-        assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), 10000 * 1e18);
-        tokenizedVault.mockLoseSome(lossAmount);
-        entry.accrue(address(tokenizedVaultPCVDeposit));
-        assertApproxEq(
-            tokenizedVaultPCVDeposit.lastRecordedBalance().toInt256(),
-            (uint256(10000 * 1e18) - uint256(lossAmount / 2)).toInt256(),
-            10
         );
     }
 
@@ -348,12 +384,6 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         vm.expectRevert("GlobalReentrancyLock: invalid lock level");
         vm.prank(addresses.pcvControllerAddress);
         tokenizedVaultPCVDeposit.withdraw(address(45), withdrawAmount);
-    }
-
-    /// @notice checks that the deposit function cannot be called directly
-    function testCannotDepositDirectly() public {
-        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
-        tokenizedVaultPCVDeposit.deposit();
     }
 
     /// @notice checks that only authorized can withdraw
@@ -439,6 +469,20 @@ contract UnitTestERC4626PCVDeposit is DSTest {
             address(tokenizedVaultPCVDeposit),
             withdrawAmount
         );
+    }
+
+    /// @notice checks that the withdrawMax function cannot be used if called is not PCV Controller
+    function testCannotWithdrawMaxIfNotPCVController() public {
+        vm.expectRevert("CoreRef: Caller is not a PCV controller");
+        tokenizedVaultPCVDeposit.withdrawMax(address(45));
+    }
+
+    /// @notice checks that the withdrawMax function cannot be called directly
+    /// even by a pcv controller
+    function testCannotWithdrawMaxDirectly() public {
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        vm.prank(addresses.pcvControllerAddress);
+        tokenizedVaultPCVDeposit.withdrawMax(address(45));
     }
 
     /// @notice checks the function withdrawMax withdraw all tokens if no shares locked
@@ -650,5 +694,42 @@ contract UnitTestERC4626PCVDeposit is DSTest {
             tokenizedVaultPCVDeposit.lastRecordedBalance(),
             uint256(deposit1) + uint256(profit)
         );
+    }
+
+    function testReentrantAccrueFails() public {
+        _reentrantSetup();
+        vm.expectRevert("CoreRef: cannot lock less than current level");
+        entry.accrue(address(tokenizedVaultPCVDeposit));
+    }
+
+    function testReentrantDepositFails() public {
+        _reentrantSetup();
+        token.mint(address(tokenizedVaultPCVDeposit), 10000 * 1e18);
+        vm.expectRevert("CoreRef: cannot lock less than current level");
+        entry.deposit(address(tokenizedVaultPCVDeposit));
+    }
+
+    function testReentrantWithdrawFails() public {
+        _reentrantSetup();
+        //utilDepositTokens(10000 * 1e18);
+        vm.expectRevert("CoreRef: cannot lock less than current level");
+        pcvGuardian.withdrawToSafeAddress(
+            address(tokenizedVaultPCVDeposit),
+            10000 * 1e18
+        );
+    }
+
+    function testReentrantWithdrawMaxFails() public {
+        _reentrantSetup();
+
+        // lock level 1 directly to be able to call withdrawMax function
+        // could be removed when/if the pcvGuardian implements withdrawMax function one day
+        vm.prank(addresses.governorAddress);
+        core.grantLocker(address(this));
+        core.lock(1);
+
+        vm.prank(addresses.pcvControllerAddress);
+        vm.expectRevert("CoreRef: cannot lock less than current level");
+        tokenizedVaultPCVDeposit.withdrawMax(address(this));
     }
 }
