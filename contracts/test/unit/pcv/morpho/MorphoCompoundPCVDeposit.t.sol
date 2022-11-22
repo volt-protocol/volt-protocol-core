@@ -186,6 +186,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         }
         uint256 lastRecordedBalance = entry.accrue(address(morphoDeposit));
         assertEq(lastRecordedBalance, sumDeposit + profitAccrued);
+        assertEq(lastRecordedBalance, morphoDeposit.lastRecordedBalance());
     }
 
     function testWithdraw(

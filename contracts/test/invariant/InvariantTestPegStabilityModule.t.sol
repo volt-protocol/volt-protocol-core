@@ -98,6 +98,7 @@ contract InvariantTestPegStabilityModule is DSTest, DSInvariantTest {
         vm.startPrank(addresses.governorAddress);
 
         core.grantMinter(address(grlm));
+
         core.grantLocker(address(psm));
         core.grantLocker(address(grlm));
         core.grantLocker(address(pcvGuardian));
