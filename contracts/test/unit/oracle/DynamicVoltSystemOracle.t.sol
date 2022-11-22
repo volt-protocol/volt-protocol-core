@@ -21,7 +21,7 @@ contract DynamicVoltSystemOracleUnitTest is DSTest {
     uint256 public constant initialOraclePrice = 1e18; // start price = 1.0$
     uint256 public constant periodStartTime = 1000;
     uint256 public constant baseChangeRate = 0.1e18; // 10% APR
-    uint256 public getLiquidVenuePercentage = 0.5e18; // 50% liquid reserves
+    uint256 public lastLiquidVenuePercentage = 0.5e18; // 50% liquid reserves
 
     // DynamicVoltSystemOracle events
     event InterestCompounded(
@@ -145,7 +145,7 @@ contract DynamicVoltSystemOracleUnitTest is DSTest {
     }
 
     function testUpdateBaseRate() public {
-        getLiquidVenuePercentage = 0.5e18; // 50%, enough liquid reserves for 0 boost
+        lastLiquidVenuePercentage = 0.5e18; // 50%, enough liquid reserves for 0 boost
 
         // grow at default change rate for half of TIMEFRAME
         vm.warp(periodStartTime + TIMEFRAME / 2);
@@ -217,7 +217,7 @@ contract DynamicVoltSystemOracleUnitTest is DSTest {
     }
 
     function testUpdateBaseRateLowLiquidity() public {
-        getLiquidVenuePercentage = 0; // 0% => max boost
+        lastLiquidVenuePercentage = 0; // 0% => max boost
         uint256 maxRate = rateModel.MAXIMUM_CHANGE_RATE();
 
         vm.warp(periodStartTime);
