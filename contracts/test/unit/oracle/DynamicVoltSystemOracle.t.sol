@@ -38,10 +38,10 @@ contract DynamicVoltSystemOracleUnitTest is DSTest {
         uint256 oldRate,
         uint256 newRate
     );
-    event PCVOracleUpdated(
+    event RateModelUpdated(
         uint256 blockTime,
-        address oldOracle,
-        address newOracle
+        address oldRateModel,
+        address newRateModel
     );
 
     // mock behavior of the previous system oracle
@@ -64,7 +64,7 @@ contract DynamicVoltSystemOracleUnitTest is DSTest {
 
         /// allow this contract to call in and update the actual rate
         vm.prank(addresses.governorAddress);
-        systemOracle.setPcvOracle(address(this));
+        systemOracle.setPCVOracle(address(this));
     }
 
     function testSetup() public {
@@ -253,33 +253,33 @@ contract DynamicVoltSystemOracleUnitTest is DSTest {
         systemOracle.updateBaseRate(0);
     }
 
-    function testSetPcvOracle() public {
+    function testSetRateModel() public {
         uint256 currentTimestamp = periodStartTime;
         vm.warp(currentTimestamp);
-        assertEq(systemOracle.pcvOracle(), address(this));
+        assertEq(systemOracle.rateModel(), address(rateModel));
 
         // check events
         vm.expectEmit(false, false, false, true, address(systemOracle));
-        emit PCVOracleUpdated(currentTimestamp, address(this), address(0));
+        emit RateModelUpdated(currentTimestamp, address(rateModel), address(0));
 
         // prank & call
         vm.prank(addresses.governorAddress);
-        systemOracle.setPcvOracle(address(0));
-        assertEq(systemOracle.pcvOracle(), address(0));
+        systemOracle.setRateModel(address(0));
+        assertEq(systemOracle.rateModel(), address(0));
 
         // check events
         vm.expectEmit(false, false, false, true, address(systemOracle));
-        emit PCVOracleUpdated(currentTimestamp, address(0), address(this));
+        emit RateModelUpdated(currentTimestamp, address(0), address(rateModel));
 
         // prank & call
         vm.prank(addresses.governorAddress);
-        systemOracle.setPcvOracle(address(this));
-        assertEq(systemOracle.pcvOracle(), address(this));
+        systemOracle.setRateModel(address(rateModel));
+        assertEq(systemOracle.rateModel(), address(rateModel));
     }
 
-    function testSetPcvOracleAcl() public {
+    function testSetRateModelAcl() public {
         vm.expectRevert(bytes("CoreRef: Caller is not a governor"));
-        systemOracle.setPcvOracle(address(0));
+        systemOracle.setRateModel(address(0));
     }
 
     function testUpdateActualRateFuzz(

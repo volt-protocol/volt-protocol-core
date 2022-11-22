@@ -45,6 +45,13 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
         address newOracle
     );
 
+    /// @notice Event emitted when reference to the Rate Model updates.
+    event RateModelUpdated(
+        uint256 blockTime,
+        address oldRateModel,
+        address newRateModel
+    );
+
     /// ---------- Mutable Variables ----------
 
     /// @notice Start time at which point interest will start accruing, and the
@@ -153,13 +160,14 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
         );
     }
 
-    /// @notice Set the reference to the PCV oracle.
+    /// @notice Set the reference to the Rate Model.
     /// Callable only by governor.
-    /// @param newPcvOracle address of the new pcv oracle.
-    function setPcvOracle(address newPcvOracle) external onlyGovernor {
-        address oldPcvOracle = pcvOracle; // SLOAD
-        pcvOracle = newPcvOracle; // SSTORE
-        emit PCVOracleUpdated(block.timestamp, oldPcvOracle, newPcvOracle);
+    /// @param newRateModel address of the new rate model.
+    function setRateModel(address newRateModel) external onlyGovernor {
+        address oldRateModel = rateModel; // SLOAD
+        rateModel = newRateModel; // SSTORE
+        // emit event
+        emit RateModelUpdated(block.timestamp, oldRateModel, newRateModel);
     }
 
     /// ------------- PCV Oracle Only API -------------
