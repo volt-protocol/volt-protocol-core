@@ -688,7 +688,7 @@ contract UnitTestERC4626PCVDeposit is DSTest {
     }
 
     /// @notice checks that reentrant withdraw fail
-    /// here the vault try to reenter withdraw() or withdrawMaw() on the PCVDeposit 
+    /// here the vault try to reenter withdraw() or withdrawMaw() on the PCVDeposit
     /// when withdraw() is called on the vault
     function testReentrantWithdrawFails(uint120 amountToWithdraw) public {
         _reentrantSetup();

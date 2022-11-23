@@ -29,10 +29,9 @@ contract MockERC4626VaultMaliciousReentrancy {
 
     // try to reenter withdraw or withdraw max with 50% chance
     function withdraw(address, uint256 amount) external {
-        if(amount % 2 == 0) {
+        if (amount % 2 == 0) {
             erc4626vaultPCVDeposit.withdraw(address(this), amount);
-        }
-        else {
+        } else {
             erc4626vaultPCVDeposit.withdrawMax(address(this));
         }
     }

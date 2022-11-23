@@ -205,20 +205,18 @@ contract ERC4626PCVDeposit is PCVDeposit {
     /// ------------- Helper Methods -------------
     /// ------------------------------------------
 
-    /// @notice update the PCVOracle if the oracle is set and the updated value is not 0
+    /// @notice update the PCVOracle if delta is not 0
     function _updateOracle(int256 delta) private {
         if (delta != 0) {
-            isLiquid ? _liquidPcvOracleHook(delta) : _illiquidPcvOracleHook(delta);
+            isLiquid
+                ? _liquidPcvOracleHook(delta)
+                : _illiquidPcvOracleHook(delta);
         }
     }
 
     /// @notice helper function to avoid repeated code in withdraw and withdrawMax
     /// anytime this function is called it is by an external function in this smart contract
     /// with a reentrancy guard. This ensures lastRecordedBalance never desynchronizes.
-    /// Morpho is assumed to be a loss-less venue. over the course of less than 1 block,
-    /// it is possible to lose funds. However, after 1 block, deposits are expected to always
-    /// be in profit at least with current interest rates around 0.8% natively on Compound,
-    /// ignoring all COMP and Morpho rewards.
     /// @param to recipient of withdraw funds
     /// @param amount to withdraw
     function _withdraw(address to, uint256 amount) private {
