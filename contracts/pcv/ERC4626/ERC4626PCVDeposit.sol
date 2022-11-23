@@ -6,7 +6,6 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {CoreRefV2} from "../../refs/CoreRefV2.sol";
-import {IPCVOracle} from "../../oracle/IPCVOracle.sol";
 import {PCVDeposit} from "../PCVDeposit.sol";
 import {IERC4626} from "./IERC4626.sol";
 
@@ -38,6 +37,8 @@ contract ERC4626PCVDeposit is PCVDeposit {
     ///      of the function 'balanceReportedIn'
     address private immutable token;
 
+    bool public immutable isLiquid;
+
     /// ------------------------------------------
     /// ------------- State Variables -------------
     /// ------------------------------------------
@@ -52,13 +53,16 @@ contract ERC4626PCVDeposit is PCVDeposit {
     /// @param _core reference to the core contract
     /// @param _underlying Token denomination of this deposit
     /// @param _vault the reference to the ERC4626 Vault the PCVDeposit interfaces
+    /// @param _isLiquid defines if the vault is liquid or not
     constructor(
         address _core,
         address _underlying,
-        address _vault
+        address _vault,
+        bool _isLiquid
     ) CoreRefV2(_core) {
         token = _underlying;
         vault = _vault;
+        isLiquid = _isLiquid;
 
         // check that the vault's asset is equal to the PCVDeposit token
         require(
@@ -197,27 +201,14 @@ contract ERC4626PCVDeposit is PCVDeposit {
         _updateOracle(endingRecordedBalance - startingRecordedBalance);
     }
 
-    /// @notice set the pcv oracle address
-    /// @param _pcvOracle new pcv oracle to reference
-    function setPCVOracle(address _pcvOracle) external override onlyGovernor {
-        address oldOracle = pcvOracle;
-        pcvOracle = _pcvOracle;
-
-        _recordPNL();
-
-        _updateOracle(lastRecordedBalance.toInt256());
-
-        emit PCVOracleUpdated(oldOracle, _pcvOracle);
-    }
-
     /// ------------------------------------------
     /// ------------- Helper Methods -------------
     /// ------------------------------------------
 
     /// @notice update the PCVOracle if the oracle is set and the updated value is not 0
     function _updateOracle(int256 delta) private {
-        if (pcvOracle != address(0) && delta != 0) {
-            IPCVOracle(pcvOracle).updateLiquidBalance(delta);
+        if (delta != 0) {
+            isLiquid ? _liquidPcvOracleHook(delta) : _illiquidPcvOracleHook(delta);
         }
     }
 
@@ -258,24 +249,22 @@ contract ERC4626PCVDeposit is PCVDeposit {
         /// get the current balance from the vault
         uint256 currentBalance = balance();
 
+        uint256 _lastRecordedBalance = lastRecordedBalance; // SLOAD
         /// save gas if contract has no balance
         /// if cost basis is 0 and last recorded balance is 0
         /// there is no profit or loss to record and no reason
         /// to update lastRecordedBalance
-        if (currentBalance == 0 && lastRecordedBalance == 0) {
+        if (currentBalance == 0 && _lastRecordedBalance == 0) {
             return;
         }
-
         /// currentBalance should always be greater than or equal to
         /// the deposited amount, except on the same block a deposit occurs
         /// or if we're at loss in the vault
         int256 profit = currentBalance.toInt256() -
-            lastRecordedBalance.toInt256();
-
+            _lastRecordedBalance.toInt256();
         /// ------ Effects ------
-
         /// record new deposited amount
-        lastRecordedBalance = currentBalance;
+        lastRecordedBalance = currentBalance; // SSTORE
 
         /// profit is in underlying token
         emit Harvest(token, profit, block.timestamp);

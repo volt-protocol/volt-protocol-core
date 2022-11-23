@@ -60,7 +60,8 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         tokenizedVaultPCVDeposit = new ERC4626PCVDeposit(
             address(core),
             address(token),
-            address(tokenizedVault)
+            address(tokenizedVault),
+            true
         );
 
         address[] memory toWhitelist = new address[](1);
@@ -86,7 +87,8 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         tokenizedVaultPCVDeposit = new ERC4626PCVDeposit(
             address(core),
             address(token),
-            address(maliciousVault)
+            address(maliciousVault),
+            true
         );
 
         vm.prank(addresses.governorAddress);
@@ -157,7 +159,8 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         new ERC4626PCVDeposit(
             address(core),
             address(depositToken),
-            address(vault)
+            address(vault),
+            true
         );
     }
 
@@ -667,41 +670,16 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         assertEq(tokenizedVaultPCVDeposit.pcvOracle(), address(oracle));
     }
 
-    /// @notice checks that the PCVOracle, when replaced, update the lastRecordedBalance
-    function testSetPCVOracle(uint120 deposit1, uint120 profit) public {
-        vm.assume(deposit1 > 0);
-        vm.assume(profit > 0);
-        utilDepositTokens(deposit1);
-        assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), deposit1);
-        tokenizedVault.mockGainSome(profit);
-        // here, after the profit, we do not call accrue() so the lastRecordedBalance does not change
-        assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), deposit1);
-
-        address oldOracle = tokenizedVaultPCVDeposit.pcvOracle();
-        MockPCVOracle oracle = new MockPCVOracle();
-        vm.prank(addresses.governorAddress);
-        vm.expectEmit(
-            true,
-            false,
-            false,
-            true,
-            address(tokenizedVaultPCVDeposit)
-        );
-        emit PCVOracleUpdated(oldOracle, address(oracle));
-        tokenizedVaultPCVDeposit.setPCVOracle(address(oracle));
-        assertEq(tokenizedVaultPCVDeposit.pcvOracle(), address(oracle));
-        assertEq(
-            tokenizedVaultPCVDeposit.lastRecordedBalance(),
-            uint256(deposit1) + uint256(profit)
-        );
-    }
-
+    /// @notice checks that reentrant accrue fail
+    /// here the vault try to reenter accrue when accrue balanceOf() is called
     function testReentrantAccrueFails() public {
         _reentrantSetup();
         vm.expectRevert("CoreRef: cannot lock less than current level");
         entry.accrue(address(tokenizedVaultPCVDeposit));
     }
 
+    /// @notice checks that reentrant deposit fail
+    /// here the vault try to reenter deposit() when deposit() is called on the vault
     function testReentrantDepositFails() public {
         _reentrantSetup();
         token.mint(address(tokenizedVaultPCVDeposit), 10000 * 1e18);
@@ -709,27 +687,16 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         entry.deposit(address(tokenizedVaultPCVDeposit));
     }
 
-    function testReentrantWithdrawFails() public {
+    /// @notice checks that reentrant withdraw fail
+    /// here the vault try to reenter withdraw() or withdrawMaw() on the PCVDeposit 
+    /// when withdraw() is called on the vault
+    function testReentrantWithdrawFails(uint120 amountToWithdraw) public {
         _reentrantSetup();
         //utilDepositTokens(10000 * 1e18);
         vm.expectRevert("CoreRef: cannot lock less than current level");
         pcvGuardian.withdrawToSafeAddress(
             address(tokenizedVaultPCVDeposit),
-            10000 * 1e18
+            amountToWithdraw
         );
-    }
-
-    function testReentrantWithdrawMaxFails() public {
-        _reentrantSetup();
-
-        // lock level 1 directly to be able to call withdrawMax function
-        // could be removed when/if the pcvGuardian implements withdrawMax function one day
-        vm.prank(addresses.governorAddress);
-        core.grantLocker(address(this));
-        core.lock(1);
-
-        vm.prank(addresses.pcvControllerAddress);
-        vm.expectRevert("CoreRef: cannot lock less than current level");
-        tokenizedVaultPCVDeposit.withdrawMax(address(this));
     }
 }

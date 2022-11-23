@@ -43,7 +43,8 @@ contract InvariantTestERC4626PCVDeposit is DSTest, DSInvariantTest {
         tokenizedVaultPCVDeposit = new ERC4626PCVDeposit(
             address(core),
             address(token),
-            address(tokenizedVault)
+            address(tokenizedVault),
+            true
         );
 
         address[] memory toWhitelist = new address[](1);
