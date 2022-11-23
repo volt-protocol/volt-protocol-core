@@ -38,7 +38,7 @@ contract ERC4626PCVDeposit is PCVDeposit {
     address private immutable token;
 
     /// @notice defines if the linked ERC4626 Vault is liquid or not
-    /// @dev it is used to check whether we call _liquidPcvOracleHook 
+    /// @dev it is used to check whether we call _liquidPcvOracleHook
     ///      or _illiquidPcvOracleHook
     bool public immutable isLiquid;
 
@@ -167,11 +167,10 @@ contract ERC4626PCVDeposit is PCVDeposit {
     /// non-reentrant as state changes and external calls are made
     /// @param to the address PCV will be sent to
     /// @param amount of tokens withdrawn
-    function withdraw(address to, uint256 amount)
-        external
-        onlyPCVController
-        globalLock(2)
-    {
+    function withdraw(
+        address to,
+        uint256 amount
+    ) external onlyPCVController globalLock(2) {
         int256 startingRecordedBalance = lastRecordedBalance.toInt256();
 
         /// compute profit from interest accrued and emit an event

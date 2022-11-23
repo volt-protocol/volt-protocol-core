@@ -374,9 +374,9 @@ contract UnitTestERC4626PCVDeposit is DSTest {
     }
 
     /// @notice checks that the withdraw function cannot be used if called is not PCV Controller
-    function testCannotWithdrawIfNotPCVController(uint120 withdrawAmount)
-        public
-    {
+    function testCannotWithdrawIfNotPCVController(
+        uint120 withdrawAmount
+    ) public {
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
         tokenizedVaultPCVDeposit.withdraw(address(45), withdrawAmount);
     }
@@ -563,9 +563,10 @@ contract UnitTestERC4626PCVDeposit is DSTest {
     }
 
     /// @notice checks the function withdrawMax withdraw all tokens if no shares locked
-    function testWithdrawMaxWhenLoss(uint120 withdrawAmount, uint120 lossAmount)
-        public
-    {
+    function testWithdrawMaxWhenLoss(
+        uint120 withdrawAmount,
+        uint120 lossAmount
+    ) public {
         vm.assume(withdrawAmount > 0);
         vm.assume(lossAmount < withdrawAmount);
         utilDepositTokens(withdrawAmount);
@@ -604,9 +605,10 @@ contract UnitTestERC4626PCVDeposit is DSTest {
 
     /// @notice checks the function withdrawMax withdraw all available tokens
     /// when some shares are locked in the vault
-    function testWithdrawMaxWhenLock(uint120 depositAmount, uint120 lockAmount)
-        public
-    {
+    function testWithdrawMaxWhenLock(
+        uint120 depositAmount,
+        uint120 lockAmount
+    ) public {
         vm.assume(depositAmount > 0);
         vm.assume(lockAmount > 0);
         vm.assume(lockAmount < depositAmount);
