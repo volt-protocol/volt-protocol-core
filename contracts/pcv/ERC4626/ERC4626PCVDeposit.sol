@@ -37,6 +37,9 @@ contract ERC4626PCVDeposit is PCVDeposit {
     ///      of the function 'balanceReportedIn'
     address private immutable token;
 
+    /// @notice defines if the linked ERC4626 Vault is liquid or not
+    /// @dev it is used to check whether we call _liquidPcvOracleHook 
+    ///      or _illiquidPcvOracleHook
     bool public immutable isLiquid;
 
     /// ------------------------------------------
