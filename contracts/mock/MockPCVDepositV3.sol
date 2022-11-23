@@ -36,6 +36,12 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
         return (resistantBalance, resistantProtocolOwnedVolt);
     }
 
+    function accrue() external returns (uint256) {
+        uint256 _balance = balance();
+        resistantBalance = _balance;
+        return _balance;
+    }
+
     // IPCVDeposit V1
     function deposit() external override globalLock(2) {
         resistantBalance = IERC20(balanceReportedIn).balanceOf(address(this));
@@ -64,7 +70,7 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
         to.transfer(amount);
     }
 
-    function balance() external view override returns (uint256) {
+    function balance() public view override returns (uint256) {
         return IERC20(balanceReportedIn).balanceOf(address(this));
     }
 }

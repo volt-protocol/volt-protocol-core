@@ -56,4 +56,11 @@ library VoltRoles {
 
     /// @notice capable of changing PCV Deposit and Global Rate Limited Minter in the PSM
     bytes32 internal constant PSM_ADMIN_ROLE = keccak256("PSM_ADMIN_ROLE");
+
+    /// @notice granted to liquid PCV Deposits
+    bytes32 internal constant LIQUID_PCV_DEPOSIT_ROLE =
+        keccak256("LIQUID_PCV_DEPOSIT_ROLE");
+    /// @notice granted to illiquid PCV Deposits
+    bytes32 internal constant ILLIQUID_PCV_DEPOSIT_ROLE =
+        keccak256("ILLIQUID_PCV_DEPOSIT_ROLE");
 }
