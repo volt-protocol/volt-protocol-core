@@ -2,6 +2,7 @@
 pragma solidity 0.8.13;
 
 import {CoreRefV2} from "../refs/CoreRefV2.sol";
+import {PCVOracle} from "../oracle/PCVOracle.sol";
 import {IPCVDepositV2} from "../pcv/IPCVDepositV2.sol";
 
 /// @notice contract to accrue, deposit or harvest
@@ -9,24 +10,49 @@ import {IPCVDepositV2} from "../pcv/IPCVDepositV2.sol";
 contract SystemEntry is CoreRefV2 {
     constructor(address _core) CoreRefV2(_core) {}
 
+    /// @notice if the PCVOracle is set, enforce that the
+    /// PCV Deposit we cann .accrue(), .deposit(), or .harvest()
+    /// on is a valid PCV Deposit added in the oracle.
+    /// This protects from giving the execution flow to an arbitrary
+    /// contract whose address is passed as calldata while the system
+    /// is in a locked state level 1.
+    modifier onlyValidDeposit(address pcvDeposit) {
+        address _pcvOracle = pcvOracle;
+        if (_pcvOracle != address(0)) {
+            bool isVenue = PCVOracle(_pcvOracle).isVenue(pcvDeposit);
+            require(isVenue, "SystemEntry: Invalid PCVDeposit");
+        }
+        _;
+    }
+
     /// @notice lock the system to level 1, then call accrue
     /// @param pcvDeposit to call accrue
     /// @return the balance of the PCV Deposit being called
     function accrue(
         address pcvDeposit
-    ) external globalLock(1) returns (uint256) {
+    )
+        external
+        whenNotPaused
+        globalLock(1)
+        onlyValidDeposit(pcvDeposit)
+        returns (uint256)
+    {
         return IPCVDepositV2(pcvDeposit).accrue();
     }
 
     /// @notice lock the system to level 1, then call deposit
     /// @param pcvDeposit to call deposit
-    function deposit(address pcvDeposit) external globalLock(1) {
+    function deposit(
+        address pcvDeposit
+    ) external whenNotPaused globalLock(1) onlyValidDeposit(pcvDeposit) {
         IPCVDepositV2(pcvDeposit).deposit();
     }
 
     /// @notice lock the system to level 1, then call harvest
     /// @param pcvDeposit to call harvest
-    function harvest(address pcvDeposit) external globalLock(1) {
+    function harvest(
+        address pcvDeposit
+    ) external whenNotPaused globalLock(1) onlyValidDeposit(pcvDeposit) {
         IPCVDepositV2(pcvDeposit).harvest();
     }
 }
