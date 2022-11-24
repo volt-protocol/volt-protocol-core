@@ -13,13 +13,13 @@ import {ICore} from "../../../core/ICore.sol";
 import {IGRLM} from "../../../minter/IGRLM.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
-import {getCoreV2, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
+import {getCoreV2} from "./../utils/Fixtures.sol";
 
 contract UnitTestCoreV2 is DSTest {
     CoreV2 private core;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
-    VoltTestAddresses public addresses = getAddresses();
     address volt;
     address vcon;
 

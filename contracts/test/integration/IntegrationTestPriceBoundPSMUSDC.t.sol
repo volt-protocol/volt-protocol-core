@@ -18,12 +18,11 @@ import {IOraclePassThrough} from "../../oracle/IOraclePassThrough.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 import {IGRLM, GlobalRateLimitedMinter} from "../../minter/GlobalRateLimitedMinter.sol";
-import {getCoreV2, getAddresses, VoltTestAddresses} from "./../unit/utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
+import {getCoreV2} from "./../unit/utils/Fixtures.sol";
 
 contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     using SafeCast for *;
-
-    VoltTestAddresses public addresses = getAddresses();
 
     IVolt private volt;
     ICoreV2 private core;

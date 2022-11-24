@@ -8,7 +8,8 @@ import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {IPCVDeposit} from "../../../pcv/IPCVDeposit.sol";
 import {MockERC20, IERC20} from "../../../mock/MockERC20.sol";
 import {ERC20HoldingPCVDeposit} from "../../../mock/ERC20HoldingPCVDeposit.sol";
-import {getCore, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
+import {getCore} from "./../utils/Fixtures.sol";
 
 contract UnitTestERC20HoldingsPCVDeposit is DSTest {
     event Deposit(address indexed _from, uint256 _amount);
@@ -18,8 +19,6 @@ contract UnitTestERC20HoldingsPCVDeposit is DSTest {
     ERC20HoldingPCVDeposit private erc20HoldingDeposit;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
-
-    VoltTestAddresses public addresses = getAddresses();
 
     /// @notice token to deposit
     MockERC20 private token;
