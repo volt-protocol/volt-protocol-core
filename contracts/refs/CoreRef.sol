@@ -179,13 +179,13 @@ abstract contract CoreRef is ICoreRef, Pausable {
 
     /// @notice address of the Core contract referenced
     /// @return ICore implementation address
-    function core() public view override returns (ICore) {
+    function core() public view virtual override returns (ICore) {
         return _core;
     }
 
     /// @notice address of the Fei contract referenced by Core
     /// @return IFei implementation address
-    function volt() public view override returns (IVolt) {
+    function volt() public view virtual override returns (IVolt) {
         return _volt;
     }
 
@@ -197,7 +197,7 @@ abstract contract CoreRef is ICoreRef, Pausable {
 
     /// @notice volt balance of contract
     /// @return volt amount held
-    function voltBalance() public view override returns (uint256) {
+    function voltBalance() public view virtual override returns (uint256) {
         return _volt.balanceOf(address(this));
     }
 
@@ -207,7 +207,7 @@ abstract contract CoreRef is ICoreRef, Pausable {
         return _vcon.balanceOf(address(this));
     }
 
-    function _burnVoltHeld() internal {
+    function _burnVoltHeld() internal virtual {
         _volt.burn(voltBalance());
     }
 

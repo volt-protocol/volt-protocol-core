@@ -218,7 +218,7 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         address token,
         address to,
         uint256 amount
-    ) external onlyGovernor {
+    ) external virtual onlyGovernor {
         IERC20(token).safeTransfer(to, amount);
     }
 
