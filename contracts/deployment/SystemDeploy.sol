@@ -22,7 +22,8 @@ import {IScalingPriceOracle} from "../oracle/IScalingPriceOracle.sol";
 import {IPCVDeposit, PCVDeposit} from "../pcv/PCVDeposit.sol";
 import {MorphoCompoundPCVDeposit} from "../pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {IGRLM, GlobalRateLimitedMinter} from "../minter/GlobalRateLimitedMinter.sol";
-import {getCoreV2, getAddresses, getVoltAddresses, VoltAddresses, VoltTestAddresses} from "../test/unit/utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../test/unit/utils/TestAddresses.sol";
+import {getCoreV2, getVoltAddresses, VoltAddresses} from "../test/unit/utils/Fixtures.sol";
 
 import "hardhat/console.sol";
 
@@ -51,7 +52,6 @@ import "hardhat/console.sol";
 contract SystemDeploy {
     using SafeCast for *;
 
-    VoltTestAddresses public addresses = getAddresses();
     VoltAddresses public guardianAddresses = getVoltAddresses();
 
     CoreV2 private core;

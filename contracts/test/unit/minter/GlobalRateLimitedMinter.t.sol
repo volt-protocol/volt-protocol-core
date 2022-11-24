@@ -9,7 +9,8 @@ import {Test} from "../../../../forge-std/src/Test.sol";
 import {ICoreV2} from "../../../core/ICoreV2.sol";
 import {MockMinter} from "../../../mock/MockMinter.sol";
 import {IGRLM, GlobalRateLimitedMinter} from "../../../minter/GlobalRateLimitedMinter.sol";
-import {getCoreV2, getAddresses, getVoltAddresses, VoltAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
+import {getCoreV2, getVoltAddresses, VoltAddresses} from "./../utils/Fixtures.sol";
 
 /// deployment steps
 /// 1. core v2
@@ -22,7 +23,6 @@ import {getCoreV2, getAddresses, getVoltAddresses, VoltAddresses, VoltTestAddres
 contract GlobalRateLimitedMinterUnitTest is Test {
     using SafeCast for *;
 
-    VoltTestAddresses public addresses = getAddresses();
     VoltAddresses public guardianAddresses = getVoltAddresses();
 
     GlobalRateLimitedMinter public grlm;

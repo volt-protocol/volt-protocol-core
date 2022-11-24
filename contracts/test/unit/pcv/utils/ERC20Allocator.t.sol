@@ -10,7 +10,8 @@ import {VoltRoles} from "../../../../core/VoltRoles.sol";
 import {PCVDeposit} from "../../../../pcv/PCVDeposit.sol";
 import {ERC20Allocator} from "../../../../pcv/utils/ERC20Allocator.sol";
 import {ERC20HoldingPCVDeposit} from "../../../../mock/ERC20HoldingPCVDeposit.sol";
-import {getCoreV2, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../../utils/TestAddresses.sol";
+import {getCoreV2} from "./../../utils/Fixtures.sol";
 
 contract UnitTestERC20Allocator is DSTest {
     /// @notice emitted when an existing deposit is updated
@@ -30,7 +31,6 @@ contract UnitTestERC20Allocator is DSTest {
 
     ICoreV2 private core;
     Vm public constant vm = Vm(HEVM_ADDRESS);
-    VoltTestAddresses public addresses = getAddresses();
 
     /// @notice reference to the PCVDeposit to pull from
     ERC20HoldingPCVDeposit private pcvDeposit;
