@@ -10,7 +10,6 @@ import {ICToken} from "./ICompound.sol";
 import {IMorpho} from "./IMorpho.sol";
 import {CoreRefV2} from "../../refs/CoreRefV2.sol";
 import {Constants} from "../../Constants.sol";
-import {IPCVOracle} from "./IPCVOracle.sol";
 import {PCVDeposit} from "../PCVDeposit.sol";
 
 /// @notice PCV Deposit for Morpho-Compound V2.
@@ -155,11 +154,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
 
         int256 endingRecordedBalance = balance().toInt256();
 
-        if (pcvOracle != address(0)) {
-            IPCVOracle(pcvOracle).updateLiquidBalance(
-                endingRecordedBalance - startingRecordedBalance
-            );
-        }
+        _liquidPcvOracleHook(endingRecordedBalance - startingRecordedBalance);
 
         emit Deposit(msg.sender, amount);
     }
@@ -187,16 +182,14 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
 
         _recordPNL(); /// update deposit amount and fire harvest event
 
-        int256 endingRecordedBalance = lastRecordedBalance.toInt256();
+        uint256 endingRecordedBalance = lastRecordedBalance;
 
-        if (pcvOracle != address(0)) {
-            /// if any amount of PCV is withdrawn and no gains, delta is negative
-            IPCVOracle(pcvOracle).updateLiquidBalance(
-                endingRecordedBalance - startingRecordedBalance
-            );
-        }
+        /// if any amount of PCV is withdrawn and no gains, delta is negative
+        _liquidPcvOracleHook(
+            endingRecordedBalance.toInt256() - startingRecordedBalance
+        );
 
-        return lastRecordedBalance; /// return updated pcv amount
+        return endingRecordedBalance; /// return updated pcv amount
     }
 
     /// ------------------------------------------
@@ -216,27 +209,9 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
         _withdraw(to, amount, true);
 
         int256 endingRecordedBalance = lastRecordedBalance.toInt256();
-        if (pcvOracle != address(0)) {
-            /// if any amount of PCV is withdrawn and no gains, delta is negative
-            IPCVOracle(pcvOracle).updateLiquidBalance(
-                endingRecordedBalance - startingRecordedBalance
-            );
-        }
-    }
 
-    /// @notice set the pcv oracle address
-    /// @param _pcvOracle new pcv oracle to reference
-    function setPCVOracle(address _pcvOracle) external override onlyGovernor {
-        address oldOracle = pcvOracle;
-        pcvOracle = _pcvOracle;
-
-        _recordPNL();
-
-        IPCVOracle(pcvOracle).updateLiquidBalance(
-            lastRecordedBalance.toInt256()
-        );
-
-        emit PCVOracleUpdated(oldOracle, _pcvOracle);
+        /// if any amount of PCV is withdrawn and no gains, delta is negative
+        _liquidPcvOracleHook(endingRecordedBalance - startingRecordedBalance);
     }
 
     /// @notice withdraw all tokens from Morpho
@@ -253,12 +228,8 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
 
         int256 endingRecordedBalance = lastRecordedBalance.toInt256();
 
-        if (pcvOracle != address(0)) {
-            /// all PCV withdrawn, send call in with amount withdrawn negative if any amount is withdrawn
-            IPCVOracle(pcvOracle).updateLiquidBalance(
-                endingRecordedBalance - startingRecordedBalance
-            );
-        }
+        /// all PCV withdrawn, send call in with amount withdrawn negative if any amount is withdrawn
+        _liquidPcvOracleHook(endingRecordedBalance - startingRecordedBalance);
     }
 
     /// ------------------------------------------
