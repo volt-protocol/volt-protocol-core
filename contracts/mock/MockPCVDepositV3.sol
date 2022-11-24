@@ -8,6 +8,7 @@ import {IPCVDeposit} from "../pcv/IPCVDeposit.sol";
 
 contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
     address public override balanceReportedIn;
+    bool public checkPCVController = false;
 
     uint256 private resistantBalance;
     uint256 private resistantProtocolOwnedVolt;
@@ -24,6 +25,10 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
     ) public {
         resistantBalance = _resistantBalance;
         resistantProtocolOwnedVolt = _resistantProtocolOwnedVolt;
+    }
+
+    function setCheckPCVController(bool value) public {
+        checkPCVController = value;
     }
 
     // gets the resistant token balance and protocol owned volt of this deposit
@@ -51,6 +56,13 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
         address to,
         uint256 amount
     ) external override globalLock(2) {
+        if (checkPCVController) {
+            // simulate onlyPCVController modifier from CoreRef
+            require(
+                core().isPCVController(msg.sender),
+                "CoreRef: Caller is not a PCV controller"
+            );
+        }
         IERC20(balanceReportedIn).transfer(to, amount);
         resistantBalance = IERC20(balanceReportedIn).balanceOf(address(this));
     }
