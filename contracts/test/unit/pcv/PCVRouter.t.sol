@@ -258,6 +258,48 @@ contract PCVRouterUnitTest is DSTest {
         );
     }
 
+    function testMovePCVUncheckedRevertIfPaused() public {
+        vm.prank(addresses.governorAddress);
+        pcvRouter.pause();
+
+        vm.expectRevert("Pausable: paused");
+        pcvRouter.movePCVUnchecked(
+            address(depositToken1Liquid),
+            address(depositToken1Illiquid),
+            50e18
+        );
+    }
+
+    function testMovePCVUncheckedAcl() public {
+        vm.expectRevert("CoreRef: Caller is not a PCV controller");
+        vm.prank(address(0)); // doesn't have PCV_CONTROLLER role
+        pcvRouter.movePCVUnchecked(
+            address(depositToken1Liquid),
+            address(depositToken1Illiquid),
+            50e18
+        );
+    }
+
+    function testMoveAllPCVUncheckedRevertIfPaused() public {
+        vm.prank(addresses.governorAddress);
+        pcvRouter.pause();
+
+        vm.expectRevert("Pausable: paused");
+        pcvRouter.moveAllPCVUnchecked(
+            address(depositToken1Liquid),
+            address(depositToken1Illiquid)
+        );
+    }
+
+    function testMoveAllPCVUncheckedAcl() public {
+        vm.expectRevert("CoreRef: Caller is not a PCV controller");
+        vm.prank(address(0)); // doesn't have PCV_CONTROLLER role
+        pcvRouter.moveAllPCVUnchecked(
+            address(depositToken1Liquid),
+            address(depositToken1Illiquid)
+        );
+    }
+
     // -------------------------------------------------
     // Configuration Errors
     // -------------------------------------------------

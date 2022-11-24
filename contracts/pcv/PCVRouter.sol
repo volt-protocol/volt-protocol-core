@@ -21,6 +21,9 @@ contract PCVRouter is CoreRefV2 {
 
     /// @notice Move PCV by withdrawing it from a PCVDeposit and deposit it in
     /// a destination PCVDeposit.
+    /// This function requires a less trusted PCV_MOVER role, and performs checks
+    /// at runtime that the PCV Deposits are indeed added in the PCV Oracle, and
+    /// that both PCV Deposits use the same token.
     /// @param source the address of the pcv deposit contract to withdraw from
     /// @param destination the address of the pcv deposit contract to deposit into
     /// @param sourceIsLiquid true if {source} is a liquid PCVDeposit
@@ -58,6 +61,46 @@ contract PCVRouter is CoreRefV2 {
             "PCVRouter: invalid route"
         );
 
+        // Do movement
+        _movePCV(source, destination, amount);
+    }
+
+    /// @notice Move PCV by withdrawing it from a PCVDeposit and deposit it in
+    /// a destination PCVDeposit.
+    /// This function requires the highly trusted PCV_CONTROLLER role, and expects
+    /// caller to know what they are doing by disabling checks such as the fact
+    /// that the 2 PCV Deposits passed as parameter are indeed contracts of the
+    /// Volt Protocol, and that they are compatible for a PCV movement (same token).
+    /// @param source the address of the pcv deposit contract to withdraw from
+    /// @param destination the address of the pcv deposit contract to deposit into
+    /// @param amount the amount to withdraw and deposit
+    function movePCVUnchecked(
+        address source,
+        address destination,
+        uint256 amount
+    ) external whenNotPaused onlyPCVController globalLock(1) {
+        _movePCV(source, destination, amount);
+    }
+
+    /// @notice Move all PCV in a source PCVDeposit and deposit it in
+    /// a destination PCVDeposit.
+    /// This function requires the highly trusted PCV_CONTROLLER role, see {movePCVUnchecked}.
+    /// @param source the address of the pcv deposit contract to withdraw from
+    /// @param destination the address of the pcv deposit contract to deposit into
+    function moveAllPCVUnchecked(
+        address source,
+        address destination
+    ) external whenNotPaused onlyPCVController globalLock(1) {
+        uint256 amount = IPCVDeposit(source).balance();
+        _movePCV(source, destination, amount);
+    }
+
+    /// ------------- Helper Methods -------------
+    function _movePCV(
+        address source,
+        address destination,
+        uint256 amount
+    ) internal {
         // Do transfer
         IPCVDeposit(source).withdraw(destination, amount);
         IPCVDeposit(destination).deposit();
