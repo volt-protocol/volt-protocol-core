@@ -5,7 +5,8 @@ import {DSTest} from "../unit/utils/DSTest.sol";
 import {DSInvariantTest} from "../unit/utils/DSInvariantTest.sol";
 import {Vm} from "../unit/utils/Vm.sol";
 import {ICore} from "../../core/ICore.sol";
-import {getCore, getAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
+import {getCore} from "../unit/utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
 import {VoltV2} from "../../volt/VoltV2.sol";
 
 /// @dev Modified from Solmate ERC20 Invariant Test (https://github.com/transmissions11/solmate/blob/main/src/test/ERC20.t.sol)
@@ -60,7 +61,6 @@ contract InvariantTestVoltV2 is DSTest, DSInvariantTest {
 
 contract BalanceSum is DSTest {
     VoltV2 volt;
-    VoltTestAddresses public addresses = getAddresses();
     Vm private vm = Vm(HEVM_ADDRESS);
     mapping(address => uint256) public balances;
     mapping(address => bool) public isUser;

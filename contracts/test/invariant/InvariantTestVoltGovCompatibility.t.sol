@@ -7,7 +7,8 @@ import {DSTest} from "../unit/utils/DSTest.sol";
 import {DSInvariantTest} from "../unit/utils/DSInvariantTest.sol";
 import {Vm} from "../unit/utils/Vm.sol";
 import {ICore} from "../../core/ICore.sol";
-import {getCore, getAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
+import {getCore} from "../unit/utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
 import {VoltV2} from "../../volt/VoltV2.sol";
 import {MockDAO, IVotes} from "../../mock/MockDAO.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
@@ -123,7 +124,6 @@ contract VoltTester is DSTest {
     MockDAO public mockDAO;
     uint256 public proposalId;
 
-    VoltTestAddresses public addresses = getAddresses();
     Vm private vm = Vm(HEVM_ADDRESS);
     mapping(address => uint256) public balances;
     mapping(address => bool) public isUser;

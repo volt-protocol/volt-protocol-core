@@ -6,7 +6,8 @@ import {DSTest} from "../unit/utils/DSTest.sol";
 import {Vm} from "../unit/utils/Vm.sol";
 import {VoltV2} from "../../volt/VoltV2.sol";
 import {Core} from "../../core/Core.sol";
-import {getCore, getAddresses, VoltTestAddresses} from "./utils/Fixtures.sol";
+import {getCore} from "./utils/Fixtures.sol";
+import {TestAddresses as addresses} from "./utils/TestAddresses.sol";
 import {ICore} from "../../core/ICore.sol";
 import {stdError} from "../unit/utils/StdLib.sol";
 
@@ -14,7 +15,6 @@ contract UnitTestVoltV2 is DSTest {
     using SafeCast for *;
     VoltV2 private volt;
     ICore private core;
-    VoltTestAddresses public addresses = getAddresses();
 
     Vm private vm = Vm(HEVM_ADDRESS);
 

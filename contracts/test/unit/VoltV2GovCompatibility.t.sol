@@ -9,7 +9,8 @@ import {DSTest} from "../unit/utils/DSTest.sol";
 import {Vm} from "../unit/utils/Vm.sol";
 import {VoltV2} from "../../volt/VoltV2.sol";
 import {Core} from "../../core/Core.sol";
-import {getCore, getAddresses, VoltTestAddresses} from "./utils/Fixtures.sol";
+import {getCore} from "./utils/Fixtures.sol";
+import {TestAddresses as addresses} from "./utils/TestAddresses.sol";
 import {ICore} from "../../core/ICore.sol";
 import {stdError} from "../unit/utils/StdLib.sol";
 import {MockDAO, IVotes} from "../../mock/MockDAO.sol";
@@ -23,8 +24,6 @@ contract UnitTestVoltV2GovCompatibility is DSTest {
     MockDAO private mockDAO;
     MockERC20 private mockToken;
     TimelockController private timelock;
-
-    VoltTestAddresses public addresses = getAddresses();
 
     address proposerCancellerExecutor = address(0x123);
     address userWithVolt = address(0xFFF);
