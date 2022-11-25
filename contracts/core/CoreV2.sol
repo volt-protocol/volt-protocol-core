@@ -7,6 +7,7 @@ import {IVolt} from "../volt/IVolt.sol";
 import {IGRLM} from "../minter/IGRLM.sol";
 import {ICoreV2} from "./ICoreV2.sol";
 import {PermissionsV2} from "./PermissionsV2.sol";
+import {IPCVOracle} from "../oracle/IPCVOracle.sol";
 import {GlobalReentrancyLock} from "./GlobalReentrancyLock.sol";
 
 /// @title Source of truth for VOLT Protocol
@@ -21,6 +22,9 @@ contract CoreV2 is ICoreV2, PermissionsV2, GlobalReentrancyLock {
 
     /// @notice address of the global rate limited minter
     IGRLM public globalRateLimitedMinter;
+
+    /// @notice address of the pcv oracle
+    IPCVOracle public pcvOracle;
 
     /// @notice construct CoreV2
     /// @param newVolt reference to the volt token
@@ -61,5 +65,14 @@ contract CoreV2 is ICoreV2, PermissionsV2, GlobalReentrancyLock {
             oldGrlm,
             address(newGlobalRateLimitedMinter)
         );
+    }
+
+    /// @notice governor only function to set the PCV oracle
+    /// @param newPCVOracle new volt pcv oracle
+    function setPCVOracle(IPCVOracle newPCVOracle) external onlyGovernor {
+        address oldPCVOracle = address(pcvOracle);
+        pcvOracle = newPCVOracle;
+
+        emit PCVOracleUpdate(oldPCVOracle, address(newPCVOracle));
     }
 }
