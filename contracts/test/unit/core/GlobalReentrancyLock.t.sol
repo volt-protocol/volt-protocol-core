@@ -15,13 +15,13 @@ import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {MockERC20} from "./../../../mock/MockERC20.sol";
 import {MockReentrancyLock} from "./../../../mock/MockReentrancyLock.sol";
 import {MockReentrancyLockFailure} from "./../../../mock/MockReentrancyLockFailure.sol";
-import {getCoreV2, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
+import {getCoreV2} from "./../utils/Fixtures.sol";
 
 contract UnitTestGlobalReentrancyLock is DSTest {
     CoreV2 private core;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
-    VoltTestAddresses public addresses = getAddresses();
     MockERC20 volt;
     MockReentrancyLock private lock;
     Vcon vcon;
