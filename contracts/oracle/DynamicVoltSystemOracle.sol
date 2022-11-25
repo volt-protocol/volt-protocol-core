@@ -3,7 +3,6 @@ pragma solidity 0.8.13;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-import {PCVOracle} from "./PCVOracle.sol";
 import {CoreRefV2} from "./../refs/CoreRefV2.sol";
 import {DynamicVoltRateModel} from "./DynamicVoltRateModel.sol";
 
@@ -149,7 +148,7 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
         /// if too few liquid reserves, adjust rate up
         uint256 newActualChangeRate = DynamicVoltRateModel(rateModel).getRate(
             newBaseChangeRate,
-            PCVOracle(pcvOracle).lastLiquidVenuePercentage()
+            pcvOracle().lastLiquidVenuePercentage()
         );
         uint256 oldActualChangeRate = actualChangeRate; // SLOAD
         actualChangeRate = newActualChangeRate; // SSTORE
@@ -181,7 +180,7 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
     /// or from `addVenues` that is a governor-only action that will only execute
     /// during DAO proposals.
     function updateActualRate(uint256 liquidPercentage) external {
-        require(msg.sender == pcvOracle, "MGO: Not PCV Oracle");
+        require(msg.sender == address(pcvOracle()), "MGO: Not PCV Oracle");
 
         /// first, compound interest
         _compoundInterest();

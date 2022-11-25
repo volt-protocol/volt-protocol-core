@@ -10,6 +10,7 @@ import {ICoreV2} from "../../core/ICoreV2.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
 import {MockMorpho} from "../../mock/MockMorpho.sol";
 import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
+import {IPCVOracle} from "../../oracle/IPCVOracle.sol";
 import {MockPCVOracle} from "../../mock/MockPCVOracle.sol";
 import {DSInvariantTest} from "../unit/utils/DSInvariantTest.sol";
 import {VoltSystemOracle} from "../../oracle/VoltSystemOracle.sol";
@@ -86,7 +87,7 @@ contract InvariantTestPegStabilityModule is DSTest, DSInvariantTest {
         );
 
         vm.prank(addresses.governorAddress);
-        psm.setPCVOracle(address(pcvOracle));
+        core.setPCVOracle(IPCVOracle(address(pcvOracle)));
 
         grlm = new GlobalRateLimitedMinter(
             address(core),

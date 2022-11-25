@@ -4,7 +4,7 @@ pragma solidity ^0.8.4;
 import {CoreRefV2} from "../refs/CoreRefV2.sol";
 import {IPCVDeposit} from "./IPCVDeposit.sol";
 import {VoltRoles} from "../core/VoltRoles.sol";
-import {PCVOracle} from "../oracle/PCVOracle.sol";
+import {IPCVOracle} from "../oracle/IPCVOracle.sol";
 
 /// @title Volt Protocol PCV Router
 /// @notice A contract that allows PCV movements between deposits.
@@ -37,20 +37,20 @@ contract PCVRouter is CoreRefV2 {
         uint256 amount
     ) external whenNotPaused onlyVoltRole(VoltRoles.PCV_MOVER) globalLock(1) {
         // Check both deposits are still valid for PCVOracle
-        address _pcvOracle = pcvOracle;
+        IPCVOracle _pcvOracle = pcvOracle();
         require(
             (
                 sourceIsLiquid
-                    ? PCVOracle(_pcvOracle).isLiquidVenue(source)
-                    : PCVOracle(_pcvOracle).isIlliquidVenue(source)
+                    ? _pcvOracle.isLiquidVenue(source)
+                    : _pcvOracle.isIlliquidVenue(source)
             ),
             "PCVRouter: invalid source"
         );
         require(
             (
                 destinationIsLiquid
-                    ? PCVOracle(_pcvOracle).isLiquidVenue(destination)
-                    : PCVOracle(_pcvOracle).isIlliquidVenue(destination)
+                    ? _pcvOracle.isLiquidVenue(destination)
+                    : _pcvOracle.isIlliquidVenue(destination)
             ),
             "PCVRouter: invalid destination"
         );

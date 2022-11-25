@@ -2,7 +2,7 @@
 pragma solidity 0.8.13;
 
 import {CoreRefV2} from "../refs/CoreRefV2.sol";
-import {PCVOracle} from "../oracle/PCVOracle.sol";
+import {IPCVOracle} from "../oracle/IPCVOracle.sol";
 import {IPCVDepositV2} from "../pcv/IPCVDepositV2.sol";
 
 /// @notice contract to accrue, deposit or harvest
@@ -10,16 +10,16 @@ import {IPCVDepositV2} from "../pcv/IPCVDepositV2.sol";
 contract SystemEntry is CoreRefV2 {
     constructor(address _core) CoreRefV2(_core) {}
 
-    /// @notice if the PCVOracle is set, enforce that the
-    /// PCV Deposit we cann .accrue(), .deposit(), or .harvest()
+    /// @notice Enforce that the PCV Deposit we call
+    /// .accrue(), .deposit(), or .harvest()
     /// on is a valid PCV Deposit added in the oracle.
     /// This protects from giving the execution flow to an arbitrary
     /// contract whose address is passed as calldata while the system
     /// is in a locked state level 1.
     modifier onlyValidDeposit(address pcvDeposit) {
-        address _pcvOracle = pcvOracle;
-        if (_pcvOracle != address(0)) {
-            bool isVenue = PCVOracle(_pcvOracle).isVenue(pcvDeposit);
+        IPCVOracle _pcvOracle = pcvOracle();
+        if (address(_pcvOracle) != address(0)) {
+            bool isVenue = _pcvOracle.isVenue(pcvDeposit);
             require(isVenue, "SystemEntry: Invalid PCVDeposit");
         }
         _;

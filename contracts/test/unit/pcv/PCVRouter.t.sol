@@ -6,6 +6,7 @@ import {DSTest} from "./../utils/DSTest.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
 import {PCVRouter} from "../../../pcv/PCVRouter.sol";
 import {PCVOracle} from "../../../oracle/PCVOracle.sol";
+import {IPCVOracle} from "../../../oracle/IPCVOracle.sol";
 import {SystemEntry} from "../../../entry/SystemEntry.sol";
 import {MockPCVDepositV3} from "../../../mock/MockPCVDepositV3.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
@@ -127,12 +128,12 @@ contract PCVRouterUnitTest is DSTest {
 
         // setup PCVRouter
         vm.prank(addresses.governorAddress);
-        pcvRouter.setPCVOracle(address(pcvOracle));
+        core.setPCVOracle(IPCVOracle(address(pcvOracle)));
     }
 
     function testSetup() public {
         assertEq(address(pcvRouter.core()), address(core));
-        assertEq(pcvRouter.pcvOracle(), address(pcvOracle));
+        assertEq(address(pcvRouter.pcvOracle()), address(pcvOracle));
     }
 
     // -------------------------------------------------

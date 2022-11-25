@@ -13,6 +13,7 @@ import {ICore} from "../../../core/ICore.sol";
 import {IGRLM} from "../../../minter/IGRLM.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
+import {IPCVOracle} from "../../../oracle/IPCVOracle.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 import {getCoreV2} from "./../utils/Fixtures.sol";
 
@@ -35,6 +36,12 @@ contract UnitTestCoreV2 is DSTest {
         address indexed newGrlm
     );
 
+    /// @notice emitted when reference to pcv oracle is updated
+    event PCVOracleUpdate(
+        address indexed oldPcvOracle,
+        address indexed newPcvOracle
+    );
+
     function setUp() public {
         core = getCoreV2();
         vcon = address(core.vcon());
@@ -45,6 +52,7 @@ contract UnitTestCoreV2 is DSTest {
         assertEq(address(core.volt()), volt);
         assertEq(address(core.vcon()), vcon); /// vcon starts set to address 0
         assertEq(address(core.globalRateLimitedMinter()), address(0)); /// global rate limited minter starts set to address 0
+        assertEq(address(core.pcvOracle()), address(0)); /// pcv oracle starts set to address 0
     }
 
     function testGovernorSetsVolt() public {
@@ -91,5 +99,21 @@ contract UnitTestCoreV2 is DSTest {
     function testNonGovernorFailsSettingGlobalRateLimitedMinter() public {
         vm.expectRevert("Permissions: Caller is not a governor");
         core.setGlobalRateLimitedMinter(IGRLM(addresses.userAddress));
+    }
+
+    function testGovernorSetsPcvOracle() public {
+        address newPcvOracle = address(8794534168787);
+        vm.expectEmit(true, true, false, true, address(core));
+        emit PCVOracleUpdate(address(0), newPcvOracle);
+
+        vm.prank(addresses.governorAddress);
+        core.setPCVOracle(IPCVOracle(newPcvOracle));
+
+        assertEq(address(core.pcvOracle()), newPcvOracle);
+    }
+
+    function testNonGovernorFailsSettingPCVOracle() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.setPCVOracle(IPCVOracle(addresses.userAddress));
     }
 }
