@@ -600,11 +600,11 @@ contract vip13 is DSTest, IVIP {
         revert("no arbitrum proposal");
     }
 
-    function arbitrumSetup() public override {
+    function arbitrumSetup() public pure override {
         revert("no arbitrum proposal");
     }
 
-    function arbitrumValidate() public override {
+    function arbitrumValidate() public pure override {
         revert("no arbitrum proposal");
     }
 

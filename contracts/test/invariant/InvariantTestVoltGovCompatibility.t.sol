@@ -149,7 +149,7 @@ contract VoltTester is DSTest {
         }
     }
 
-    function allUserLength() public returns (uint256) {
+    function allUserLength() public view returns (uint256) {
         return allUsers.length;
     }
 
