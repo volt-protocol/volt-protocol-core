@@ -6,12 +6,12 @@ import {DSTest} from "./../utils/DSTest.sol";
 import {ICoreV2} from "../../../core/ICoreV2.sol";
 import {DynamicVoltSystemOracle} from "../../../oracle/DynamicVoltSystemOracle.sol";
 import {DynamicVoltRateModel} from "../../../oracle/DynamicVoltRateModel.sol";
-import {getCoreV2, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
+import {getCoreV2} from "./../utils/Fixtures.sol";
 
 contract DynamicVoltSystemOracleUnitTest is DSTest {
     ICoreV2 private core;
     Vm public constant vm = Vm(HEVM_ADDRESS);
-    VoltTestAddresses public addresses = getAddresses();
 
     /// @notice reference to the volt system oracle
     DynamicVoltRateModel private rateModel;

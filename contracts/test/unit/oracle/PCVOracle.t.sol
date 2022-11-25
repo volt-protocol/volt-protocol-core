@@ -10,13 +10,13 @@ import {MockPCVDepositV3} from "../../../mock/MockPCVDepositV3.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
 import {MockOracle} from "../../../mock/MockOracle.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
-import {getCoreV2, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
+import {getCoreV2} from "./../utils/Fixtures.sol";
 
 contract PCVOracleUnitTest is DSTest {
     CoreV2 private core;
     SystemEntry public entry;
     Vm public constant vm = Vm(HEVM_ADDRESS);
-    VoltTestAddresses public addresses = getAddresses();
 
     // reference to the volt pcv oracle
     PCVOracle private pcvOracle;

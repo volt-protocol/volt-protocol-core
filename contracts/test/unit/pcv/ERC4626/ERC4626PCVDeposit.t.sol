@@ -13,7 +13,8 @@ import {PCVGuardian} from "../../../../pcv/PCVGuardian.sol";
 import {MockERC20, IERC20} from "../../../../mock/MockERC20.sol";
 import {MockERC4626Vault} from "../../../../mock/MockERC4626Vault.sol";
 import {ERC4626PCVDeposit} from "../../../../pcv/ERC4626/ERC4626PCVDeposit.sol";
-import {getCoreV2, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../../utils/TestAddresses.sol";
+import {getCoreV2} from "./../../utils/Fixtures.sol";
 import "../../../../mock/MockERC4626VaultMaliciousReentrancy.sol";
 
 contract UnitTestERC4626PCVDeposit is DSTest {
@@ -41,10 +42,10 @@ contract UnitTestERC4626PCVDeposit is DSTest {
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
-    VoltTestAddresses public addresses = getAddresses();
-
     /// @notice token to deposit in the vault
     MockERC20 private token;
+
+    bool public isLiquid = true;
 
     MockERC4626VaultMaliciousReentrancy private maliciousVault;
 
@@ -61,7 +62,7 @@ contract UnitTestERC4626PCVDeposit is DSTest {
             address(core),
             address(token),
             address(tokenizedVault),
-            true
+            isLiquid
         );
 
         address[] memory toWhitelist = new address[](1);
@@ -143,6 +144,11 @@ contract UnitTestERC4626PCVDeposit is DSTest {
         token.approve(address(tokenizedVault), amountToDeposit);
         vm.prank(vaultUser);
         tokenizedVault.deposit(amountToDeposit, vaultUser);
+    }
+
+    /// @notice checks that the balance is reported in the correct token
+    function testBalanceReportedInValidToken() public {
+        assertEq(tokenizedVaultPCVDeposit.balanceReportedIn(), address(token));
     }
 
     /// @notice checks that the PCVDeposit cannot be deployed if there is a
@@ -292,6 +298,23 @@ contract UnitTestERC4626PCVDeposit is DSTest {
     /// @notice checks that if the vault gain profits, then the deposit balance should gain them too
     /// this test assume 0 fees from the vault and that the pcvdeposit is the only participant in the vault
     function testAccrueWhenProfitShouldSaveProfit(uint120 profit) public {
+        utilDepositTokens(10000 * 1e18);
+        assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), 10000 * 1e18);
+        tokenizedVault.mockGainSome(profit);
+        entry.accrue(address(tokenizedVaultPCVDeposit));
+        assertEq(
+            tokenizedVaultPCVDeposit.lastRecordedBalance(),
+            uint256(profit) + 10000 * 1e18
+        );
+    }
+
+    /// @notice same test as 'testAccrueWhenProfitShouldSaveProfit' but with an illiquid vault
+    /// which just use a different hook when reporting PNL
+    function testAccrueWhenProfitShouldSaveProfitIlliquid(
+        uint120 profit
+    ) public {
+        isLiquid = false;
+        setUp();
         utilDepositTokens(10000 * 1e18);
         assertEq(tokenizedVaultPCVDeposit.lastRecordedBalance(), 10000 * 1e18);
         tokenizedVault.mockGainSome(profit);
