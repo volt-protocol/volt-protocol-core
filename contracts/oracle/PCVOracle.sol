@@ -6,6 +6,7 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import {Decimal} from "../external/Decimal.sol";
 
 import {IOracle} from "./IOracle.sol";
+import {IPCVOracle} from "./IPCVOracle.sol";
 import {VoltRoles} from "../core/VoltRoles.sol";
 import {CoreRefV2} from "../refs/CoreRefV2.sol";
 import {IPCVDepositV2} from "../pcv/IPCVDepositV2.sol";
@@ -22,39 +23,10 @@ import {DynamicVoltSystemOracle} from "./DynamicVoltSystemOracle.sol";
 /// does not automatically detect it & return erroneous balance() values.
 /// Oracles are also responsible for decimal normalization.
 /// @author Eswak, Elliot Friedman
-contract PCVOracle is CoreRefV2 {
+contract PCVOracle is IPCVOracle, CoreRefV2 {
     using Decimal for Decimal.D256;
     using SafeCast for *;
     using EnumerableSet for EnumerableSet.AddressSet;
-
-    /// @notice emitted when a new venue oracle is set
-    event VenueOracleUpdated(
-        address indexed venue,
-        address indexed oldOracle,
-        address indexed newOracle
-    );
-
-    /// @notice emitted when a new venue is added
-    event VenueAdded(address indexed venue, bool isIliquid, uint256 timestamp);
-
-    /// @notice emitted when a venue is removed
-    event VenueRemoved(
-        address indexed venue,
-        bool isIliquid,
-        uint256 timestamp
-    );
-
-    /// @notice emitted when total venue PCV changes
-    event PCVUpdated(
-        address indexed venue,
-        bool isIliquid,
-        uint256 timestamp,
-        uint256 oldLiquidity,
-        uint256 newLiquidity
-    );
-
-    /// @notice emitted when market governance oracle is updated
-    event VoltSystemOracleUpdated(address oldOracle, address newOracle);
 
     /// @notice Map from venue address to oracle address. By reading an oracle
     /// value and multiplying by the PCVDeposit's balance(), the PCVOracle can
