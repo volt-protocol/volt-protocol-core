@@ -11,7 +11,4 @@ interface IPCVDepositBalances {
 
     /// @notice gets the token address in which this deposit returns its balance
     function balanceReportedIn() external view returns (address);
-
-    /// @notice gets the resistant token balance and protocol owned fei of this deposit
-    function resistantBalanceAndVolt() external view returns (uint256, uint256);
 }

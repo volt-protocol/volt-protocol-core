@@ -266,16 +266,6 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
         return address(underlyingToken);
     }
 
-    /// @notice override default behavior of not checking Volt balance
-    function resistantBalanceAndVolt()
-        public
-        view
-        override
-        returns (uint256, uint256)
-    {
-        return (balance(), voltBalance());
-    }
-
     /// @notice returns whether or not the current price is valid
     function isPriceValid() external view override returns (bool) {
         return _validPrice(readOracle());

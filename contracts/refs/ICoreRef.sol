@@ -15,10 +15,6 @@ interface ICoreRef {
         bytes32 indexed newContractAdminRole
     );
 
-    // ----------- Governor only state changing api -----------
-
-    function setContractAdminRole(bytes32 newContractAdminRole) external;
-
     // ----------- Governor or Guardian only state changing api -----------
 
     function pause() external;
@@ -32,10 +28,6 @@ interface ICoreRef {
     function volt() external view returns (IVolt);
 
     function vcon() external view returns (IERC20);
-
-    function voltBalance() external view returns (uint256);
-
-    function vconBalance() external view returns (uint256);
 
     function CONTRACT_ADMIN_ROLE() external view returns (bytes32);
 

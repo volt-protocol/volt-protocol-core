@@ -37,8 +37,6 @@ contract UnitTestCoreRefV2 is DSTest {
         assertEq(address(coreRef.vcon()), address(core.vcon()));
         assertEq(address(coreRef.core()), address(core));
         assertEq(address(coreRef.pcvOracle()), address(0));
-        assertEq(coreRef.voltBalance(), 0);
-        assertEq(coreRef.vconBalance(), 0);
     }
 
     function testMinter(address caller) public {

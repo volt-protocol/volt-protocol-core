@@ -46,14 +46,4 @@ abstract contract PCVDeposit is IPCVDeposit, CoreRefV2 {
     }
 
     function balance() public view virtual override returns (uint256);
-
-    function resistantBalanceAndVolt()
-        public
-        view
-        virtual
-        override
-        returns (uint256, uint256)
-    {
-        return (balance(), 0);
-    }
 }
