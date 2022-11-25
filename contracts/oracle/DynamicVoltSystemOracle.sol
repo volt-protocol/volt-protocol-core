@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
+import {IOracleV2} from "./IOracleV2.sol";
 import {CoreRefV2} from "./../refs/CoreRefV2.sol";
 import {DynamicVoltRateModel} from "./DynamicVoltRateModel.sol";
 
@@ -13,7 +14,7 @@ import {DynamicVoltRateModel} from "./DynamicVoltRateModel.sol";
 /// When PCV allocations change, this contract is notified and the oracle
 /// start time updates, creating a new interpolation over 1 year.
 /// @author Eswak, Elliot Friedman
-contract DynamicVoltSystemOracle is CoreRefV2 {
+contract DynamicVoltSystemOracle is CoreRefV2, IOracleV2 {
     /// ------------- Events ---------------
 
     /// @notice Event emitted when the Volt system oracle compounds.
@@ -125,6 +126,13 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
         uint256 priceDelta = periodPriceChange * timeDelta / TIMEFRAME / 1e18;
 
         return cachedOraclePrice + priceDelta;
+    }
+
+    /// ------------- IOracleV2 API -------------
+
+    /// @notice Get the current VOLT price in USD with 18 decimals
+    function read() external view returns (uint256, bool) {
+        return (getCurrentOraclePrice(), true);
     }
 
     /// ------------- Governor Only API -------------

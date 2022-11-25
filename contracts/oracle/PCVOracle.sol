@@ -3,9 +3,8 @@ pragma solidity 0.8.13;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {Decimal} from "../external/Decimal.sol";
 
-import {IOracle} from "./IOracle.sol";
+import {IOracleV2} from "./IOracleV2.sol";
 import {IPCVOracle} from "./IPCVOracle.sol";
 import {VoltRoles} from "../core/VoltRoles.sol";
 import {CoreRefV2} from "../refs/CoreRefV2.sol";
@@ -24,7 +23,6 @@ import {DynamicVoltSystemOracle} from "./DynamicVoltSystemOracle.sol";
 /// Oracles are also responsible for decimal normalization.
 /// @author Eswak, Elliot Friedman
 contract PCVOracle is IPCVOracle, CoreRefV2 {
-    using Decimal for Decimal.D256;
     using SafeCast for *;
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -138,28 +136,24 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         unchecked {
             for (uint256 i = 0; i < liquidVenueLength; i++) {
                 address depositAddress = liquidVenues.at(i);
-                (Decimal.D256 memory oracleValue, bool oracleValid) = IOracle(
+                (uint256 oracleValue, bool oracleValid) = IOracleV2(
                     venueToOracle[depositAddress]
                 ).read();
                 require(oracleValid, "PCVO: invalid oracle value");
 
-                liquidPcv +=
-                    (oracleValue.mul(1e18).asUint256() *
-                        IPCVDepositV2(depositAddress).balance()) /
-                    1e18;
+                uint256 balance = IPCVDepositV2(depositAddress).balance();
+                liquidPcv += (oracleValue * balance) / 1e18;
             }
 
             for (uint256 i = 0; i < illiquidVenueLength; i++) {
                 address depositAddress = illiquidVenues.at(i);
-                (Decimal.D256 memory oracleValue, bool oracleValid) = IOracle(
+                (uint256 oracleValue, bool oracleValid) = IOracleV2(
                     venueToOracle[depositAddress]
                 ).read();
                 require(oracleValid, "PCVO: invalid oracle value");
 
-                illiquidPcv +=
-                    (oracleValue.mul(1e18).asUint256() *
-                        IPCVDepositV2(depositAddress).balance()) /
-                    1e18;
+                uint256 balance = IPCVDepositV2(depositAddress).balance();
+                illiquidPcv += (oracleValue * balance) / 1e18;
             }
 
             totalPcv = liquidPcv + illiquidPcv;
@@ -312,10 +306,9 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     ) private view returns (int256) {
         address oracle = venueToOracle[venue];
         require(oracle != address(0), "PCVO: invalid caller deposit");
-        (Decimal.D256 memory oracleValue, bool oracleValid) = IOracle(oracle)
-            .read();
+        (uint256 oracleValue, bool oracleValid) = IOracleV2(oracle).read();
         require(oracleValid, "PCVO: invalid oracle value");
-        return (int256(oracleValue.mul(1e18).asUint256()) * pcvDelta) / 1e18;
+        return (int256(oracleValue) * pcvDelta) / 1e18;
     }
 
     function _afterActionHook() private {

@@ -6,20 +6,15 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-import {Decimal} from "../external/Decimal.sol";
 import {Constants} from "../Constants.sol";
-import {OracleRef} from "./../refs/OracleRef.sol";
+import {OracleRefV2} from "./../refs/OracleRefV2.sol";
 import {PCVDeposit} from "./../pcv/PCVDeposit.sol";
 import {IPCVDeposit} from "./../pcv/IPCVDeposit.sol";
 import {IPegStabilityModule} from "./IPegStabilityModule.sol";
 
-contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
-    using Decimal for Decimal.D256;
+contract PegStabilityModule is IPegStabilityModule, OracleRefV2, PCVDeposit {
     using SafeERC20 for IERC20;
     using SafeCast for *;
-
-    /// @notice decimals to scale by
-    uint256 public constant SCALE = 1e18;
 
     /// @notice the token this PSM will exchange for VOLT
     /// This token will be set to WETH9 if the bonding curve accepts eth
@@ -50,7 +45,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
         uint128 floorPrice,
         uint128 ceilingPrice
     )
-        OracleRef(
+        OracleRefV2(
             coreAddress,
             oracleAddress,
             backupOracle,
@@ -204,7 +199,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
     function getMintAmountOut(
         uint256 amountIn
     ) public view override returns (uint256 amountVoltOut) {
-        Decimal.D256 memory oraclePrice = readOracle();
+        uint256 oraclePrice = readOracle();
         _validatePriceRange(oraclePrice);
 
         /// This was included to make sure that precision is retained when dividing
@@ -218,10 +213,10 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
 
         /// DAI example:
         /// amountIn = 1e18 (1 DAI)
-        /// oraclePrice.value = 1.05e18 ($1.05/Volt)
-        /// amountVoltOut = (amountIn * 1e18) / oraclePrice.value
+        /// oraclePrice = 1.05e18 ($1.05/Volt)
+        /// amountVoltOut = (amountIn * 1e18) / oraclePrice
         /// = 9.523809524E17 Volt out
-        amountVoltOut = (amountIn * SCALE) / oraclePrice.value;
+        amountVoltOut = (amountIn * 1e18) / oraclePrice;
     }
 
     /// @notice calculate the amount of underlying out for a given `amountVoltIn` of Volt
@@ -232,23 +227,23 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
     function getRedeemAmountOut(
         uint256 amountVoltIn
     ) public view override returns (uint256 amountTokenOut) {
-        Decimal.D256 memory oraclePrice = readOracle();
+        uint256 oraclePrice = readOracle();
         _validatePriceRange(oraclePrice);
 
         /// DAI Example:
         /// decimals normalizer: 0
         /// amountVoltIn = 1e18 (1 VOLT)
-        /// oraclePrice.value = 1.05e18 ($1.05/Volt)
+        /// oraclePrice = 1.05e18 ($1.05/Volt)
         /// amountTokenOut = oraclePrice * amountVoltIn / 1e18
         /// = 1.05e18 DAI out
 
         /// USDC Example:
         /// decimals normalizer: -12
         /// amountVoltIn = 1e18 (1 VOLT)
-        /// oraclePrice.value = 1.05e6 ($1.05/Volt)
+        /// oraclePrice = 1.05e6 ($1.05/Volt)
         /// amountTokenOut = oraclePrice * amountVoltIn / 1e18
         /// = 1.05e6 USDC out
-        amountTokenOut = oraclePrice.mul(amountVoltIn).asUint256();
+        amountTokenOut = (oraclePrice * amountVoltIn) / 1e18;
     }
 
     /// @notice returns the maximum amount of Volt that can be minted
@@ -300,16 +295,13 @@ contract PegStabilityModule is IPegStabilityModule, OracleRef, PCVDeposit {
 
     /// @notice helper function to determine if price is within a valid range
     /// @param price oracle price expressed as a decimal
-    function _validPrice(
-        Decimal.D256 memory price
-    ) private view returns (bool valid) {
-        uint256 oraclePrice = price.value;
-        valid = oraclePrice >= floor && oraclePrice <= ceiling;
+    function _validPrice(uint256 price) private view returns (bool valid) {
+        valid = price >= floor && price <= ceiling;
     }
 
     /// @notice reverts if the price is greater than or equal to the ceiling or less than or equal to the floor
     /// @param price oracle price expressed as a decimal
-    function _validatePriceRange(Decimal.D256 memory price) private view {
+    function _validatePriceRange(uint256 price) private view {
         require(_validPrice(price), "PegStabilityModule: price out of bounds");
     }
 }
