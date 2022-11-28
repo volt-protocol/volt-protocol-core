@@ -14,10 +14,10 @@
     "test:integration": "forge test --fork-url https://eth-mainnet.alchemyapi.io/v2/$MAINNET_ALCHEMY_API_KEY --match-contract IntegrationTest -vvv",
     "test:integration:arbitrum": "forge test --fork-url https://arb-mainnet.g.alchemy.com/v2/$ARBITRUM_ALCHEMY_API_KEY --match-contract ArbitrumTest -vvv",
     "lint": "npm run lint:ts && npm run lint:sol",
-    "lint:ts": "eslint --config ./.eslintrc --ignore-path ./.eslintignore --ext .ts,.tsx .",
-    "lint-all": "eslint --config ./.eslintrc --ignore-path ./.eslintignore --ext .js,.jsx,.ts,.tsx .",
-    "lint:fix": "eslint --fix --config ./.eslintrc --ignore-path ./.eslintignore --ext .ts,.tsx .",
-    "lint:sol": "solhint --ignore-path ./.solhintignore \"contracts/**/*.sol\"",
+    "lint:ts": "npx eslint --config ./.eslintrc --ignore-path ./.eslintignore --ext .ts,.tsx .",
+    "lint-all": "npx eslint --config ./.eslintrc --ignore-path ./.eslintignore --ext .js,.jsx,.ts,.tsx .",
+    "lint:fix": "npx eslint --fix --config ./.eslintrc --ignore-path ./.eslintignore --ext .ts,.tsx .",
+    "lint:sol": "npx solhint --ignore-path ./.solhintignore \"contracts/**/*.sol\"",
     "size-contracts": "npx hardhat size-contracts",
     "setup:forge": "curl -L https://foundry.paradigm.xyz | bash && foundryup",
     "deploy:localhost": "npx hardhat run --network localhost scripts/deploy/migrations.ts",
@@ -33,9 +33,12 @@
     "calldata:arbitrum": "ENABLE_ARBITRUM_FORKING=true npx hardhat run scripts/simulation/getProposalCalldata.ts",
     "check-proposal": "ENABLE_MAINNET_FORKING=true npx hardhat run scripts/utils/checkProposal.ts",
     "check-proposal-arbitrum": "ENABLE_ARBITRUM_FORKING=true npx hardhat run scripts/utils/checkProposal.ts --network arbitrumOne",
-    "prettier:sol": "prettier --config ./contracts/.prettierrc --write 'contracts/**/*.sol'",
-    "prettier:ts": "prettier --config .prettierrc './**/*.ts' --write",
-    "prettier": "npx prettier:soldity && npx prettier:ts",
+    "prettier:sol": "npx prettier --check 'contracts/**/*.sol'",
+    "prettier:sol:fix": "npx prettier --write 'contracts/**/*.sol'",
+    "prettier:ts": "npx prettier --check './**/*.ts'",
+    "prettier:ts:fix": "npx prettier --write './**/*.ts'",
+    "prettier": "npm run prettier:sol && npm run prettier:ts",
+    "prettier:fix": "npm run prettier:sol:fix && npm run prettier:ts:fix",
     "prepare": "husky install"
   },
   "authors": "elliotfriedman,kassim,joeysantoro",
@@ -73,7 +76,7 @@
     "mocha-junit-reporter": "^2.0.2",
     "mocha-multi-reporters": "^1.5.1",
     "prettier": "2.5.1",
-    "prettier-plugin-solidity": "^1.0.0-beta.19",
+    "prettier-plugin-solidity": "1.0.0",
     "solhint": "3.3.7",
     "solhint-plugin-prettier": "0.0.5",
     "solidity-coverage": "0.8.0",
@@ -84,11 +87,11 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint --cache --fix --config ./.eslintrc --ignore-path ./.eslintignore --ext .ts,.tsx .",
-      "prettier --config .prettierrc './**/*.ts' --write"
+      "npx eslint --cache --fix --config ./.eslintrc --ignore-path ./.eslintignore --ext .ts,.tsx .",
+      "npx prettier --config .prettierrc './**/*.ts' --write"
     ],
     "*.{sol}": [
-      "prettier --config ./contracts/.prettierrc --write 'contracts/**/*.sol'"
+      "npx prettier --config .prettierrc 'contracts/**/*.sol' --write"
     ]
   }
 }
