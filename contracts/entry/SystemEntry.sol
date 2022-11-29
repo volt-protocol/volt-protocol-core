@@ -11,7 +11,7 @@ contract SystemEntry is CoreRefV2 {
     constructor(address _core) CoreRefV2(_core) {}
 
     /// @notice if the PCVOracle is set, enforce that the
-    /// PCV Deposit we cann .accrue(), .deposit(), or .harvest()
+    /// PCV Deposit we can .accrue(), .deposit(), or .harvest()
     /// on is a valid PCV Deposit added in the oracle.
     /// This protects from giving the execution flow to an arbitrary
     /// contract whose address is passed as calldata while the system
