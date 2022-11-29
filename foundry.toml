@@ -2,9 +2,15 @@
 optimizer = true
 optimizer_runs = 200
 contracts = "contracts"
-fuzz_max_global_rejects = 100000
-fuzz_max_local_rejects = 100000
-fuzz_runs = 500
+
+[fuzz]
+runs = 5000
+max_test_rejects = 100000
+
 # 'contracts/test', 'contracts/mock', 'forge-std/lib/ds-test/src', 'forge-std/src' are added here
 # to not appear in the code coverage result when using forge coverage
 libs = ['node_modules', 'lib', 'contracts/test', 'contracts/mock', 'forge-std/lib/ds-test/src', 'forge-std/src']
+
+[invariant]
+runs = 1000
+depth = 100
