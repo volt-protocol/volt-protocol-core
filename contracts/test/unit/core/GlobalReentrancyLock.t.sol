@@ -547,9 +547,9 @@ contract UnitTestGlobalReentrancyLock is DSTest {
         core.grantLocker(addresses.governorAddress);
         core.grantLocker(addresses.governorAddress);
         core.lock(1);
-        vm.expectRevert("GlobalReentrancyLock: unlock level must be lower");
+        vm.expectRevert("GlobalReentrancyLock: unlock level must be 1 lower");
         core.unlock(2);
-        vm.expectRevert("GlobalReentrancyLock: unlock level must be lower");
+        vm.expectRevert("GlobalReentrancyLock: unlock level must be 1 lower");
         core.unlock(1);
         vm.stopPrank();
     }
