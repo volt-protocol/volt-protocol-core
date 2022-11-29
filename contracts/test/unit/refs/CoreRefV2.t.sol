@@ -7,13 +7,13 @@ import {ICoreV2} from "../../../core/ICoreV2.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
 import {MockCoreRefV2} from "../../../mock/MockCoreRefV2.sol";
-import {getCoreV2, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
+import {getCoreV2} from "./../utils/Fixtures.sol";
 
 contract UnitTestCoreRefV2 is DSTest {
     ICoreV2 private core;
     MockCoreRefV2 private coreRef;
     Vm public constant vm = Vm(HEVM_ADDRESS);
-    VoltTestAddresses public addresses = getAddresses();
 
     event CoreUpdate(address indexed oldCore, address indexed newCore);
 

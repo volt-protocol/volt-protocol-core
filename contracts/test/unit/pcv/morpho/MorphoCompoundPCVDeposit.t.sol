@@ -16,7 +16,8 @@ import {MockPCVOracle} from "../../../../mock/MockPCVOracle.sol";
 import {MockERC20, IERC20} from "../../../../mock/MockERC20.sol";
 import {MorphoCompoundPCVDeposit} from "../../../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {MockMorphoMaliciousReentrancy} from "../../../../mock/MockMorphoMaliciousReentrancy.sol";
-import {getCoreV2, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../../utils/TestAddresses.sol";
+import {getCoreV2} from "./../../utils/Fixtures.sol";
 
 contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     using SafeCast for *;
@@ -39,8 +40,6 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     MockMorphoMaliciousReentrancy private maliciousMorpho;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
-
-    VoltTestAddresses public addresses = getAddresses();
 
     /// @notice token to deposit
     MockERC20 private token;
