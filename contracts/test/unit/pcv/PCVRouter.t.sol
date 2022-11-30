@@ -161,6 +161,18 @@ contract PCVRouterUnitTest is DSTest {
         assertEq(depositToken1Liquid.balance(), 100e18);
         assertEq(depositToken1Illiquid.balance(), 100e18);
 
+        vm.expectCall(
+            address(depositToken1Liquid),
+            abi.encodeWithSignature(
+                "withdraw(address,uint256)",
+                address(depositToken1Illiquid),
+                50e18
+            )
+        );
+        vm.expectCall(
+            address(depositToken1Illiquid),
+            abi.encodeWithSignature("deposit()")
+        );
         pcvRouter.movePCV(
             address(depositToken1Liquid),
             address(depositToken1Illiquid),
