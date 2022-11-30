@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
+import {IPCVRouter} from "./IPCVRouter.sol";
 import {CoreRefV2} from "../refs/CoreRefV2.sol";
 import {IPCVDeposit} from "./IPCVDeposit.sol";
 import {VoltRoles} from "../core/VoltRoles.sol";
@@ -10,13 +11,7 @@ import {PCVOracle} from "../oracle/PCVOracle.sol";
 /// @notice A contract that allows PCV movements between deposits.
 /// @dev This contract requires the PCV_CONTROLLER role.
 /// @author eswak
-contract PCVRouter is CoreRefV2 {
-    event PCVMovement(
-        address indexed source,
-        address indexed destination,
-        uint256 amount
-    );
-
+contract PCVRouter is IPCVRouter, CoreRefV2 {
     constructor(address _core) CoreRefV2(_core) {}
 
     /// @notice Move PCV by withdrawing it from a PCVDeposit and deposit it in
