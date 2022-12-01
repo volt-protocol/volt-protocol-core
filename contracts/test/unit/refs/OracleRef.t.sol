@@ -6,14 +6,14 @@ import {MockOracle} from "../../../mock/MockOracle.sol";
 import {MockOracleRef} from "../../../mock/MockOracleRef.sol";
 import {Test, console2} from "../../../../forge-std/src/Test.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
-import {getCoreV2, getAddresses, getVoltSystemOracle, VoltTestAddresses} from "./../../unit/utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
+import {getCoreV2, getVoltSystemOracle} from "./../../unit/utils/Fixtures.sol";
 
 contract UnitTestOracleRef is Test {
     uint128 voltStartingPrice = 1.01e18;
 
     ICoreV2 private core;
     MockOracleRef private oracleRef;
-    VoltTestAddresses public addresses = getAddresses();
     VoltSystemOracle public oracle;
     bool public constant doInvert = false;
     int256 public constant decimalsNormalizer = 0;

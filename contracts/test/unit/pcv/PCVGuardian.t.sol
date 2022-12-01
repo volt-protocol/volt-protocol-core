@@ -9,7 +9,8 @@ import {MockERC20} from "../../../mock/MockERC20.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {SystemEntry} from "../../../entry/SystemEntry.sol";
 import {MockPCVDepositV2} from "../../../mock/MockPCVDepositV2.sol";
-import {getCoreV2, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
+import {getCoreV2} from "./../utils/Fixtures.sol";
 
 contract UnitTestPCVGuardian is DSTest {
     event SafeAddressUpdated(
@@ -25,7 +26,6 @@ contract UnitTestPCVGuardian is DSTest {
     MockPCVDepositV2 public pcvDeposit;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
-    VoltTestAddresses public addresses = getAddresses();
 
     address[] public whitelistAddresses;
     address public guard = address(0x123456789);

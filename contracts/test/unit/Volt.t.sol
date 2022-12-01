@@ -9,7 +9,8 @@ import {ICore} from "../../core/ICore.sol";
 import {Core} from "../../core/Core.sol";
 import {Vm} from "./utils/Vm.sol";
 import {DSTest} from "./utils/DSTest.sol";
-import {getCore, getAddresses, VoltTestAddresses} from "./utils/Fixtures.sol";
+import {getCore} from "./utils/Fixtures.sol";
+import {TestAddresses as addresses} from "./utils/TestAddresses.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 
 contract UnitTestVolt is DSTest {
@@ -17,7 +18,6 @@ contract UnitTestVolt is DSTest {
     ICore private core;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
-    VoltTestAddresses public addresses = getAddresses();
 
     function setUp() public {
         core = getCore();
