@@ -9,6 +9,7 @@ import {PCVOracle} from "../../../oracle/PCVOracle.sol";
 import {SystemEntry} from "../../../entry/SystemEntry.sol";
 import {MockPCVDepositV3} from "../../../mock/MockPCVDepositV3.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
+import {MockPCVSwapper} from "../../../mock/MockPCVSwapper.sol";
 import {MockOracle} from "../../../mock/MockOracle.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {getCoreV2, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
@@ -35,13 +36,25 @@ contract PCVRouterUnitTest is DSTest {
     MockPCVDepositV3 private depositToken2Illiquid;
     // test Oracles
     MockOracle private oracle;
+    // test swapper
+    MockPCVSwapper swapper;
 
     // PCVRouter events
     event PCVMovement(
         address indexed source,
         address indexed destination,
-        uint256 amount
+        uint256 amountSource,
+        uint256 amountDestination
     );
+    event Swap(
+        address indexed assetIn,
+        address indexed assetOut,
+        address indexed destination,
+        uint256 amountIn,
+        uint256 amountOut
+    );
+    event PCVSwapperAdded(address indexed swapper);
+    event PCVSwapperRemoved(address indexed swapper);
 
     // mocked DynamicVoltSystemOracle behavior to prevent reverts
     // of the PCVOracle
@@ -78,6 +91,7 @@ contract PCVRouterUnitTest is DSTest {
             address(core),
             address(token2)
         );
+        swapper = new MockPCVSwapper(token1, token2);
 
         // init oracle
         oracle.setValues(1e18, true);
@@ -133,6 +147,77 @@ contract PCVRouterUnitTest is DSTest {
     function testSetup() public {
         assertEq(address(pcvRouter.core()), address(core));
         assertEq(pcvRouter.pcvOracle(), address(pcvOracle));
+        assertEq(pcvRouter.getPCVSwappers().length, 0);
+    }
+
+    // -------------------------------------------------
+    // PCVSwapper Management API
+    // -------------------------------------------------
+
+    function testAddPCVSwappers() public {
+        assertEq(pcvRouter.getPCVSwappers().length, 0);
+
+        vm.prank(addresses.governorAddress);
+        address[] memory whitelistedSwapperAddresses = new address[](1);
+        whitelistedSwapperAddresses[0] = address(swapper);
+        vm.expectEmit(true, false, false, true, address(pcvRouter));
+        emit PCVSwapperAdded(address(swapper));
+        pcvRouter.addPCVSwappers(whitelistedSwapperAddresses);
+
+        assertEq(pcvRouter.getPCVSwappers().length, 1);
+        assertEq(pcvRouter.getPCVSwappers()[0], address(swapper));
+        assertEq(pcvRouter.isPCVSwapper(address(swapper)), true);
+    }
+
+    function testAddPCVSwappersRevertIfAlreadyExisting() public {
+        vm.prank(addresses.governorAddress);
+        address[] memory whitelistedSwapperAddresses = new address[](2);
+        whitelistedSwapperAddresses[0] = address(swapper);
+        whitelistedSwapperAddresses[1] = address(swapper);
+        vm.expectRevert("PCVRouter: Failed to add swapper");
+        pcvRouter.addPCVSwappers(whitelistedSwapperAddresses);
+    }
+
+    function testAddPCVSwappersAcl() public {
+        address[] memory whitelistedSwapperAddresses = new address[](1);
+        whitelistedSwapperAddresses[0] = address(swapper);
+
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        pcvRouter.addPCVSwappers(whitelistedSwapperAddresses);
+    }
+
+    function testRemovePCVSwappers() public {
+        vm.prank(addresses.governorAddress);
+        address[] memory whitelistedSwapperAddresses = new address[](1);
+        whitelistedSwapperAddresses[0] = address(swapper);
+        pcvRouter.addPCVSwappers(whitelistedSwapperAddresses);
+
+        assertEq(pcvRouter.getPCVSwappers().length, 1);
+        assertEq(pcvRouter.getPCVSwappers()[0], address(swapper));
+        assertEq(pcvRouter.isPCVSwapper(address(swapper)), true);
+
+        vm.prank(addresses.governorAddress);
+        vm.expectEmit(true, false, false, true, address(pcvRouter));
+        emit PCVSwapperRemoved(address(swapper));
+        pcvRouter.removePCVSwappers(whitelistedSwapperAddresses);
+
+        assertEq(pcvRouter.getPCVSwappers().length, 0);
+    }
+
+    function testRemovePCVSwappersRevertIfNotExisting() public {
+        vm.prank(addresses.governorAddress);
+        address[] memory whitelistedSwapperAddresses = new address[](1);
+        whitelistedSwapperAddresses[0] = address(swapper);
+        vm.expectRevert("PCVRouter: Failed to remove swapper");
+        pcvRouter.removePCVSwappers(whitelistedSwapperAddresses);
+    }
+
+    function testRemovePCVSwappersAcl() public {
+        address[] memory whitelistedSwapperAddresses = new address[](1);
+        whitelistedSwapperAddresses[0] = address(swapper);
+
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        pcvRouter.removePCVSwappers(whitelistedSwapperAddresses);
     }
 
     // -------------------------------------------------
@@ -145,15 +230,19 @@ contract PCVRouterUnitTest is DSTest {
         emit PCVMovement(
             address(depositToken1Liquid),
             address(depositToken1Illiquid),
+            50e18,
             50e18
         );
 
         pcvRouter.movePCV(
-            address(depositToken1Liquid),
-            address(depositToken1Illiquid),
-            true,
-            false,
-            50e18
+            address(depositToken1Liquid), // source
+            address(depositToken1Illiquid), // destination
+            address(0), // swapper
+            50e18, // amount
+            address(token1), // sourceAsset
+            address(token1), // destinationAsset
+            true, // sourceIsLiquid
+            false // destinationIsLiquid
         );
     }
 
@@ -174,15 +263,113 @@ contract PCVRouterUnitTest is DSTest {
             abi.encodeWithSignature("deposit()")
         );
         pcvRouter.movePCV(
-            address(depositToken1Liquid),
-            address(depositToken1Illiquid),
-            true,
-            false,
-            50e18
+            address(depositToken1Liquid), // source
+            address(depositToken1Illiquid), // destination
+            address(0), // swapper
+            50e18, // amount
+            address(token1), // sourceAsset
+            address(token1), // destinationAsset
+            true, // sourceIsLiquid
+            false // destinationIsLiquid
         );
 
         assertEq(depositToken1Liquid.balance(), 50e18);
         assertEq(depositToken1Illiquid.balance(), 150e18);
+    }
+
+    function testMovePCVUsingSwapper() public {
+        assertEq(depositToken1Liquid.balance(), 100e18);
+        assertEq(depositToken2Liquid.balance(), 100e18);
+
+        vm.prank(addresses.governorAddress);
+        address[] memory whitelistedSwapperAddresses = new address[](1);
+        whitelistedSwapperAddresses[0] = address(swapper);
+        pcvRouter.addPCVSwappers(whitelistedSwapperAddresses);
+
+        vm.expectEmit(true, true, true, true, address(swapper));
+        emit Swap(
+            address(token1), // assetIn
+            address(token2), // assetOut
+            address(depositToken2Liquid), // destination
+            50e18, // amountIn
+            50e18 // amountOut
+        );
+        pcvRouter.movePCV(
+            address(depositToken1Liquid), // source
+            address(depositToken2Liquid), // destination
+            address(swapper), // swapper
+            50e18, // amount
+            address(token1), // sourceAsset
+            address(token2), // destinationAsset
+            true, // sourceIsLiquid
+            true // destinationIsLiquid
+        );
+
+        assertEq(depositToken1Liquid.balance(), 50e18);
+        assertEq(depositToken2Liquid.balance(), 150e18);
+    }
+
+    function testMovePCVUncheckedBalances() public {
+        assertEq(depositToken1Liquid.balance(), 100e18);
+        assertEq(depositToken1Illiquid.balance(), 100e18);
+
+        vm.prank(addresses.governorAddress);
+        core.grantPCVController(address(this));
+
+        vm.expectCall(
+            address(depositToken1Liquid),
+            abi.encodeWithSignature(
+                "withdraw(address,uint256)",
+                address(depositToken1Illiquid),
+                50e18
+            )
+        );
+        vm.expectCall(
+            address(depositToken1Illiquid),
+            abi.encodeWithSignature("deposit()")
+        );
+        pcvRouter.movePCVUnchecked(
+            address(depositToken1Liquid), // source
+            address(depositToken1Illiquid), // destination
+            address(0), // swapper
+            50e18, // amount
+            address(token1), // sourceAsset
+            address(token1) // destinationAsset
+        );
+
+        assertEq(depositToken1Liquid.balance(), 50e18);
+        assertEq(depositToken1Illiquid.balance(), 150e18);
+    }
+
+    function testMoveAllPCVUncheckedBalances() public {
+        assertEq(depositToken1Liquid.balance(), 100e18);
+        assertEq(depositToken1Illiquid.balance(), 100e18);
+
+        vm.prank(addresses.governorAddress);
+        core.grantPCVController(address(this));
+
+        vm.expectCall(
+            address(depositToken1Liquid),
+            abi.encodeWithSignature(
+                "withdraw(address,uint256)",
+                address(depositToken1Illiquid),
+                100e18
+            )
+        );
+        vm.expectCall(
+            address(depositToken1Illiquid),
+            abi.encodeWithSignature("deposit()")
+        );
+        pcvRouter.moveAllPCVUnchecked(
+            address(depositToken1Liquid), // source
+            address(depositToken1Illiquid), // destination
+            address(0), // swapper
+            address(token1), // sourceAsset
+            address(token1) // destinationAsset
+        );
+
+        assertEq(depositToken1Liquid.balance(), 0);
+        assertEq(depositToken1Illiquid.balance(), 200e18);
     }
 
     // -------------------------------------------------
@@ -190,53 +377,113 @@ contract PCVRouterUnitTest is DSTest {
     // -------------------------------------------------
 
     function testMovePCVInvalidSource() public {
-        vm.expectRevert("PCVRouter: invalid source");
+        vm.expectRevert("PCVRouter: invalid liquid source");
         pcvRouter.movePCV(
-            address(this), // not a PCVDeposit
-            address(depositToken2Liquid),
-            true,
-            true,
-            50e18
+            address(this), // source, not a PCVDeposit
+            address(depositToken2Liquid), // destination
+            address(0), // swapper
+            50e18, // amount
+            address(this), // sourceAsset
+            address(token2), // destinationAsset
+            true, // sourceIsLiquid
+            true // destinationIsLiquid
         );
 
-        vm.expectRevert("PCVRouter: invalid source");
+        vm.expectRevert("PCVRouter: invalid illiquid source");
         pcvRouter.movePCV(
-            address(depositToken1Illiquid),
-            address(depositToken2Liquid),
-            true, // expected liquid but is illiquid
-            true,
-            50e18
+            address(this), // source
+            address(depositToken2Liquid), // destination
+            address(0), // swapper
+            50e18, // amount
+            address(token1), // sourceAsset
+            address(token2), // destinationAsset
+            false, // sourceIsLiquid
+            true // destinationIsLiquid
         );
     }
 
     function testMovePCVInvalidDestination() public {
-        vm.expectRevert("PCVRouter: invalid destination");
+        vm.expectRevert("PCVRouter: invalid liquid destination");
         pcvRouter.movePCV(
-            address(depositToken1Liquid),
-            address(this), // not a PCVDeposit
-            true,
-            true,
-            50e18
+            address(depositToken1Liquid), // source
+            address(this), // destination, not a PCVDeposit
+            address(0), // swapper
+            50e18, // amount
+            address(token1), // sourceAsset
+            address(token2), // destinationAsset
+            true, // sourceIsLiquid
+            true // destinationIsLiquid
         );
 
-        vm.expectRevert("PCVRouter: invalid destination");
+        vm.expectRevert("PCVRouter: invalid illiquid destination");
         pcvRouter.movePCV(
-            address(depositToken1Liquid),
-            address(depositToken2Illiquid),
-            true,
-            true, // expected liquid but is illiquid
-            50e18
+            address(depositToken1Liquid), // source
+            address(this), // destination, not a PCVDeposit
+            address(0), // swapper
+            50e18, // amount
+            address(token1), // sourceAsset
+            address(token2), // destinationAsset
+            true, // sourceIsLiquid
+            false // destinationIsLiquid
         );
     }
 
     function testMovePCVWrongToken() public {
-        vm.expectRevert("PCVRouter: invalid route");
+        vm.expectRevert("PCVRouter: invalid source asset");
         pcvRouter.movePCV(
-            address(depositToken1Liquid),
-            address(depositToken2Liquid),
-            true,
-            true,
-            50e18
+            address(depositToken1Liquid), // source
+            address(depositToken2Liquid), // destination
+            address(0), // swapper
+            50e18, // amount
+            address(token2), // sourceAsset, wrong value
+            address(token2), // destinationAsset
+            true, // sourceIsLiquid
+            true // destinationIsLiquid
+        );
+
+        vm.expectRevert("PCVRouter: invalid destination asset");
+        pcvRouter.movePCV(
+            address(depositToken1Liquid), // source
+            address(depositToken2Liquid), // destination
+            address(0), // swapper
+            50e18, // amount
+            address(token1), // sourceAsset
+            address(token1), // destinationAsset, wrong value
+            true, // sourceIsLiquid
+            true // destinationIsLiquid
+        );
+    }
+
+    function testMovePCVInvalidSwapper() public {
+        vm.expectRevert("PCVRouter: invalid swapper");
+        pcvRouter.movePCV(
+            address(depositToken1Liquid), // source
+            address(depositToken2Liquid), // destination
+            address(this), // swapper
+            50e18, // amount
+            address(token1), // sourceAsset
+            address(token2), // destinationAsset
+            true, // sourceIsLiquid
+            true // destinationIsLiquid
+        );
+    }
+
+    function testMovePCVUnsupportedSwap() public {
+        vm.prank(addresses.governorAddress);
+        address[] memory whitelistedSwapperAddresses = new address[](1);
+        whitelistedSwapperAddresses[0] = address(swapper);
+        pcvRouter.addPCVSwappers(whitelistedSwapperAddresses);
+
+        vm.expectRevert("PCVRouter: unsupported swap");
+        pcvRouter.movePCV(
+            address(depositToken2Liquid), // source
+            address(depositToken1Liquid), // destination
+            address(swapper), // swapper
+            50e18, // amount
+            address(token2), // sourceAsset
+            address(token1), // destinationAsset
+            true, // sourceIsLiquid
+            true // destinationIsLiquid
         );
     }
 
@@ -250,11 +497,14 @@ contract PCVRouterUnitTest is DSTest {
 
         vm.expectRevert("Pausable: paused");
         pcvRouter.movePCV(
-            address(depositToken1Liquid),
-            address(depositToken1Illiquid),
-            true,
-            false,
-            50e18
+            address(depositToken1Liquid), // source
+            address(depositToken1Illiquid), // destination
+            address(0), // swapper
+            50e18, // amount
+            address(token1), // sourceAsset
+            address(token1), // destinationAsset
+            true, // sourceIsLiquid
+            false // destinationIsLiquid
         );
     }
 
@@ -262,11 +512,14 @@ contract PCVRouterUnitTest is DSTest {
         vm.expectRevert("UNAUTHORIZED");
         vm.prank(address(0)); // doesn't have PCV_MOVER role
         pcvRouter.movePCV(
-            address(depositToken1Liquid),
-            address(depositToken1Illiquid),
-            true,
-            false,
-            50e18
+            address(depositToken1Liquid), // source
+            address(depositToken1Illiquid), // destination
+            address(0), // swapper
+            50e18, // amount
+            address(token1), // sourceAsset
+            address(token1), // destinationAsset
+            true, // sourceIsLiquid
+            false // destinationIsLiquid
         );
     }
 
@@ -276,9 +529,12 @@ contract PCVRouterUnitTest is DSTest {
 
         vm.expectRevert("Pausable: paused");
         pcvRouter.movePCVUnchecked(
-            address(depositToken1Liquid),
-            address(depositToken1Illiquid),
-            50e18
+            address(depositToken1Liquid), // source
+            address(depositToken1Illiquid), // destination
+            address(0), // swapper
+            50e18, // amount
+            address(token1), // sourceAsset
+            address(token1) // destinationAsset
         );
     }
 
@@ -286,9 +542,12 @@ contract PCVRouterUnitTest is DSTest {
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
         vm.prank(address(0)); // doesn't have PCV_CONTROLLER role
         pcvRouter.movePCVUnchecked(
-            address(depositToken1Liquid),
-            address(depositToken1Illiquid),
-            50e18
+            address(depositToken1Liquid), // source
+            address(depositToken1Illiquid), // destination
+            address(0), // swapper
+            50e18, // amount
+            address(token1), // sourceAsset
+            address(token1) // destinationAsset
         );
     }
 
@@ -298,8 +557,11 @@ contract PCVRouterUnitTest is DSTest {
 
         vm.expectRevert("Pausable: paused");
         pcvRouter.moveAllPCVUnchecked(
-            address(depositToken1Liquid),
-            address(depositToken1Illiquid)
+            address(depositToken1Liquid), // source
+            address(depositToken1Illiquid), // destination
+            address(0), // swapper
+            address(token1), // sourceAsset
+            address(token1) // destinationAsset
         );
     }
 
@@ -307,8 +569,11 @@ contract PCVRouterUnitTest is DSTest {
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
         vm.prank(address(0)); // doesn't have PCV_CONTROLLER role
         pcvRouter.moveAllPCVUnchecked(
-            address(depositToken1Liquid),
-            address(depositToken1Illiquid)
+            address(depositToken1Liquid), // source
+            address(depositToken1Illiquid), // destination
+            address(0), // swapper
+            address(token1), // sourceAsset
+            address(token1) // destinationAsset
         );
     }
 
@@ -324,11 +589,14 @@ contract PCVRouterUnitTest is DSTest {
 
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
         pcvRouter.movePCV(
-            address(depositToken1Liquid),
-            address(depositToken1Illiquid),
-            true,
-            false,
-            50e18
+            address(depositToken1Liquid), // source
+            address(depositToken1Illiquid), // destination
+            address(0), // swapper
+            50e18, // amount
+            address(token1), // sourceAsset
+            address(token1), // destinationAsset
+            true, // sourceIsLiquid
+            false // destinationIsLiquid
         );
     }
 
@@ -338,11 +606,14 @@ contract PCVRouterUnitTest is DSTest {
 
         vm.expectRevert("GlobalReentrancyLock: missing locker role");
         pcvRouter.movePCV(
-            address(depositToken1Liquid),
-            address(depositToken1Illiquid),
-            true,
-            false,
-            50e18
+            address(depositToken1Liquid), // source
+            address(depositToken1Illiquid), // destination
+            address(0), // swapper
+            50e18, // amount
+            address(token1), // sourceAsset
+            address(token1), // destinationAsset
+            true, // sourceIsLiquid
+            false // destinationIsLiquid
         );
     }
 }
