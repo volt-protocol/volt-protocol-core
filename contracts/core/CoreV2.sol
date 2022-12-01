@@ -4,11 +4,11 @@ pragma solidity 0.8.13;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IVolt} from "../volt/IVolt.sol";
-import {IGlobalRateLimitedMinter} from "../limiter/IGlobalRateLimitedMinter.sol";
-import {IGlobalSystemExitRateLimiter} from "../limiter/IGlobalSystemExitRateLimiter.sol";
 import {ICoreV2} from "./ICoreV2.sol";
 import {PermissionsV2} from "./PermissionsV2.sol";
 import {GlobalReentrancyLock} from "./GlobalReentrancyLock.sol";
+import {IGlobalRateLimitedMinter} from "../limiter/IGlobalRateLimitedMinter.sol";
+import {IGlobalSystemExitRateLimiter} from "../limiter/IGlobalSystemExitRateLimiter.sol";
 
 /// @title Source of truth for VOLT Protocol
 /// @author Volt Protocol
