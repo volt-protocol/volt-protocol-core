@@ -37,12 +37,12 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         keccak256("VOLT_RATE_LIMITED_REDEEMER_ROLE");
 
     /// @notice can replenish buffer through GlobalSystemExitRateLimiter
-    bytes32 public constant VOLT_RATE_LIMITED_REPLENISH_ROLE =
-        keccak256("VOLT_RATE_LIMITED_REPLENISH_ROLE");
+    bytes32 public constant VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH_ROLE =
+        keccak256("VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH_ROLE");
 
     /// @notice can delpete buffer through the GlobalSystemExitRateLimiter buffer
-    bytes32 public constant VOLT_RATE_LIMITED_DEPLETER_ROLE =
-        keccak256("VOLT_RATE_LIMITED_DEPLETER_ROLE");
+    bytes32 public constant VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE =
+        keccak256("VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE");
 
     /// @notice granted to system smart contracts to enable the setting
     /// of reentrancy locks within the GlobalReentrancyLock contract
@@ -60,8 +60,8 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         _setRoleAdmin(PCV_GUARD_ROLE, GOVERN_ROLE);
         _setRoleAdmin(VOLT_RATE_LIMITED_MINTER_ROLE, GOVERN_ROLE);
         _setRoleAdmin(VOLT_RATE_LIMITED_REDEEMER_ROLE, GOVERN_ROLE);
-        _setRoleAdmin(VOLT_RATE_LIMITED_REPLENISH_ROLE, GOVERN_ROLE);
-        _setRoleAdmin(VOLT_RATE_LIMITED_DEPLETER_ROLE, GOVERN_ROLE);
+        _setRoleAdmin(VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH_ROLE, GOVERN_ROLE);
+        _setRoleAdmin(VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE, GOVERN_ROLE);
     }
 
     modifier onlyGovernor() {
@@ -150,19 +150,25 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     /// @notice grants ability to replenish buffer for funds exiting system through
     /// the global system exit rate limiter
     /// @param rateLimitedReplenisher address to add as a replenisher in global system exit rate limiter
-    function grantRateLimitedReplenisher(
+    function grantSystemExitRateLimitReplenisher(
         address rateLimitedReplenisher
     ) external override onlyGovernor {
-        _grantRole(VOLT_RATE_LIMITED_REPLENISH_ROLE, rateLimitedReplenisher);
+        _grantRole(
+            VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH_ROLE,
+            rateLimitedReplenisher
+        );
     }
 
     /// @notice grants ability to deplete buffer for funds exiting system through
     /// the global system exit rate limiter
     /// @param rateLimitedDepleter address to add as a depleter in global system exit rate limiter
-    function grantRateLimitedDepleter(
+    function grantSystemExitRateLimitDepleter(
         address rateLimitedDepleter
     ) external override onlyGovernor {
-        _grantRole(VOLT_RATE_LIMITED_DEPLETER_ROLE, rateLimitedDepleter);
+        _grantRole(
+            VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE,
+            rateLimitedDepleter
+        );
     }
 
     /// @notice revokes minter role from address
@@ -224,19 +230,25 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     /// @notice revokes ability to replenish buffer for funds exiting system through
     /// the global system exit rate limiter
     /// @param rateLimitedRedeemer ex replenisher in global system exit rate limiter
-    function revokeRateLimitedReplenisher(
+    function revokeSystemExitRateLimitReplenisher(
         address rateLimitedRedeemer
     ) external override onlyGovernor {
-        _revokeRole(VOLT_RATE_LIMITED_REPLENISH_ROLE, rateLimitedRedeemer);
+        _revokeRole(
+            VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH_ROLE,
+            rateLimitedRedeemer
+        );
     }
 
     /// @notice revokes ability to deplete buffer for funds exiting system through
     /// the global system exit rate limiter
     /// @param rateLimitedRedeemer ex depleter in global system exit rate limiter
-    function revokeRateLimitedDepleter(
+    function revokeSystemExitRateLimitDepleter(
         address rateLimitedRedeemer
     ) external override onlyGovernor {
-        _revokeRole(VOLT_RATE_LIMITED_DEPLETER_ROLE, rateLimitedRedeemer);
+        _revokeRole(
+            VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE,
+            rateLimitedRedeemer
+        );
     }
 
     /// @notice revokes a role from address
@@ -330,18 +342,18 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     /// @notice checks if address has Volt Rate Limited Replenisher Role
     /// @param _address address to check
     /// @return true if _address has Volt Rate Limited Replenisher Role
-    function isRateLimitedReplenisher(
+    function isSystemExitRateLimitReplenisher(
         address _address
     ) public view override returns (bool) {
-        return hasRole(VOLT_RATE_LIMITED_REPLENISH_ROLE, _address);
+        return hasRole(VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH_ROLE, _address);
     }
 
     /// @notice checks if address has Volt Rate Limited Depleter Role
     /// @param _address address to check
     /// @return true if _address has Volt Rate Limited Depleter Role
-    function isRateLimitedDepleter(
+    function isSystemExitRateLimitDepleter(
         address _address
     ) public view override returns (bool) {
-        return hasRole(VOLT_RATE_LIMITED_DEPLETER_ROLE, _address);
+        return hasRole(VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE, _address);
     }
 }

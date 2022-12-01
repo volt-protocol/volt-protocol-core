@@ -102,7 +102,7 @@ contract GlobalSystemExitRateLimiterUnitTest is Test {
 
     function testReplenishAsReplenisherFailsWhenNotLocked() public {
         vm.prank(TestAddresses.governorAddress);
-        core.grantRateLimitedReplenisher(address(this));
+        core.grantSystemExitRateLimitReplenisher(address(this));
 
         vm.expectRevert("GlobalReentrancyLock: invalid lock level");
         gserl.replenishBuffer(0);
@@ -110,7 +110,7 @@ contract GlobalSystemExitRateLimiterUnitTest is Test {
 
     function testDepleteAsDepleterFailsWhenNotLocked() public {
         vm.prank(TestAddresses.governorAddress);
-        core.grantRateLimitedDepleter(address(this));
+        core.grantSystemExitRateLimitDepleter(address(this));
 
         vm.expectRevert("GlobalReentrancyLock: invalid lock level");
         gserl.depleteBuffer(0);
@@ -118,7 +118,7 @@ contract GlobalSystemExitRateLimiterUnitTest is Test {
 
     function testDepleteAsDepleterSucceeds(uint80 amount) public {
         vm.prank(TestAddresses.governorAddress);
-        core.grantRateLimitedDepleter(address(this));
+        core.grantSystemExitRateLimitDepleter(address(this));
 
         uint256 startingBuffer = gserl.buffer();
 
@@ -137,7 +137,7 @@ contract GlobalSystemExitRateLimiterUnitTest is Test {
         testDepleteAsDepleterSucceeds(depleteAmount);
 
         vm.prank(addresses.governorAddress);
-        core.grantRateLimitedReplenisher(address(this));
+        core.grantSystemExitRateLimitReplenisher(address(this));
 
         uint256 startingBuffer = gserl.buffer();
 

@@ -167,7 +167,7 @@ contract NonCustodialPSMUnitTest is Test {
         core.grantPCVController(address(psm));
         core.grantMinter(address(grlm));
 
-        core.grantRateLimitedDepleter(address(psm));
+        core.grantSystemExitRateLimitDepleter(address(psm));
         core.grantRateLimitedRedeemer(address(psm));
         core.grantRateLimitedRedeemer(address(custodialPsm));
 

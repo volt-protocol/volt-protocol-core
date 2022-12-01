@@ -257,10 +257,10 @@ contract SystemDeploy {
         core.grantRateLimitedRedeemer(address(daiNonCustodialPsm));
         core.grantRateLimitedRedeemer(address(usdcNonCustodialPsm));
 
-        core.grantRateLimitedReplenisher(address(allocator));
-        core.grantRateLimitedDepleter(address(daiNonCustodialPsm));
-        core.grantRateLimitedDepleter(address(usdcNonCustodialPsm));
-        core.grantRateLimitedDepleter(address(allocator));
+        core.grantSystemExitRateLimitReplenisher(address(allocator));
+        core.grantSystemExitRateLimitDepleter(address(daiNonCustodialPsm));
+        core.grantSystemExitRateLimitDepleter(address(usdcNonCustodialPsm));
+        core.grantSystemExitRateLimitDepleter(address(allocator));
 
         core.grantLocker(address(allocator));
         core.grantLocker(address(daipsm));

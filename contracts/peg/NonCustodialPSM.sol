@@ -16,7 +16,7 @@ import {INonCustodialPSM} from "./INonCustodialPSM.sol";
 /// from the PCV deposit smart contract.
 /// @dev This contract requires the VOLT_RATE_LIMITED_REDEEMER_ROLE
 /// in order to replenish the buffer in the GlobalRateLimitedMinter.
-/// @dev This contract requires the VOLT_RATE_LIMITED_DEPLETER_ROLE
+/// @dev This contract requires the VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE
 /// in order to deplete the buffer in the GlobalSystemExitRateLimiter.
 /// This PSM is not a PCV deposit because it never holds funds, it only has permissions
 /// to pull funds from a PCV deposit and replenish a global buffer.

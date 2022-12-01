@@ -36,12 +36,12 @@ library VoltRoles {
         keccak256("VOLT_RATE_LIMITED_REDEEMER_ROLE");
 
     /// @notice can replenish buffer through GlobalSystemExitRateLimiter
-    bytes32 internal constant VOLT_RATE_LIMITED_REPLENISH_ROLE =
-        keccak256("VOLT_RATE_LIMITED_REPLENISH_ROLE");
+    bytes32 internal constant VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH_ROLE =
+        keccak256("VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH_ROLE");
 
     /// @notice can delpete buffer through the GlobalSystemExitRateLimiter buffer
-    bytes32 internal constant VOLT_RATE_LIMITED_DEPLETER_ROLE =
-        keccak256("VOLT_RATE_LIMITED_DEPLETER_ROLE");
+    bytes32 internal constant VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE =
+        keccak256("VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE");
 
     /// @notice is able to withdraw whitelisted PCV deposits to a safe address
     bytes32 internal constant PCV_GUARD = keccak256("PCV_GUARD_ROLE");

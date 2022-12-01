@@ -91,8 +91,8 @@ contract UnitTestERC20Allocator is DSTest {
         allocator.connectDeposit(address(psm), address(pcvDeposit));
         core.grantLocker(address(allocator));
         core.grantLocker(address(gserl));
-        core.grantRateLimitedDepleter(address(allocator));
-        core.grantRateLimitedReplenisher(address(allocator));
+        core.grantSystemExitRateLimitDepleter(address(allocator));
+        core.grantSystemExitRateLimitReplenisher(address(allocator));
 
         core.setGlobalSystemExitRateLimiter(
             IGlobalSystemExitRateLimiter(address(gserl))

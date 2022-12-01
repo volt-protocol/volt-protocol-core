@@ -26,9 +26,11 @@ interface IPermissionsV2 is IAccessControl {
 
     function grantRateLimitedRedeemer(address rateLimitedRedeemer) external;
 
-    function grantRateLimitedDepleter(address rateLimitedDepleter) external;
+    function grantSystemExitRateLimitDepleter(
+        address rateLimitedDepleter
+    ) external;
 
-    function grantRateLimitedReplenisher(
+    function grantSystemExitRateLimitReplenisher(
         address rateLimitedReplenisher
     ) external;
 
@@ -48,9 +50,11 @@ interface IPermissionsV2 is IAccessControl {
 
     function revokeRateLimitedRedeemer(address rateLimitedRedeemer) external;
 
-    function revokeRateLimitedDepleter(address rateLimitedDepleter) external;
+    function revokeSystemExitRateLimitDepleter(
+        address rateLimitedDepleter
+    ) external;
 
-    function revokeRateLimitedReplenisher(
+    function revokeSystemExitRateLimitReplenisher(
         address rateLimitedReplenisher
     ) external;
 
@@ -78,11 +82,11 @@ interface IPermissionsV2 is IAccessControl {
         address _address
     ) external view returns (bool);
 
-    function isRateLimitedReplenisher(
+    function isSystemExitRateLimitReplenisher(
         address _address
     ) external view returns (bool);
 
-    function isRateLimitedDepleter(
+    function isSystemExitRateLimitDepleter(
         address _address
     ) external view returns (bool);
 

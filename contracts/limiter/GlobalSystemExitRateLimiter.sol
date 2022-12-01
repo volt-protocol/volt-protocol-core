@@ -9,9 +9,9 @@ import {RateLimitedV2} from "../utils/RateLimitedV2.sol";
 /// In a bank run due to losses exceeding the surplus buffer, this will allow the system
 /// to apply a uniform haircut to all users after the buffer is depleted.
 /// All minting should flow through this smart contract.
-/// Non Custodial Peg Stability Modules will be granted the VOLT_RATE_LIMITED_DEPLETER_ROLE
+/// Non Custodial Peg Stability Modules will be granted the VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE
 /// to deplete the buffer through this contract on a global rate limit.
-/// ERC20Allocator will be granted both the VOLT_RATE_LIMITED_DEPLETER_ROLE and VOLT_RATE_LIMITED_REPLENISH_ROLE
+/// ERC20Allocator will be granted both the VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE and VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH_ROLE
 /// to be able to replenish and deplete the buffer.
 contract GlobalSystemExitRateLimiter is
     IGlobalSystemExitRateLimiter,
@@ -40,7 +40,7 @@ contract GlobalSystemExitRateLimiter is
     )
         external
         /// checks
-        onlyVoltRole(VoltRoles.VOLT_RATE_LIMITED_DEPLETER_ROLE)
+        onlyVoltRole(VoltRoles.VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE)
         /// system must be level 1 locked before this function can execute
         /// asserts system is inside higher level operation when this function is called
         globalLock(2)
@@ -55,7 +55,7 @@ contract GlobalSystemExitRateLimiter is
     )
         external
         /// checks
-        onlyVoltRole(VoltRoles.VOLT_RATE_LIMITED_REPLENISH_ROLE)
+        onlyVoltRole(VoltRoles.VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH_ROLE)
         /// system must be level 1 locked before this function can execute
         /// asserts system is inside higher level operation when this function is called
         globalLock(2)
