@@ -5,7 +5,8 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {IGRLM} from "../minter/IGRLM.sol";
+import {IGlobalRateLimitedMinter} from "../limiter/IGlobalRateLimitedMinter.sol";
+import {IGlobalSystemExitRateLimiter} from "../limiter/IGlobalSystemExitRateLimiter.sol";
 import {VoltRoles} from "./../core/VoltRoles.sol";
 import {ICoreRefV2} from "./ICoreRefV2.sol";
 import {IPCVOracle} from "./../pcv/morpho/IPCVOracle.sol";
@@ -14,7 +15,7 @@ import {IVolt, IVoltBurn} from "./../volt/IVolt.sol";
 import {IGlobalReentrancyLock} from "./../core/IGlobalReentrancyLock.sol";
 
 /// @title A Reference to Core
-/// @author Volt & Fei Protocol
+/// @author Volt Protocol
 /// @notice defines some modifiers and utilities around interacting with Core
 abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     using SafeERC20 for IERC20;
@@ -176,9 +177,25 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     }
 
     /// @notice address of the GlobalRateLimitedMinter contract referenced by Core
-    /// @return IGRLM implementation address
-    function globalRateLimitedMinter() public view override returns (IGRLM) {
+    /// @return IGlobalRateLimitedMinter implementation address
+    function globalRateLimitedMinter()
+        public
+        view
+        override
+        returns (IGlobalRateLimitedMinter)
+    {
         return _core.globalRateLimitedMinter();
+    }
+
+    /// @notice address of the GlobalSystemExitRateLimiter contract referenced by Core
+    /// @return IGlobalSystemExitRateLimiter implementation address
+    function globalSystemExitRateLimiter()
+        public
+        view
+        override
+        returns (IGlobalSystemExitRateLimiter)
+    {
+        return _core.globalSystemExitRateLimiter();
     }
 
     /// @notice volt balance of contract

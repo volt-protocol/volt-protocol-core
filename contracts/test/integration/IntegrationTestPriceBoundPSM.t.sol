@@ -18,7 +18,7 @@ import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {IOraclePassThrough} from "../../oracle/IOraclePassThrough.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
-import {IGRLM, GlobalRateLimitedMinter} from "../../minter/GlobalRateLimitedMinter.sol";
+import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../limiter/GlobalRateLimitedMinter.sol";
 import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
 import {getCoreV2} from "../unit/utils/Fixtures.sol";
 
@@ -84,7 +84,9 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
         );
 
         vm.startPrank(addresses.governorAddress);
-        core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
+        core.setGlobalRateLimitedMinter(
+            IGlobalRateLimitedMinter(address(grlm))
+        );
         core.grantLocker(address(grlm)); /// allow setting of reentrancy lock
         core.grantMinter(address(grlm));
 

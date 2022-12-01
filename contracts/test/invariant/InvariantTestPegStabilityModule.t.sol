@@ -14,7 +14,7 @@ import {MockPCVOracle} from "../../mock/MockPCVOracle.sol";
 import {DSInvariantTest} from "../unit/utils/DSInvariantTest.sol";
 import {VoltSystemOracle} from "../../oracle/VoltSystemOracle.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
-import {IGRLM, GlobalRateLimitedMinter} from "../../minter/GlobalRateLimitedMinter.sol";
+import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../limiter/GlobalRateLimitedMinter.sol";
 import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
 import {getCoreV2} from "../unit/utils/Fixtures.sol";
 
@@ -106,7 +106,9 @@ contract InvariantTestPegStabilityModule is DSTest, DSInvariantTest {
         core.grantRateLimitedMinter(address(psm));
         core.grantRateLimitedRedeemer(address(psm));
         core.grantPCVController(address(pcvGuardian));
-        core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
+        core.setGlobalRateLimitedMinter(
+            IGlobalRateLimitedMinter(address(grlm))
+        );
 
         vm.stopPrank();
 

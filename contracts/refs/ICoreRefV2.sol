@@ -3,12 +3,13 @@ pragma solidity 0.8.13;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {IGRLM} from "../minter/IGRLM.sol";
+import {IGlobalRateLimitedMinter} from "../limiter/IGlobalRateLimitedMinter.sol";
+import {IGlobalSystemExitRateLimiter} from "../limiter/IGlobalSystemExitRateLimiter.sol";
 import {ICoreV2} from "../core/ICoreV2.sol";
 import {IVolt, IVoltBurn} from "../volt/IVolt.sol";
 
 /// @title CoreRef interface
-/// @author Volt & Fei Protocol
+/// @author Volt Protocol
 interface ICoreRefV2 {
     // ----------- Events -----------
 
@@ -35,5 +36,13 @@ interface ICoreRefV2 {
 
     function vconBalance() external view returns (uint256);
 
-    function globalRateLimitedMinter() external view returns (IGRLM);
+    function globalRateLimitedMinter()
+        external
+        view
+        returns (IGlobalRateLimitedMinter);
+
+    function globalSystemExitRateLimiter()
+        external
+        view
+        returns (IGlobalSystemExitRateLimiter);
 }

@@ -3,7 +3,7 @@ pragma solidity =0.8.13;
 
 import {IRateLimitedV2} from "../utils/IRateLimitedV2.sol";
 
-interface IGRLM is IRateLimitedV2 {
+interface IGlobalRateLimitedMinter is IRateLimitedV2 {
     /// @notice function that all VOLT minters call to mint VOLT
     /// pausable and depletes the msg.sender's buffer
     /// @param to the recipient address of the minted VOLT

@@ -13,10 +13,13 @@ import {IPCVDeposit} from "./../pcv/IPCVDeposit.sol";
 import {INonCustodialPSM} from "./INonCustodialPSM.sol";
 
 /// @notice this contract needs the PCV controller role to be able to pull funds
-/// from the PCV deposit smart contract. This contract also requires the VOLT_RATE_LIMITED_REDEEMER_ROLE
+/// from the PCV deposit smart contract.
+/// @dev This contract requires the VOLT_RATE_LIMITED_REDEEMER_ROLE
 /// in order to replenish the buffer in the GlobalRateLimitedMinter.
+/// @dev This contract requires the VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE
+/// in order to deplete the buffer in the GlobalSystemExitRateLimiter.
 /// This PSM is not a PCV deposit because it never holds funds, it only has permissions
-/// to pull funds from a pcv deposit and replenish a global buffer.
+/// to pull funds from a PCV deposit and replenish a global buffer.
 contract NonCustodialPSM is INonCustodialPSM, OracleRef {
     using Decimal for Decimal.D256;
     using SafeERC20 for IERC20;
@@ -129,6 +132,7 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRef {
         /// Replenishing buffer allows more Volt to be minted.
         volt().burnFrom(msg.sender, amountVoltIn); /// Check and Interaction -- trusted contract
         globalRateLimitedMinter().replenishBuffer(amountVoltIn); /// Effect -- trusted contract
+        globalSystemExitRateLimiter().depleteBuffer(amountOut); /// Effect -- trusted contract
 
         /// Interaction -- pcv deposit is trusted,
         /// however interacts with external untrusted contracts

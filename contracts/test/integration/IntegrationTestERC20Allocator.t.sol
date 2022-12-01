@@ -76,9 +76,6 @@ contract IntegrationTestERC20Allocator is DSTest {
 
     function testSetup() public {
         assertEq(address(allocator.core()), address(core));
-        assertEq(allocator.buffer(), bufferCap); /// buffercap has not been eaten into
-        assertEq(allocator.rateLimitPerSecond(), rateLimitPerSecond);
-        assertEq(allocator.MAX_RATE_LIMIT_PER_SECOND(), maxRateLimitPerSecond);
 
         {
             (
@@ -134,7 +131,6 @@ contract IntegrationTestERC20Allocator is DSTest {
         assertEq(amountToDrip, adjustedAmountToDrip);
         assertEq(amountToDrip, targetDaiBalance);
         assertEq(daiBalance, targetDaiBalance);
-        assertEq(allocator.buffer(), bufferCap - targetDaiBalance);
     }
 
     function testDripUsdc() public {
@@ -157,10 +153,6 @@ contract IntegrationTestERC20Allocator is DSTest {
         assertEq(amountToDrip * scalingFactorUsdc, adjustedAmountToDrip);
         assertEq(amountToDrip, targetUsdcBalance);
         assertEq(usdcBalance, targetUsdcBalance);
-        assertEq(
-            allocator.buffer(),
-            bufferCap - targetUsdcBalance * scalingFactorUsdc
-        );
     }
 
     /// ------ SKIM ------
@@ -195,9 +187,6 @@ contract IntegrationTestERC20Allocator is DSTest {
             (daiBalance + daiPSMBalance - targetDaiBalance).toInt256(),
             0
         );
-
-        /// buffer should be full as no depletion happened prior and skimming is regenerative
-        assertEq(allocator.buffer(), bufferCap);
     }
 
     function testSkimUsdc() public {
@@ -230,9 +219,6 @@ contract IntegrationTestERC20Allocator is DSTest {
             (usdcBalance + usdcPSMBalance - targetUsdcBalance).toInt256(),
             0
         );
-
-        /// buffer should be full as no depletion happened prior and skimming is regenerative
-        assertEq(allocator.buffer(), bufferCap);
     }
 
     /// ------ DRIP ------
@@ -262,7 +248,6 @@ contract IntegrationTestERC20Allocator is DSTest {
         assertEq(amountToDrip, adjustedAmountToDrip);
         assertEq(amountToDrip, targetDaiBalance);
         assertEq(daiBalance, targetDaiBalance);
-        assertEq(allocator.buffer(), bufferCap - targetDaiBalance);
     }
 
     function testDripUsdcViaDoAction() public {
@@ -287,10 +272,6 @@ contract IntegrationTestERC20Allocator is DSTest {
         assertEq(amountToDrip * scalingFactorUsdc, adjustedAmountToDrip);
         assertEq(amountToDrip, targetUsdcBalance);
         assertEq(usdcBalance, targetUsdcBalance);
-        assertEq(
-            allocator.buffer(),
-            bufferCap - targetUsdcBalance * scalingFactorUsdc
-        );
     }
 
     /// ------ SKIM ------
@@ -325,9 +306,6 @@ contract IntegrationTestERC20Allocator is DSTest {
             (daiBalance + daiPSMBalance - targetDaiBalance).toInt256(),
             0
         );
-
-        /// buffer should be full as no depletion happened prior and skimming is regenerative
-        assertEq(allocator.buffer(), bufferCap);
     }
 
     function testSkimUsdcViaDoAction() public {
@@ -360,8 +338,5 @@ contract IntegrationTestERC20Allocator is DSTest {
             (usdcBalance + usdcPSMBalance - targetUsdcBalance).toInt256(),
             0
         );
-
-        /// buffer should be full as no depletion happened prior and skimming is regenerative
-        assertEq(allocator.buffer(), bufferCap);
     }
 }
