@@ -129,11 +129,6 @@ contract vip10 is DSTest, IVIP {
     function mainnetSetup() public override {}
 
     function mainnetValidate() public override {
-        assertEq(allocator.buffer(), bufferCap);
-        assertEq(allocator.bufferCap(), bufferCap);
-        assertEq(allocator.MAX_RATE_LIMIT_PER_SECOND(), maxRateLimitPerSecond);
-        assertEq(allocator.rateLimitPerSecond(), rateLimitPerSecond);
-
         /// assert erc20 allocator has usdc psm and pcv deposit connected
         {
             address psmAddress = allocator.pcvDepositToPSM(address(daiDeposit));

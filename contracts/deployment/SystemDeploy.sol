@@ -21,8 +21,9 @@ import {PegStabilityModule} from "../peg/PegStabilityModule.sol";
 import {IScalingPriceOracle} from "../oracle/IScalingPriceOracle.sol";
 import {IPCVDeposit, PCVDeposit} from "../pcv/PCVDeposit.sol";
 import {MorphoCompoundPCVDeposit} from "../pcv/morpho/MorphoCompoundPCVDeposit.sol";
-import {IGRLM, GlobalRateLimitedMinter} from "../minter/GlobalRateLimitedMinter.sol";
 import {TestAddresses as addresses} from "../test/unit/utils/TestAddresses.sol";
+import {IGRLM, GlobalRateLimitedMinter} from "../limiter/GlobalRateLimitedMinter.sol";
+import {IGSERL, GlobalSystemExitRateLimiter} from "../limiter/GlobalSystemExitRateLimiter.sol";
 import {getCoreV2, getVoltAddresses, VoltAddresses} from "../test/unit/utils/Fixtures.sol";
 
 import "hardhat/console.sol";
@@ -71,6 +72,7 @@ contract SystemDeploy {
     VoltSystemOracle private vso;
     TimelockController public timelockController;
     GlobalRateLimitedMinter public grlm;
+    GlobalSystemExitRateLimiter public gserl;
     address private coreAddress;
 
     IERC20 private usdc;
@@ -131,6 +133,12 @@ contract SystemDeploy {
             maxRateLimitPerSecondMinting,
             rateLimitPerSecondMinting,
             bufferCapMinting
+        );
+        gserl = new GlobalSystemExitRateLimiter(
+            coreAddress,
+            maxRateLimitPerSecond,
+            rateLimitPerSecond,
+            bufferCap
         );
 
         usdcpsm = new PegStabilityModule(
@@ -219,12 +227,7 @@ contract SystemDeploy {
             address(timelockController),
             toWhitelist
         );
-        allocator = new ERC20Allocator(
-            coreAddress,
-            maxRateLimitPerSecond,
-            rateLimitPerSecond,
-            bufferCap
-        );
+        allocator = new ERC20Allocator(coreAddress);
         router = new CompoundPCVRouter(
             coreAddress,
             PCVDeposit(address(daiPcvDeposit)),
@@ -254,13 +257,20 @@ contract SystemDeploy {
         core.grantRateLimitedRedeemer(address(daiNonCustodialPsm));
         core.grantRateLimitedRedeemer(address(usdcNonCustodialPsm));
 
+        core.grantRateLimitedReplenisher(address(allocator));
+        core.grantRateLimitedDepleter(address(daiNonCustodialPsm));
+        core.grantRateLimitedDepleter(address(usdcNonCustodialPsm));
+        core.grantRateLimitedDepleter(address(allocator));
+
         core.grantLocker(address(allocator));
         core.grantLocker(address(daipsm));
         core.grantLocker(address(usdcpsm));
         core.grantLocker(address(grlm));
+        core.grantLocker(address(gserl));
 
         core.grantMinter(address(grlm));
         core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
+        core.setGlobalSystemExitRateLimiter(IGSERL(address(gserl)));
 
         allocator.connectPSM(
             address(usdcpsm),

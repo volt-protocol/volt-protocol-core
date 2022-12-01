@@ -5,7 +5,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {Test} from "../../../../forge-std/src/Test.sol";
-import {ICoreV2} from "../../../core/ICoreV2.sol";
+import {CoreV2} from "../../../core/CoreV2.sol";
 import {Deviation} from "../../../utils/Deviation.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
@@ -19,8 +19,9 @@ import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {IScalingPriceOracle} from "../../../oracle/IScalingPriceOracle.sol";
-import {IGRLM, GlobalRateLimitedMinter} from "../../../minter/GlobalRateLimitedMinter.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
+import {IGRLM, GlobalRateLimitedMinter} from "../../../limiter/GlobalRateLimitedMinter.sol";
+import {IGSERL, GlobalSystemExitRateLimiter} from "../../../limiter/GlobalSystemExitRateLimiter.sol";
 import {getCoreV2, getVoltAddresses, VoltAddresses} from "./../utils/Fixtures.sol";
 
 /// deployment steps
@@ -61,13 +62,14 @@ contract NonCustodialPSMUnitTest is Test {
 
     VoltAddresses public guardianAddresses = getVoltAddresses();
 
-    ICoreV2 private core;
+    CoreV2 private core;
     SystemEntry private entry;
     IERC20Mintable private dai;
     IERC20Mintable private volt;
     NonCustodialPSM private psm;
     VoltSystemOracle private oracle;
     GlobalRateLimitedMinter private grlm;
+    GlobalSystemExitRateLimiter private gserl;
     MockPCVDepositV3 private pcvDeposit;
     PegStabilityModule private custodialPsm;
 
@@ -95,7 +97,7 @@ contract NonCustodialPSMUnitTest is Test {
 
     uint256 public constant maxRateLimitPerSecond = 1_000e18; /// 1k volt per second
     uint128 public constant rateLimitPerSecond = 10e18; /// 10 volt per second
-    uint128 public constant bufferCap = 1_000_000e18; /// buffer cap is 1m volt
+    uint128 public constant bufferCap = type(uint128).max; /// buffer cap is 2^128-1
 
     /// ---------- PSM PARAMS ----------
 
@@ -153,11 +155,19 @@ contract NonCustodialPSMUnitTest is Test {
             voltCeilingPrice
         );
 
+        gserl = new GlobalSystemExitRateLimiter(
+            coreAddress,
+            maxRateLimitPerSecond,
+            rateLimitPerSecond,
+            bufferCap
+        );
+
         vm.startPrank(addresses.governorAddress);
 
         core.grantPCVController(address(psm));
         core.grantMinter(address(grlm));
 
+        core.grantRateLimitedDepleter(address(psm));
         core.grantRateLimitedRedeemer(address(psm));
         core.grantRateLimitedRedeemer(address(custodialPsm));
 
@@ -166,8 +176,10 @@ contract NonCustodialPSMUnitTest is Test {
         core.grantLocker(address(custodialPsm));
         core.grantLocker(address(pcvDeposit));
         core.grantLocker(address(grlm));
+        core.grantLocker(address(gserl));
 
         core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
+        core.setGlobalSystemExitRateLimiter(IGSERL(address(gserl)));
 
         vm.stopPrank();
 
@@ -280,6 +292,7 @@ contract NonCustodialPSMUnitTest is Test {
                 underlyingAmountOut,
                 psm.redeem(address(this), voltBalance, underlyingAmountOut)
             );
+            assertEq(bufferCap - underlyingAmountOut, gserl.buffer());
 
             uint256 depositEndingUnderlyingBalance = pcvDeposit.balance();
             uint256 userEndingUnderlyingBalance = dai.balanceOf(address(this));
@@ -378,6 +391,8 @@ contract NonCustodialPSMUnitTest is Test {
             depositStartingUnderlyingBalance - depositEndingUnderlyingBalance,
             underlyingAmountOut
         );
+
+        assertEq(bufferCap - underlyingAmountOut, gserl.buffer());
 
         assertEq(bufferAfterRedeem, grlm.bufferCap());
         assertEq(bufferAfterRedeem, grlm.buffer());

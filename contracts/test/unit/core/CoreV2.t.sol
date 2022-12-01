@@ -10,7 +10,8 @@ import {Volt} from "../../../volt/Volt.sol";
 import {Vcon} from "../../../vcon/Vcon.sol";
 import {IVolt} from "../../../volt/Volt.sol";
 import {ICore} from "../../../core/ICore.sol";
-import {IGRLM} from "../../../minter/IGRLM.sol";
+import {IGRLM} from "../../../limiter/IGRLM.sol";
+import {IGSERL} from "../../../limiter/IGSERL.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
@@ -33,6 +34,12 @@ contract UnitTestCoreV2 is DSTest {
     event GlobalRateLimitedMinterUpdate(
         address indexed oldGrlm,
         address indexed newGrlm
+    );
+
+    /// @notice emitted when reference to global system exit rate limiter is updated
+    event GlobalSystemExitRateLimiterUpdate(
+        address indexed oldGserl,
+        address indexed newGserl
     );
 
     function setUp() public {
@@ -91,5 +98,21 @@ contract UnitTestCoreV2 is DSTest {
     function testNonGovernorFailsSettingGlobalRateLimitedMinter() public {
         vm.expectRevert("Permissions: Caller is not a governor");
         core.setGlobalRateLimitedMinter(IGRLM(addresses.userAddress));
+    }
+
+    function testGovernorSetsGlobalSystemExitRateLimiter() public {
+        address newGserl = address(103927828732);
+        vm.expectEmit(true, true, false, true, address(core));
+        emit GlobalSystemExitRateLimiterUpdate(address(0), newGserl);
+
+        vm.prank(addresses.governorAddress);
+        core.setGlobalSystemExitRateLimiter(IGSERL(newGserl));
+
+        assertEq(address(core.globalSystemExitRateLimiter()), newGserl);
+    }
+
+    function testNonGovernorFailsSettingGlobalSystemExitRateLimiter() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.setGlobalSystemExitRateLimiter(IGSERL(addresses.userAddress));
     }
 }

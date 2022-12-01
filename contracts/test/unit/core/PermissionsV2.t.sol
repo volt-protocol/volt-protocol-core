@@ -359,4 +359,50 @@ contract UnitTestPermissionsV2 is DSTest {
         vm.expectRevert("Permissions: Caller is not a governor");
         core.revokeRateLimitedRedeemer(address(this));
     }
+
+    function testGovAddsRateLimitedDepleterRoleSucceeds() public {
+        vm.prank(addresses.governorAddress);
+        core.grantRateLimitedDepleter(address(this));
+        assertTrue(core.isRateLimitedDepleter(address(this)));
+    }
+
+    function testGovRevokesRateLimitedDepleterRoleSucceeds() public {
+        testGovAddsRedeemerRoleSucceeds();
+        vm.prank(addresses.governorAddress);
+        core.revokeRateLimitedDepleter(address(this));
+        assertTrue(!core.isRateLimitedDepleter(address(this)));
+    }
+
+    function testNonGovAddsRateLimitedDepleterRoleFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.grantRateLimitedDepleter(address(this));
+    }
+
+    function testNonGovRevokesRateLimitedDepleterRoleFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.revokeRateLimitedDepleter(address(this));
+    }
+
+    function testGovAddsRateLimitedReplenisherRoleSucceeds() public {
+        vm.prank(addresses.governorAddress);
+        core.grantRateLimitedReplenisher(address(this));
+        assertTrue(core.isRateLimitedReplenisher(address(this)));
+    }
+
+    function testGovRevokesRateLimitedReplenisherRoleSucceeds() public {
+        testGovAddsRedeemerRoleSucceeds();
+        vm.prank(addresses.governorAddress);
+        core.revokeRateLimitedReplenisher(address(this));
+        assertTrue(!core.isRateLimitedReplenisher(address(this)));
+    }
+
+    function testNonGovAddsRateLimitedReplenisherRoleFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.grantRateLimitedReplenisher(address(this));
+    }
+
+    function testNonGovRevokesRateLimitedReplenisherRoleFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.revokeRateLimitedReplenisher(address(this));
+    }
 }

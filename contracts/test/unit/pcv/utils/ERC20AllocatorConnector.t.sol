@@ -3,16 +3,17 @@ pragma solidity =0.8.13;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {Vm} from "./../../utils/Vm.sol";
-import {ICoreV2} from "../../../../core/ICoreV2.sol";
+import {CoreV2} from "../../../../core/CoreV2.sol";
 import {DSTest} from "./../../utils/DSTest.sol";
 import {MockPSM} from "../../../../mock/MockPSM.sol";
 import {MockERC20} from "../../../../mock/MockERC20.sol";
-import {PCVDeposit} from "../../../../pcv/PCVDeposit.sol";
+import {getCoreV2} from "./../../utils/Fixtures.sol";
 import {VoltRoles} from "../../../../core/VoltRoles.sol";
+import {PCVDeposit} from "../../../../pcv/PCVDeposit.sol";
 import {ERC20Allocator} from "../../../../pcv/utils/ERC20Allocator.sol";
 import {ERC20HoldingPCVDeposit} from "../../../../mock/ERC20HoldingPCVDeposit.sol";
 import {TestAddresses as addresses} from "../../utils/TestAddresses.sol";
-import {getCoreV2} from "./../../utils/Fixtures.sol";
+import {IGSERL, GlobalSystemExitRateLimiter} from "../../../../limiter/GlobalSystemExitRateLimiter.sol";
 
 contract UnitTestERC20AllocatorConnector is DSTest {
     /// @notice emitted when an existing deposit is updated
@@ -39,7 +40,7 @@ contract UnitTestERC20AllocatorConnector is DSTest {
     /// @notice emitted when a psm is connected to a PCV Deposit
     event DepositConnected(address psm, address pcvDeposit);
 
-    ICoreV2 private core;
+    CoreV2 private core;
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
     /// @notice reference to the PCVDeposit to pull from
@@ -50,6 +51,9 @@ contract UnitTestERC20AllocatorConnector is DSTest {
 
     /// @notice reference to the ERC20
     ERC20Allocator private allocator;
+
+    /// @notice reference to global system exit rate limiter
+    GlobalSystemExitRateLimiter private gserl;
 
     /// @notice token to push
     MockERC20 private token;
@@ -82,17 +86,27 @@ contract UnitTestERC20AllocatorConnector is DSTest {
             address(0)
         );
 
-        allocator = new ERC20Allocator(
+        gserl = new GlobalSystemExitRateLimiter(
             address(core),
             maxRateLimitPerSecond,
             rateLimitPerSecond,
             bufferCap
         );
 
+        allocator = new ERC20Allocator(address(core));
+
         vm.startPrank(addresses.governorAddress);
+
         allocator.connectPSM(address(psm), targetBalance, 0);
         allocator.connectDeposit(address(psm), address(pcvDeposit));
+
         core.grantLocker(address(allocator));
+        core.grantLocker(address(gserl));
+        core.grantRateLimitedDepleter(address(allocator));
+        core.grantRateLimitedReplenisher(address(allocator));
+
+        core.setGlobalSystemExitRateLimiter(IGSERL(address(gserl)));
+
         vm.stopPrank();
     }
 
