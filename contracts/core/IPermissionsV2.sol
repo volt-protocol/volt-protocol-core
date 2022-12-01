@@ -26,6 +26,10 @@ interface IPermissionsV2 is IAccessControl {
 
     function grantRateLimitedRedeemer(address rateLimitedRedeemer) external;
 
+    function grantRateLimitedDepleter(address rateLimitedRedeemer) external;
+
+    function grantRateLimitedReplenisher(address rateLimitedRedeemer) external;
+
     function revokeMinter(address minter) external;
 
     function revokePCVController(address pcvController) external;
@@ -41,6 +45,10 @@ interface IPermissionsV2 is IAccessControl {
     function revokeRateLimitedMinter(address rateLimitedMinter) external;
 
     function revokeRateLimitedRedeemer(address rateLimitedRedeemer) external;
+
+    function revokeRateLimitedDepleter(address rateLimitedRedeemer) external;
+
+    function revokeRateLimitedReplenisher(address rateLimitedRedeemer) external;
 
     // ----------- Revoker only state changing api -----------
 
@@ -63,6 +71,14 @@ interface IPermissionsV2 is IAccessControl {
     function isRateLimitedMinter(address _address) external view returns (bool);
 
     function isRateLimitedRedeemer(
+        address _address
+    ) external view returns (bool);
+
+    function isRateLimitedReplenisher(
+        address _address
+    ) external view returns (bool);
+
+    function isRateLimitedDepleter(
         address _address
     ) external view returns (bool);
 

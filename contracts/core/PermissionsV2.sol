@@ -36,6 +36,14 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     bytes32 public constant VOLT_RATE_LIMITED_REDEEMER_ROLE =
         keccak256("VOLT_RATE_LIMITED_REDEEMER_ROLE");
 
+    /// @notice can replenish buffer through GlobalSystemExitRateLimiter
+    bytes32 public constant VOLT_RATE_LIMITED_REPLENISH_ROLE =
+        keccak256("VOLT_RATE_LIMITED_REPLENISH_ROLE");
+
+    /// @notice can delpete buffer through the GlobalSystemExitRateLimiter buffer
+    bytes32 public constant VOLT_RATE_LIMITED_DEPLETER_ROLE =
+        keccak256("VOLT_RATE_LIMITED_DEPLETER_ROLE");
+
     /// @notice granted to system smart contracts to enable the setting
     /// of reentrancy locks within the GlobalReentrancyLock contract
     bytes32 public constant override LOCKER_ROLE = keccak256("LOCKER_ROLE");
@@ -52,6 +60,8 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         _setRoleAdmin(PCV_GUARD_ROLE, GOVERN_ROLE);
         _setRoleAdmin(VOLT_RATE_LIMITED_MINTER_ROLE, GOVERN_ROLE);
         _setRoleAdmin(VOLT_RATE_LIMITED_REDEEMER_ROLE, GOVERN_ROLE);
+        _setRoleAdmin(VOLT_RATE_LIMITED_REPLENISH_ROLE, GOVERN_ROLE);
+        _setRoleAdmin(VOLT_RATE_LIMITED_DEPLETER_ROLE, GOVERN_ROLE);
     }
 
     modifier onlyGovernor() {
@@ -137,6 +147,24 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         _grantRole(VOLT_RATE_LIMITED_REDEEMER_ROLE, rateLimitedRedeemer);
     }
 
+    /// @notice grants ability to replenish buffer for funds exiting system through
+    /// the global system exit rate limiter
+    /// @param rateLimitedReplenisher address to add as a replenisher in global system exit rate limiter
+    function grantRateLimitedReplenisher(
+        address rateLimitedReplenisher
+    ) external override onlyGovernor {
+        _grantRole(VOLT_RATE_LIMITED_REPLENISH_ROLE, rateLimitedReplenisher);
+    }
+
+    /// @notice grants ability to deplete buffer for funds exiting system through
+    /// the global system exit rate limiter
+    /// @param rateLimitedDepleter address to add as a depleter in global system exit rate limiter
+    function grantRateLimitedDepleter(
+        address rateLimitedDepleter
+    ) external override onlyGovernor {
+        _grantRole(VOLT_RATE_LIMITED_DEPLETER_ROLE, rateLimitedDepleter);
+    }
+
     /// @notice revokes minter role from address
     /// @param minter ex minter
     function revokeMinter(address minter) external override onlyGovernor {
@@ -191,6 +219,24 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         address rateLimitedRedeemer
     ) external override onlyGovernor {
         _revokeRole(VOLT_RATE_LIMITED_REDEEMER_ROLE, rateLimitedRedeemer);
+    }
+
+    /// @notice revokes ability to replenish buffer for funds exiting system through
+    /// the global system exit rate limiter
+    /// @param rateLimitedRedeemer ex replenisher in global system exit rate limiter
+    function revokeRateLimitedReplenisher(
+        address rateLimitedRedeemer
+    ) external override onlyGovernor {
+        _revokeRole(VOLT_RATE_LIMITED_REPLENISH_ROLE, rateLimitedRedeemer);
+    }
+
+    /// @notice revokes ability to deplete buffer for funds exiting system through
+    /// the global system exit rate limiter
+    /// @param rateLimitedRedeemer ex depleter in global system exit rate limiter
+    function revokeRateLimitedDepleter(
+        address rateLimitedRedeemer
+    ) external override onlyGovernor {
+        _revokeRole(VOLT_RATE_LIMITED_DEPLETER_ROLE, rateLimitedRedeemer);
     }
 
     /// @notice revokes a role from address
@@ -279,5 +325,23 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         address _address
     ) public view override returns (bool) {
         return hasRole(VOLT_RATE_LIMITED_REDEEMER_ROLE, _address);
+    }
+
+    /// @notice checks if address has Volt Rate Limited Replenisher Role
+    /// @param _address address to check
+    /// @return true if _address has Volt Rate Limited Replenisher Role
+    function isRateLimitedReplenisher(
+        address _address
+    ) public view override returns (bool) {
+        return hasRole(VOLT_RATE_LIMITED_REPLENISH_ROLE, _address);
+    }
+
+    /// @notice checks if address has Volt Rate Limited Depleter Role
+    /// @param _address address to check
+    /// @return true if _address has Volt Rate Limited Depleter Role
+    function isRateLimitedDepleter(
+        address _address
+    ) public view override returns (bool) {
+        return hasRole(VOLT_RATE_LIMITED_DEPLETER_ROLE, _address);
     }
 }
