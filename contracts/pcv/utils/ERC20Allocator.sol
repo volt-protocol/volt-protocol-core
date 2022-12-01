@@ -9,7 +9,6 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {Timed} from "./../../utils/Timed.sol";
 import {CoreRefV2} from "./../../refs/CoreRefV2.sol";
 import {PCVDeposit} from "./../PCVDeposit.sol";
-import {RateLimitedV2} from "./../../utils/RateLimitedV2.sol";
 import {IERC20Allocator} from "./IERC20Allocator.sol";
 
 /// @notice Contract to remove all excess funds past a target balance from a smart contract
@@ -29,7 +28,7 @@ import {IERC20Allocator} from "./IERC20Allocator.sol";
 /// connect deposit function.
 
 /// @author Elliot Friedman
-contract ERC20Allocator is IERC20Allocator, CoreRefV2, RateLimitedV2 {
+contract ERC20Allocator is IERC20Allocator, CoreRefV2 {
     using Address for address payable;
     using SafeERC20 for IERC20;
     using SafeCast for *;
@@ -55,18 +54,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2, RateLimitedV2 {
 
     /// @notice ERC20 Allocator constructor
     /// @param _core Volt Core for reference
-    /// @param _maxRateLimitPerSecond maximum rate limit per second that governance can set
-    /// @param _rateLimitPerSecond starting rate limit per second
-    /// @param _bufferCap cap on buffer size for this rate limited instance
-    constructor(
-        address _core,
-        uint256 _maxRateLimitPerSecond,
-        uint128 _rateLimitPerSecond,
-        uint128 _bufferCap
-    )
-        CoreRefV2(_core)
-        RateLimitedV2(_maxRateLimitPerSecond, _rateLimitPerSecond, _bufferCap)
-    {}
+    constructor(address _core) CoreRefV2(_core) {}
 
     /// ----------- Governor Only API -----------
 
@@ -193,7 +181,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2, RateLimitedV2 {
 
         /// Effects
 
-        _replenishBuffer(adjustedAmountToSkim);
+        globalSystemExitRateLimiter().replenishBuffer(adjustedAmountToSkim); /// Effect -- trusted contract
 
         /// Interactions
 
@@ -236,7 +224,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2, RateLimitedV2 {
 
         /// deplete buffer with adjusted amount so that it gets
         /// depleted uniformly across all assets and deposits
-        _depleteBuffer(adjustedAmountToDrip);
+        globalSystemExitRateLimiter().depleteBuffer(adjustedAmountToDrip); /// Effect -- trusted contract
 
         /// Interaction
 
@@ -342,7 +330,10 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2, RateLimitedV2 {
             /// and if token is not scaled by 1e18, then this amountToDrip could be over the buffer
             /// because buffer is 1e18 adjusted, and decimals normalizer is used to adjust up to the buffer
             /// need to invert decimals normalizer for this to work properly
-            getAdjustedAmount(buffer(), toDrip.decimalsNormalizer * -1)
+            getAdjustedAmount(
+                globalSystemExitRateLimiter().buffer(),
+                toDrip.decimalsNormalizer * -1
+            )
         );
 
         /// adjust amount to drip based on the decimals normalizer to deplete buffer
@@ -360,7 +351,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2, RateLimitedV2 {
         address pcvDeposit
     ) external view override returns (bool) {
         /// if paused or buffer empty, cannot drip
-        if (paused() == true || buffer() == 0) {
+        if (paused() == true || globalSystemExitRateLimiter().buffer() == 0) {
             return false;
         }
 
@@ -395,7 +386,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2, RateLimitedV2 {
         address psm = pcvDepositToPSM[pcvDeposit];
         /// cannot drip with an empty buffer
         return
-            (buffer() != 0 &&
+            (globalSystemExitRateLimiter().buffer() != 0 &&
                 _checkDripCondition(psm, PCVDeposit(pcvDeposit))) ||
             _checkSkimCondition(psm);
     }
