@@ -16,13 +16,13 @@ import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 import {MorphoCompoundPCVDeposit} from "../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
-import {getCoreV2, getAddresses, VoltTestAddresses} from "./../unit/utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
+import {getCoreV2} from "./../unit/utils/Fixtures.sol";
 
 contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     using SafeCast for *;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
-    VoltTestAddresses public addresses = getAddresses();
 
     CoreV2 private core;
     SystemEntry public entry;

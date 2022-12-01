@@ -12,7 +12,8 @@ import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {ERC20Allocator} from "../../../pcv/utils/ERC20Allocator.sol";
 import {MockRateLimitedV2} from "../../../mock/MockRateLimitedV2.sol";
 import {ERC20HoldingPCVDeposit} from "../../../mock/ERC20HoldingPCVDeposit.sol";
-import {getCoreV2, getAddresses, VoltTestAddresses} from "./Fixtures.sol";
+import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
+import {getCoreV2} from "./Fixtures.sol";
 
 contract UnitTestRateLimitedV2 is DSTest {
     using SafeCast for *;
@@ -34,9 +35,6 @@ contract UnitTestRateLimitedV2 is DSTest {
 
     /// @notice foundry vm
     Vm public constant vm = Vm(HEVM_ADDRESS);
-
-    /// @notice test addresses
-    VoltTestAddresses public addresses = getAddresses();
 
     /// @notice rate limited v2 contract
     MockRateLimitedV2 rlm;

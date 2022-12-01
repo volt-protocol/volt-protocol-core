@@ -14,7 +14,8 @@ import {SystemEntry} from "../../entry/SystemEntry.sol";
 import {MockPCVOracle} from "../../mock/MockPCVOracle.sol";
 import {DSInvariantTest} from "../unit/utils/DSInvariantTest.sol";
 import {MorphoCompoundPCVDeposit} from "../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
-import {getCoreV2, getAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
+import {getCoreV2} from "../unit/utils/Fixtures.sol";
 
 /// note all variables have to be public and not immutable otherwise foundry
 /// will not run invariant tests
@@ -33,7 +34,6 @@ contract InvariantTestMorphoCompoundPCVDeposit is DSTest, DSInvariantTest {
     MorphoCompoundPCVDeposit public morphoDeposit;
 
     Vm private vm = Vm(HEVM_ADDRESS);
-    VoltTestAddresses public addresses = getAddresses();
 
     function setUp() public {
         core = getCoreV2();
@@ -107,7 +107,6 @@ contract InvariantTestMorphoCompoundPCVDeposit is DSTest, DSInvariantTest {
 }
 
 contract MorphoPCVDepositTest is DSTest {
-    VoltTestAddresses public addresses = getAddresses();
     Vm private vm = Vm(HEVM_ADDRESS);
 
     uint256 public totalDeposited;

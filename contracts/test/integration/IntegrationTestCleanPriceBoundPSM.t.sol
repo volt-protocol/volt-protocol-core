@@ -15,7 +15,8 @@ import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {IOraclePassThrough} from "../../oracle/IOraclePassThrough.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {IGRLM, GlobalRateLimitedMinter} from "../../minter/GlobalRateLimitedMinter.sol";
-import {getCoreV2, getAddresses, VoltTestAddresses} from "./../unit/utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
+import {getCoreV2} from "./../unit/utils/Fixtures.sol";
 
 import "hardhat/console.sol";
 
@@ -23,8 +24,6 @@ import "hardhat/console.sol";
 /// to ensure parity in behavior
 contract IntegrationTestCleanPriceBoundPSM is DSTest {
     using SafeCast for *;
-
-    VoltTestAddresses public addresses = getAddresses();
 
     /// reference PSM to test against
     PegStabilityModule private immutable priceBoundPsm =
@@ -176,7 +175,7 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
 
     /// @notice PSM is set up correctly and redeem view function is working
     function testGetRedeemAmountOutPpq(uint128 amountVoltIn) public {
-        vm.assume(amountVoltIn > 10_000_000); /// ensure accuracy down to the hundred thousandth
+        vm.assume(amountVoltIn > 1e10); /// ensure accuracy down to the hundred thousandth
 
         uint256 currentPegPrice = oracle.getCurrentOraclePrice() / 1e12;
 
