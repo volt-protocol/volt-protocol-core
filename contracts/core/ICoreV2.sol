@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {IGRLM} from "../limiter/IGRLM.sol";
-import {IGSERL} from "../limiter/IGSERL.sol";
+import {IGlobalRateLimitedMinter} from "../limiter/IGlobalRateLimitedMinter.sol";
+import {IGlobalSystemExitRateLimiter} from "../limiter/IGlobalSystemExitRateLimiter.sol";
 import {IVolt, IERC20} from "../volt/IVolt.sol";
 import {IPermissionsV2} from "./IPermissionsV2.sol";
 
@@ -38,20 +38,23 @@ interface ICoreV2 is IPermissionsV2 {
     function vcon() external view returns (IERC20);
 
     /// @notice returns reference to the global rate limited minter
-    function globalRateLimitedMinter() external view returns (IGRLM);
+    function globalRateLimitedMinter()
+        external
+        view
+        returns (IGlobalRateLimitedMinter);
 
     // ----------- Governance Only API -----------
 
     /// @notice governor only function to set the Global Rate Limited Minter
     /// @param newGlobalRateLimitedMinter new volt global rate limited minter
     function setGlobalRateLimitedMinter(
-        IGRLM newGlobalRateLimitedMinter
+        IGlobalRateLimitedMinter newGlobalRateLimitedMinter
     ) external;
 
     /// @notice governor only function to set the Global Rate Limited Minter
     /// @param newGlobalSystemExitRateLimiter new volt global rate limited minter
     function setGlobalSystemExitRateLimiter(
-        IGSERL newGlobalSystemExitRateLimiter
+        IGlobalSystemExitRateLimiter newGlobalSystemExitRateLimiter
     ) external;
 
     /// @notice governor only function to set the VOLT token

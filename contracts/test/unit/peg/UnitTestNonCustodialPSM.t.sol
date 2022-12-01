@@ -20,8 +20,8 @@ import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {IScalingPriceOracle} from "../../../oracle/IScalingPriceOracle.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
-import {IGRLM, GlobalRateLimitedMinter} from "../../../limiter/GlobalRateLimitedMinter.sol";
-import {IGSERL, GlobalSystemExitRateLimiter} from "../../../limiter/GlobalSystemExitRateLimiter.sol";
+import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../../limiter/GlobalRateLimitedMinter.sol";
+import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "../../../limiter/GlobalSystemExitRateLimiter.sol";
 import {getCoreV2, getVoltAddresses, VoltAddresses} from "./../utils/Fixtures.sol";
 
 /// deployment steps
@@ -178,8 +178,12 @@ contract NonCustodialPSMUnitTest is Test {
         core.grantLocker(address(grlm));
         core.grantLocker(address(gserl));
 
-        core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
-        core.setGlobalSystemExitRateLimiter(IGSERL(address(gserl)));
+        core.setGlobalRateLimitedMinter(
+            IGlobalRateLimitedMinter(address(grlm))
+        );
+        core.setGlobalSystemExitRateLimiter(
+            IGlobalSystemExitRateLimiter(address(gserl))
+        );
 
         vm.stopPrank();
 

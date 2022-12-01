@@ -10,8 +10,8 @@ import {Volt} from "../../../volt/Volt.sol";
 import {Vcon} from "../../../vcon/Vcon.sol";
 import {IVolt} from "../../../volt/Volt.sol";
 import {ICore} from "../../../core/ICore.sol";
-import {IGRLM} from "../../../limiter/IGRLM.sol";
-import {IGSERL} from "../../../limiter/IGSERL.sol";
+import {IGlobalRateLimitedMinter} from "../../../limiter/IGlobalRateLimitedMinter.sol";
+import {IGlobalSystemExitRateLimiter} from "../../../limiter/IGlobalSystemExitRateLimiter.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
@@ -90,14 +90,16 @@ contract UnitTestCoreV2 is DSTest {
         emit GlobalRateLimitedMinterUpdate(address(0), newGrlm);
 
         vm.prank(addresses.governorAddress);
-        core.setGlobalRateLimitedMinter(IGRLM(newGrlm));
+        core.setGlobalRateLimitedMinter(IGlobalRateLimitedMinter(newGrlm));
 
         assertEq(address(core.globalRateLimitedMinter()), newGrlm);
     }
 
     function testNonGovernorFailsSettingGlobalRateLimitedMinter() public {
         vm.expectRevert("Permissions: Caller is not a governor");
-        core.setGlobalRateLimitedMinter(IGRLM(addresses.userAddress));
+        core.setGlobalRateLimitedMinter(
+            IGlobalRateLimitedMinter(addresses.userAddress)
+        );
     }
 
     function testGovernorSetsGlobalSystemExitRateLimiter() public {
@@ -106,13 +108,17 @@ contract UnitTestCoreV2 is DSTest {
         emit GlobalSystemExitRateLimiterUpdate(address(0), newGserl);
 
         vm.prank(addresses.governorAddress);
-        core.setGlobalSystemExitRateLimiter(IGSERL(newGserl));
+        core.setGlobalSystemExitRateLimiter(
+            IGlobalSystemExitRateLimiter(newGserl)
+        );
 
         assertEq(address(core.globalSystemExitRateLimiter()), newGserl);
     }
 
     function testNonGovernorFailsSettingGlobalSystemExitRateLimiter() public {
         vm.expectRevert("Permissions: Caller is not a governor");
-        core.setGlobalSystemExitRateLimiter(IGSERL(addresses.userAddress));
+        core.setGlobalSystemExitRateLimiter(
+            IGlobalSystemExitRateLimiter(addresses.userAddress)
+        );
     }
 }

@@ -12,7 +12,7 @@ import {PCVDeposit} from "../../../../pcv/PCVDeposit.sol";
 import {ERC20Allocator} from "../../../../pcv/utils/ERC20Allocator.sol";
 import {ERC20HoldingPCVDeposit} from "../../../../mock/ERC20HoldingPCVDeposit.sol";
 import {TestAddresses as addresses} from "../../utils/TestAddresses.sol";
-import {IGSERL, GlobalSystemExitRateLimiter} from "../../../../limiter/GlobalSystemExitRateLimiter.sol";
+import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "../../../../limiter/GlobalSystemExitRateLimiter.sol";
 
 contract UnitTestERC20Allocator is DSTest {
     /// @notice emitted when an existing deposit is updated
@@ -94,7 +94,9 @@ contract UnitTestERC20Allocator is DSTest {
         core.grantRateLimitedDepleter(address(allocator));
         core.grantRateLimitedReplenisher(address(allocator));
 
-        core.setGlobalSystemExitRateLimiter(IGSERL(address(gserl)));
+        core.setGlobalSystemExitRateLimiter(
+            IGlobalSystemExitRateLimiter(address(gserl))
+        );
 
         vm.stopPrank();
     }

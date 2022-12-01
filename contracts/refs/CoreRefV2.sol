@@ -5,8 +5,8 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {IGRLM} from "../limiter/IGRLM.sol";
-import {IGSERL} from "../limiter/IGSERL.sol";
+import {IGlobalRateLimitedMinter} from "../limiter/IGlobalRateLimitedMinter.sol";
+import {IGlobalSystemExitRateLimiter} from "../limiter/IGlobalSystemExitRateLimiter.sol";
 import {VoltRoles} from "./../core/VoltRoles.sol";
 import {ICoreRefV2} from "./ICoreRefV2.sol";
 import {IPCVOracle} from "./../pcv/morpho/IPCVOracle.sol";
@@ -177,18 +177,23 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     }
 
     /// @notice address of the GlobalRateLimitedMinter contract referenced by Core
-    /// @return IGRLM implementation address
-    function globalRateLimitedMinter() public view override returns (IGRLM) {
+    /// @return IGlobalRateLimitedMinter implementation address
+    function globalRateLimitedMinter()
+        public
+        view
+        override
+        returns (IGlobalRateLimitedMinter)
+    {
         return _core.globalRateLimitedMinter();
     }
 
     /// @notice address of the GlobalSystemExitRateLimiter contract referenced by Core
-    /// @return IGSERL implementation address
+    /// @return IGlobalSystemExitRateLimiter implementation address
     function globalSystemExitRateLimiter()
         public
         view
         override
-        returns (IGSERL)
+        returns (IGlobalSystemExitRateLimiter)
     {
         return _core.globalSystemExitRateLimiter();
     }

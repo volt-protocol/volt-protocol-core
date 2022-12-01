@@ -1,6 +1,6 @@
 pragma solidity =0.8.13;
 
-import {IGSERL} from "./IGSERL.sol";
+import {IGlobalSystemExitRateLimiter} from "./IGlobalSystemExitRateLimiter.sol";
 import {CoreRefV2} from "../refs/CoreRefV2.sol";
 import {VoltRoles} from "../core/VoltRoles.sol";
 import {RateLimitedV2} from "../utils/RateLimitedV2.sol";
@@ -13,7 +13,10 @@ import {RateLimitedV2} from "../utils/RateLimitedV2.sol";
 /// to deplete the buffer through this contract on a global rate limit.
 /// ERC20Allocator will be granted both the VOLT_RATE_LIMITED_DEPLETER_ROLE and VOLT_RATE_LIMITED_REPLENISH_ROLE
 /// to be able to replenish and deplete the buffer.
-contract GlobalSystemExitRateLimiter is IGSERL, RateLimitedV2 {
+contract GlobalSystemExitRateLimiter is
+    IGlobalSystemExitRateLimiter,
+    RateLimitedV2
+{
     /// @param _core reference to the core smart contract
     /// @param _maxRateLimitPerSecond maximum rate limit per second that governance can set
     /// @param _rateLimitPerSecond starting rate limit per second for Volt minting

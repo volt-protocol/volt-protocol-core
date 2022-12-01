@@ -9,7 +9,7 @@ import {Test} from "../../../../forge-std/src/Test.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
 import {TestAddresses} from "./../utils/TestAddresses.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
-import {IGSERL, GlobalSystemExitRateLimiter} from "../../../limiter/GlobalSystemExitRateLimiter.sol";
+import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "../../../limiter/GlobalSystemExitRateLimiter.sol";
 import {getCoreV2, getVoltAddresses, VoltAddresses} from "./../utils/Fixtures.sol";
 
 /// deployment steps
@@ -63,7 +63,9 @@ contract GlobalSystemExitRateLimiterUnitTest is Test {
         core.grantRateLimitedRedeemer(guardianAddresses.pcvGuardAddress1);
         core.grantRateLimitedRedeemer(guardianAddresses.pcvGuardAddress2);
 
-        core.setGlobalSystemExitRateLimiter(IGSERL(address(gserl)));
+        core.setGlobalSystemExitRateLimiter(
+            IGlobalSystemExitRateLimiter(address(gserl))
+        );
 
         vm.stopPrank();
 

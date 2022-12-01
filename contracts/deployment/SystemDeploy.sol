@@ -22,8 +22,8 @@ import {IScalingPriceOracle} from "../oracle/IScalingPriceOracle.sol";
 import {IPCVDeposit, PCVDeposit} from "../pcv/PCVDeposit.sol";
 import {MorphoCompoundPCVDeposit} from "../pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {TestAddresses as addresses} from "../test/unit/utils/TestAddresses.sol";
-import {IGRLM, GlobalRateLimitedMinter} from "../limiter/GlobalRateLimitedMinter.sol";
-import {IGSERL, GlobalSystemExitRateLimiter} from "../limiter/GlobalSystemExitRateLimiter.sol";
+import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../limiter/GlobalRateLimitedMinter.sol";
+import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "../limiter/GlobalSystemExitRateLimiter.sol";
 import {getCoreV2, getVoltAddresses, VoltAddresses} from "../test/unit/utils/Fixtures.sol";
 
 import "hardhat/console.sol";
@@ -269,8 +269,12 @@ contract SystemDeploy {
         core.grantLocker(address(gserl));
 
         core.grantMinter(address(grlm));
-        core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
-        core.setGlobalSystemExitRateLimiter(IGSERL(address(gserl)));
+        core.setGlobalRateLimitedMinter(
+            IGlobalRateLimitedMinter(address(grlm))
+        );
+        core.setGlobalSystemExitRateLimiter(
+            IGlobalSystemExitRateLimiter(address(gserl))
+        );
 
         allocator.connectPSM(
             address(usdcpsm),
