@@ -152,6 +152,7 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
 
     /// @notice PSM is set up correctly and redeem view function is working
     function testGetRedeemAmountOut(uint128 amountVoltIn) public {
+        vm.assume(amountVoltIn > 1e18);
         uint256 currentPegPrice = oracle.getCurrentOraclePrice() / 1e12;
 
         uint256 amountOut = (amountVoltIn * currentPegPrice) / 1e18;
@@ -173,6 +174,8 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
             priceBoundPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
             0
         );
+
+        assertTrue(amountOut >= cleanPsm.getRedeemAmountOut(amountVoltIn));
     }
 
     /// @notice PSM is set up correctly and redeem view function is working
