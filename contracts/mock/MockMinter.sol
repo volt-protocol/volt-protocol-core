@@ -1,6 +1,6 @@
 pragma solidity 0.8.13;
 
-import {IGRLM} from "../minter/IGRLM.sol";
+import {IGRLM} from "../limiter/IGRLM.sol";
 import {CoreRefV2} from "../refs/CoreRefV2.sol";
 
 contract MockMinter is CoreRefV2 {
