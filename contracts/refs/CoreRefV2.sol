@@ -9,7 +9,7 @@ import {IGlobalRateLimitedMinter} from "../limiter/IGlobalRateLimitedMinter.sol"
 import {IGlobalSystemExitRateLimiter} from "../limiter/IGlobalSystemExitRateLimiter.sol";
 import {VoltRoles} from "./../core/VoltRoles.sol";
 import {ICoreRefV2} from "./ICoreRefV2.sol";
-import {IPCVOracle} from "./../pcv/morpho/IPCVOracle.sol";
+import {IPCVOracle} from "./../oracle/IPCVOracle.sol";
 import {CoreV2, ICoreV2} from "./../core/CoreV2.sol";
 import {IVolt, IVoltBurn} from "./../volt/IVolt.sol";
 import {IGlobalReentrancyLock} from "./../core/IGlobalReentrancyLock.sol";

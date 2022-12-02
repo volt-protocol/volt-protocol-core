@@ -273,36 +273,6 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         assertEq(oracle.pcvAmount(), sumDeposit.toInt256());
     }
 
-    function testSetPCVOracleSucceedsAndHookCalledSuccessfullyAfterDeposit(
-        uint120[4] calldata depositAmount,
-        uint248[10] calldata withdrawAmount,
-        uint120 profitAccrued,
-        address to
-    ) public {
-        vm.assume(to != address(0));
-        testWithdraw(depositAmount, withdrawAmount, profitAccrued, to);
-
-        uint256 sumDeposit = uint256(depositAmount[0]) +
-            uint256(depositAmount[1]) +
-            uint256(depositAmount[2]) +
-            uint256(depositAmount[3]) +
-            uint256(profitAccrued);
-
-        for (uint256 i = 0; i < 10; i++) {
-            if (withdrawAmount[i] > sumDeposit) {
-                continue;
-            }
-            sumDeposit -= withdrawAmount[i];
-        }
-
-        MockPCVOracle oracle = new MockPCVOracle();
-        vm.prank(addresses.governorAddress);
-        morphoDeposit.setPCVOracle(address(oracle));
-        assertEq(morphoDeposit.pcvOracle(), address(oracle));
-
-        assertEq(oracle.pcvAmount(), sumDeposit.toInt256());
-    }
-
     function testEmergencyActionWithdrawSucceedsGovernor(
         uint120 amount
     ) public {
