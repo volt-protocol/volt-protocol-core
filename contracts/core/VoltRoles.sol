@@ -38,6 +38,9 @@ library VoltRoles {
     /// @notice is able to withdraw whitelisted PCV deposits to a safe address
     bytes32 internal constant PCV_GUARD = keccak256("PCV_GUARD_ROLE");
 
+    /// @notice is able to move PCV between deposits
+    bytes32 internal constant PCV_MOVER = keccak256("PCV_MOVER_ROLE");
+
     /// @notice system state role can lock and unlock the global reentrancy
     /// lock. this allows for a system wide reentrancy lock.
     bytes32 internal constant LOCKER_ROLE = keccak256("LOCKER_ROLE");
