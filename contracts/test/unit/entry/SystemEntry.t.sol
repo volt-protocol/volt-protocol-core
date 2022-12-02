@@ -5,6 +5,7 @@ import {Vm} from "./../utils/Vm.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
 import {PCVOracle} from "../../../oracle/PCVOracle.sol";
+import {IPCVOracle} from "../../../oracle/IPCVOracle.sol";
 import {SystemEntry} from "../../../entry/SystemEntry.sol";
 import {MockPCVDepositV3} from "../../../mock/MockPCVDepositV3.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
@@ -54,7 +55,6 @@ contract SystemEntryUnitTest is DSTest {
         core.grantLocker(address(entry));
         core.grantLocker(address(pcvOracle));
         core.grantLocker(address(deposit1));
-        entry.setPCVOracle(address(pcvOracle));
         vm.stopPrank();
 
         // setup pcv oracle
@@ -66,6 +66,9 @@ contract SystemEntryUnitTest is DSTest {
         isLiquid[0] = true;
         vm.prank(addresses.governorAddress);
         pcvOracle.addVenues(venues, oracles, isLiquid);
+        // setup pcv oracle
+        vm.prank(addresses.governorAddress);
+        core.setPCVOracle(IPCVOracle(address(pcvOracle)));
     }
 
     function testSetup() public {

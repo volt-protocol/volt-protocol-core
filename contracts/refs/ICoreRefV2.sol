@@ -6,6 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IGlobalRateLimitedMinter} from "../limiter/IGlobalRateLimitedMinter.sol";
 import {IGlobalSystemExitRateLimiter} from "../limiter/IGlobalSystemExitRateLimiter.sol";
 import {ICoreV2} from "../core/ICoreV2.sol";
+import {IPCVOracle} from "../oracle/IPCVOracle.sol";
 import {IVolt, IVoltBurn} from "../volt/IVolt.sol";
 
 /// @title CoreRef interface
@@ -31,6 +32,8 @@ interface ICoreRefV2 {
     function volt() external view returns (IVoltBurn);
 
     function vcon() external view returns (IERC20);
+
+    function pcvOracle() external view returns (IPCVOracle);
 
     function voltBalance() external view returns (uint256);
 

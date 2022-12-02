@@ -12,7 +12,6 @@ import {MockMorpho} from "../../../../mock/MockMorpho.sol";
 import {IPCVDeposit} from "../../../../pcv/IPCVDeposit.sol";
 import {PCVGuardian} from "../../../../pcv/PCVGuardian.sol";
 import {SystemEntry} from "../../../../entry/SystemEntry.sol";
-import {MockPCVOracle} from "../../../../mock/MockPCVOracle.sol";
 import {MockERC20, IERC20} from "../../../../mock/MockERC20.sol";
 import {MorphoCompoundPCVDeposit} from "../../../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {MockMorphoMaliciousReentrancy} from "../../../../mock/MockMorphoMaliciousReentrancy.sol";
@@ -240,39 +239,6 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         }
     }
 
-    function testSetPCVOracleSucceedsAndHookCalledSuccessfully(
-        uint120[4] calldata depositAmount,
-        uint248[10] calldata withdrawAmount,
-        uint120 profitAccrued,
-        address to
-    ) public {
-        MockPCVOracle oracle = new MockPCVOracle();
-
-        vm.prank(addresses.governorAddress);
-        morphoDeposit.setPCVOracle(address(oracle));
-
-        assertEq(morphoDeposit.pcvOracle(), address(oracle));
-
-        vm.assume(to != address(0));
-        testWithdraw(depositAmount, withdrawAmount, profitAccrued, to);
-
-        uint256 sumDeposit = uint256(depositAmount[0]) +
-            uint256(depositAmount[1]) +
-            uint256(depositAmount[2]) +
-            uint256(depositAmount[3]) +
-            uint256(profitAccrued);
-
-        for (uint256 i = 0; i < 10; i++) {
-            if (withdrawAmount[i] > sumDeposit) {
-                continue;
-            }
-            sumDeposit -= withdrawAmount[i];
-        }
-        entry.accrue(address(morphoDeposit));
-
-        assertEq(oracle.pcvAmount(), sumDeposit.toInt256());
-    }
-
     function testEmergencyActionWithdrawSucceedsGovernor(
         uint120 amount
     ) public {
@@ -343,13 +309,6 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         entry.accrue(address(morphoDeposit));
     }
 
-    function testSetPCVOracleSucceedsGovernor() public {
-        MockPCVOracle oracle = new MockPCVOracle();
-        vm.prank(addresses.governorAddress);
-        morphoDeposit.setPCVOracle(address(oracle));
-        assertEq(morphoDeposit.pcvOracle(), address(oracle));
-    }
-
     //// access controls
 
     function testEmergencyActionFailsNonGovernor() public {
@@ -374,11 +333,6 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     function testWithdrawAllFailsNonGovernor() public {
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
         morphoDeposit.withdrawAll(address(this));
-    }
-
-    function testSetPCVOracleFailsNonGovernor() public {
-        vm.expectRevert("CoreRef: Caller is not a governor");
-        morphoDeposit.setPCVOracle(address(this));
     }
 
     //// reentrancy

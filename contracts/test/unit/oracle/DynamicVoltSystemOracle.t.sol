@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 import {Test} from "../../../../forge-std/src/Test.sol";
 import {ICoreV2} from "../../../core/ICoreV2.sol";
 import {getCoreV2} from "./../utils/Fixtures.sol";
+import {IPCVOracle} from "../../../oracle/IPCVOracle.sol";
 import {LinearInterpolation} from "../utils/LinearInterpolation.sol";
 import {DynamicVoltRateModel} from "../../../oracle/DynamicVoltRateModel.sol";
 import {DynamicVoltSystemOracle} from "../../../oracle/DynamicVoltSystemOracle.sol";
@@ -66,7 +67,7 @@ contract DynamicVoltSystemOracleUnitTest is Test {
 
         /// allow this contract to call in and update the actual rate
         vm.prank(addresses.governorAddress);
-        systemOracle.setPCVOracle(address(this));
+        core.setPCVOracle(IPCVOracle(address(this)));
     }
 
     function testSetup() public {
@@ -77,7 +78,7 @@ contract DynamicVoltSystemOracleUnitTest is Test {
         );
         assertEq(systemOracle.baseChangeRate(), baseChangeRate);
         assertEq(systemOracle.actualChangeRate(), baseChangeRate);
-        assertEq(systemOracle.pcvOracle(), address(this));
+        assertEq(address(systemOracle.pcvOracle()), address(this));
         assertEq(systemOracle.rateModel(), address(rateModel));
         assertEq(systemOracle.TIMEFRAME(), TIMEFRAME);
     }

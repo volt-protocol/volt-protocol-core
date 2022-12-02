@@ -6,6 +6,7 @@ import {DSTest} from "./../utils/DSTest.sol";
 import {ICoreV2} from "../../../core/ICoreV2.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
+import {IPCVOracle} from "../../../oracle/IPCVOracle.sol";
 import {MockCoreRefV2} from "../../../mock/MockCoreRefV2.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 import {getCoreV2} from "./../utils/Fixtures.sol";
@@ -35,7 +36,7 @@ contract UnitTestCoreRefV2 is DSTest {
         assertEq(address(coreRef.volt()), address(core.volt()));
         assertEq(address(coreRef.vcon()), address(core.vcon()));
         assertEq(address(coreRef.core()), address(core));
-        assertEq(coreRef.pcvOracle(), address(0));
+        assertEq(address(coreRef.pcvOracle()), address(0));
         assertEq(coreRef.voltBalance(), 0);
         assertEq(coreRef.vconBalance(), 0);
     }
@@ -265,12 +266,6 @@ contract UnitTestCoreRefV2 is DSTest {
         assertEq(address(coreRef).balance, 0);
     }
 
-    function testSetPcvOracleSucceedsGovernor() public {
-        vm.prank(addresses.governorAddress);
-        coreRef.setPCVOracle(address(1));
-        assertEq(coreRef.pcvOracle(), address(1));
-    }
-
     /// ---------- ACL ----------
 
     function testPauseSucceedsGovernor() public {
@@ -283,11 +278,6 @@ contract UnitTestCoreRefV2 is DSTest {
     function testPauseFailsNonGovernor() public {
         vm.expectRevert("CoreRef: Caller is not a guardian or governor");
         coreRef.pause();
-    }
-
-    function testSetPcvOracleFailsNonGovernor() public {
-        vm.expectRevert("CoreRef: Caller is not a governor");
-        coreRef.setPCVOracle(address(0));
     }
 
     receive() external payable {}

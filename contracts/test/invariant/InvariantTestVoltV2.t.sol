@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.8.13;
 
-import {DSInvariantTest} from "../unit/utils/DSInvariantTest.sol";
-import {DSTest} from "../unit/utils/DSTest.sol";
 import {Vm} from "../unit/utils/Vm.sol";
+import {DSTest} from "../unit/utils/DSTest.sol";
 import {VoltV2} from "../../volt/VoltV2.sol";
 import {ICoreV2} from "../../core/ICoreV2.sol";
 import {getCoreV2} from "../unit/utils/Fixtures.sol";
+import {DSInvariantTest} from "../unit/utils/DSInvariantTest.sol";
 import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
 
 /// @dev Modified from Solmate ERC20 Invariant Test (https://github.com/transmissions11/solmate/blob/main/src/test/ERC20.t.sol)

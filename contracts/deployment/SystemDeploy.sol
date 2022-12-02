@@ -21,7 +21,6 @@ import {PegStabilityModule} from "../peg/PegStabilityModule.sol";
 import {IScalingPriceOracle} from "../oracle/IScalingPriceOracle.sol";
 import {IPCVDeposit, PCVDeposit} from "../pcv/PCVDeposit.sol";
 import {MorphoCompoundPCVDeposit} from "../pcv/morpho/MorphoCompoundPCVDeposit.sol";
-import {TestAddresses as addresses} from "../test/unit/utils/TestAddresses.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../limiter/GlobalRateLimitedMinter.sol";
 import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "../limiter/GlobalSystemExitRateLimiter.sol";
 import {getCoreV2, getVoltAddresses, VoltAddresses} from "../test/unit/utils/Fixtures.sol";

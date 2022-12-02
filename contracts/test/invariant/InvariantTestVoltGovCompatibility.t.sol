@@ -3,16 +3,15 @@ pragma solidity =0.8.13;
 
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
-import {DSTest} from "../unit/utils/DSTest.sol";
-import {DSInvariantTest} from "../unit/utils/DSInvariantTest.sol";
 import {Vm} from "../unit/utils/Vm.sol";
+import {DSTest} from "../unit/utils/DSTest.sol";
+import {VoltV2} from "../../volt/VoltV2.sol";
 import {ICoreV2} from "../../core/ICoreV2.sol";
 import {getCoreV2} from "../unit/utils/Fixtures.sol";
-import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
-
-import {VoltV2} from "../../volt/VoltV2.sol";
-import {MockDAO, IVotes} from "../../mock/MockDAO.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
+import {MockDAO, IVotes} from "../../mock/MockDAO.sol";
+import {DSInvariantTest} from "../unit/utils/DSInvariantTest.sol";
+import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
 
 contract InvariantTestVoltGovCompatibility is DSTest, DSInvariantTest {
     VoltTester public voltTester;

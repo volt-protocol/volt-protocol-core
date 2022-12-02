@@ -10,6 +10,7 @@ import {DSTest} from "../unit/utils/DSTest.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
 import {MockMorpho} from "../../mock/MockMorpho.sol";
 import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
+import {IPCVOracle} from "../../oracle/IPCVOracle.sol";
 import {SystemEntry} from "../../entry/SystemEntry.sol";
 import {MockPCVOracle} from "../../mock/MockPCVOracle.sol";
 import {DSInvariantTest} from "../unit/utils/DSInvariantTest.sol";
@@ -68,7 +69,7 @@ contract InvariantTestMorphoCompoundPCVDeposit is DSTest, DSInvariantTest {
 
         vm.startPrank(addresses.governorAddress);
 
-        morphoDeposit.setPCVOracle(address(pcvOracle));
+        core.setPCVOracle(IPCVOracle(address(pcvOracle)));
 
         core.grantPCVGuard(address(morphoTest));
         core.grantPCVController(address(pcvGuardian));

@@ -118,7 +118,7 @@ contract DynamicVoltSystemOracle is IDynamicVoltSystemOracle, CoreRefV2 {
         /// if too few liquid reserves, adjust rate up
         uint256 newActualChangeRate = DynamicVoltRateModel(rateModel).getRate(
             newBaseChangeRate,
-            PCVOracle(pcvOracle).lastLiquidVenuePercentage()
+            pcvOracle().lastLiquidVenuePercentage()
         );
         uint256 oldActualChangeRate = actualChangeRate; // SLOAD
         actualChangeRate = newActualChangeRate; // SSTORE
@@ -151,7 +151,7 @@ contract DynamicVoltSystemOracle is IDynamicVoltSystemOracle, CoreRefV2 {
     /// during DAO proposals.
     function updateActualRate(uint256 liquidPercentage) external {
         require(
-            msg.sender == pcvOracle,
+            msg.sender == address(pcvOracle()),
             "DynamicVoltSystemOracle: Not PCV Oracle"
         );
 

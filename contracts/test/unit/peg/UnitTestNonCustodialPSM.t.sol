@@ -6,6 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {Test} from "../../../../forge-std/src/Test.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
+import {getCoreV2} from "./../utils/Fixtures.sol";
 import {Deviation} from "../../../utils/Deviation.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
@@ -22,7 +23,6 @@ import {IScalingPriceOracle} from "../../../oracle/IScalingPriceOracle.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../../limiter/GlobalRateLimitedMinter.sol";
 import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "../../../limiter/GlobalSystemExitRateLimiter.sol";
-import {getCoreV2, getVoltAddresses, VoltAddresses} from "./../utils/Fixtures.sol";
 
 /// deployment steps
 /// 1. core v2
@@ -59,8 +59,6 @@ contract NonCustodialPSMUnitTest is Test {
     using SafeCast for *;
 
     event PCVDepositUpdate(IPCVDeposit oldTarget, IPCVDeposit newPCVDeposit);
-
-    VoltAddresses public guardianAddresses = getVoltAddresses();
 
     CoreV2 private core;
     SystemEntry private entry;
