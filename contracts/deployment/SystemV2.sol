@@ -29,6 +29,7 @@ import {PegStabilityModule} from "../peg/PegStabilityModule.sol";
 import {IPCVDeposit, PCVDeposit} from "../pcv/PCVDeposit.sol";
 import {MorphoCompoundPCVDeposit} from "../pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../limiter/GlobalRateLimitedMinter.sol";
+import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "../limiter/GlobalSystemExitRateLimiter.sol";
 
 contract SystemV2 {
     using SafeCast for *;
@@ -43,6 +44,7 @@ contract SystemV2 {
     CoreV2 public core;
     TimelockController public timelockController;
     GlobalRateLimitedMinter public grlm;
+    GlobalSystemExitRateLimiter public gserl;
 
     // VOLT rate
     DynamicVoltRateModel public vrm;
@@ -119,6 +121,12 @@ contract SystemV2 {
             MAX_RATE_LIMIT_PER_SECOND_MINTING,
             RATE_LIMIT_PER_SECOND_MINTING,
             BUFFER_CAP_MINTING
+        );
+        gserl = new GlobalSystemExitRateLimiter(
+            coreAddress,
+            maxRateLimitPerSecond,
+            rateLimitPerSecond,
+            bufferCap
         );
 
         // VOLT rate
@@ -233,6 +241,9 @@ contract SystemV2 {
         core.setGlobalRateLimitedMinter(
             IGlobalRateLimitedMinter(address(grlm))
         );
+        core.setGlobalSystemExitRateLimiter(
+            IGlobalSystemExitRateLimiter(address(gserl))
+        );
         core.setPCVOracle(IPCVOracle(address(pcvOracle)));
 
         // Grant Roles
@@ -287,6 +298,7 @@ contract SystemV2 {
         core.grantLocker(address(morphoDaiPCVDeposit));
         core.grantLocker(address(morphoUsdcPCVDeposit));
         core.grantLocker(address(grlm));
+        core.grantLocker(address(gserl));
         core.grantLocker(address(pcvRouter));
         core.grantLocker(address(pcvGuardian));
 

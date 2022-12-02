@@ -30,6 +30,10 @@ contract IntegrationTestSystemV2 is DSTest {
             address(core.globalRateLimitedMinter()),
             address(systemV2.grlm())
         );
+        assertEq(
+            address(core.globalSystemExitRateLimiter()),
+            address(systemV2.gserl())
+        );
         assertEq(address(core.pcvOracle()), address(systemV2.pcvOracle()));
 
         // psm allocator
@@ -201,7 +205,7 @@ contract IntegrationTestSystemV2 is DSTest {
         );
 
         // LOCKER_ROLE
-        assertEq(core.getRoleMemberCount(VoltRoles.LOCKER_ROLE), 10);
+        assertEq(core.getRoleMemberCount(VoltRoles.LOCKER_ROLE), 11);
         assertEq(
             core.getRoleMember(VoltRoles.LOCKER_ROLE, 0),
             address(systemV2.systemEntry())
@@ -236,10 +240,14 @@ contract IntegrationTestSystemV2 is DSTest {
         );
         assertEq(
             core.getRoleMember(VoltRoles.LOCKER_ROLE, 8),
-            address(systemV2.pcvRouter())
+            address(systemV2.gserl())
         );
         assertEq(
             core.getRoleMember(VoltRoles.LOCKER_ROLE, 9),
+            address(systemV2.pcvRouter())
+        );
+        assertEq(
+            core.getRoleMember(VoltRoles.LOCKER_ROLE, 10),
             address(systemV2.pcvGuardian())
         );
 
