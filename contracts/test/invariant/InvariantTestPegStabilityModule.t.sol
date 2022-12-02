@@ -14,8 +14,9 @@ import {MockPCVOracle} from "../../mock/MockPCVOracle.sol";
 import {DSInvariantTest} from "../unit/utils/DSInvariantTest.sol";
 import {VoltSystemOracle} from "../../oracle/VoltSystemOracle.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
-import {IGRLM, GlobalRateLimitedMinter} from "../../minter/GlobalRateLimitedMinter.sol";
-import {getCoreV2, getAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
+import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../limiter/GlobalRateLimitedMinter.sol";
+import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
+import {getCoreV2} from "../unit/utils/Fixtures.sol";
 
 /// note all variables have to be public and not immutable otherwise foundry
 /// will not run invariant tests
@@ -35,7 +36,6 @@ contract InvariantTestPegStabilityModule is DSTest, DSInvariantTest {
     PegStabilityModuleTest public morphoTest;
 
     Vm private vm = Vm(HEVM_ADDRESS);
-    VoltTestAddresses public addresses = getAddresses();
 
     /// ---------- PSM PARAMS ----------
 
@@ -106,7 +106,9 @@ contract InvariantTestPegStabilityModule is DSTest, DSInvariantTest {
         core.grantRateLimitedMinter(address(psm));
         core.grantRateLimitedRedeemer(address(psm));
         core.grantPCVController(address(pcvGuardian));
-        core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
+        core.setGlobalRateLimitedMinter(
+            IGlobalRateLimitedMinter(address(grlm))
+        );
 
         vm.stopPrank();
 
@@ -130,7 +132,6 @@ contract PegStabilityModuleTest is DSTest {
     PCVGuardian public pcvGuardian;
 
     Vm private vm = Vm(HEVM_ADDRESS);
-    VoltTestAddresses public addresses = getAddresses();
 
     constructor(
         PegStabilityModule _psm,

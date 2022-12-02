@@ -8,6 +8,7 @@ import {IPCVDeposit} from "../pcv/IPCVDeposit.sol";
 
 contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
     address public override balanceReportedIn;
+    bool public checkPCVController = false;
 
     uint256 private resistantBalance;
     uint256 private resistantProtocolOwnedVolt;
@@ -26,6 +27,10 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
         resistantProtocolOwnedVolt = _resistantProtocolOwnedVolt;
     }
 
+    function setCheckPCVController(bool value) public {
+        checkPCVController = value;
+    }
+
     // gets the resistant token balance and protocol owned volt of this deposit
     function resistantBalanceAndVolt()
         external
@@ -36,6 +41,16 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
         return (resistantBalance, resistantProtocolOwnedVolt);
     }
 
+    function harvest() external pure {
+        // noop
+    }
+
+    function accrue() external returns (uint256) {
+        uint256 _balance = balance();
+        resistantBalance = _balance;
+        return _balance;
+    }
+
     // IPCVDeposit V1
     function deposit() external override globalLock(2) {
         resistantBalance = IERC20(balanceReportedIn).balanceOf(address(this));
@@ -44,7 +59,14 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
     function withdraw(
         address to,
         uint256 amount
-    ) external override globalLockLevelTwo {
+    ) external override globalLock(2) {
+        if (checkPCVController) {
+            // simulate onlyPCVController modifier from CoreRef
+            require(
+                core().isPCVController(msg.sender),
+                "CoreRef: Caller is not a PCV controller"
+            );
+        }
         IERC20(balanceReportedIn).transfer(to, amount);
         resistantBalance = IERC20(balanceReportedIn).balanceOf(address(this));
     }
@@ -64,7 +86,7 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
         to.transfer(amount);
     }
 
-    function balance() external view override returns (uint256) {
+    function balance() public view override returns (uint256) {
         return IERC20(balanceReportedIn).balanceOf(address(this));
     }
 }

@@ -9,13 +9,13 @@ import {Vm} from "./../utils/Vm.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
-import {getCoreV2, getAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
+import {getCoreV2} from "./../utils/Fixtures.sol";
 
 contract UnitTestPermissionsV2 is DSTest {
     CoreV2 private core;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
-    VoltTestAddresses public addresses = getAddresses();
 
     function setUp() public {
         core = getCoreV2();
@@ -358,5 +358,51 @@ contract UnitTestPermissionsV2 is DSTest {
     function testNonGovRevokesRedeemerRoleFails() public {
         vm.expectRevert("Permissions: Caller is not a governor");
         core.revokeRateLimitedRedeemer(address(this));
+    }
+
+    function testGovAddsRateLimitedDepleterRoleSucceeds() public {
+        vm.prank(addresses.governorAddress);
+        core.grantSystemExitRateLimitDepleter(address(this));
+        assertTrue(core.isSystemExitRateLimitDepleter(address(this)));
+    }
+
+    function testGovRevokesRateLimitedDepleterRoleSucceeds() public {
+        testGovAddsRedeemerRoleSucceeds();
+        vm.prank(addresses.governorAddress);
+        core.revokeSystemExitRateLimitDepleter(address(this));
+        assertTrue(!core.isSystemExitRateLimitDepleter(address(this)));
+    }
+
+    function testNonGovAddsRateLimitedDepleterRoleFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.grantSystemExitRateLimitDepleter(address(this));
+    }
+
+    function testNonGovRevokesRateLimitedDepleterRoleFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.revokeSystemExitRateLimitDepleter(address(this));
+    }
+
+    function testGovAddsRateLimitedReplenisherRoleSucceeds() public {
+        vm.prank(addresses.governorAddress);
+        core.grantSystemExitRateLimitReplenisher(address(this));
+        assertTrue(core.isSystemExitRateLimitReplenisher(address(this)));
+    }
+
+    function testGovRevokesRateLimitedReplenisherRoleSucceeds() public {
+        testGovAddsRedeemerRoleSucceeds();
+        vm.prank(addresses.governorAddress);
+        core.revokeSystemExitRateLimitReplenisher(address(this));
+        assertTrue(!core.isSystemExitRateLimitReplenisher(address(this)));
+    }
+
+    function testNonGovAddsRateLimitedReplenisherRoleFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.grantSystemExitRateLimitReplenisher(address(this));
+    }
+
+    function testNonGovRevokesRateLimitedReplenisherRoleFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.revokeSystemExitRateLimitReplenisher(address(this));
     }
 }

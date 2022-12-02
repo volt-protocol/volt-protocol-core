@@ -16,7 +16,8 @@ import {MockPCVOracle} from "../../../../mock/MockPCVOracle.sol";
 import {MockERC20, IERC20} from "../../../../mock/MockERC20.sol";
 import {MorphoCompoundPCVDeposit} from "../../../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {MockMorphoMaliciousReentrancy} from "../../../../mock/MockMorphoMaliciousReentrancy.sol";
-import {getCoreV2, getAddresses, VoltTestAddresses} from "./../../utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../../utils/TestAddresses.sol";
+import {getCoreV2} from "./../../utils/Fixtures.sol";
 
 contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     using SafeCast for *;
@@ -39,8 +40,6 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     MockMorphoMaliciousReentrancy private maliciousMorpho;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
-
-    VoltTestAddresses public addresses = getAddresses();
 
     /// @notice token to deposit
     MockERC20 private token;
@@ -270,36 +269,6 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
             sumDeposit -= withdrawAmount[i];
         }
         entry.accrue(address(morphoDeposit));
-
-        assertEq(oracle.pcvAmount(), sumDeposit.toInt256());
-    }
-
-    function testSetPCVOracleSucceedsAndHookCalledSuccessfullyAfterDeposit(
-        uint120[4] calldata depositAmount,
-        uint248[10] calldata withdrawAmount,
-        uint120 profitAccrued,
-        address to
-    ) public {
-        vm.assume(to != address(0));
-        testWithdraw(depositAmount, withdrawAmount, profitAccrued, to);
-
-        uint256 sumDeposit = uint256(depositAmount[0]) +
-            uint256(depositAmount[1]) +
-            uint256(depositAmount[2]) +
-            uint256(depositAmount[3]) +
-            uint256(profitAccrued);
-
-        for (uint256 i = 0; i < 10; i++) {
-            if (withdrawAmount[i] > sumDeposit) {
-                continue;
-            }
-            sumDeposit -= withdrawAmount[i];
-        }
-
-        MockPCVOracle oracle = new MockPCVOracle();
-        vm.prank(addresses.governorAddress);
-        morphoDeposit.setPCVOracle(address(oracle));
-        assertEq(morphoDeposit.pcvOracle(), address(oracle));
 
         assertEq(oracle.pcvAmount(), sumDeposit.toInt256());
     }

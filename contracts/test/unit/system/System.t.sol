@@ -19,8 +19,9 @@ import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {IScalingPriceOracle} from "../../../oracle/IScalingPriceOracle.sol";
-import {IGRLM, GlobalRateLimitedMinter} from "../../../minter/GlobalRateLimitedMinter.sol";
-import {getCoreV2, getAddresses, getVoltAddresses, VoltAddresses, VoltTestAddresses} from "./../utils/Fixtures.sol";
+import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../../limiter/GlobalRateLimitedMinter.sol";
+import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
+import {getCoreV2, getVoltAddresses, VoltAddresses} from "./../utils/Fixtures.sol";
 
 import "hardhat/console.sol";
 
@@ -61,8 +62,6 @@ interface IERC20Mintable is IERC20 {
 
 contract SystemUnitTest is Test {
     using SafeCast for *;
-
-    VoltTestAddresses public addresses = getAddresses();
     VoltAddresses public guardianAddresses = getVoltAddresses();
 
     ICoreV2 private core;
@@ -195,12 +194,7 @@ contract SystemUnitTest is Test {
             address(timelockController),
             toWhitelist
         );
-        allocator = new ERC20Allocator(
-            coreAddress,
-            maxRateLimitPerSecond,
-            rateLimitPerSecond,
-            bufferCap
-        );
+        allocator = new ERC20Allocator(coreAddress);
         router = new CompoundPCVRouter(
             coreAddress,
             PCVDeposit(address(pcvDepositDai)),
@@ -238,7 +232,9 @@ contract SystemUnitTest is Test {
 
         core.grantLocker(address(grlm));
 
-        core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
+        core.setGlobalRateLimitedMinter(
+            IGlobalRateLimitedMinter(address(grlm))
+        );
 
         allocator.connectPSM(
             address(usdcpsm),

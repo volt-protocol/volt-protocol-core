@@ -21,8 +21,10 @@ import {PegStabilityModule} from "../peg/PegStabilityModule.sol";
 import {IScalingPriceOracle} from "../oracle/IScalingPriceOracle.sol";
 import {IPCVDeposit, PCVDeposit} from "../pcv/PCVDeposit.sol";
 import {MorphoCompoundPCVDeposit} from "../pcv/morpho/MorphoCompoundPCVDeposit.sol";
-import {IGRLM, GlobalRateLimitedMinter} from "../minter/GlobalRateLimitedMinter.sol";
-import {getCoreV2, getAddresses, getVoltAddresses, VoltAddresses, VoltTestAddresses} from "../test/unit/utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../test/unit/utils/TestAddresses.sol";
+import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../limiter/GlobalRateLimitedMinter.sol";
+import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "../limiter/GlobalSystemExitRateLimiter.sol";
+import {getCoreV2, getVoltAddresses, VoltAddresses} from "../test/unit/utils/Fixtures.sol";
 
 import "hardhat/console.sol";
 
@@ -51,7 +53,6 @@ import "hardhat/console.sol";
 contract SystemDeploy {
     using SafeCast for *;
 
-    VoltTestAddresses public addresses = getAddresses();
     VoltAddresses public guardianAddresses = getVoltAddresses();
 
     CoreV2 private core;
@@ -71,6 +72,7 @@ contract SystemDeploy {
     VoltSystemOracle private vso;
     TimelockController public timelockController;
     GlobalRateLimitedMinter public grlm;
+    GlobalSystemExitRateLimiter public gserl;
     address private coreAddress;
 
     IERC20 private usdc;
@@ -131,6 +133,12 @@ contract SystemDeploy {
             maxRateLimitPerSecondMinting,
             rateLimitPerSecondMinting,
             bufferCapMinting
+        );
+        gserl = new GlobalSystemExitRateLimiter(
+            coreAddress,
+            maxRateLimitPerSecond,
+            rateLimitPerSecond,
+            bufferCap
         );
 
         usdcpsm = new PegStabilityModule(
@@ -219,12 +227,7 @@ contract SystemDeploy {
             address(timelockController),
             toWhitelist
         );
-        allocator = new ERC20Allocator(
-            coreAddress,
-            maxRateLimitPerSecond,
-            rateLimitPerSecond,
-            bufferCap
-        );
+        allocator = new ERC20Allocator(coreAddress);
         router = new CompoundPCVRouter(
             coreAddress,
             PCVDeposit(address(daiPcvDeposit)),
@@ -254,13 +257,24 @@ contract SystemDeploy {
         core.grantRateLimitedRedeemer(address(daiNonCustodialPsm));
         core.grantRateLimitedRedeemer(address(usdcNonCustodialPsm));
 
+        core.grantSystemExitRateLimitReplenisher(address(allocator));
+        core.grantSystemExitRateLimitDepleter(address(daiNonCustodialPsm));
+        core.grantSystemExitRateLimitDepleter(address(usdcNonCustodialPsm));
+        core.grantSystemExitRateLimitDepleter(address(allocator));
+
         core.grantLocker(address(allocator));
         core.grantLocker(address(daipsm));
         core.grantLocker(address(usdcpsm));
         core.grantLocker(address(grlm));
+        core.grantLocker(address(gserl));
 
         core.grantMinter(address(grlm));
-        core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
+        core.setGlobalRateLimitedMinter(
+            IGlobalRateLimitedMinter(address(grlm))
+        );
+        core.setGlobalSystemExitRateLimiter(
+            IGlobalSystemExitRateLimiter(address(gserl))
+        );
 
         allocator.connectPSM(
             address(usdcpsm),

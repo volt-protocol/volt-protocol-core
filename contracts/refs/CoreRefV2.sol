@@ -5,16 +5,17 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {IGRLM} from "../minter/IGRLM.sol";
+import {IGlobalRateLimitedMinter} from "../limiter/IGlobalRateLimitedMinter.sol";
+import {IGlobalSystemExitRateLimiter} from "../limiter/IGlobalSystemExitRateLimiter.sol";
 import {VoltRoles} from "./../core/VoltRoles.sol";
 import {ICoreRefV2} from "./ICoreRefV2.sol";
-import {IPCVOracle} from "./../pcv/morpho/IPCVOracle.sol";
+import {IPCVOracle} from "./../oracle/IPCVOracle.sol";
 import {CoreV2, ICoreV2} from "./../core/CoreV2.sol";
 import {IVolt, IVoltBurn} from "./../volt/IVolt.sol";
 import {IGlobalReentrancyLock} from "./../core/IGlobalReentrancyLock.sol";
 
 /// @title A Reference to Core
-/// @author Volt & Fei Protocol
+/// @author Volt Protocol
 /// @notice defines some modifiers and utilities around interacting with Core
 abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     using SafeERC20 for IERC20;
@@ -44,18 +45,6 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         _core.lock(level);
         _;
         _core.unlock(startingLevel);
-    }
-
-    /// 1. validate system is already at level 1 locked
-    /// 2. call core and lock the lock to level 2
-    /// 3. execute the code
-    /// 4. call core and unlock the lock to level 2
-    modifier globalLockLevelTwo() {
-        uint8 currentLevel = _core.lockLevel();
-        require(currentLevel == 1, "CoreRef: restricted lock");
-        _core.lock(2);
-        _;
-        _core.unlock(1);
     }
 
     modifier isGlobalReentrancyLocked() {
@@ -188,9 +177,25 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     }
 
     /// @notice address of the GlobalRateLimitedMinter contract referenced by Core
-    /// @return IGRLM implementation address
-    function globalRateLimitedMinter() public view override returns (IGRLM) {
+    /// @return IGlobalRateLimitedMinter implementation address
+    function globalRateLimitedMinter()
+        public
+        view
+        override
+        returns (IGlobalRateLimitedMinter)
+    {
         return _core.globalRateLimitedMinter();
+    }
+
+    /// @notice address of the GlobalSystemExitRateLimiter contract referenced by Core
+    /// @return IGlobalSystemExitRateLimiter implementation address
+    function globalSystemExitRateLimiter()
+        public
+        view
+        override
+        returns (IGlobalSystemExitRateLimiter)
+    {
+        return _core.globalSystemExitRateLimiter();
     }
 
     /// @notice volt balance of contract

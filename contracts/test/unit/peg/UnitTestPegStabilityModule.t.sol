@@ -17,13 +17,13 @@ import {Test, console2} from "../../../../forge-std/src/Test.sol";
 import {NonCustodialPSM} from "../../../peg/NonCustodialPSM.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
-import {IGRLM, GlobalRateLimitedMinter} from "../../../minter/GlobalRateLimitedMinter.sol";
-import {getCoreV2, getAddresses, getLocalOracleSystem, VoltTestAddresses} from "./../../unit/utils/Fixtures.sol";
+import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../../limiter/GlobalRateLimitedMinter.sol";
+import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
+import {getCoreV2, getLocalOracleSystem} from "./../../unit/utils/Fixtures.sol";
 
 /// PSM Unit Test that tests new PSM to ensure proper behavior
 contract UnitTestPegStabilityModule is Test {
     using SafeCast for *;
-    VoltTestAddresses public addresses = getAddresses();
 
     /// @notice PSM to test against
     PegStabilityModule private psm;
@@ -95,7 +95,9 @@ contract UnitTestPegStabilityModule is Test {
         vm.startPrank(addresses.governorAddress);
 
         core.grantPCVController(address(pcvGuardian));
-        core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
+        core.setGlobalRateLimitedMinter(
+            IGlobalRateLimitedMinter(address(grlm))
+        );
         core.grantMinter(address(grlm));
 
         core.grantRateLimitedRedeemer(address(psm));

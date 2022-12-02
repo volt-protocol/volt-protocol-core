@@ -15,8 +15,9 @@ import {SystemEntry} from "../../entry/SystemEntry.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {IOraclePassThrough} from "../../oracle/IOraclePassThrough.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
-import {IGRLM, GlobalRateLimitedMinter} from "../../minter/GlobalRateLimitedMinter.sol";
-import {getCoreV2, getAddresses, VoltTestAddresses} from "./../unit/utils/Fixtures.sol";
+import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../limiter/GlobalRateLimitedMinter.sol";
+import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
+import {getCoreV2} from "./../unit/utils/Fixtures.sol";
 
 /// Differential Test that compares current production PSM to the new PSM
 /// to ensure parity in behavior
@@ -24,8 +25,6 @@ import {getCoreV2, getAddresses, VoltTestAddresses} from "./../unit/utils/Fixtur
 /// increase values for fuzzer for more realistic tests
 contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
     using SafeCast for *;
-
-    VoltTestAddresses public addresses = getAddresses();
 
     /// reference PSM to test against
     PegStabilityModule private immutable priceBoundPsm =
@@ -92,7 +91,9 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
 
         vm.startPrank(addresses.governorAddress);
 
-        tmpCore.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
+        tmpCore.setGlobalRateLimitedMinter(
+            IGlobalRateLimitedMinter(address(grlm))
+        );
         tmpCore.grantMinter(address(grlm));
         tmpCore.grantRateLimitedMinter(address(cleanPsm));
         tmpCore.grantRateLimitedRedeemer(address(cleanPsm));

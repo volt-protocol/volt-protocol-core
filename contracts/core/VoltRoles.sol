@@ -35,8 +35,19 @@ library VoltRoles {
     bytes32 internal constant VOLT_RATE_LIMITED_REDEEMER_ROLE =
         keccak256("VOLT_RATE_LIMITED_REDEEMER_ROLE");
 
+    /// @notice can replenish buffer through GlobalSystemExitRateLimiter
+    bytes32 internal constant VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH_ROLE =
+        keccak256("VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH_ROLE");
+
+    /// @notice can delpete buffer through the GlobalSystemExitRateLimiter buffer
+    bytes32 internal constant VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE =
+        keccak256("VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE");
+
     /// @notice is able to withdraw whitelisted PCV deposits to a safe address
     bytes32 internal constant PCV_GUARD = keccak256("PCV_GUARD_ROLE");
+
+    /// @notice is able to move PCV between deposits
+    bytes32 internal constant PCV_MOVER = keccak256("PCV_MOVER_ROLE");
 
     /// @notice system state role can lock and unlock the global reentrancy
     /// lock. this allows for a system wide reentrancy lock.
@@ -56,4 +67,11 @@ library VoltRoles {
 
     /// @notice capable of changing PCV Deposit and Global Rate Limited Minter in the PSM
     bytes32 internal constant PSM_ADMIN_ROLE = keccak256("PSM_ADMIN_ROLE");
+
+    /// @notice granted to liquid PCV Deposits
+    bytes32 internal constant LIQUID_PCV_DEPOSIT_ROLE =
+        keccak256("LIQUID_PCV_DEPOSIT_ROLE");
+    /// @notice granted to illiquid PCV Deposits
+    bytes32 internal constant ILLIQUID_PCV_DEPOSIT_ROLE =
+        keccak256("ILLIQUID_PCV_DEPOSIT_ROLE");
 }
