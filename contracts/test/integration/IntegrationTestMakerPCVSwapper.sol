@@ -2,17 +2,16 @@
 pragma solidity =0.8.13;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 import {Vm} from "../unit/utils/Vm.sol";
+import {Test} from "../../../forge-std/src/Test.sol";
 import {CoreV2} from "../../core/CoreV2.sol";
-import {DSTest} from "../unit/utils/DSTest.sol";
+import {getCoreV2} from "./../unit/utils/Fixtures.sol";
 import {MakerPCVSwapper} from "../../pcv/maker/MakerPCVSwapper.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
-import {getCoreV2} from "./../unit/utils/Fixtures.sol";
 
-contract IntegrationTestMakerPCVSwapper is DSTest {
-    Vm public constant vm = Vm(HEVM_ADDRESS);
-
+contract IntegrationTestMakerPCVSwapper is Test {
     CoreV2 private core;
     MakerPCVSwapper private swapper;
     IERC20 private dai = IERC20(MainnetAddresses.DAI);
@@ -24,10 +23,8 @@ contract IntegrationTestMakerPCVSwapper is DSTest {
         swapper = new MakerPCVSwapper(address(core));
 
         // Get some DAI and USDC for tests
-        vm.startPrank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
-        dai.transfer(address(this), BALANCE);
-        usdc.transfer(address(this), BALANCE / 1e12);
-        vm.stopPrank();
+        deal(address(dai), address(this), BALANCE);
+        deal(address(usdc), address(this), BALANCE / 1e12);
     }
 
     function testSetup() public {

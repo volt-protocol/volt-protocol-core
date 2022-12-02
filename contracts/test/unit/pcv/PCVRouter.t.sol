@@ -2,23 +2,22 @@
 pragma solidity 0.8.13;
 
 import {Vm} from "../utils/Vm.sol";
-import {DSTest} from "./../utils/DSTest.sol";
+import {Test} from "../../../../forge-std/src/Test.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
 import {PCVRouter} from "../../../pcv/PCVRouter.sol";
 import {PCVOracle} from "../../../oracle/PCVOracle.sol";
-import {SystemEntry} from "../../../entry/SystemEntry.sol";
-import {MockPCVDepositV3} from "../../../mock/MockPCVDepositV3.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
-import {MockPCVSwapper} from "../../../mock/MockPCVSwapper.sol";
-import {MockOracle} from "../../../mock/MockOracle.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {getCoreV2} from "./../utils/Fixtures.sol";
+import {MockOracle} from "../../../mock/MockOracle.sol";
+import {SystemEntry} from "../../../entry/SystemEntry.sol";
+import {MockPCVSwapper} from "../../../mock/MockPCVSwapper.sol";
+import {MockPCVDepositV3} from "../../../mock/MockPCVDepositV3.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 
-contract PCVRouterUnitTest is DSTest {
+contract PCVRouterUnitTest is Test {
     CoreV2 private core;
     SystemEntry public entry;
-    Vm public constant vm = Vm(HEVM_ADDRESS);
 
     // reference to the volt pcv oracle
     PCVOracle private pcvOracle;

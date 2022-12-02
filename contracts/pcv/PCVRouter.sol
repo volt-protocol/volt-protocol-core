@@ -3,12 +3,12 @@ pragma solidity 0.8.13;
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {IPCVRouter} from "./IPCVRouter.sol";
-import {IPCVSwapper} from "./IPCVSwapper.sol";
 import {CoreRefV2} from "../refs/CoreRefV2.sol";
-import {IPCVDeposit} from "./IPCVDeposit.sol";
 import {VoltRoles} from "../core/VoltRoles.sol";
 import {PCVOracle} from "../oracle/PCVOracle.sol";
+import {IPCVRouter} from "./IPCVRouter.sol";
+import {IPCVSwapper} from "./IPCVSwapper.sol";
+import {IPCVDeposit} from "./IPCVDeposit.sol";
 
 /// @title Volt Protocol PCV Router
 /// @notice A contract that allows PCV movements between deposits.
@@ -105,6 +105,7 @@ contract PCVRouter is IPCVRouter, CoreRefV2 {
     ) external whenNotPaused onlyVoltRole(VoltRoles.PCV_MOVER) globalLock(1) {
         // Check both deposits are still valid for PCVOracle
         address _pcvOracle = pcvOracle;
+
         if (sourceIsLiquid) {
             require(
                 PCVOracle(_pcvOracle).isLiquidVenue(source),
@@ -116,6 +117,7 @@ contract PCVRouter is IPCVRouter, CoreRefV2 {
                 "PCVRouter: invalid illiquid source"
             );
         }
+
         if (destinationIsLiquid) {
             require(
                 PCVOracle(_pcvOracle).isLiquidVenue(destination),
@@ -127,6 +129,7 @@ contract PCVRouter is IPCVRouter, CoreRefV2 {
                 "PCVRouter: invalid illiquid destination"
             );
         }
+
         // Check underlying tokens
         require(
             IPCVDeposit(source).balanceReportedIn() == sourceAsset,

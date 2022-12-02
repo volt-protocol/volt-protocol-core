@@ -4,8 +4,8 @@ pragma solidity 0.8.13;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IDSSPSM} from "./IDSSPSM.sol";
-import {IPCVSwapper} from "../IPCVSwapper.sol";
 import {CoreRefV2} from "../../refs/CoreRefV2.sol";
+import {IPCVSwapper} from "../IPCVSwapper.sol";
 
 /// @notice This contracts allows swaps between DAI and USDC through Maker's DAI PSM.
 /// @author eswak
