@@ -11,7 +11,7 @@ import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {vip13} from "./vip/vip13.sol";
 import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
 import {IPCVGuardian} from "../../pcv/IPCVGuardian.sol";
-import {IGRLM, GlobalRateLimitedMinter} from "../../minter/GlobalRateLimitedMinter.sol";
+import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../limiter/GlobalRateLimitedMinter.sol";
 
 contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
     using SafeCast for *;
@@ -70,7 +70,9 @@ contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
             bufferCapMinting
         );
 
-        coreV2.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
+        coreV2.setGlobalRateLimitedMinter(
+            IGlobalRateLimitedMinter(address(grlm))
+        );
         coreV2.grantMinter(address(grlm));
         coreV2.grantRateLimitedRedeemer(address(voltV2DaiPriceBoundPSM));
         coreV2.grantRateLimitedRedeemer(address(voltV2UsdcPriceBoundPSM));

@@ -6,8 +6,10 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
 import {DSTest} from "../unit/utils/DSTest.sol";
 import {DSInvariantTest} from "../unit/utils/DSInvariantTest.sol";
 import {Vm} from "../unit/utils/Vm.sol";
-import {ICore} from "../../core/ICore.sol";
-import {getCore, getAddresses, VoltTestAddresses} from "../unit/utils/Fixtures.sol";
+import {ICoreV2} from "../../core/ICoreV2.sol";
+import {getCoreV2} from "../unit/utils/Fixtures.sol";
+import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
+
 import {VoltV2} from "../../volt/VoltV2.sol";
 import {MockDAO, IVotes} from "../../mock/MockDAO.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
@@ -15,7 +17,7 @@ import {MockERC20} from "../../mock/MockERC20.sol";
 contract InvariantTestVoltGovCompatibility is DSTest, DSInvariantTest {
     VoltTester public voltTester;
     VoltV2 public volt;
-    ICore public core;
+    ICoreV2 public core;
 
     MockDAO public mockDAO;
     MockERC20 public mockToken;
@@ -27,7 +29,7 @@ contract InvariantTestVoltGovCompatibility is DSTest, DSInvariantTest {
     Vm private vm = Vm(HEVM_ADDRESS);
 
     function setUp() public {
-        core = getCore();
+        core = getCoreV2();
         volt = new VoltV2(address(core));
 
         address[] memory proposerCancellerAddresses = new address[](1);
@@ -123,7 +125,6 @@ contract VoltTester is DSTest {
     MockDAO public mockDAO;
     uint256 public proposalId;
 
-    VoltTestAddresses public addresses = getAddresses();
     Vm private vm = Vm(HEVM_ADDRESS);
     mapping(address => uint256) public balances;
     mapping(address => bool) public isUser;
