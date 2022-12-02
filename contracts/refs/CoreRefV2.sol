@@ -23,12 +23,6 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     /// @notice reference to Core
     CoreV2 private _core;
 
-    /// @notice reference to the PCV Oracle. Settable by governance
-    /// if set, anytime PCV is updated, delta is sent in to update liquid
-    /// amount of PCV held
-    /// not set in the constructor
-    address public pcvOracle;
-
     constructor(address coreAddress) {
         _core = CoreV2(coreAddress);
     }
@@ -176,6 +170,12 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         return _core.vcon();
     }
 
+    /// @notice address of the PCVOracle contract referenced by Core
+    /// @return IPCVOracle implementation address
+    function pcvOracle() public view override returns (IPCVOracle) {
+        return _core.pcvOracle();
+    }
+
     /// @notice address of the GlobalRateLimitedMinter contract referenced by Core
     /// @return IGlobalRateLimitedMinter implementation address
     function globalRateLimitedMinter()
@@ -235,17 +235,8 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         address token,
         address to,
         uint256 amount
-    ) external onlyGovernor {
+    ) external virtual onlyGovernor {
         IERC20(token).safeTransfer(to, amount);
-    }
-
-    /// @notice set the pcv oracle address
-    /// @param _pcvOracle new pcv oracle to reference
-    function setPCVOracle(address _pcvOracle) external virtual onlyGovernor {
-        address oldOracle = pcvOracle;
-        pcvOracle = _pcvOracle;
-
-        emit PCVOracleUpdated(oldOracle, _pcvOracle);
     }
 
     /// ------------------------------------------
@@ -290,18 +281,20 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     /// @notice hook into the pcv oracle, calls into pcv oracle with delta
     /// if pcv oracle is not set to address 0, and updates the liquid balance
     function _liquidPcvOracleHook(int256 delta) internal {
-        if (pcvOracle != address(0)) {
+        IPCVOracle _pcvOracle = pcvOracle();
+        if (address(_pcvOracle) != address(0)) {
             /// if any amount of PCV is withdrawn and no gains, delta is negative
-            IPCVOracle(pcvOracle).updateLiquidBalance(delta);
+            _pcvOracle.updateLiquidBalance(delta);
         }
     }
 
     /// @notice hook into the pcv oracle, calls into pcv oracle with delta
     /// if pcv oracle is not set to address 0, and updates the illiquid balance
     function _illiquidPcvOracleHook(int256 delta) internal {
-        if (pcvOracle != address(0)) {
+        IPCVOracle _pcvOracle = pcvOracle();
+        if (address(_pcvOracle) != address(0)) {
             /// if any amount of PCV is withdrawn and no gains, delta is negative
-            IPCVOracle(pcvOracle).updateIlliquidBalance(delta);
+            _pcvOracle.updateIlliquidBalance(delta);
         }
     }
 }

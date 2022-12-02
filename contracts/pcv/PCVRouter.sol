@@ -5,7 +5,7 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 
 import {CoreRefV2} from "../refs/CoreRefV2.sol";
 import {VoltRoles} from "../core/VoltRoles.sol";
-import {PCVOracle} from "../oracle/PCVOracle.sol";
+import {IPCVOracle} from "../oracle/IPCVOracle.sol";
 import {IPCVRouter} from "./IPCVRouter.sol";
 import {IPCVSwapper} from "./IPCVSwapper.sol";
 import {IPCVDeposit} from "./IPCVDeposit.sol";
@@ -104,28 +104,28 @@ contract PCVRouter is IPCVRouter, CoreRefV2 {
         bool destinationIsLiquid
     ) external whenNotPaused onlyVoltRole(VoltRoles.PCV_MOVER) globalLock(1) {
         // Check both deposits are still valid for PCVOracle
-        address _pcvOracle = pcvOracle;
+        IPCVOracle _pcvOracle = pcvOracle();
 
         if (sourceIsLiquid) {
             require(
-                PCVOracle(_pcvOracle).isLiquidVenue(source),
+                _pcvOracle.isLiquidVenue(source),
                 "PCVRouter: invalid liquid source"
             );
         } else {
             require(
-                PCVOracle(_pcvOracle).isIlliquidVenue(source),
+                _pcvOracle.isIlliquidVenue(source),
                 "PCVRouter: invalid illiquid source"
             );
         }
 
         if (destinationIsLiquid) {
             require(
-                PCVOracle(_pcvOracle).isLiquidVenue(destination),
+                _pcvOracle.isLiquidVenue(destination),
                 "PCVRouter: invalid liquid destination"
             );
         } else {
             require(
-                PCVOracle(_pcvOracle).isIlliquidVenue(destination),
+                _pcvOracle.isIlliquidVenue(destination),
                 "PCVRouter: invalid illiquid destination"
             );
         }

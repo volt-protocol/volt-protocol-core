@@ -222,8 +222,8 @@ contract vip14 is DSTest, IVIP {
         assertEq(address(daiDeposit.core()), core);
         assertEq(address(router.core()), core);
 
-        assertEq(daiDeposit.pcvOracle(), address(0));
-        assertEq(usdcDeposit.pcvOracle(), address(0));
+        assertEq(address(daiDeposit.pcvOracle()), address(0));
+        assertEq(address(usdcDeposit.pcvOracle()), address(0));
         assertEq(daiDeposit.morpho(), MainnetAddresses.MORPHO);
         assertEq(usdcDeposit.morpho(), MainnetAddresses.MORPHO);
         assertEq(daiDeposit.lens(), MainnetAddresses.MORPHO_LENS);

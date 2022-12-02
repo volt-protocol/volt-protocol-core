@@ -1,6 +1,6 @@
 pragma solidity =0.8.13;
 
-import {vip14} from "./vip14.sol";
+import {vip13} from "./vip13.sol";
 // import {vipx} from "./vipx.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {TimelockSimulation} from "../utils/TimelockSimulation.sol";
@@ -10,7 +10,7 @@ import {PCVGuardian} from "./../../../pcv/PCVGuardian.sol";
 
 /// @dev test harness for running and simulating VOLT Improvement Proposals
 /// inherit the proposal to simulate
-contract Runner is TimelockSimulation, vip14 {
+contract Runner is TimelockSimulation, vip13 {
     /// @notice mainnet PCV Guardian
     PCVGuardian private immutable mainnetPCVGuardian =
         PCVGuardian(MainnetAddresses.PCV_GUARDIAN);
@@ -19,10 +19,8 @@ contract Runner is TimelockSimulation, vip14 {
     PCVGuardian private immutable arbitrumPCVGuardian =
         PCVGuardian(ArbitrumAddresses.PCV_GUARDIAN);
 
-    /// remove all function calls inside testProposal and don't inherit the VIP
-    /// once the proposal is live and passed
     function testProposalMainnet() public {
-        mainnetSetup();
+        // mainnet setup not called as it is called in the proposal constructor
         simulate(
             getMainnetProposal(),
             TimelockController(payable(MainnetAddresses.TIMELOCK_CONTROLLER)),

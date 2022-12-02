@@ -9,6 +9,7 @@ import {PCVOracle} from "../../../oracle/PCVOracle.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {getCoreV2} from "./../utils/Fixtures.sol";
+import {IPCVOracle} from "../../../oracle/IPCVOracle.sol";
 import {MockOracle} from "../../../mock/MockOracle.sol";
 import {SystemEntry} from "../../../entry/SystemEntry.sol";
 import {MockPCVSwapper} from "../../../mock/MockPCVSwapper.sol";
@@ -140,12 +141,12 @@ contract PCVRouterUnitTest is Test {
 
         // setup PCVRouter
         vm.prank(addresses.governorAddress);
-        pcvRouter.setPCVOracle(address(pcvOracle));
+        core.setPCVOracle(IPCVOracle(address(pcvOracle)));
     }
 
     function testSetup() public {
         assertEq(address(pcvRouter.core()), address(core));
-        assertEq(pcvRouter.pcvOracle(), address(pcvOracle));
+        assertEq(address(pcvRouter.pcvOracle()), address(pcvOracle));
         assertEq(pcvRouter.getPCVSwappers().length, 0);
     }
 

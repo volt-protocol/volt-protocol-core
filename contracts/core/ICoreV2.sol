@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {IGlobalRateLimitedMinter} from "../limiter/IGlobalRateLimitedMinter.sol";
-import {IGlobalSystemExitRateLimiter} from "../limiter/IGlobalSystemExitRateLimiter.sol";
+import {IPCVOracle} from "../oracle/IPCVOracle.sol";
 import {IVolt, IERC20} from "../volt/IVolt.sol";
 import {IPermissionsV2} from "./IPermissionsV2.sol";
+import {IGlobalRateLimitedMinter} from "../limiter/IGlobalRateLimitedMinter.sol";
+import {IGlobalSystemExitRateLimiter} from "../limiter/IGlobalSystemExitRateLimiter.sol";
 
 /// @title Core Interface
 /// @author Volt Protocol
@@ -21,6 +22,12 @@ interface ICoreV2 is IPermissionsV2 {
     event GlobalRateLimitedMinterUpdate(
         address indexed oldGrlm,
         address indexed newGrlm
+    );
+
+    /// @notice emitted when reference to PCV oracle is updated
+    event PCVOracleUpdate(
+        address indexed oldPcvOracle,
+        address indexed newPcvOracle
     );
 
     /// @notice emitted when reference to global system exit rate limiter is updated
@@ -43,6 +50,9 @@ interface ICoreV2 is IPermissionsV2 {
         view
         returns (IGlobalRateLimitedMinter);
 
+    /// @notice returns reference to the pcv oracle
+    function pcvOracle() external view returns (IPCVOracle);
+
     // ----------- Governance Only API -----------
 
     /// @notice governor only function to set the Global Rate Limited Minter
@@ -56,6 +66,10 @@ interface ICoreV2 is IPermissionsV2 {
     function setGlobalSystemExitRateLimiter(
         IGlobalSystemExitRateLimiter newGlobalSystemExitRateLimiter
     ) external;
+
+    /// @notice governor only function to set the PCV Oracle
+    /// @param newPCVOracle new volt pcv oracle
+    function setPCVOracle(IPCVOracle newPCVOracle) external;
 
     /// @notice governor only function to set the VOLT token
     /// @param newVolt new volt token
