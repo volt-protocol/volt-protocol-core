@@ -1,6 +1,6 @@
 pragma solidity =0.8.13;
 
-import {IGRLM} from "./IGRLM.sol";
+import {IGlobalRateLimitedMinter} from "./IGlobalRateLimitedMinter.sol";
 import {CoreRefV2} from "../refs/CoreRefV2.sol";
 import {VoltRoles} from "../core/VoltRoles.sol";
 import {RateLimitedV2} from "../utils/RateLimitedV2.sol";
@@ -11,7 +11,7 @@ import {RateLimitedV2} from "../utils/RateLimitedV2.sol";
 /// through this contract on a global rate limit.
 /// Peg Stability Modules will be granted the VOLT_RATE_LIMITED_REDEEMER_ROLE to replenish
 /// this contract's on a global rate limit when burning Volt.
-contract GlobalRateLimitedMinter is IGRLM, RateLimitedV2 {
+contract GlobalRateLimitedMinter is IGlobalRateLimitedMinter, RateLimitedV2 {
     /// @param _core reference to the core smart contract
     /// @param _maxRateLimitPerSecond maximum rate limit per second that governance can set
     /// @param _rateLimitPerSecond starting rate limit per second for Volt minting

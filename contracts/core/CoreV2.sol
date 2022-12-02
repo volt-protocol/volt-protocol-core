@@ -4,11 +4,12 @@ pragma solidity 0.8.13;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IVolt} from "../volt/IVolt.sol";
-import {IGRLM} from "../minter/IGRLM.sol";
 import {ICoreV2} from "./ICoreV2.sol";
 import {PermissionsV2} from "./PermissionsV2.sol";
 import {IPCVOracle} from "../oracle/IPCVOracle.sol";
 import {GlobalReentrancyLock} from "./GlobalReentrancyLock.sol";
+import {IGlobalRateLimitedMinter} from "../limiter/IGlobalRateLimitedMinter.sol";
+import {IGlobalSystemExitRateLimiter} from "../limiter/IGlobalSystemExitRateLimiter.sol";
 
 /// @title Source of truth for VOLT Protocol
 /// @author Volt Protocol
@@ -21,7 +22,10 @@ contract CoreV2 is ICoreV2, PermissionsV2, GlobalReentrancyLock {
     IERC20 public override vcon;
 
     /// @notice address of the global rate limited minter
-    IGRLM public globalRateLimitedMinter;
+    IGlobalRateLimitedMinter public globalRateLimitedMinter;
+
+    /// @notice address of the global system exit rate limiter
+    IGlobalSystemExitRateLimiter public globalSystemExitRateLimiter;
 
     /// @notice address of the pcv oracle
     IPCVOracle public pcvOracle;
@@ -56,7 +60,7 @@ contract CoreV2 is ICoreV2, PermissionsV2, GlobalReentrancyLock {
     /// @notice governor only function to set the Global Rate Limited Minter
     /// @param newGlobalRateLimitedMinter new volt global rate limited minter
     function setGlobalRateLimitedMinter(
-        IGRLM newGlobalRateLimitedMinter
+        IGlobalRateLimitedMinter newGlobalRateLimitedMinter
     ) external onlyGovernor {
         address oldGrlm = address(globalRateLimitedMinter);
         globalRateLimitedMinter = newGlobalRateLimitedMinter;
@@ -74,5 +78,19 @@ contract CoreV2 is ICoreV2, PermissionsV2, GlobalReentrancyLock {
         pcvOracle = newPCVOracle;
 
         emit PCVOracleUpdate(oldPCVOracle, address(newPCVOracle));
+    }
+
+    /// @notice governor only function to set the Global Rate Limited Minter
+    /// @param newGlobalSystemExitRateLimiter new volt global rate limited minter
+    function setGlobalSystemExitRateLimiter(
+        IGlobalSystemExitRateLimiter newGlobalSystemExitRateLimiter
+    ) external onlyGovernor {
+        address oldGserl = address(globalSystemExitRateLimiter);
+        globalSystemExitRateLimiter = newGlobalSystemExitRateLimiter;
+
+        emit GlobalSystemExitRateLimiterUpdate(
+            oldGserl,
+            address(newGlobalSystemExitRateLimiter)
+        );
     }
 }

@@ -359,4 +359,50 @@ contract UnitTestPermissionsV2 is DSTest {
         vm.expectRevert("Permissions: Caller is not a governor");
         core.revokeRateLimitedRedeemer(address(this));
     }
+
+    function testGovAddsRateLimitedDepleterRoleSucceeds() public {
+        vm.prank(addresses.governorAddress);
+        core.grantSystemExitRateLimitDepleter(address(this));
+        assertTrue(core.isSystemExitRateLimitDepleter(address(this)));
+    }
+
+    function testGovRevokesRateLimitedDepleterRoleSucceeds() public {
+        testGovAddsRedeemerRoleSucceeds();
+        vm.prank(addresses.governorAddress);
+        core.revokeSystemExitRateLimitDepleter(address(this));
+        assertTrue(!core.isSystemExitRateLimitDepleter(address(this)));
+    }
+
+    function testNonGovAddsRateLimitedDepleterRoleFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.grantSystemExitRateLimitDepleter(address(this));
+    }
+
+    function testNonGovRevokesRateLimitedDepleterRoleFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.revokeSystemExitRateLimitDepleter(address(this));
+    }
+
+    function testGovAddsRateLimitedReplenisherRoleSucceeds() public {
+        vm.prank(addresses.governorAddress);
+        core.grantSystemExitRateLimitReplenisher(address(this));
+        assertTrue(core.isSystemExitRateLimitReplenisher(address(this)));
+    }
+
+    function testGovRevokesRateLimitedReplenisherRoleSucceeds() public {
+        testGovAddsRedeemerRoleSucceeds();
+        vm.prank(addresses.governorAddress);
+        core.revokeSystemExitRateLimitReplenisher(address(this));
+        assertTrue(!core.isSystemExitRateLimitReplenisher(address(this)));
+    }
+
+    function testNonGovAddsRateLimitedReplenisherRoleFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.grantSystemExitRateLimitReplenisher(address(this));
+    }
+
+    function testNonGovRevokesRateLimitedReplenisherRoleFails() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.revokeSystemExitRateLimitReplenisher(address(this));
+    }
 }

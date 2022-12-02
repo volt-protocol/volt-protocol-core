@@ -1,18 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {Vm} from "./../utils/Vm.sol";
-import {DSTest} from "./../utils/DSTest.sol";
+import {Test} from "../../../../forge-std/src/Test.sol";
 import {ICoreV2} from "../../../core/ICoreV2.sol";
-import {IPCVOracle} from "../../../oracle/IPCVOracle.sol";
-import {DynamicVoltSystemOracle} from "../../../oracle/DynamicVoltSystemOracle.sol";
-import {DynamicVoltRateModel} from "../../../oracle/DynamicVoltRateModel.sol";
 import {getCoreV2} from "./../utils/Fixtures.sol";
+import {IPCVOracle} from "../../../oracle/IPCVOracle.sol";
+import {LinearInterpolation} from "../utils/LinearInterpolation.sol";
+import {DynamicVoltRateModel} from "../../../oracle/DynamicVoltRateModel.sol";
+import {DynamicVoltSystemOracle} from "../../../oracle/DynamicVoltSystemOracle.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 
-contract DynamicVoltSystemOracleUnitTest is DSTest {
+contract DynamicVoltSystemOracleUnitTest is Test {
     ICoreV2 private core;
-    Vm public constant vm = Vm(HEVM_ADDRESS);
 
     /// @notice reference to the volt system oracle
     DynamicVoltRateModel private rateModel;
@@ -53,7 +52,10 @@ contract DynamicVoltSystemOracleUnitTest is DSTest {
     function setUp() public {
         core = getCoreV2();
 
-        rateModel = new DynamicVoltRateModel();
+        rateModel = new DynamicVoltRateModel(
+            0.3e18, // at less than 30% liquid reserves, rate jumps
+            0.5e18 // maximum APR for the VOLT rate = 50%
+        );
         systemOracle = new DynamicVoltSystemOracle(
             address(core),
             baseChangeRate,
@@ -76,6 +78,7 @@ contract DynamicVoltSystemOracleUnitTest is DSTest {
         );
         assertEq(systemOracle.baseChangeRate(), baseChangeRate);
         assertEq(systemOracle.actualChangeRate(), baseChangeRate);
+        assertEq(address(systemOracle.pcvOracle()), address(this));
         assertEq(systemOracle.rateModel(), address(rateModel));
         assertEq(systemOracle.TIMEFRAME(), TIMEFRAME);
     }
@@ -130,7 +133,7 @@ contract DynamicVoltSystemOracleUnitTest is DSTest {
         // after periodStartTime, rate grows linearly over the period of TIMEFRAME
         // use different lerp implementation to double-check business logic
         else {
-            uint256 expectedAccruedYield = _lerp(
+            uint256 expectedAccruedYield = LinearInterpolation.lerp(
                 currentTimestamp,
                 periodStartTime,
                 periodStartTime + TIMEFRAME,
@@ -294,19 +297,10 @@ contract DynamicVoltSystemOracleUnitTest is DSTest {
         vm.prank(addresses.governorAddress);
         systemOracle.updateBaseRate(baseRate);
 
-        // trust DynamicVotlRateModel.getRate to get the actualRate,
+        // trust DynamicVoltRateModel.getRate to get the actualRate,
         // see actual fuzz tests in DynamicVoltRateModel.t.sol for
         // checks on the correctness of this value.
         uint256 actualRate = rateModel.getRate(baseRate, liquidReserves);
-
-        // check events
-        vm.expectEmit(false, false, false, true, address(systemOracle));
-        emit InterestCompounded(
-            uint64(periodStartTime),
-            uint192(initialOraclePrice)
-        );
-        vm.expectEmit(false, false, false, true, address(systemOracle));
-        emit ActualRateUpdated(periodStartTime, baseRate, actualRate);
         systemOracle.updateActualRate(liquidReserves);
 
         // check state
@@ -319,9 +313,52 @@ contract DynamicVoltSystemOracleUnitTest is DSTest {
         assertEq(systemOracle.actualChangeRate(), actualRate);
     }
 
+    function testUpdateActualRateFuzzCompounding(
+        uint256 baseRate,
+        uint256 liquidReserves,
+        uint256 periodDuration
+    ) public {
+        vm.assume(baseRate < 100e18); // never set a base rate > 1000% APR
+        vm.assume(liquidReserves <= 1e18); // percent of liquid reserves can't be >100%
+        vm.assume(periodDuration <= TIMEFRAME);
+
+        // initialize state with the fuzzed base rate
+        vm.warp(periodStartTime);
+        vm.prank(addresses.governorAddress);
+        systemOracle.updateBaseRate(baseRate);
+        uint256 actualRate = rateModel.getRate(baseRate, liquidReserves);
+        systemOracle.updateActualRate(liquidReserves);
+
+        // compound over 10 periods to check the oracle value's growth
+        uint64 _periodStartTime = uint64(periodStartTime);
+        uint192 _periodStartOraclePrice = uint192(initialOraclePrice);
+        for (uint256 i = 0; i < 10; i++) {
+            _periodStartTime += uint64(periodDuration);
+            _periodStartOraclePrice += uint192(
+                (_periodStartOraclePrice * actualRate * periodDuration) /
+                    TIMEFRAME /
+                    1e18
+            );
+            vm.warp(_periodStartTime);
+            systemOracle.updateActualRate(liquidReserves);
+
+            assertEq(systemOracle.baseChangeRate(), baseRate);
+            assertEq(systemOracle.actualChangeRate(), actualRate);
+            assertEq(systemOracle.periodStartTime(), _periodStartTime);
+            assertEq(
+                systemOracle.periodStartOraclePrice(),
+                _periodStartOraclePrice
+            );
+            assertEq(
+                systemOracle.getCurrentOraclePrice(),
+                _periodStartOraclePrice
+            );
+        }
+    }
+
     function testUpdateActualRateAcl() public {
         vm.prank(address(0));
-        vm.expectRevert(bytes("MGO: Not PCV Oracle"));
+        vm.expectRevert(bytes("DynamicVoltSystemOracle: Not PCV Oracle"));
         systemOracle.updateActualRate(1e18);
     }
 }

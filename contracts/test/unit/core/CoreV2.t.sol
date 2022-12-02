@@ -10,12 +10,13 @@ import {Volt} from "../../../volt/Volt.sol";
 import {Vcon} from "../../../vcon/Vcon.sol";
 import {IVolt} from "../../../volt/Volt.sol";
 import {ICore} from "../../../core/ICore.sol";
-import {IGRLM} from "../../../minter/IGRLM.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
-import {IPCVOracle} from "../../../oracle/IPCVOracle.sol";
-import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 import {getCoreV2} from "./../utils/Fixtures.sol";
+import {IPCVOracle} from "../../../oracle/IPCVOracle.sol";
+import {IGlobalRateLimitedMinter} from "../../../limiter/IGlobalRateLimitedMinter.sol";
+import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
+import {IGlobalSystemExitRateLimiter} from "../../../limiter/IGlobalSystemExitRateLimiter.sol";
 
 contract UnitTestCoreV2 is DSTest {
     CoreV2 private core;
@@ -40,6 +41,12 @@ contract UnitTestCoreV2 is DSTest {
     event PCVOracleUpdate(
         address indexed oldPcvOracle,
         address indexed newPcvOracle
+    );
+
+    /// @notice emitted when reference to global system exit rate limiter is updated
+    event GlobalSystemExitRateLimiterUpdate(
+        address indexed oldGserl,
+        address indexed newGserl
     );
 
     function setUp() public {
@@ -91,14 +98,36 @@ contract UnitTestCoreV2 is DSTest {
         emit GlobalRateLimitedMinterUpdate(address(0), newGrlm);
 
         vm.prank(addresses.governorAddress);
-        core.setGlobalRateLimitedMinter(IGRLM(newGrlm));
+        core.setGlobalRateLimitedMinter(IGlobalRateLimitedMinter(newGrlm));
 
         assertEq(address(core.globalRateLimitedMinter()), newGrlm);
     }
 
     function testNonGovernorFailsSettingGlobalRateLimitedMinter() public {
         vm.expectRevert("Permissions: Caller is not a governor");
-        core.setGlobalRateLimitedMinter(IGRLM(addresses.userAddress));
+        core.setGlobalRateLimitedMinter(
+            IGlobalRateLimitedMinter(addresses.userAddress)
+        );
+    }
+
+    function testGovernorSetsGlobalSystemExitRateLimiter() public {
+        address newGserl = address(103927828732);
+        vm.expectEmit(true, true, false, true, address(core));
+        emit GlobalSystemExitRateLimiterUpdate(address(0), newGserl);
+
+        vm.prank(addresses.governorAddress);
+        core.setGlobalSystemExitRateLimiter(
+            IGlobalSystemExitRateLimiter(newGserl)
+        );
+
+        assertEq(address(core.globalSystemExitRateLimiter()), newGserl);
+    }
+
+    function testNonGovernorFailsSettingGlobalSystemExitRateLimiter() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.setGlobalSystemExitRateLimiter(
+            IGlobalSystemExitRateLimiter(addresses.userAddress)
+        );
     }
 
     function testGovernorSetsPcvOracle() public {

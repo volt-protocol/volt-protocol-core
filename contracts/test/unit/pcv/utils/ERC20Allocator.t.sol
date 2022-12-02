@@ -4,14 +4,15 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {Vm} from "./../../utils/Vm.sol";
 import {DSTest} from "./../../utils/DSTest.sol";
-import {ICoreV2} from "../../../../core/ICoreV2.sol";
+import {CoreV2} from "../../../../core/CoreV2.sol";
+import {getCoreV2} from "./../../utils/Fixtures.sol";
 import {MockERC20} from "../../../../mock/MockERC20.sol";
 import {VoltRoles} from "../../../../core/VoltRoles.sol";
 import {PCVDeposit} from "../../../../pcv/PCVDeposit.sol";
 import {ERC20Allocator} from "../../../../pcv/utils/ERC20Allocator.sol";
 import {ERC20HoldingPCVDeposit} from "../../../../mock/ERC20HoldingPCVDeposit.sol";
 import {TestAddresses as addresses} from "../../utils/TestAddresses.sol";
-import {getCoreV2} from "./../../utils/Fixtures.sol";
+import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "../../../../limiter/GlobalSystemExitRateLimiter.sol";
 
 contract UnitTestERC20Allocator is DSTest {
     /// @notice emitted when an existing deposit is updated
@@ -29,7 +30,7 @@ contract UnitTestERC20Allocator is DSTest {
     /// @notice emitted when an existing deposit is deleted
     event DepositDeleted(address psm);
 
-    ICoreV2 private core;
+    CoreV2 private core;
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
     /// @notice reference to the PCVDeposit to pull from
@@ -40,6 +41,9 @@ contract UnitTestERC20Allocator is DSTest {
 
     /// @notice reference to the ERC20
     ERC20Allocator private allocator;
+
+    /// @notice reference to global system exit rate limiter
+    GlobalSystemExitRateLimiter private gserl;
 
     /// @notice token to push
     MockERC20 private token;
@@ -72,17 +76,28 @@ contract UnitTestERC20Allocator is DSTest {
             address(0)
         );
 
-        allocator = new ERC20Allocator(
+        gserl = new GlobalSystemExitRateLimiter(
             address(core),
             maxRateLimitPerSecond,
             rateLimitPerSecond,
             bufferCap
         );
 
+        allocator = new ERC20Allocator(address(core));
+
         vm.startPrank(addresses.governorAddress);
+
         allocator.connectPSM(address(psm), targetBalance, 0);
         allocator.connectDeposit(address(psm), address(pcvDeposit));
         core.grantLocker(address(allocator));
+        core.grantLocker(address(gserl));
+        core.grantSystemExitRateLimitDepleter(address(allocator));
+        core.grantSystemExitRateLimitReplenisher(address(allocator));
+
+        core.setGlobalSystemExitRateLimiter(
+            IGlobalSystemExitRateLimiter(address(gserl))
+        );
+
         vm.stopPrank();
     }
 
@@ -99,7 +114,7 @@ contract UnitTestERC20Allocator is DSTest {
         assertEq(psmTargetBalance, targetBalance);
         assertEq(decimalsNormalizer, 0);
         assertEq(psmToken, address(token));
-        assertEq(allocator.buffer(), bufferCap);
+        assertEq(gserl.buffer(), bufferCap);
         assertEq(targetBalance, allocator.targetBalance(address(psm)));
         assertEq(psmAddress, address(psm));
 
@@ -133,7 +148,7 @@ contract UnitTestERC20Allocator is DSTest {
     function testDripFailsWhenBufferExhausted() public {
         vm.startPrank(addresses.governorAddress);
         core.grantPCVController(address(allocator));
-        allocator.setBufferCap(uint128(targetBalance)); /// only allow 1 complete drip to exhaust buffer
+        gserl.setBufferCap(uint128(targetBalance)); /// only allow 1 complete drip to exhaust buffer
 
         token.mint(address(pcvDeposit), targetBalance * 2);
 
@@ -146,7 +161,7 @@ contract UnitTestERC20Allocator is DSTest {
         assertTrue(!allocator.checkDripCondition(address(pcvDeposit)));
         assertTrue(!allocator.checkSkimCondition(address(pcvDeposit))); /// cannot skim
         assertTrue(!allocator.checkActionAllowed(address(pcvDeposit)));
-        assertEq(allocator.buffer(), 0);
+        assertEq(gserl.buffer(), 0);
 
         token.mint(address(psm), targetBalance);
 
@@ -156,7 +171,7 @@ contract UnitTestERC20Allocator is DSTest {
         assertTrue(!allocator.checkDripCondition(address(pcvDeposit))); /// cannot drip as buffer is exhausted
 
         token.mockBurn(address(psm), token.balanceOf(address(psm)));
-        assertEq(allocator.buffer(), 0);
+        assertEq(gserl.buffer(), 0);
 
         vm.expectRevert("RateLimited: no rate limit buffer");
         allocator.drip(address(pcvDeposit));
@@ -165,14 +180,14 @@ contract UnitTestERC20Allocator is DSTest {
     function testDripFailsWhenBufferZero() public {
         vm.startPrank(addresses.governorAddress);
         core.grantPCVController(address(allocator));
-        allocator.setBufferCap(uint128(0)); /// fully exhaust buffer
+        gserl.setBufferCap(uint128(0)); /// fully exhaust buffer
 
         token.mint(address(pcvDeposit), targetBalance * 2);
 
         assertTrue(!allocator.checkDripCondition(address(pcvDeposit)));
         assertTrue(!allocator.checkSkimCondition(address(pcvDeposit))); /// cannot skim
         assertTrue(!allocator.checkActionAllowed(address(pcvDeposit)));
-        assertEq(allocator.buffer(), 0);
+        assertEq(gserl.buffer(), 0);
 
         vm.expectRevert("RateLimited: no rate limit buffer");
         allocator.drip(address(pcvDeposit));
@@ -181,14 +196,14 @@ contract UnitTestERC20Allocator is DSTest {
     function testDripSucceedsWhenBufferFiftyPercentDepleted() public {
         vm.startPrank(addresses.governorAddress);
         core.grantPCVController(address(allocator));
-        allocator.setBufferCap(uint128(targetBalance / 2)); /// halfway exhaust buffer
+        gserl.setBufferCap(uint128(targetBalance / 2)); /// halfway exhaust buffer
 
         token.mint(address(pcvDeposit), targetBalance * 2);
 
         assertTrue(allocator.checkDripCondition(address(pcvDeposit)));
         assertTrue(!allocator.checkSkimCondition(address(pcvDeposit))); /// cannot skim
         assertTrue(allocator.checkActionAllowed(address(pcvDeposit)));
-        assertEq(allocator.buffer(), targetBalance / 2);
+        assertEq(gserl.buffer(), targetBalance / 2);
 
         allocator.drip(address(pcvDeposit));
 
@@ -224,14 +239,14 @@ contract UnitTestERC20Allocator is DSTest {
 
         vm.startPrank(addresses.governorAddress);
         core.grantPCVController(address(allocator));
-        allocator.setBufferCap(uint128(targetBalance / 2)); /// halfway exhaust buffer
+        gserl.setBufferCap(uint128(targetBalance / 2)); /// halfway exhaust buffer
 
         newToken.mint(address(newPcvDeposit), newTargetBalance * 2);
 
         assertTrue(allocator.checkDripCondition(address(newPcvDeposit)));
         assertTrue(!allocator.checkSkimCondition(address(newPcvDeposit))); /// cannot skim
         assertTrue(allocator.checkActionAllowed(address(newPcvDeposit)));
-        assertEq(allocator.buffer(), targetBalance / 2);
+        assertEq(gserl.buffer(), targetBalance / 2);
 
         (uint256 amountToDrip, uint256 adjustedAmountToDrip) = allocator
             .getDripDetails(
@@ -244,7 +259,7 @@ contract UnitTestERC20Allocator is DSTest {
         assertEq(adjustedAmountToDrip, amountToDrip * 1e12);
         assertEq(newPsm.balance(), amountToDrip);
         assertEq(newPsm.balance(), newTargetBalance / 2);
-        assertEq(allocator.buffer(), 0);
+        assertEq(gserl.buffer(), 0);
     }
 
     function testDripSucceedsWhenBufferFiftyPercentDepletedDecimalsNormalizedNegative()
@@ -276,14 +291,14 @@ contract UnitTestERC20Allocator is DSTest {
 
         vm.startPrank(addresses.governorAddress);
         core.grantPCVController(address(allocator));
-        allocator.setBufferCap(uint128(targetBalance / 2)); /// halfway exhaust buffer
+        gserl.setBufferCap(uint128(targetBalance / 2)); /// halfway exhaust buffer
 
         newToken.mint(address(newPcvDeposit), newTargetBalance * 2);
 
         assertTrue(allocator.checkDripCondition(address(newPcvDeposit)));
         assertTrue(!allocator.checkSkimCondition(address(newPcvDeposit))); /// cannot skim
         assertTrue(allocator.checkActionAllowed(address(newPcvDeposit)));
-        assertEq(allocator.buffer(), targetBalance / 2);
+        assertEq(gserl.buffer(), targetBalance / 2);
 
         (uint256 amountToDrip, uint256 adjustedAmountToDrip) = allocator
             .getDripDetails(
@@ -296,7 +311,7 @@ contract UnitTestERC20Allocator is DSTest {
         assertEq(adjustedAmountToDrip, amountToDrip / 1e12);
         assertEq(newPsm.balance(), amountToDrip);
         assertEq(newPsm.balance(), newTargetBalance / 2);
-        assertEq(allocator.buffer(), 0); /// buffer has been fully drained
+        assertEq(gserl.buffer(), 0); /// buffer has been fully drained
     }
 
     function testCreateDepositNonGovFails() public {
@@ -526,7 +541,7 @@ contract UnitTestERC20Allocator is DSTest {
 
     function testDripSucceedsWhenOverThresholdAndPSMPartiallyFunded() public {
         uint256 depositBalance = 10_000_000e18;
-        uint256 bufferStart = allocator.buffer();
+        uint256 bufferStart = gserl.buffer();
 
         token.mint(address(pcvDeposit), depositBalance);
         token.mint(address(psm), targetBalance / 2);
@@ -549,7 +564,7 @@ contract UnitTestERC20Allocator is DSTest {
         assertTrue(!allocator.checkDripCondition(address(pcvDeposit)));
         assertTrue(!allocator.checkActionAllowed(address(pcvDeposit)));
 
-        uint256 bufferEnd = allocator.buffer();
+        uint256 bufferEnd = gserl.buffer();
 
         assertEq(bufferEnd, bufferStart - targetBalance / 2);
         assertEq(bufferStart, uint256(bufferCap));
@@ -590,12 +605,12 @@ contract UnitTestERC20Allocator is DSTest {
 
         allocator.drip(address(pcvDeposit));
 
-        uint256 bufferEnd = allocator.buffer();
+        uint256 bufferEnd = gserl.buffer();
         token.mint(address(psm), targetBalance);
 
         allocator.skim(address(pcvDeposit));
 
-        uint256 bufferEndAfterSkim = allocator.buffer();
+        uint256 bufferEndAfterSkim = gserl.buffer();
         assertEq(bufferEndAfterSkim, bufferCap);
         assertEq(bufferEnd, bufferCap - targetBalance / 2);
     }
@@ -612,7 +627,7 @@ contract UnitTestERC20Allocator is DSTest {
 
         allocator.drip(address(pcvDeposit));
 
-        uint256 bufferEnd = allocator.buffer();
+        uint256 bufferEnd = gserl.buffer();
         assertEq(bufferEnd, bufferCap - targetBalance / 2);
         /// multiply by 2 to get over buffer cap and fully replenish buffer
         token.mint(address(psm), (targetBalance * 3) / 2);
@@ -621,7 +636,7 @@ contract UnitTestERC20Allocator is DSTest {
 
         allocator.skim(address(pcvDeposit));
 
-        uint256 bufferEndAfterSkim = allocator.buffer();
+        uint256 bufferEndAfterSkim = gserl.buffer();
         assertEq(bufferEndAfterSkim, bufferCap);
     }
 
@@ -769,7 +784,7 @@ contract UnitTestERC20Allocator is DSTest {
         assertEq(token.balanceOf(address(psm)), targetBalance);
         assertEq(newToken.balanceOf(address(newPsm)), newTargetBalance);
 
-        uint256 bufferEnd = allocator.buffer();
+        uint256 bufferEnd = gserl.buffer();
         assertEq(bufferEnd, bufferCap - targetBalance * 2); /// should have effectively dripped target balance 2x, meaning normalization worked properly
 
         /// multiply by 2 to get over buffer cap and fully replenish buffer
@@ -799,7 +814,7 @@ contract UnitTestERC20Allocator is DSTest {
         assertEq(token.balanceOf(address(psm)), targetBalance);
         assertEq(newToken.balanceOf(address(newPsm)), newTargetBalance);
 
-        uint256 bufferEndAfterSkim = allocator.buffer();
+        uint256 bufferEndAfterSkim = gserl.buffer();
         assertEq(bufferEndAfterSkim, bufferCap); /// fully replenish buffer, meaning normalization worked properly
     }
 
@@ -855,7 +870,7 @@ contract UnitTestERC20Allocator is DSTest {
         vm.prank(addresses.governorAddress);
         core.grantPCVController(address(allocator));
 
-        uint256 bufferStart = allocator.buffer();
+        uint256 bufferStart = gserl.buffer();
         (uint256 amountToDrip, uint256 adjustedAmountToDrip) = allocator
             .getDripDetails(address(psm), PCVDeposit(address(pcvDeposit)));
 
@@ -868,7 +883,7 @@ contract UnitTestERC20Allocator is DSTest {
             assertTrue(!allocator.checkDripCondition(address(pcvDeposit)));
         }
 
-        assertEq(bufferStart, allocator.buffer() + adjustedAmountToDrip);
+        assertEq(bufferStart, gserl.buffer() + adjustedAmountToDrip);
         assertEq(amountToDrip, adjustedAmountToDrip);
         assertEq(token.balanceOf(address(pcvDeposit)), 0);
         assertEq(token.balanceOf(address(psm)), depositBalance);
@@ -882,10 +897,10 @@ contract UnitTestERC20Allocator is DSTest {
         token.mint(address(psm), depositBalance);
 
         if (depositBalance > targetBalance) {
-            uint256 bufferStart = allocator.buffer();
+            uint256 bufferStart = gserl.buffer();
             allocator.doAction(address(pcvDeposit));
 
-            assertEq(bufferStart, allocator.buffer());
+            assertEq(bufferStart, gserl.buffer());
             assertEq(token.balanceOf(address(psm)), targetBalance);
             assertEq(
                 token.balanceOf(address(pcvDeposit)),

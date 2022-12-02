@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {Vm} from "./../utils/Vm.sol";
-import {DSTest} from "./../utils/DSTest.sol";
+import {Test} from "../../../../forge-std/src/Test.sol";
+import {LinearInterpolation} from "../utils/LinearInterpolation.sol";
 import {DynamicVoltRateModel} from "../../../oracle/DynamicVoltRateModel.sol";
 
-contract DynamicVoltRateModelUnitTest is DSTest {
-    Vm public constant vm = Vm(HEVM_ADDRESS);
-
+contract DynamicVoltRateModelUnitTest is Test {
     /// @notice reference to the volt system oracle
     DynamicVoltRateModel private rateModel;
 
     function setUp() public {
-        rateModel = new DynamicVoltRateModel();
+        rateModel = new DynamicVoltRateModel(
+            0.3e18, // at less than 30% liquid reserves, rate jumps
+            0.5e18 // maximum APR for the VOLT rate = 50%
+        );
     }
 
     function testSetup() public {
@@ -71,7 +72,7 @@ contract DynamicVoltRateModelUnitTest is DSTest {
         // otherwise, do a linear interpolation of the rate
         // use a different implementation to double check formula
         else {
-            uint256 boost = _lerp(
+            uint256 boost = LinearInterpolation.lerp(
                 LIQUIDITY_JUMP_TARGET - liquidReserves,
                 0, // min reserves for boost
                 LIQUIDITY_JUMP_TARGET, // max reserves for boost
