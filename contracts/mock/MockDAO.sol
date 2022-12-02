@@ -37,7 +37,7 @@ contract MockDAO is
     // The functions below are overrides required by Solidity.
 
     function quorum(
-        uint256 blockNumber
+        uint256 /* blockNumber*/
     ) public pure override returns (uint256) {
         return 1_000_000e18;
     }

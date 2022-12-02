@@ -47,16 +47,6 @@ contract ERC20HoldingPCVDeposit is PCVDeposit, IERC20HoldingPCVDeposit {
         return token.balanceOf(address(this));
     }
 
-    /// @notice returns the resistant balance and VOLT in the deposit
-    function resistantBalanceAndVolt()
-        public
-        view
-        override
-        returns (uint256, uint256)
-    {
-        return (balance(), 0);
-    }
-
     /// @notice display the related token of the balance reported
     function balanceReportedIn() public view override returns (address) {
         return address(token);

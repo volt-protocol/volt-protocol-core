@@ -9,6 +9,7 @@ import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {getCoreV2} from "./../utils/Fixtures.sol";
 import {MockOracle} from "../../../mock/MockOracle.sol";
 import {SystemEntry} from "../../../entry/SystemEntry.sol";
+import {MockOracleV2} from "../../../mock/MockOracleV2.sol";
 import {MockPCVDepositV3} from "../../../mock/MockPCVDepositV3.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 
@@ -26,8 +27,8 @@ contract PCVOracleUnitTest is Test {
     MockPCVDepositV3 private deposit1;
     MockPCVDepositV3 private deposit2;
     // test Oracles
-    MockOracle private oracle1;
-    MockOracle private oracle2;
+    MockOracleV2 private oracle1;
+    MockOracleV2 private oracle2;
 
     // PCVOracle events
     event VenueOracleUpdated(
@@ -64,8 +65,8 @@ contract PCVOracleUnitTest is Test {
         entry = new SystemEntry(address(core));
 
         // mock utils
-        oracle1 = new MockOracle();
-        oracle2 = new MockOracle();
+        oracle1 = new MockOracleV2();
+        oracle2 = new MockOracleV2();
         token1 = new MockERC20();
         token2 = new MockERC20();
         deposit1 = new MockPCVDepositV3(address(core), address(token1));

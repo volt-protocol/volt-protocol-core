@@ -35,7 +35,6 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
     function resistantBalanceAndVolt()
         external
         view
-        override
         returns (uint256, uint256)
     {
         return (resistantBalance, resistantProtocolOwnedVolt);
