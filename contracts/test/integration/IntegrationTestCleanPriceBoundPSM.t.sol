@@ -14,7 +14,7 @@ import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {IOraclePassThrough} from "../../oracle/IOraclePassThrough.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
-import {IGRLM, GlobalRateLimitedMinter} from "../../minter/GlobalRateLimitedMinter.sol";
+import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../limiter/GlobalRateLimitedMinter.sol";
 import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
 import {getCoreV2} from "./../unit/utils/Fixtures.sol";
 
@@ -87,7 +87,9 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
         );
 
         vm.startPrank(addresses.governorAddress);
-        tmpCore.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
+        tmpCore.setGlobalRateLimitedMinter(
+            IGlobalRateLimitedMinter(address(grlm))
+        );
         tmpCore.grantMinter(address(grlm));
         tmpCore.grantRateLimitedMinter(address(cleanPsm));
         tmpCore.grantRateLimitedRedeemer(address(cleanPsm));
@@ -150,6 +152,7 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
 
     /// @notice PSM is set up correctly and redeem view function is working
     function testGetRedeemAmountOut(uint128 amountVoltIn) public {
+        vm.assume(amountVoltIn > 1e18);
         uint256 currentPegPrice = oracle.getCurrentOraclePrice() / 1e12;
 
         uint256 amountOut = (amountVoltIn * currentPegPrice) / 1e18;
@@ -171,11 +174,13 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
             priceBoundPsm.getRedeemAmountOut(amountVoltIn).toInt256(),
             0
         );
+
+        assertTrue(amountOut >= cleanPsm.getRedeemAmountOut(amountVoltIn));
     }
 
     /// @notice PSM is set up correctly and redeem view function is working
     function testGetRedeemAmountOutPpq(uint128 amountVoltIn) public {
-        vm.assume(amountVoltIn > 10_000_000); /// ensure accuracy down to the hundred thousandth
+        vm.assume(amountVoltIn > 1e10); /// ensure accuracy down to the hundred thousandth
 
         uint256 currentPegPrice = oracle.getCurrentOraclePrice() / 1e12;
 

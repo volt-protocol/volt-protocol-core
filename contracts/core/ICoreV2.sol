@@ -2,9 +2,10 @@
 pragma solidity 0.8.13;
 
 import {IPCVOracle} from "../oracle/IPCVOracle.sol";
-import {IGRLM} from "../minter/IGRLM.sol";
 import {IVolt, IERC20} from "../volt/IVolt.sol";
 import {IPermissionsV2} from "./IPermissionsV2.sol";
+import {IGlobalRateLimitedMinter} from "../limiter/IGlobalRateLimitedMinter.sol";
+import {IGlobalSystemExitRateLimiter} from "../limiter/IGlobalSystemExitRateLimiter.sol";
 
 /// @title Core Interface
 /// @author Volt Protocol
@@ -29,6 +30,12 @@ interface ICoreV2 is IPermissionsV2 {
         address indexed newPcvOracle
     );
 
+    /// @notice emitted when reference to global system exit rate limiter is updated
+    event GlobalSystemExitRateLimiterUpdate(
+        address indexed oldGserl,
+        address indexed newGserl
+    );
+
     // ----------- Getters -----------
 
     /// @notice returns reference to the VOLT token contract
@@ -38,7 +45,10 @@ interface ICoreV2 is IPermissionsV2 {
     function vcon() external view returns (IERC20);
 
     /// @notice returns reference to the global rate limited minter
-    function globalRateLimitedMinter() external view returns (IGRLM);
+    function globalRateLimitedMinter()
+        external
+        view
+        returns (IGlobalRateLimitedMinter);
 
     /// @notice returns reference to the pcv oracle
     function pcvOracle() external view returns (IPCVOracle);
@@ -48,7 +58,13 @@ interface ICoreV2 is IPermissionsV2 {
     /// @notice governor only function to set the Global Rate Limited Minter
     /// @param newGlobalRateLimitedMinter new volt global rate limited minter
     function setGlobalRateLimitedMinter(
-        IGRLM newGlobalRateLimitedMinter
+        IGlobalRateLimitedMinter newGlobalRateLimitedMinter
+    ) external;
+
+    /// @notice governor only function to set the Global Rate Limited Minter
+    /// @param newGlobalSystemExitRateLimiter new volt global rate limited minter
+    function setGlobalSystemExitRateLimiter(
+        IGlobalSystemExitRateLimiter newGlobalSystemExitRateLimiter
     ) external;
 
     /// @notice governor only function to set the PCV Oracle

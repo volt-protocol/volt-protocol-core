@@ -37,9 +37,7 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
 
     /// system unlocked
     /// request level 2 locked
-    /// level 2 locked, msg.sender stored
-    /// level 2 unlocked, msg.sender checked to ensure same as locking
-    /// unlock down to level 0
+    /// call reverts because system must be locked at level 1 before locking to level 2
     ///
     /// system unlocked
     /// request level 1 locked
@@ -49,6 +47,7 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// lock level 1, msg.sender is stored
     /// request level 2 locked
     /// level 2 locked, msg.sender not stored
+    /// request level 2 unlocked,
     /// level 2 unlocked, msg.sender not checked
     /// level 1 unlocked, msg.sender checked
     ///
@@ -56,6 +55,8 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// request level 2 locked
     /// level 2 locked
     /// request level 0 unlocked, invalid state, must unlock to level 1, call reverts
+    ///
+    /// request level 3 or greater locked from any system state, call reverts
 
     /// -------------------------------------------------
     /// -------------------------------------------------
@@ -76,8 +77,8 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// @notice system lock level
     uint8 private _lockLevel;
 
-    /// @notice only level 1 locker role is allowed to call
-    /// in and set entered or not entered for status level one
+    /// @notice only locker role is allowed to call in and
+    /// set entered or not entered for status level one
     modifier onlyLocker() {
         require(
             hasRole(LOCKER_ROLE, msg.sender),
@@ -104,14 +105,12 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
         return _lockLevel == _NOT_ENTERED;
     }
 
-    /// @notice returns whether or not the contract is currently entered
-    /// if true, and locked in the same block, it is possible to unlock
+    /// @notice returns whether or not the contract is currently locked
     function isLocked() external view override returns (bool) {
         return _lockLevel != _NOT_ENTERED;
     }
 
-    /// @notice returns whether or not the contract is currently entered
-    /// if true, and locked in the same block, it is possible to unlock
+    /// @notice returns current lock level
     function lockLevel() external view override returns (uint8) {
         return _lockLevel;
     }
@@ -119,8 +118,10 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// ---------- Global Locker Role State Changing APIs ----------
 
     /// @notice set the status to entered
-    /// only available if not entered at level 1 and level 2
-    /// Only callable by locker role
+    /// Callable only by locker role
+    /// @dev only valid state transitions:
+    /// - lock to level 1 from level 0
+    /// - lock to level 2 from level 1
     function lock(uint8 toLock) external override onlyLocker {
         uint8 currentLevel = _lockLevel; /// cache to save 1 warm SLOAD
 
@@ -133,8 +134,10 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
             "GlobalReentrancyLock: exceeds lock state"
         );
 
-        /// only store the sender and startingLockLevel if first caller
+        /// only store the sender and lastBlockEntered if first caller (locking to level 1)
         if (currentLevel == _NOT_ENTERED) {
+            /// - lock to level 1 from level 0
+
             uint88 blockEntered = uint88(block.number);
             uint160 sender = uint160(msg.sender);
 
@@ -142,11 +145,12 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
             _lastBlockEntered = blockEntered;
             _lockLevel = toLock;
         } else {
+            /// - lock to level 2 from level 1
+
             /// ------ increasing lock level flow ------
+
             /// do not update sender, to ensure original sender gets checked on final unlock
             /// do not update lastBlockEntered because it should be the same, if it isn't, revert
-            /// do not update startingLockLevel because the system is already entered and updating that
-            /// would put the contract into an invalid state
             /// if already entered, ensure entry happened this block
             require(
                 block.number == _lastBlockEntered,
@@ -158,13 +162,16 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     }
 
     /// @notice set the status to not entered
-    /// only available if entered and entered in same block
+    /// only available if entered in same block
     /// otherwise, system is in an indeterminate state and no execution should be allowed
     /// can only be called by the last address to lock the system
     /// to prevent incorrect system behavior
-    /// Only callable by locker level 1 role
+    /// Only callable by sender's with the locker role
     /// @dev toUnlock can only be _ENTERED_LEVEL_ONE or _NOT_ENTERED
     /// currentLevel cannot be _NOT_ENTERED when this function is called
+    /// @dev only valid state transitions:
+    /// - unlock to level 0 from level 1 as original locker in same block as lock
+    /// - lock from level 2 down to level 1 in same block as lock
     function unlock(uint8 toUnlock) external override onlyLocker {
         uint8 currentLevel = _lockLevel;
 
@@ -176,10 +183,6 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
             currentLevel != _NOT_ENTERED,
             "GlobalReentrancyLock: system not entered"
         );
-        require(
-            toUnlock < currentLevel,
-            "GlobalReentrancyLock: unlock level must be lower"
-        );
 
         /// if started at level 1, locked up to level 2,
         /// and trying to lock down to level 0,
@@ -190,18 +193,8 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
             "GlobalReentrancyLock: unlock level must be 1 lower"
         );
 
-        /// level 1 locked, sender calls in, sender is stored
-        /// level 2 locked, sender is not stored
-        /// level 2 unlock, sender is not checked, status level 1 locked
-        /// level 1 unlock, sender is checked, status level unlocked
-
-        /// level 2 locked from unlocked, sender is stored
-        /// level 2 unlock, sender is checked, status level unlocked
-
-        /// level 2 locked from completley unlocked,
-        /// call reverts with message "GlobalReentrancyLock: invalid lock level"
-
         if (toUnlock == _NOT_ENTERED) {
+            /// - unlock to level 0 from level 1, verify sender is original locker
             require(
                 uint160(msg.sender) == _sender,
                 "GlobalReentrancyLock: caller is not locker"

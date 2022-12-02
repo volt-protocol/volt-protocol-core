@@ -11,11 +11,16 @@ pragma solidity 0.8.13;
 /// @author Eswak, Elliot Friedman
 contract DynamicVoltRateModel {
     /// @notice the percentage at which the Volt rate will start going above
-    /// the base rate. At less than 30% liquid reserves, rate jumps.
-    uint256 public constant LIQUIDITY_JUMP_TARGET = 0.3e18; // 30%
+    /// the base rate.
+    uint256 public immutable LIQUIDITY_JUMP_TARGET; // e.g. 0.3e18 = 30%
 
-    /// @notice maximum APR for the VOLT rate = 50%.
-    uint256 public constant MAXIMUM_CHANGE_RATE = 0.5e18; // 50%
+    /// @notice maximum APR for the VOLT rate.
+    uint256 public immutable MAXIMUM_CHANGE_RATE; // e.g. 0.5e18 = 50%
+
+    constructor(uint256 liquidityJumpTarget, uint256 maximumChangeRate) {
+        LIQUIDITY_JUMP_TARGET = liquidityJumpTarget;
+        MAXIMUM_CHANGE_RATE = maximumChangeRate;
+    }
 
     /// @notice get the dynamic volt rate, based on current rate and percentage of
     /// liquid reserves. Expressed as an APR with 18 decimals.
@@ -27,14 +32,14 @@ contract DynamicVoltRateModel {
     function getRate(
         uint256 baseRate,
         uint256 liquidPercentage
-    ) external pure returns (uint256 actualRate) {
-        // if liquidity is fine, do not boost the current rate
-        if (liquidPercentage > LIQUIDITY_JUMP_TARGET) {
-            return baseRate;
-        }
-        // if current rate is already above maximum rate, do not boost the current rate
-        // even if liquidity is low
-        if (baseRate >= MAXIMUM_CHANGE_RATE) {
+    ) external view returns (uint256 actualRate) {
+        if (
+            // if liquidity is fine, do not boost the current rate
+            (liquidPercentage > LIQUIDITY_JUMP_TARGET) ||
+            // if current rate is already above maximum rate, do not boost the current rate
+            // even if liquidity is low
+            (baseRate >= MAXIMUM_CHANGE_RATE)
+        ) {
             return baseRate;
         }
 

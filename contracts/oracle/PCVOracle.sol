@@ -39,7 +39,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     ///@notice set of whitelisted pcvDeposit addresses for withdrawal
     EnumerableSet.AddressSet private illiquidVenues;
 
-    /// @notice reference to the market governance oracle smart contract
+    /// @notice reference to the volt system oracle smart contract
     address public voltOracle;
 
     /// @notice last illiquid balance
@@ -141,7 +141,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
                 (Decimal.D256 memory oracleValue, bool oracleValid) = IOracle(
                     venueToOracle[depositAddress]
                 ).read();
-                require(oracleValid, "PCVO: invalid oracle value");
+                require(oracleValid, "PCVOracle: invalid oracle value");
 
                 liquidPcv +=
                     (oracleValue.mul(1e18).asUint256() *
@@ -154,7 +154,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
                 (Decimal.D256 memory oracleValue, bool oracleValid) = IOracle(
                     venueToOracle[depositAddress]
                 ).read();
-                require(oracleValid, "PCVO: invalid oracle value");
+                require(oracleValid, "PCVOracle: invalid oracle value");
 
                 illiquidPcv +=
                     (oracleValue.mul(1e18).asUint256() *
@@ -222,12 +222,15 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         bool[] calldata isLiquid
     ) external onlyGovernor globalLock(1) {
         uint256 length = venues.length;
-        require(oracles.length == length, "PCVO: invalid oracles length");
-        require(isLiquid.length == length, "PCVO: invalid isLiquid length");
+        require(oracles.length == length, "PCVOracle: invalid oracles length");
+        require(
+            isLiquid.length == length,
+            "PCVOracle: invalid isLiquid length"
+        );
         bool nonZeroBalances = false;
         for (uint256 i = 0; i < length; ) {
-            require(venues[i] != address(0), "PCVO: invalid venue");
-            require(oracles[i] != address(0), "PCVO: invalid oracle");
+            require(venues[i] != address(0), "PCVOracle: invalid venue");
+            require(oracles[i] != address(0), "PCVOracle: invalid oracle");
 
             // add venue in state
             _setVenueOracle(venues[i], oracles[i]);
@@ -259,10 +262,13 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         bool[] calldata isLiquid
     ) external onlyGovernor globalLock(1) {
         uint256 length = venues.length;
-        require(isLiquid.length == length, "PCVO: invalid isLiquid length");
+        require(
+            isLiquid.length == length,
+            "PCVOracle: invalid isLiquid length"
+        );
         bool nonZeroBalances = false;
         for (uint256 i = 0; i < length; ) {
-            require(venues[i] != address(0), "PCVO: invalid venue");
+            require(venues[i] != address(0), "PCVOracle: invalid venue");
 
             uint256 balance = IPCVDepositV2(venues[i]).accrue();
             if (balance != 0) {
@@ -287,7 +293,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
 
     /// @notice set the VOLT System Oracle address
     /// only callable by governor
-    /// @param _voltOracle new address of the market governance oracle
+    /// @param _voltOracle new address of the volt system oracle
     function setVoltOracle(address _voltOracle) external onlyGovernor {
         address oldVoltOracle = voltOracle;
         voltOracle = _voltOracle;
@@ -311,10 +317,10 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         int256 pcvDelta
     ) private view returns (int256) {
         address oracle = venueToOracle[venue];
-        require(oracle != address(0), "PCVO: invalid caller deposit");
+        require(oracle != address(0), "PCVOracle: invalid caller deposit");
         (Decimal.D256 memory oracleValue, bool oracleValid) = IOracle(oracle)
             .read();
-        require(oracleValid, "PCVO: invalid oracle value");
+        require(oracleValid, "PCVOracle: invalid oracle value");
         return (int256(oracleValue.mul(1e18).asUint256()) * pcvDelta) / 1e18;
     }
 
@@ -361,7 +367,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         bool removed;
         if (isLiquid) removed = liquidVenues.remove(venue);
         else removed = illiquidVenues.remove(venue);
-        require(removed, "PCVO: venue not found");
+        require(removed, "PCVOracle: venue not found");
 
         emit VenueRemoved(venue, isLiquid, block.timestamp);
     }
