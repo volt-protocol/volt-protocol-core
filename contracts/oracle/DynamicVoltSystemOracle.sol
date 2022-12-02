@@ -6,6 +6,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {PCVOracle} from "./PCVOracle.sol";
 import {CoreRefV2} from "./../refs/CoreRefV2.sol";
 import {DynamicVoltRateModel} from "./DynamicVoltRateModel.sol";
+import {IDynamicVoltSystemOracle} from "./IDynamicVoltSystemOracle.sol";
 
 /// @notice contract that linearly interpolates VOLT rate over a year
 /// into the VOLT price after the oracle start time.
@@ -14,44 +15,7 @@ import {DynamicVoltRateModel} from "./DynamicVoltRateModel.sol";
 /// When PCV allocations change, this contract is notified and the oracle
 /// start time updates, creating a new interpolation over 1 year.
 /// @author Eswak, Elliot Friedman
-contract DynamicVoltSystemOracle is CoreRefV2 {
-    /// ------------- Events ---------------
-
-    /// @notice Event emitted when the Volt system oracle compounds.
-    /// Emits the end time of the period that completed and the new oracle price.
-    event InterestCompounded(
-        uint64 periodStartTime,
-        uint192 periodStartOraclePrice
-    );
-
-    /// @notice Event emitted when the Volt system oracle base rate updates.
-    event BaseRateUpdated(
-        uint256 periodStart,
-        uint256 oldRate,
-        uint256 newRate
-    );
-
-    /// @notice Event emitted when the Volt system oracle actual rate updates.
-    event ActualRateUpdated(
-        uint256 periodStart,
-        uint256 oldRate,
-        uint256 newRate
-    );
-
-    /// @notice Event emitted when reference to the PCV Oracle updates.
-    event PCVOracleUpdated(
-        uint256 blockTime,
-        address oldOracle,
-        address newOracle
-    );
-
-    /// @notice Event emitted when reference to the Rate Model updates.
-    event RateModelUpdated(
-        uint256 blockTime,
-        address oldRateModel,
-        address newRateModel
-    );
-
+contract DynamicVoltSystemOracle is IDynamicVoltSystemOracle, CoreRefV2 {
     /// ---------- Mutable Variables ----------
 
     /// @notice Start time at which point interest will start accruing, and the
@@ -128,6 +92,11 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
         return cachedOraclePrice + priceDelta;
     }
 
+    /// @notice Same as getCurrentOraclePrice(), added for compatibility with IOracleV2.
+    function read() external view returns (uint256, bool) {
+        return (getCurrentOraclePrice(), true);
+    }
+
     /// ------------- Governor Only API -------------
 
     /// @notice Set the base VOLT rate.
@@ -181,7 +150,10 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
     /// or from `addVenues` that is a governor-only action that will only execute
     /// during DAO proposals.
     function updateActualRate(uint256 liquidPercentage) external {
-        require(msg.sender == pcvOracle, "MGO: Not PCV Oracle");
+        require(
+            msg.sender == pcvOracle,
+            "DynamicVoltSystemOracle: Not PCV Oracle"
+        );
 
         /// first, compound interest
         _compoundInterest();
@@ -192,12 +164,15 @@ contract DynamicVoltSystemOracle is CoreRefV2 {
             liquidPercentage
         );
         uint256 oldActualChangeRate = actualChangeRate; // SLOAD
-        actualChangeRate = newActualChangeRate; // SSTORE
-        emit ActualRateUpdated(
-            block.timestamp,
-            oldActualChangeRate,
-            newActualChangeRate
-        );
+
+        if (newActualChangeRate != oldActualChangeRate) {
+            actualChangeRate = newActualChangeRate; // SSTORE
+            emit ActualRateUpdated(
+                block.timestamp,
+                oldActualChangeRate,
+                newActualChangeRate
+            );
+        }
     }
 
     /// ------------- Helper Methods -------------

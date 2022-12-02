@@ -1,22 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {Vm} from "./../utils/Vm.sol";
-import {DSTest} from "./../utils/DSTest.sol";
+import {Test} from "../../../../forge-std/src/Test.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
 import {PCVOracle} from "../../../oracle/PCVOracle.sol";
-import {SystemEntry} from "../../../entry/SystemEntry.sol";
-import {MockPCVDepositV3} from "../../../mock/MockPCVDepositV3.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
-import {MockOracle} from "../../../mock/MockOracle.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {getCoreV2} from "./../utils/Fixtures.sol";
+import {MockOracle} from "../../../mock/MockOracle.sol";
+import {SystemEntry} from "../../../entry/SystemEntry.sol";
+import {MockPCVDepositV3} from "../../../mock/MockPCVDepositV3.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 
-contract PCVOracleUnitTest is DSTest {
+contract PCVOracleUnitTest is Test {
     CoreV2 private core;
     SystemEntry public entry;
-    Vm public constant vm = Vm(HEVM_ADDRESS);
 
     // reference to the volt pcv oracle
     PCVOracle private pcvOracle;
@@ -276,7 +274,7 @@ contract PCVOracleUnitTest is DSTest {
         isLiquid[0] = true;
         // add
         vm.prank(addresses.governorAddress);
-        vm.expectRevert(bytes("PCVO: invalid oracle value"));
+        vm.expectRevert(bytes("PCVOracle: invalid oracle value"));
         pcvOracle.addVenues(venues, oracles, isLiquid);
     }
 
@@ -307,7 +305,7 @@ contract PCVOracleUnitTest is DSTest {
 
         // remove
         vm.prank(addresses.governorAddress);
-        vm.expectRevert(bytes("PCVO: invalid oracle value"));
+        vm.expectRevert(bytes("PCVOracle: invalid oracle value"));
         pcvOracle.removeVenues(venues, isLiquid);
     }
 
@@ -513,7 +511,7 @@ contract PCVOracleUnitTest is DSTest {
         oracle1.setValues(123456, false); // oracle unvalid
 
         // getPcv() reverts because oracle is invalid
-        vm.expectRevert(bytes("PCVO: invalid oracle value"));
+        vm.expectRevert(bytes("PCVOracle: invalid oracle value"));
         pcvOracle.getTotalPcv();
     }
 
