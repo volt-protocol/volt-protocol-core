@@ -28,7 +28,7 @@ import {CompoundPCVRouter} from "../pcv/compound/CompoundPCVRouter.sol";
 import {PegStabilityModule} from "../peg/PegStabilityModule.sol";
 import {IPCVDeposit, PCVDeposit} from "../pcv/PCVDeposit.sol";
 import {MorphoCompoundPCVDeposit} from "../pcv/morpho/MorphoCompoundPCVDeposit.sol";
-import {IGRLM, GlobalRateLimitedMinter} from "../minter/GlobalRateLimitedMinter.sol";
+import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../limiter/GlobalRateLimitedMinter.sol";
 
 contract SystemV2 {
     using SafeCast for *;
@@ -122,7 +122,10 @@ contract SystemV2 {
         );
 
         // VOLT rate
-        vrm = new DynamicVoltRateModel();
+        vrm = new DynamicVoltRateModel(
+            0.3e18, // at less than 30% liquid reserves, rate jumps
+            0.5e18 // maximum APR for the VOLT rate = 50%
+        );
         vso = new DynamicVoltSystemOracle(
             address(core),
             VOLT_APR,
@@ -191,12 +194,7 @@ contract SystemV2 {
             VOLT_CEILING_PRICE_DAI,
             IPCVDeposit(address(morphoDaiPCVDeposit))
         );
-        allocator = new ERC20Allocator(
-            address(core),
-            ALLOCATOR_MAX_RATE_LIMIT_PER_SECOND,
-            ALLOCATOR_RATE_LIMIT_PER_SECOND,
-            ALLOCATOR_BUFFER_CAP
-        );
+        allocator = new ERC20Allocator(address(core));
 
         // PCV Movement
         systemEntry = new SystemEntry(address(core));
@@ -232,7 +230,9 @@ contract SystemV2 {
     function setUp(address deployer) public {
         // Set references in Core
         core.setVolt(IVolt(address(volt)));
-        core.setGlobalRateLimitedMinter(IGRLM(address(grlm)));
+        core.setGlobalRateLimitedMinter(
+            IGlobalRateLimitedMinter(address(grlm))
+        );
         core.setPCVOracle(IPCVOracle(address(pcvOracle)));
 
         // Grant Roles

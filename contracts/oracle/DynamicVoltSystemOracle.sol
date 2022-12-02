@@ -3,7 +3,6 @@ pragma solidity 0.8.13;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-import {IOracleV2} from "./IOracleV2.sol";
 import {CoreRefV2} from "./../refs/CoreRefV2.sol";
 import {DynamicVoltRateModel} from "./DynamicVoltRateModel.sol";
 import {IDynamicVoltSystemOracle} from "./IDynamicVoltSystemOracle.sol";
@@ -15,11 +14,7 @@ import {IDynamicVoltSystemOracle} from "./IDynamicVoltSystemOracle.sol";
 /// When PCV allocations change, this contract is notified and the oracle
 /// start time updates, creating a new interpolation over 1 year.
 /// @author Eswak, Elliot Friedman
-contract DynamicVoltSystemOracle is
-    IDynamicVoltSystemOracle,
-    IOracleV2,
-    CoreRefV2
-{
+contract DynamicVoltSystemOracle is IDynamicVoltSystemOracle, CoreRefV2 {
     /// ---------- Mutable Variables ----------
 
     /// @notice Start time at which point interest will start accruing, and the

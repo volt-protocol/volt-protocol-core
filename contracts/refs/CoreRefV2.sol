@@ -198,18 +198,6 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         return _core.globalSystemExitRateLimiter();
     }
 
-    /// @notice volt balance of contract
-    /// @return volt amount held
-    function voltBalance() public view override returns (uint256) {
-        return volt().balanceOf(address(this));
-    }
-
-    /// @notice vcon balance of contract
-    /// @return vcon amount held
-    function vconBalance() public view override returns (uint256) {
-        return vcon().balanceOf(address(this));
-    }
-
     /// ------------------------------------------
     /// ----------- Governor Only API ------------
     /// ------------------------------------------
