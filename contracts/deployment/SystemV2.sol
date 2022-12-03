@@ -364,7 +364,7 @@ contract SystemV2 {
         // Cleanup
         timelockController.renounceRole(
             timelockController.TIMELOCK_ADMIN_ROLE(),
-            deployer
+            address(this)
         );
         core.revokeGovernor(deployer); /// remove governor from deployer
         core.revokeGovernor(address(this)); /// remove governor from this
