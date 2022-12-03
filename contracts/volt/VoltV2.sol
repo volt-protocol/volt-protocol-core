@@ -3,7 +3,7 @@ pragma solidity =0.8.13;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {VoltCoreRef} from "../refs/VoltCoreRef.sol";
+
 import {CoreRefV2} from "../refs/CoreRefV2.sol";
 
 // Forked from Uniswap's UNI

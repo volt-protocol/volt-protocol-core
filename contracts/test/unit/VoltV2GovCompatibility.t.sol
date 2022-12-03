@@ -1,26 +1,25 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.8.13;
 
+import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
-
 import {DSTest} from "../unit/utils/DSTest.sol";
 import {Vm} from "../unit/utils/Vm.sol";
-import {VoltV2} from "../../volt/VoltV2.sol";
 import {Core} from "../../core/Core.sol";
-import {getCore} from "./utils/Fixtures.sol";
-import {TestAddresses as addresses} from "./utils/TestAddresses.sol";
-import {ICore} from "../../core/ICore.sol";
+import {VoltV2} from "../../volt/VoltV2.sol";
+import {ICoreV2} from "../../core/ICoreV2.sol";
 import {stdError} from "../unit/utils/StdLib.sol";
-import {MockDAO, IVotes} from "../../mock/MockDAO.sol";
+import {getCoreV2} from "./utils/Fixtures.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
+import {MockDAO, IVotes} from "../../mock/MockDAO.sol";
+import {TestAddresses as addresses} from "./utils/TestAddresses.sol";
 
 contract UnitTestVoltV2GovCompatibility is DSTest {
     using SafeCast for *;
 
     VoltV2 private voltV2;
-    ICore private core;
+    ICoreV2 private core;
     MockDAO private mockDAO;
     MockERC20 private mockToken;
     TimelockController private timelock;
@@ -33,7 +32,7 @@ contract UnitTestVoltV2GovCompatibility is DSTest {
     uint256 public quorum = 1_000_000e18;
 
     function setUp() public {
-        core = getCore();
+        core = getCoreV2();
 
         address[] memory proposerCancellerAddresses = new address[](1);
         proposerCancellerAddresses[0] = proposerCancellerExecutor;
