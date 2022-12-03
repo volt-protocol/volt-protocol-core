@@ -88,7 +88,7 @@ contract IntegrationTestSystemV2 is DSTest {
         );
 
         // PCV_CONTROLLER
-        assertEq(core.getRoleMemberCount(VoltRoles.PCV_CONTROLLER), 5);
+        assertEq(core.getRoleMemberCount(VoltRoles.PCV_CONTROLLER), 7);
         assertEq(
             core.getRoleMember(VoltRoles.PCV_CONTROLLER, 0),
             address(systemV2.allocator())
@@ -108,6 +108,14 @@ contract IntegrationTestSystemV2 is DSTest {
         assertEq(
             core.getRoleMember(VoltRoles.PCV_CONTROLLER, 4),
             MainnetAddresses.GOVERNOR
+        );
+        assertEq(
+            core.getRoleMember(VoltRoles.PCV_CONTROLLER, 5),
+            address(systemV2.daiNonCustodialPsm())
+        );
+        assertEq(
+            core.getRoleMember(VoltRoles.PCV_CONTROLLER, 6),
+            address(systemV2.usdcNonCustodialPsm())
         );
 
         // PCV_MOVER
@@ -256,6 +264,43 @@ contract IntegrationTestSystemV2 is DSTest {
         assertEq(
             core.getRoleMember(VoltRoles.MINTER, 0),
             address(systemV2.grlm())
+        );
+
+        /// SYSTEM EXIT RATE LIMIT DEPLETER
+        assertEq(
+            core.getRoleMemberCount(
+                VoltRoles.VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE
+            ),
+            2
+        );
+        assertEq(
+            core.getRoleMember(
+                VoltRoles.VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE,
+                0
+            ),
+            address(systemV2.daiNonCustodialPsm())
+        );
+        assertEq(
+            core.getRoleMember(
+                VoltRoles.VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE,
+                1
+            ),
+            address(systemV2.usdcNonCustodialPsm())
+        );
+
+        /// SYSTEM EXIT RATE LIMIT REPLENISH
+        assertEq(
+            core.getRoleMemberCount(
+                VoltRoles.VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE
+            ),
+            2
+        );
+        assertEq(
+            core.getRoleMember(
+                VoltRoles.VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH_ROLE,
+                0
+            ),
+            address(systemV2.allocator())
         );
     }
 
