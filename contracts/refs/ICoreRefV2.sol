@@ -35,10 +35,6 @@ interface ICoreRefV2 {
 
     function pcvOracle() external view returns (IPCVOracle);
 
-    function voltBalance() external view returns (uint256);
-
-    function vconBalance() external view returns (uint256);
-
     function globalRateLimitedMinter()
         external
         view

@@ -87,13 +87,13 @@ contract vip2 is DSTest, IVIP {
 
     function mainnetSetup() public override {
         vm.warp(execTime - 1 days);
-        mainnetStartingPrice = (mainnetUsdcPSM.readOracle()).value;
+        mainnetStartingPrice = mainnetUsdcPSM.readOracle();
     }
 
     /// assert all contracts have their correct number of roles now,
     /// and that the proper addresses have the correct role after the governance upgrade
     function mainnetValidate() public override {
-        uint256 mainnetEndingPrice = (mainnetUsdcPSM.readOracle()).value;
+        uint256 mainnetEndingPrice = mainnetUsdcPSM.readOracle();
         /// maximum deviation of new oracle and regular oracle is 10 basis points
         assertApproxEq(
             mainnetStartingPrice.toInt256(),
@@ -164,11 +164,11 @@ contract vip2 is DSTest, IVIP {
 
     function arbitrumSetup() public override {
         vm.warp(execTime - 1 days);
-        arbitrumStartingPrice = (usdcPSM.readOracle()).value;
+        arbitrumStartingPrice = usdcPSM.readOracle();
     }
 
     function arbitrumValidate() public override {
-        uint256 arbitrumEndingPrice = (usdcPSM.readOracle()).value;
+        uint256 arbitrumEndingPrice = usdcPSM.readOracle();
         /// maximum deviation of new oracle and regular oracle is 10 basis points
         assertApproxEq(
             arbitrumStartingPrice.toInt256(),

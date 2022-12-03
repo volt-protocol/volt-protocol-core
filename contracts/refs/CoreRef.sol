@@ -20,8 +20,6 @@ abstract contract CoreRef is ICoreRef, Pausable {
 
         _volt = ICore(coreAddress).volt();
         _vcon = ICore(coreAddress).vcon();
-
-        _setContractAdminRole(ICore(coreAddress).GOVERN_ROLE());
     }
 
     function _initialize() internal {} // no-op for backward compatibility
@@ -153,13 +151,6 @@ abstract contract CoreRef is ICoreRef, Pausable {
         _;
     }
 
-    /// @notice sets a new admin role for this contract
-    function setContractAdminRole(
-        bytes32 newContractAdminRole
-    ) external override onlyGovernor {
-        _setContractAdminRole(newContractAdminRole);
-    }
-
     /// @notice returns whether a given address has the admin role for this contract
     function isContractAdmin(
         address _admin
@@ -193,36 +184,5 @@ abstract contract CoreRef is ICoreRef, Pausable {
     /// @return IERC20 implementation address
     function vcon() public view override returns (IERC20) {
         return _vcon;
-    }
-
-    /// @notice volt balance of contract
-    /// @return volt amount held
-    function voltBalance() public view virtual override returns (uint256) {
-        return _volt.balanceOf(address(this));
-    }
-
-    /// @notice vcon balance of contract
-    /// @return vcon amount held
-    function vconBalance() public view override returns (uint256) {
-        return _vcon.balanceOf(address(this));
-    }
-
-    function _burnVoltHeld() internal virtual {
-        _volt.burn(voltBalance());
-    }
-
-    function _mintVolt(address to, uint256 amount) internal virtual {
-        if (amount != 0) {
-            _volt.mint(to, amount);
-        }
-    }
-
-    function _setContractAdminRole(bytes32 newContractAdminRole) internal {
-        bytes32 oldContractAdminRole = CONTRACT_ADMIN_ROLE;
-        CONTRACT_ADMIN_ROLE = newContractAdminRole;
-        emit ContractAdminRoleUpdate(
-            oldContractAdminRole,
-            newContractAdminRole
-        );
     }
 }

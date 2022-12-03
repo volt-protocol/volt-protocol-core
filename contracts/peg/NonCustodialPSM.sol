@@ -6,9 +6,8 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-import {Decimal} from "../external/Decimal.sol";
 import {Constants} from "../Constants.sol";
-import {OracleRef} from "./../refs/OracleRef.sol";
+import {OracleRefV2} from "./../refs/OracleRefV2.sol";
 import {IPCVDeposit} from "./../pcv/IPCVDeposit.sol";
 import {INonCustodialPSM} from "./INonCustodialPSM.sol";
 
@@ -19,9 +18,8 @@ import {INonCustodialPSM} from "./INonCustodialPSM.sol";
 /// @dev This contract requires the VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE
 /// in order to deplete the buffer in the GlobalSystemExitRateLimiter.
 /// This PSM is not a PCV deposit because it never holds funds, it only has permissions
-/// to pull funds from a PCV deposit and replenish a global buffer.
-contract NonCustodialPSM is INonCustodialPSM, OracleRef {
-    using Decimal for Decimal.D256;
+/// to pull funds from a pcv deposit and replenish a global buffer.
+contract NonCustodialPSM is INonCustodialPSM, OracleRefV2 {
     using SafeERC20 for IERC20;
     using SafeCast for *;
 
@@ -57,7 +55,7 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRef {
         uint128 ceilingPrice,
         IPCVDeposit pcvDepositAddress
     )
-        OracleRef(
+        OracleRefV2(
             coreAddress,
             oracleAddress,
             backupOracle,
@@ -153,23 +151,23 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRef {
     function getRedeemAmountOut(
         uint256 amountVoltIn
     ) public view override returns (uint256 amountTokenOut) {
-        Decimal.D256 memory oraclePrice = readOracle();
+        uint256 oraclePrice = readOracle();
         _validatePriceRange(oraclePrice);
 
         /// DAI Example:
         /// decimals normalizer: 0
         /// amountVoltIn = 1e18 (1 VOLT)
-        /// oraclePrice.value = 1.05e18 ($1.05/Volt)
+        /// oraclePrice = 1.05e18 ($1.05/Volt)
         /// amountTokenOut = oraclePrice * amountVoltIn / 1e18
         /// = 1.05e18 DAI out
 
         /// USDC Example:
         /// decimals normalizer: -12
         /// amountVoltIn = 1e18 (1 VOLT)
-        /// oraclePrice.value = 1.05e6 ($1.05/Volt)
+        /// oraclePrice = 1.05e6 ($1.05/Volt)
         /// amountTokenOut = oraclePrice * amountVoltIn / 1e18
         /// = 1.05e6 USDC out
-        amountTokenOut = oraclePrice.mul(amountVoltIn).asUint256();
+        amountTokenOut = (oraclePrice * amountVoltIn) / 1e18;
     }
 
     /// @notice returns whether or not the current price is valid
@@ -219,16 +217,13 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRef {
 
     /// @notice helper function to determine if price is within a valid range
     /// @param price oracle price expressed as a decimal
-    function _validPrice(
-        Decimal.D256 memory price
-    ) private view returns (bool valid) {
-        uint256 oraclePrice = price.value;
-        valid = oraclePrice >= floor && oraclePrice <= ceiling;
+    function _validPrice(uint256 price) private view returns (bool valid) {
+        valid = price >= floor && price <= ceiling;
     }
 
     /// @notice reverts if the price is greater than or equal to the ceiling or less than or equal to the floor
     /// @param price oracle price expressed as a decimal
-    function _validatePriceRange(Decimal.D256 memory price) private view {
+    function _validatePriceRange(uint256 price) private view {
         require(_validPrice(price), "PegStabilityModule: price out of bounds");
     }
 }

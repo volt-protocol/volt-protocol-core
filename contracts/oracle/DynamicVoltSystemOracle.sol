@@ -3,7 +3,6 @@ pragma solidity 0.8.13;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-import {PCVOracle} from "./PCVOracle.sol";
 import {CoreRefV2} from "./../refs/CoreRefV2.sol";
 import {DynamicVoltRateModel} from "./DynamicVoltRateModel.sol";
 import {IDynamicVoltSystemOracle} from "./IDynamicVoltSystemOracle.sol";
@@ -92,7 +91,10 @@ contract DynamicVoltSystemOracle is IDynamicVoltSystemOracle, CoreRefV2 {
         return cachedOraclePrice + priceDelta;
     }
 
-    /// @notice Same as getCurrentOraclePrice(), added for compatibility with IOracleV2.
+    /// ------------- IOracleV2 API -------------
+
+    /// @notice Get the current VOLT price in USD with 18 decimals.
+    /// Same as getCurrentOraclePrice(), added for compatibility with IOracleV2.
     function read() external view returns (uint256, bool) {
         return (getCurrentOraclePrice(), true);
     }
