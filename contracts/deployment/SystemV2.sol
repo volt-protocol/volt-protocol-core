@@ -74,17 +74,37 @@ contract SystemV2 {
 
     // Parameters
     uint256 public constant TIMELOCK_DELAY = 600;
+
+    /// ---------- RATE LIMITED MINTER PARAMS ----------
+
     /// maximum rate limit per second is 100 VOLT
     uint256 public constant MAX_RATE_LIMIT_PER_SECOND_MINTING = 100e18;
+
     /// replenish 500k VOLT per day (5.787 VOLT per second)
     uint128 public constant RATE_LIMIT_PER_SECOND_MINTING = 5787037037037037000;
+
     /// buffer cap of 1.5m VOLT
     uint128 public constant BUFFER_CAP_MINTING = 1_500_000e18;
+
+    /// ---------- RATE LIMITED MINTER PARAMS ----------
+
+    /// maximum rate limit per second is $100
+    uint256 public constant MAX_RATE_LIMIT_PER_SECOND_EXITING = 100e18;
+
+    /// replenish 500k VOLT per day ($5.787 dollars per second)
+    uint128 public constant RATE_LIMIT_PER_SECOND_EXIT = 5787037037037037000;
+
+    /// buffer cap of 1.5m VOLT
+    uint128 public constant BUFFER_CAP_EXITING = 500_000e18;
+
     /// ---------- ALLOCATOR PARAMS ----------
+
     uint256 public constant ALLOCATOR_MAX_RATE_LIMIT_PER_SECOND = 1_000e18; /// 1k volt per second
     uint128 public constant ALLOCATOR_RATE_LIMIT_PER_SECOND = 10e18; /// 10 volt per second
     uint128 public constant ALLOCATOR_BUFFER_CAP = 1_000_000e18; /// buffer cap is 1m volt
+
     /// ---------- PSM PARAMS ----------
+
     uint128 public constant VOLT_FLOOR_PRICE_USDC = 1.05e6;
     uint128 public constant VOLT_CEILING_PRICE_USDC = 1.10e6;
     uint128 public constant VOLT_FLOOR_PRICE_DAI = 1.05e18;
@@ -93,7 +113,9 @@ contract SystemV2 {
     uint248 public constant DAI_TARGET_BALANCE = 10_000e18;
     int8 public constant USDC_DECIMALS_NORMALIZER = 12;
     int8 public constant DAI_DECIMALS_NORMALIZER = 0;
+
     /// ---------- ORACLE PARAMS ----------
+
     uint64 public constant VOLT_APR_START_TIME = 1672531200; // 2023-01-01
     uint256 public constant VOLT_APR = 1.0144e18;
 
@@ -123,10 +145,10 @@ contract SystemV2 {
             BUFFER_CAP_MINTING
         );
         gserl = new GlobalSystemExitRateLimiter(
-            coreAddress,
-            maxRateLimitPerSecond,
-            rateLimitPerSecond,
-            bufferCap
+            address(core),
+            MAX_RATE_LIMIT_PER_SECOND_EXITING,
+            RATE_LIMIT_PER_SECOND_EXIT,
+            BUFFER_CAP_EXITING
         );
 
         // VOLT rate
@@ -342,7 +364,7 @@ contract SystemV2 {
         // Cleanup
         timelockController.renounceRole(
             timelockController.TIMELOCK_ADMIN_ROLE(),
-            address(this)
+            deployer
         );
         core.revokeGovernor(deployer); /// remove governor from deployer
         core.revokeGovernor(address(this)); /// remove governor from this
