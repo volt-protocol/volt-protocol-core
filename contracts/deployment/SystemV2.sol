@@ -277,6 +277,8 @@ contract SystemV2 {
         core.grantPCVController(address(pcvGuardian));
         core.grantPCVController(address(pcvRouter));
         core.grantPCVController(MainnetAddresses.GOVERNOR); // team multisig
+        core.grantPCVController(address(daiNonCustodialPsm));
+        core.grantPCVController(address(usdcNonCustodialPsm));
 
         core.createRole(VoltRoles.PCV_MOVER, VoltRoles.GOVERNOR);
         core.grantRole(VoltRoles.PCV_MOVER, MainnetAddresses.GOVERNOR); // team multisig
@@ -311,6 +313,11 @@ contract SystemV2 {
         core.grantRateLimitedRedeemer(address(usdcpsm));
         core.grantRateLimitedRedeemer(address(daiNonCustodialPsm));
         core.grantRateLimitedRedeemer(address(usdcNonCustodialPsm));
+
+        core.grantSystemExitRateLimitDepleter(address(daiNonCustodialPsm));
+        core.grantSystemExitRateLimitDepleter(address(usdcNonCustodialPsm));
+
+        core.grantSystemExitRateLimitReplenisher(address(allocator));
 
         core.grantLocker(address(systemEntry));
         core.grantLocker(address(allocator));
