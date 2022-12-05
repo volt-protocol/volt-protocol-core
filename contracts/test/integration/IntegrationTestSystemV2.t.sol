@@ -88,33 +88,29 @@ contract IntegrationTestSystemV2 is DSTest {
         );
 
         // PCV_CONTROLLER
-        assertEq(core.getRoleMemberCount(VoltRoles.PCV_CONTROLLER), 7);
+        assertEq(core.getRoleMemberCount(VoltRoles.PCV_CONTROLLER), 6);
         assertEq(
             core.getRoleMember(VoltRoles.PCV_CONTROLLER, 0),
             address(systemV2.allocator())
         );
         assertEq(
             core.getRoleMember(VoltRoles.PCV_CONTROLLER, 1),
-            address(systemV2.compoundRouter())
-        );
-        assertEq(
-            core.getRoleMember(VoltRoles.PCV_CONTROLLER, 2),
             address(systemV2.pcvGuardian())
         );
         assertEq(
-            core.getRoleMember(VoltRoles.PCV_CONTROLLER, 3),
+            core.getRoleMember(VoltRoles.PCV_CONTROLLER, 2),
             address(systemV2.pcvRouter())
         );
         assertEq(
-            core.getRoleMember(VoltRoles.PCV_CONTROLLER, 4),
+            core.getRoleMember(VoltRoles.PCV_CONTROLLER, 3),
             MainnetAddresses.GOVERNOR
         );
         assertEq(
-            core.getRoleMember(VoltRoles.PCV_CONTROLLER, 5),
+            core.getRoleMember(VoltRoles.PCV_CONTROLLER, 4),
             address(systemV2.daiNonCustodialPsm())
         );
         assertEq(
-            core.getRoleMember(VoltRoles.PCV_CONTROLLER, 6),
+            core.getRoleMember(VoltRoles.PCV_CONTROLLER, 5),
             address(systemV2.usdcNonCustodialPsm())
         );
 
@@ -457,6 +453,77 @@ contract IntegrationTestSystemV2 is DSTest {
         assertGt(
             depositDaiBalanceBefore - depositDaiBalanceAfter,
             (995 * amount) / 1000
+        );
+    }
+
+    /*
+    After migrating to V2 system, check that we can use PCVRouter + MakerPCVSwapper.
+    Swap DAI to USDC, then USDC to DAI.
+    */
+    function testPcvRouterWithSwap() public {
+        _migratePcv();
+        uint256 amount = 100_000e18;
+        PCVRouter pcvRouter = systemV2.pcvRouter();
+        MorphoCompoundPCVDeposit morphoDaiPCVDeposit = systemV2
+            .morphoDaiPCVDeposit();
+        MorphoCompoundPCVDeposit morphoUsdcPCVDeposit = systemV2
+            .morphoUsdcPCVDeposit();
+
+        uint256 depositDaiBalanceBefore = morphoDaiPCVDeposit.balance();
+        uint256 depositUsdcBalanceBefore = morphoUsdcPCVDeposit.balance();
+
+        // Swap DAI to USDC
+        vm.startPrank(MainnetAddresses.GOVERNOR); // has PCV_MOVER role
+        pcvRouter.movePCV(
+            address(morphoDaiPCVDeposit), // source
+            address(morphoUsdcPCVDeposit), // destination
+            address(systemV2.pcvSwapperMaker()), // swapper
+            amount, // amount
+            address(systemV2.dai()), // sourceAsset
+            address(systemV2.usdc()), // destinationAsset
+            true, // sourceIsLiquid
+            true // destinationIsLiquid
+        );
+        vm.stopPrank();
+
+        uint256 depositDaiBalanceAfter = morphoDaiPCVDeposit.balance();
+        uint256 depositUsdcBalanceAfter = morphoUsdcPCVDeposit.balance();
+
+        // tolerate 0.5% err because morpho withdrawals are not exact
+        assertGt(
+            depositDaiBalanceBefore - depositDaiBalanceAfter,
+            (995 * amount) / 1000
+        );
+        assertGt(
+            depositUsdcBalanceAfter - depositUsdcBalanceBefore,
+            ((995 * amount) / 1e12) / 1000
+        );
+
+        // Swap USDC to DAI (half of previous amount)
+        vm.startPrank(MainnetAddresses.GOVERNOR); // has PCV_MOVER role
+        pcvRouter.movePCV(
+            address(morphoUsdcPCVDeposit), // source
+            address(morphoDaiPCVDeposit), // destination
+            address(systemV2.pcvSwapperMaker()), // swapper
+            amount / 2e12, // amount
+            address(systemV2.usdc()), // sourceAsset
+            address(systemV2.dai()), // destinationAsset
+            true, // sourceIsLiquid
+            true // destinationIsLiquid
+        );
+        vm.stopPrank();
+
+        uint256 depositDaiBalanceFinal = morphoDaiPCVDeposit.balance();
+        uint256 depositUsdcBalanceFinal = morphoUsdcPCVDeposit.balance();
+
+        // tolerate 0.5% err because morpho withdrawals are not exact
+        assertGt(
+            depositDaiBalanceFinal - depositDaiBalanceAfter,
+            (995 * amount) / 2000
+        );
+        assertGt(
+            depositUsdcBalanceAfter - depositUsdcBalanceFinal,
+            ((995 * amount) / 1e12) / 2000
         );
     }
 
