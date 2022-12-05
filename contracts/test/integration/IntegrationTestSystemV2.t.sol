@@ -2,15 +2,14 @@
 pragma solidity 0.8.13;
 
 import {Vm} from "../unit/utils/Vm.sol";
-import {DSTest} from "../unit/utils/DSTest.sol";
+import {Test} from "../../../forge-std/src/Test.sol";
 
 // import everything from SystemV2
 import "../../deployment/SystemV2.sol";
 import {VoltRoles} from "../../core/VoltRoles.sol";
 
-contract IntegrationTestSystemV2 is DSTest {
+contract IntegrationTestSystemV2 is Test {
     SystemV2 systemV2;
-    Vm public constant vm = Vm(HEVM_ADDRESS);
 
     function setUp() public {
         systemV2 = new SystemV2();
@@ -525,6 +524,37 @@ contract IntegrationTestSystemV2 is DSTest {
             depositUsdcBalanceAfter - depositUsdcBalanceFinal,
             ((995 * amount) / 1e12) / 2000
         );
+    }
+
+    /*
+    After migrating to V2 system, check that we can unset the PCVOracle in Core
+    and that it doesn't break PCV movements (only disables accounting).
+    */
+    function testUnsetPcvOracle() public {
+        _migratePcv();
+        CoreV2 core = systemV2.core();
+        IERC20 dai = systemV2.dai();
+        VoltV2 volt = systemV2.volt();
+        PegStabilityModule daipsm = systemV2.daipsm();
+        PCVGuardian pcvGuardian = systemV2.pcvGuardian();
+        MorphoCompoundPCVDeposit morphoDaiPCVDeposit = systemV2
+            .morphoDaiPCVDeposit();
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        core.setPCVOracle(IPCVOracle(address(0)));
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        pcvGuardian.withdrawToSafeAddress(address(morphoDaiPCVDeposit), 100e18);
+
+        // No revert & PCV moved
+        assertEq(dai.balanceOf(pcvGuardian.safeAddress()), 100e18);
+
+        // User redeems
+        vm.prank(address(systemV2.grlm()));
+        volt.mint(address(this), 100e18);
+        volt.approve(address(daipsm), 100e18);
+        daipsm.redeem(address(this), 100e18, 105e18);
+        assertGt(dai.balanceOf(address(this)), 105e18);
     }
 
     /*

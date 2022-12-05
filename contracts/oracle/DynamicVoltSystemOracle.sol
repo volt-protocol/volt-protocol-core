@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {CoreRefV2} from "./../refs/CoreRefV2.sol";
+import {IPCVOracle} from "./IPCVOracle.sol";
 import {DynamicVoltRateModel} from "./DynamicVoltRateModel.sol";
 import {IDynamicVoltSystemOracle} from "./IDynamicVoltSystemOracle.sol";
 
@@ -109,6 +110,7 @@ contract DynamicVoltSystemOracle is IDynamicVoltSystemOracle, CoreRefV2 {
         /// first, compound interest
         _compoundInterest();
 
+        // Update the base rate
         uint256 oldBaseChangeRate = baseChangeRate; // SLOAD
         baseChangeRate = newBaseChangeRate; // SSTORE
         emit BaseRateUpdated(
@@ -117,18 +119,27 @@ contract DynamicVoltSystemOracle is IDynamicVoltSystemOracle, CoreRefV2 {
             newBaseChangeRate
         );
 
-        /// if too few liquid reserves, adjust rate up
-        uint256 newActualChangeRate = DynamicVoltRateModel(rateModel).getRate(
-            newBaseChangeRate,
-            pcvOracle().lastLiquidVenuePercentage()
-        );
+        // if too few liquid reserves, adjust rate up
+        uint256 newActualChangeRate = newBaseChangeRate;
+        IPCVOracle _pcvOracle = pcvOracle();
+        // if pcvOracle is defined, read the current liquid venue percentage
+        if (address(_pcvOracle) != address(0)) {
+            newActualChangeRate = DynamicVoltRateModel(rateModel).getRate(
+                newBaseChangeRate,
+                _pcvOracle.lastLiquidVenuePercentage()
+            );
+        }
+        // if the new actual rate is different from the old actual rate,
+        // store the new rate and emit event
         uint256 oldActualChangeRate = actualChangeRate; // SLOAD
-        actualChangeRate = newActualChangeRate; // SSTORE
-        emit ActualRateUpdated(
-            block.timestamp,
-            oldActualChangeRate,
-            newActualChangeRate
-        );
+        if (oldActualChangeRate != newActualChangeRate) {
+            actualChangeRate = newActualChangeRate; // SSTORE
+            emit ActualRateUpdated(
+                block.timestamp,
+                oldActualChangeRate,
+                newActualChangeRate
+            );
+        }
     }
 
     /// @notice Set the reference to the Rate Model.
