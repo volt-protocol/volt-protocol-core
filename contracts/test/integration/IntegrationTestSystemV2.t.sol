@@ -65,6 +65,10 @@ contract IntegrationTestSystemV2 is Test {
         );
         assertEq(pcvOracle.getAllVenues()[2], address(systemV2.daipsm()));
         assertEq(pcvOracle.getAllVenues()[3], address(systemV2.usdcpsm()));
+
+        // pcv router
+        PCVRouter pcvRouter = systemV2.pcvRouter();
+        assertTrue(pcvRouter.isPCVSwapper(address(systemV2.pcvSwapperMaker())));
     }
 
     /*
