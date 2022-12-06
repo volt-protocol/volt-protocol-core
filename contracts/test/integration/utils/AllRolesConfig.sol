@@ -33,7 +33,7 @@ contract AllRolesConfig {
     uint256 public constant numMinters = 0;
 
     /// EOA1, EOA2 & EOA3
-    uint256 public constant numPCVGuards = 4;
+    uint256 public constant numPCVGuards = 3;
 
     /// @notice all the number of each roles in order of the allRoles array
     uint256[5] public roleCounts = [

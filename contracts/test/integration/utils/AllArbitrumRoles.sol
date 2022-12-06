@@ -36,7 +36,6 @@ contract ArbitrumTestAllArbitrumRoles is RoleTesting, AllRolesConfig {
         /// PCV Guards
         allAddresses[4].push(ArbitrumAddresses.EOA_1);
         allAddresses[4].push(ArbitrumAddresses.EOA_2);
-        allAddresses[4].push(ArbitrumAddresses.EOA_3);
         allAddresses[4].push(ArbitrumAddresses.EOA_4);
 
         /// sanity check
