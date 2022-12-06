@@ -172,39 +172,41 @@ contract IntegrationTestSystemV2 is Test {
             address(systemV2.pcvGuardian())
         );
 
-        // VOLT_RATE_LIMITED_MINTER_ROLE
+        // RATE_LIMIT_SYSTEM_ENTRY_DEPLETE_ROLE
         assertEq(
-            core.getRoleMemberCount(VoltRoles.VOLT_RATE_LIMITED_MINTER),
+            core.getRoleMemberCount(VoltRoles.RATE_LIMIT_SYSTEM_ENTRY_DEPLETE),
             2
         );
         assertEq(
-            core.getRoleMember(VoltRoles.VOLT_RATE_LIMITED_MINTER, 0),
+            core.getRoleMember(VoltRoles.RATE_LIMIT_SYSTEM_ENTRY_DEPLETE, 0),
             address(systemV2.daipsm())
         );
         assertEq(
-            core.getRoleMember(VoltRoles.VOLT_RATE_LIMITED_MINTER, 1),
+            core.getRoleMember(VoltRoles.RATE_LIMIT_SYSTEM_ENTRY_DEPLETE, 1),
             address(systemV2.usdcpsm())
         );
 
-        // VOLT_RATE_LIMITED_REDEEMER_ROLE
+        // RATE_LIMIT_SYSTEM_ENTRY_REPLENISH_ROLE
         assertEq(
-            core.getRoleMemberCount(VoltRoles.VOLT_RATE_LIMITED_REDEEMER),
+            core.getRoleMemberCount(
+                VoltRoles.RATE_LIMIT_SYSTEM_ENTRY_REPLENISH
+            ),
             4
         );
         assertEq(
-            core.getRoleMember(VoltRoles.VOLT_RATE_LIMITED_REDEEMER, 0),
+            core.getRoleMember(VoltRoles.RATE_LIMIT_SYSTEM_ENTRY_REPLENISH, 0),
             address(systemV2.daipsm())
         );
         assertEq(
-            core.getRoleMember(VoltRoles.VOLT_RATE_LIMITED_REDEEMER, 1),
+            core.getRoleMember(VoltRoles.RATE_LIMIT_SYSTEM_ENTRY_REPLENISH, 1),
             address(systemV2.usdcpsm())
         );
         assertEq(
-            core.getRoleMember(VoltRoles.VOLT_RATE_LIMITED_REDEEMER, 2),
+            core.getRoleMember(VoltRoles.RATE_LIMIT_SYSTEM_ENTRY_REPLENISH, 2),
             address(systemV2.daiNonCustodialPsm())
         );
         assertEq(
-            core.getRoleMember(VoltRoles.VOLT_RATE_LIMITED_REDEEMER, 3),
+            core.getRoleMember(VoltRoles.RATE_LIMIT_SYSTEM_ENTRY_REPLENISH, 3),
             address(systemV2.usdcNonCustodialPsm())
         );
 
@@ -264,38 +266,25 @@ contract IntegrationTestSystemV2 is Test {
 
         /// SYSTEM EXIT RATE LIMIT DEPLETER
         assertEq(
-            core.getRoleMemberCount(
-                VoltRoles.VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER
-            ),
+            core.getRoleMemberCount(VoltRoles.RATE_LIMIT_SYSTEM_EXIT_DEPLETE),
             2
         );
         assertEq(
-            core.getRoleMember(
-                VoltRoles.VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER,
-                0
-            ),
+            core.getRoleMember(VoltRoles.RATE_LIMIT_SYSTEM_EXIT_DEPLETE, 0),
             address(systemV2.daiNonCustodialPsm())
         );
         assertEq(
-            core.getRoleMember(
-                VoltRoles.VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER,
-                1
-            ),
+            core.getRoleMember(VoltRoles.RATE_LIMIT_SYSTEM_EXIT_DEPLETE, 1),
             address(systemV2.usdcNonCustodialPsm())
         );
 
         /// SYSTEM EXIT RATE LIMIT REPLENISH
         assertEq(
-            core.getRoleMemberCount(
-                VoltRoles.VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER
-            ),
+            core.getRoleMemberCount(VoltRoles.RATE_LIMIT_SYSTEM_EXIT_DEPLETE),
             2
         );
         assertEq(
-            core.getRoleMember(
-                VoltRoles.VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH,
-                0
-            ),
+            core.getRoleMember(VoltRoles.RATE_LIMIT_SYSTEM_EXIT_REPLENISH, 0),
             address(systemV2.allocator())
         );
     }

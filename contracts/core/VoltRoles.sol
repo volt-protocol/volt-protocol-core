@@ -26,23 +26,6 @@ library VoltRoles {
     /// @notice can mint VOLT arbitrarily
     bytes32 internal constant MINTER = keccak256("MINTER_ROLE");
 
-    /// @notice can mint VOLT through GlobalRateLimitedMinter on a rate limit
-    bytes32 internal constant VOLT_RATE_LIMITED_MINTER =
-        keccak256("VOLT_RATE_LIMITED_MINTER_ROLE");
-
-    /// @notice can redeem VOLT and replenish the GlobalRateLimitedMinter buffer
-    /// @notice non custodial PSM role.
-    bytes32 internal constant VOLT_RATE_LIMITED_REDEEMER =
-        keccak256("VOLT_RATE_LIMITED_REDEEMER_ROLE");
-
-    /// @notice can replenish buffer through GlobalSystemExitRateLimiter
-    bytes32 internal constant VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH =
-        keccak256("VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH_ROLE");
-
-    /// @notice can delpete buffer through the GlobalSystemExitRateLimiter buffer
-    bytes32 internal constant VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER =
-        keccak256("VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE");
-
     /// @notice is able to withdraw whitelisted PCV deposits to a safe address
     bytes32 internal constant PCV_GUARD = keccak256("PCV_GUARD_ROLE");
 
@@ -52,6 +35,25 @@ library VoltRoles {
     /// @notice system state role can lock and unlock the global reentrancy
     /// lock. this allows for a system wide reentrancy lock.
     bytes32 internal constant LOCKER = keccak256("LOCKER_ROLE");
+
+    /// ----------- Rate limiters for Global System Entry / Exit ---------------
+
+    /// @notice can mint VOLT through GlobalRateLimitedMinter on a rate limit
+    bytes32 internal constant RATE_LIMIT_SYSTEM_ENTRY_DEPLETE =
+        keccak256("RATE_LIMIT_SYSTEM_ENTRY_DEPLETE_ROLE");
+
+    /// @notice can redeem VOLT and replenish the GlobalRateLimitedMinter buffer
+    /// @notice non custodial PSM role.
+    bytes32 internal constant RATE_LIMIT_SYSTEM_ENTRY_REPLENISH =
+        keccak256("RATE_LIMIT_SYSTEM_ENTRY_REPLENISH_ROLE");
+
+    /// @notice can delpete buffer through the GlobalSystemExitRateLimiter buffer
+    bytes32 internal constant RATE_LIMIT_SYSTEM_EXIT_DEPLETE =
+        keccak256("RATE_LIMIT_SYSTEM_EXIT_DEPLETE_ROLE");
+
+    /// @notice can replenish buffer through GlobalSystemExitRateLimiter
+    bytes32 internal constant RATE_LIMIT_SYSTEM_EXIT_REPLENISH =
+        keccak256("RATE_LIMIT_SYSTEM_EXIT_REPLENISH_ROLE");
 
     /*///////////////////////////////////////////////////////////////
                                  Minor Roles
