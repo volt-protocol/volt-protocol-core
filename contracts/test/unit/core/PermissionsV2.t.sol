@@ -136,7 +136,7 @@ contract UnitTestPermissionsV2 is DSTest {
         assertEq(core.getRoleMemberCount(core.LOCKER_ROLE()), 1);
 
         vm.prank(addresses.guardianAddress);
-        core.revokeOverride(VoltRoles.LOCKER_ROLE, address(this));
+        core.revokeOverride(VoltRoles.LOCKER, address(this));
         assertTrue(!core.isLocker(address(this)));
         assertEq(core.getRoleMemberCount(core.LOCKER_ROLE()), 0);
     }

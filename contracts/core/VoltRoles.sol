@@ -51,22 +51,11 @@ library VoltRoles {
 
     /// @notice system state role can lock and unlock the global reentrancy
     /// lock. this allows for a system wide reentrancy lock.
-    bytes32 internal constant LOCKER_ROLE = keccak256("LOCKER_ROLE");
-
-    /*///////////////////////////////////////////////////////////////
-                                 Admin Roles
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice manages the granting and revocation of PCV Guard roles
-    bytes32 internal constant PCV_GUARD_ADMIN =
-        keccak256("PCV_GUARD_ADMIN_ROLE");
+    bytes32 internal constant LOCKER = keccak256("LOCKER_ROLE");
 
     /*///////////////////////////////////////////////////////////////
                                  Minor Roles
     //////////////////////////////////////////////////////////////*/
-
-    /// @notice capable of changing PCV Deposit and Global Rate Limited Minter in the PSM
-    bytes32 internal constant PSM_ADMIN_ROLE = keccak256("PSM_ADMIN_ROLE");
 
     /// @notice granted to liquid PCV Deposits
     bytes32 internal constant LIQUID_PCV_DEPOSIT_ROLE =

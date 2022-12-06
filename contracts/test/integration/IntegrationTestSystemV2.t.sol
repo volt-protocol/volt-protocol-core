@@ -212,49 +212,49 @@ contract IntegrationTestSystemV2 is Test {
         );
 
         // LOCKER_ROLE
-        assertEq(core.getRoleMemberCount(VoltRoles.LOCKER_ROLE), 11);
+        assertEq(core.getRoleMemberCount(VoltRoles.LOCKER), 11);
         assertEq(
-            core.getRoleMember(VoltRoles.LOCKER_ROLE, 0),
+            core.getRoleMember(VoltRoles.LOCKER, 0),
             address(systemV2.systemEntry())
         );
         assertEq(
-            core.getRoleMember(VoltRoles.LOCKER_ROLE, 1),
+            core.getRoleMember(VoltRoles.LOCKER, 1),
             address(systemV2.allocator())
         );
         assertEq(
-            core.getRoleMember(VoltRoles.LOCKER_ROLE, 2),
+            core.getRoleMember(VoltRoles.LOCKER, 2),
             address(systemV2.pcvOracle())
         );
         assertEq(
-            core.getRoleMember(VoltRoles.LOCKER_ROLE, 3),
+            core.getRoleMember(VoltRoles.LOCKER, 3),
             address(systemV2.daipsm())
         );
         assertEq(
-            core.getRoleMember(VoltRoles.LOCKER_ROLE, 4),
+            core.getRoleMember(VoltRoles.LOCKER, 4),
             address(systemV2.usdcpsm())
         );
         assertEq(
-            core.getRoleMember(VoltRoles.LOCKER_ROLE, 5),
+            core.getRoleMember(VoltRoles.LOCKER, 5),
             address(systemV2.morphoDaiPCVDeposit())
         );
         assertEq(
-            core.getRoleMember(VoltRoles.LOCKER_ROLE, 6),
+            core.getRoleMember(VoltRoles.LOCKER, 6),
             address(systemV2.morphoUsdcPCVDeposit())
         );
         assertEq(
-            core.getRoleMember(VoltRoles.LOCKER_ROLE, 7),
+            core.getRoleMember(VoltRoles.LOCKER, 7),
             address(systemV2.grlm())
         );
         assertEq(
-            core.getRoleMember(VoltRoles.LOCKER_ROLE, 8),
+            core.getRoleMember(VoltRoles.LOCKER, 8),
             address(systemV2.gserl())
         );
         assertEq(
-            core.getRoleMember(VoltRoles.LOCKER_ROLE, 9),
+            core.getRoleMember(VoltRoles.LOCKER, 9),
             address(systemV2.pcvRouter())
         );
         assertEq(
-            core.getRoleMember(VoltRoles.LOCKER_ROLE, 10),
+            core.getRoleMember(VoltRoles.LOCKER, 10),
             address(systemV2.pcvGuardian())
         );
 
