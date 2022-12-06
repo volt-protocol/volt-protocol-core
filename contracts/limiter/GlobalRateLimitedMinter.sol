@@ -36,7 +36,7 @@ contract GlobalRateLimitedMinter is IGlobalRateLimitedMinter, RateLimitedV2 {
     )
         external
         /// checks
-        onlyVoltRole(VoltRoles.VOLT_RATE_LIMITED_MINTER_ROLE)
+        onlyVoltRole(VoltRoles.VOLT_RATE_LIMITED_MINTER)
         /// system must be level 1 locked before this function can execute
         /// asserts system is inside PSM mint when this function is called
         globalLock(2)
@@ -52,7 +52,7 @@ contract GlobalRateLimitedMinter is IGlobalRateLimitedMinter, RateLimitedV2 {
     )
         external
         /// checks
-        onlyVoltRole(VoltRoles.VOLT_RATE_LIMITED_REDEEMER_ROLE)
+        onlyVoltRole(VoltRoles.VOLT_RATE_LIMITED_REDEEMER)
         /// system must be level 1 locked before this function can execute
         /// asserts system is inside PSM redeem when this function is called
         globalLock(2)

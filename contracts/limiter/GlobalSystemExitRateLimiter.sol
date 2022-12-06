@@ -40,7 +40,7 @@ contract GlobalSystemExitRateLimiter is
     )
         external
         /// checks
-        onlyVoltRole(VoltRoles.VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE)
+        onlyVoltRole(VoltRoles.VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER)
         /// system must be level 1 locked before this function can execute
         /// asserts system is inside higher level operation when this function is called
         globalLock(2)
@@ -55,7 +55,7 @@ contract GlobalSystemExitRateLimiter is
     )
         external
         /// checks
-        onlyVoltRole(VoltRoles.VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH_ROLE)
+        onlyVoltRole(VoltRoles.VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH)
         /// system must be level 1 locked before this function can execute
         /// asserts system is inside higher level operation when this function is called
         globalLock(2)

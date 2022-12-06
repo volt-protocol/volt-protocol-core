@@ -53,7 +53,7 @@ contract UnitTestPermissionsV2 is DSTest {
     /// PermissionsV2 Role acl tests
 
     function testRandomsCannotCreateRole(address sender, bytes32 role) public {
-        vm.assume(!core.hasRole(VoltRoles.GOVERNOR, sender));
+        vm.assume(!core.hasRole(VoltRoles.GOVERN, sender));
 
         vm.expectRevert(
             abi.encodePacked(
@@ -68,7 +68,7 @@ contract UnitTestPermissionsV2 is DSTest {
     }
 
     function testRandomsCannotRevokeRole(address sender, bytes32 role) public {
-        vm.assume(!core.hasRole(VoltRoles.GOVERNOR, sender));
+        vm.assume(!core.hasRole(VoltRoles.GOVERN, sender));
 
         vm.expectRevert(
             abi.encodePacked(
@@ -85,8 +85,8 @@ contract UnitTestPermissionsV2 is DSTest {
     function testGovCreatesRoleSucceeds() public {
         uint256 role = 100;
         vm.prank(addresses.governorAddress);
-        core.createRole(bytes32(role), VoltRoles.GOVERNOR);
-        assertEq(core.getRoleAdmin(bytes32(role)), VoltRoles.GOVERNOR);
+        core.createRole(bytes32(role), VoltRoles.GOVERN);
+        assertEq(core.getRoleAdmin(bytes32(role)), VoltRoles.GOVERN);
     }
 
     function testGovRevokesRoleSucceeds() public {
@@ -115,18 +115,18 @@ contract UnitTestPermissionsV2 is DSTest {
     function testNonGovCreatesRoleFails() public {
         uint256 role = 100;
         vm.expectRevert("Permissions: Caller is not a governor");
-        core.createRole(bytes32(role), VoltRoles.GOVERNOR);
+        core.createRole(bytes32(role), VoltRoles.GOVERN);
     }
 
     function testNonGuardianRevokeOverrideFails() public {
         vm.expectRevert("Permissions: Caller is not a guardian");
-        core.revokeOverride(VoltRoles.GOVERNOR, addresses.governorAddress);
+        core.revokeOverride(VoltRoles.GOVERN, addresses.governorAddress);
     }
 
     function testGuardianRevokeOverrideGovernorFails() public {
         vm.expectRevert("Permissions: Guardian cannot revoke governor");
         vm.prank(addresses.guardianAddress);
-        core.revokeOverride(VoltRoles.GOVERNOR, addresses.governorAddress);
+        core.revokeOverride(VoltRoles.GOVERN, addresses.governorAddress);
     }
 
     function testGuardianRevokeOverrideStateSucceeds() public {

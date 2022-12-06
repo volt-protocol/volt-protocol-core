@@ -5,7 +5,7 @@ import {VoltRoles} from "contracts/core/VoltRoles.sol";
 contract AllRolesConfig {
     /// @notice all roles
     bytes32[5] public allRoles = [
-        VoltRoles.GOVERNOR,
+        VoltRoles.GOVERN,
         VoltRoles.GUARDIAN,
         VoltRoles.PCV_CONTROLLER,
         VoltRoles.MINTER,

@@ -15,7 +15,7 @@ library VoltRoles {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice the ultimate role of Volt. Controls all other roles and protocol functionality.
-    bytes32 internal constant GOVERNOR = keccak256("GOVERN_ROLE");
+    bytes32 internal constant GOVERN = keccak256("GOVERN_ROLE");
 
     /// @notice the protector role of Volt. Admin of pause, veto, revoke, and minor roles
     bytes32 internal constant GUARDIAN = keccak256("GUARDIAN_ROLE");
@@ -27,20 +27,20 @@ library VoltRoles {
     bytes32 internal constant MINTER = keccak256("MINTER_ROLE");
 
     /// @notice can mint VOLT through GlobalRateLimitedMinter on a rate limit
-    bytes32 internal constant VOLT_RATE_LIMITED_MINTER_ROLE =
+    bytes32 internal constant VOLT_RATE_LIMITED_MINTER =
         keccak256("VOLT_RATE_LIMITED_MINTER_ROLE");
 
     /// @notice can redeem VOLT and replenish the GlobalRateLimitedMinter buffer
     /// @notice non custodial PSM role.
-    bytes32 internal constant VOLT_RATE_LIMITED_REDEEMER_ROLE =
+    bytes32 internal constant VOLT_RATE_LIMITED_REDEEMER =
         keccak256("VOLT_RATE_LIMITED_REDEEMER_ROLE");
 
     /// @notice can replenish buffer through GlobalSystemExitRateLimiter
-    bytes32 internal constant VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH_ROLE =
+    bytes32 internal constant VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH =
         keccak256("VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH_ROLE");
 
     /// @notice can delpete buffer through the GlobalSystemExitRateLimiter buffer
-    bytes32 internal constant VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE =
+    bytes32 internal constant VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER =
         keccak256("VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE");
 
     /// @notice is able to withdraw whitelisted PCV deposits to a safe address
@@ -58,9 +58,9 @@ library VoltRoles {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice granted to liquid PCV Deposits
-    bytes32 internal constant LIQUID_PCV_DEPOSIT_ROLE =
+    bytes32 internal constant LIQUID_PCV_DEPOSIT =
         keccak256("LIQUID_PCV_DEPOSIT_ROLE");
     /// @notice granted to illiquid PCV Deposits
-    bytes32 internal constant ILLIQUID_PCV_DEPOSIT_ROLE =
+    bytes32 internal constant ILLIQUID_PCV_DEPOSIT =
         keccak256("ILLIQUID_PCV_DEPOSIT_ROLE");
 }

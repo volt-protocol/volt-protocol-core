@@ -20,10 +20,10 @@ contract RoleHierarchy is DSTest {
 
     constructor() {
         /// roles and their hierarchies are the same on both mainnet and arbitrum
-        roleHierarchy.setRole(VoltRoles.GOVERNOR);
-        roleHierarchy.insert(VoltRoles.GOVERNOR, VoltRoles.GUARDIAN);
-        roleHierarchy.insert(VoltRoles.GOVERNOR, VoltRoles.PCV_CONTROLLER);
-        roleHierarchy.insert(VoltRoles.GOVERNOR, VoltRoles.MINTER);
+        roleHierarchy.setRole(VoltRoles.GOVERN);
+        roleHierarchy.insert(VoltRoles.GOVERN, VoltRoles.GUARDIAN);
+        roleHierarchy.insert(VoltRoles.GOVERN, VoltRoles.PCV_CONTROLLER);
+        roleHierarchy.insert(VoltRoles.GOVERN, VoltRoles.MINTER);
     }
 
     /// load tree to map
@@ -65,7 +65,7 @@ contract RoleHierarchy is DSTest {
                     );
                 } else {
                     /// if no address has the role, create and grant it
-                    core.createRole(subordinateRoles[i], VoltRoles.GOVERNOR);
+                    core.createRole(subordinateRoles[i], VoltRoles.GOVERN);
                     core.grantRole(subordinateRoles[i], toRevokeRole);
                     assertTrue(core.hasRole(subordinateRoles[i], toRevokeRole));
                     core.revokeRole(subordinateRoles[i], toRevokeRole);

@@ -125,11 +125,10 @@ contract SystemV2 {
 
         volt = new VoltV2(address(core));
 
-        address[] memory executorAddresses = new address[](4);
+        address[] memory executorAddresses = new address[](3);
         executorAddresses[0] = MainnetAddresses.EOA_1;
         executorAddresses[1] = MainnetAddresses.EOA_2;
-        executorAddresses[2] = MainnetAddresses.EOA_3;
-        executorAddresses[3] = MainnetAddresses.EOA_4;
+        executorAddresses[2] = MainnetAddresses.EOA_4;
         address[] memory proposerCancellerAddresses = new address[](1);
         proposerCancellerAddresses[0] = MainnetAddresses.GOVERNOR;
         timelockController = new TimelockController(
@@ -275,22 +274,19 @@ contract SystemV2 {
         core.grantPCVController(address(daiNonCustodialPsm));
         core.grantPCVController(address(usdcNonCustodialPsm));
 
-        core.createRole(VoltRoles.PCV_MOVER, VoltRoles.GOVERNOR);
+        core.createRole(VoltRoles.PCV_MOVER, VoltRoles.GOVERN);
         core.grantRole(VoltRoles.PCV_MOVER, MainnetAddresses.GOVERNOR); // team multisig
 
-        core.createRole(VoltRoles.LIQUID_PCV_DEPOSIT_ROLE, VoltRoles.GOVERNOR);
-        core.createRole(
-            VoltRoles.ILLIQUID_PCV_DEPOSIT_ROLE,
-            VoltRoles.GOVERNOR
-        );
-        core.grantRole(VoltRoles.LIQUID_PCV_DEPOSIT_ROLE, address(daipsm));
-        core.grantRole(VoltRoles.LIQUID_PCV_DEPOSIT_ROLE, address(usdcpsm));
+        core.createRole(VoltRoles.LIQUID_PCV_DEPOSIT, VoltRoles.GOVERN);
+        core.createRole(VoltRoles.ILLIQUID_PCV_DEPOSIT, VoltRoles.GOVERN);
+        core.grantRole(VoltRoles.LIQUID_PCV_DEPOSIT, address(daipsm));
+        core.grantRole(VoltRoles.LIQUID_PCV_DEPOSIT, address(usdcpsm));
         core.grantRole(
-            VoltRoles.LIQUID_PCV_DEPOSIT_ROLE,
+            VoltRoles.LIQUID_PCV_DEPOSIT,
             address(morphoDaiPCVDeposit)
         );
         core.grantRole(
-            VoltRoles.LIQUID_PCV_DEPOSIT_ROLE,
+            VoltRoles.LIQUID_PCV_DEPOSIT,
             address(morphoUsdcPCVDeposit)
         );
 

@@ -68,7 +68,7 @@ contract ERC20HoldingPCVDeposit is PCVDeposit, IERC20HoldingPCVDeposit {
     )
         external
         override(IERC20HoldingPCVDeposit, IPCVDeposit)
-        hasAnyOfTwoRoles(VoltRoles.GOVERNOR, VoltRoles.PCV_CONTROLLER)
+        hasAnyOfTwoRoles(VoltRoles.GOVERN, VoltRoles.PCV_CONTROLLER)
     {
         token.safeTransfer(to, amountUnderlying);
         emit Withdrawal(msg.sender, to, amountUnderlying);
@@ -78,7 +78,7 @@ contract ERC20HoldingPCVDeposit is PCVDeposit, IERC20HoldingPCVDeposit {
     /// @param to the address to send PCV to
     function withdrawAll(
         address to
-    ) external hasAnyOfTwoRoles(VoltRoles.GOVERNOR, VoltRoles.PCV_CONTROLLER) {
+    ) external hasAnyOfTwoRoles(VoltRoles.GOVERN, VoltRoles.PCV_CONTROLLER) {
         uint256 amountUnderlying = token.balanceOf(address(this));
         token.safeTransfer(to, amountUnderlying);
         emit Withdrawal(msg.sender, to, amountUnderlying);

@@ -15,7 +15,7 @@ contract RoleTesting is DSTest {
     mapping(bytes32 => string) roleToName;
 
     constructor() {
-        roleToName[VoltRoles.GOVERNOR] = "GOVERNOR";
+        roleToName[VoltRoles.GOVERN] = "GOVERNOR";
         roleToName[VoltRoles.PCV_CONTROLLER] = "PCV_CONTROLLER";
         roleToName[VoltRoles.GUARDIAN] = "GUARDIAN";
         roleToName[VoltRoles.MINTER] = "MINTER";

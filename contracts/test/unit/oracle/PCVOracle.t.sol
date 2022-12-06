@@ -434,13 +434,10 @@ contract PCVOracleUnitTest is Test {
 
         // grant roles to pcv deposits
         vm.startPrank(addresses.governorAddress);
-        core.createRole(VoltRoles.LIQUID_PCV_DEPOSIT_ROLE, VoltRoles.GOVERNOR);
-        core.grantRole(VoltRoles.LIQUID_PCV_DEPOSIT_ROLE, address(deposit1));
-        core.createRole(
-            VoltRoles.ILLIQUID_PCV_DEPOSIT_ROLE,
-            VoltRoles.GOVERNOR
-        );
-        core.grantRole(VoltRoles.ILLIQUID_PCV_DEPOSIT_ROLE, address(deposit2));
+        core.createRole(VoltRoles.LIQUID_PCV_DEPOSIT, VoltRoles.GOVERN);
+        core.grantRole(VoltRoles.LIQUID_PCV_DEPOSIT, address(deposit1));
+        core.createRole(VoltRoles.ILLIQUID_PCV_DEPOSIT, VoltRoles.GOVERN);
+        core.grantRole(VoltRoles.ILLIQUID_PCV_DEPOSIT, address(deposit2));
         vm.stopPrank();
 
         // deposit 1 has 100$ + 300$
