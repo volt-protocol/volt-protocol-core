@@ -20,14 +20,12 @@ contract RoleTesting is DSTest {
         roleToName[VoltRoles.GUARDIAN] = "GUARDIAN";
         roleToName[VoltRoles.MINTER] = "MINTER";
         roleToName[VoltRoles.PCV_GUARD] = "PCV_GUARD";
-        roleToName[VoltRoles.PCV_GUARD_ADMIN] = "PCV_GUARD_ADMIN";
-        roleToName[VoltRoles.PSM_ADMIN_ROLE] = "PSM_ADMIN_ROLE";
     }
 
     /// load up number of roles from Core and ensure that they match up with numbers here
     function _testRoleArity(
         bytes32[] memory allRoles,
-        uint256[7] memory roleCounts,
+        uint256[5] memory roleCounts,
         uint256[] memory numEachRole
     ) internal view {
         for (uint256 i = 0; i < allRoles.length; i++) {
@@ -56,7 +54,7 @@ contract RoleTesting is DSTest {
     /// assert that all addresses have the proper role
     function _testRoleAddresses(
         bytes32[] memory allRoles,
-        address[][7] memory allAddresses,
+        address[][5] memory allAddresses,
         Core core
     ) internal {
         for (uint256 i = 0; i < allRoles.length; i++) {

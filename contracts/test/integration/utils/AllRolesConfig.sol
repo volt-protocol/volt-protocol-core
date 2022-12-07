@@ -4,21 +4,23 @@ import {VoltRoles} from "contracts/core/VoltRoles.sol";
 
 contract AllRolesConfig {
     /// @notice all roles
-    bytes32[7] public allRoles = [
-        VoltRoles.GOVERNOR,
+    bytes32[5] public allRoles = [
+        // cannot use VoltRoles.GOVERNOR, because hashed string
+        // changed in V2 from GOVERN_ROLE to GOVERNOR_ROLE.
+        // When V2 goes live, this integration test will need
+        // updating, and we'll be able to use VoltRoles.GOVERNOR
+        keccak256("GOVERN_ROLE"),
         VoltRoles.GUARDIAN,
         VoltRoles.PCV_CONTROLLER,
         VoltRoles.MINTER,
-        VoltRoles.PCV_GUARD,
-        VoltRoles.PCV_GUARD_ADMIN,
-        VoltRoles.PSM_ADMIN_ROLE
+        VoltRoles.PCV_GUARD
     ];
 
     /// how many of each role exists
     uint256[] public numEachRole;
 
     /// @notice array of arrays that has all addresses in each role
-    address[][7] public allAddresses;
+    address[][5] public allAddresses;
 
     /// ------ @notice number of each role in the system ------
 
@@ -35,23 +37,15 @@ contract AllRolesConfig {
     uint256 public constant numMinters = 0;
 
     /// EOA1, EOA2 & EOA3
-    uint256 public constant numPCVGuards = 4;
-
-    /// PCV Guard Admin
-    uint256 public constant numPCVGuardAdmins = 1;
-
-    /// NA
-    uint256 public constant numPSMAdmins = 0;
+    uint256 public constant numPCVGuards = 3;
 
     /// @notice all the number of each roles in order of the allRoles array
-    uint256[7] public roleCounts = [
+    uint256[5] public roleCounts = [
         numGovernors,
         numGuardians,
         numPCVControllers,
         numMinters,
-        numPCVGuards,
-        numPCVGuardAdmins,
-        numPSMAdmins
+        numPCVGuards
     ];
 
     function getAllRoles() public view returns (bytes32[] memory) {

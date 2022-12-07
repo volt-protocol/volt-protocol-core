@@ -16,27 +16,15 @@ contract KArrayTreeUnitTest is DSTest {
         tree.insert(VoltRoles.GOVERNOR, VoltRoles.PCV_CONTROLLER);
         tree.insert(VoltRoles.GOVERNOR, VoltRoles.MINTER);
         tree.insert(VoltRoles.GOVERNOR, VoltRoles.GUARDIAN);
-        tree.insert(VoltRoles.GOVERNOR, VoltRoles.PCV_GUARD_ADMIN);
-        tree.insert(VoltRoles.PCV_GUARD_ADMIN, VoltRoles.PCV_GUARD);
     }
 
     function testSetup() public {
-        /// tree should have a depth of 3
-        /// GOVERNOR -> PCV GUARD ADMIN -> PCV GUARD
-        assertEq(tree.getMaxDepth(), 3);
+        /// tree should have a depth of 2
+        /// GOVERNOR -> *
+        assertEq(tree.getMaxDepth(), 2);
 
-        /// tree should have 4 children under governor
-        assertEq(tree.getCountImmediateChildren(), 4);
-
-        /// tree should have 1 child under PCV GUARD ADMIN
-        (bool found, KArrayTree.Node storage pcvGuardAdmin) = tree.traverse(
-            VoltRoles.PCV_GUARD_ADMIN
-        );
-        assertTrue(found);
-        assertEq(pcvGuardAdmin.getCountImmediateChildren(), 1);
-
-        (bool foundGuard, ) = tree.traverse(VoltRoles.PCV_GUARD);
-        assertTrue(foundGuard);
+        /// tree should have 3 children under governor
+        assertEq(tree.getCountImmediateChildren(), 3);
     }
 
     function testAddDuplicateFails() public {
@@ -46,12 +34,12 @@ contract KArrayTreeUnitTest is DSTest {
 
     function testAddDuplicateFailsFind() public {
         vm.expectRevert("cannot insert duplicate");
-        tree.insert(VoltRoles.GOVERNOR, VoltRoles.PCV_GUARD);
+        tree.insert(VoltRoles.GOVERNOR, VoltRoles.GUARDIAN);
     }
 
     function testCanChangeRole() public {
         (bool foundGuard, KArrayTree.Node storage pcvGuard) = tree.traverse(
-            VoltRoles.PCV_GUARD_ADMIN
+            VoltRoles.GUARDIAN
         );
         assertTrue(foundGuard);
         pcvGuard.setRole(bytes32(0));

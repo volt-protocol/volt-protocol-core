@@ -15,7 +15,7 @@ library VoltRoles {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice the ultimate role of Volt. Controls all other roles and protocol functionality.
-    bytes32 internal constant GOVERNOR = keccak256("GOVERN_ROLE");
+    bytes32 internal constant GOVERNOR = keccak256("GOVERNOR_ROLE");
 
     /// @notice the protector role of Volt. Admin of pause, veto, revoke, and minor roles
     bytes32 internal constant GUARDIAN = keccak256("GUARDIAN_ROLE");
@@ -26,23 +26,6 @@ library VoltRoles {
     /// @notice can mint VOLT arbitrarily
     bytes32 internal constant MINTER = keccak256("MINTER_ROLE");
 
-    /// @notice can mint VOLT through GlobalRateLimitedMinter on a rate limit
-    bytes32 internal constant VOLT_RATE_LIMITED_MINTER_ROLE =
-        keccak256("VOLT_RATE_LIMITED_MINTER_ROLE");
-
-    /// @notice can redeem VOLT and replenish the GlobalRateLimitedMinter buffer
-    /// @notice non custodial PSM role.
-    bytes32 internal constant VOLT_RATE_LIMITED_REDEEMER_ROLE =
-        keccak256("VOLT_RATE_LIMITED_REDEEMER_ROLE");
-
-    /// @notice can replenish buffer through GlobalSystemExitRateLimiter
-    bytes32 internal constant VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH_ROLE =
-        keccak256("VOLT_SYSTEM_EXIT_RATE_LIMIT_REPLENISH_ROLE");
-
-    /// @notice can delpete buffer through the GlobalSystemExitRateLimiter buffer
-    bytes32 internal constant VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE =
-        keccak256("VOLT_SYSTEM_EXIT_RATE_LIMIT_DEPLETER_ROLE");
-
     /// @notice is able to withdraw whitelisted PCV deposits to a safe address
     bytes32 internal constant PCV_GUARD = keccak256("PCV_GUARD_ROLE");
 
@@ -51,27 +34,35 @@ library VoltRoles {
 
     /// @notice system state role can lock and unlock the global reentrancy
     /// lock. this allows for a system wide reentrancy lock.
-    bytes32 internal constant LOCKER_ROLE = keccak256("LOCKER_ROLE");
+    bytes32 internal constant LOCKER = keccak256("LOCKER_ROLE");
 
-    /*///////////////////////////////////////////////////////////////
-                                 Admin Roles
-    //////////////////////////////////////////////////////////////*/
+    /// ----------- Rate limiters for Global System Entry / Exit ---------------
 
-    /// @notice manages the granting and revocation of PCV Guard roles
-    bytes32 internal constant PCV_GUARD_ADMIN =
-        keccak256("PCV_GUARD_ADMIN_ROLE");
+    /// @notice can mint VOLT through GlobalRateLimitedMinter on a rate limit
+    bytes32 internal constant RATE_LIMIT_SYSTEM_ENTRY_DEPLETE =
+        keccak256("RATE_LIMIT_SYSTEM_ENTRY_DEPLETE_ROLE");
+
+    /// @notice can redeem VOLT and replenish the GlobalRateLimitedMinter buffer
+    /// @notice non custodial PSM role.
+    bytes32 internal constant RATE_LIMIT_SYSTEM_ENTRY_REPLENISH =
+        keccak256("RATE_LIMIT_SYSTEM_ENTRY_REPLENISH_ROLE");
+
+    /// @notice can delpete buffer through the GlobalSystemExitRateLimiter buffer
+    bytes32 internal constant RATE_LIMIT_SYSTEM_EXIT_DEPLETE =
+        keccak256("RATE_LIMIT_SYSTEM_EXIT_DEPLETE_ROLE");
+
+    /// @notice can replenish buffer through GlobalSystemExitRateLimiter
+    bytes32 internal constant RATE_LIMIT_SYSTEM_EXIT_REPLENISH =
+        keccak256("RATE_LIMIT_SYSTEM_EXIT_REPLENISH_ROLE");
 
     /*///////////////////////////////////////////////////////////////
                                  Minor Roles
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice capable of changing PCV Deposit and Global Rate Limited Minter in the PSM
-    bytes32 internal constant PSM_ADMIN_ROLE = keccak256("PSM_ADMIN_ROLE");
-
     /// @notice granted to liquid PCV Deposits
-    bytes32 internal constant LIQUID_PCV_DEPOSIT_ROLE =
+    bytes32 internal constant LIQUID_PCV_DEPOSIT =
         keccak256("LIQUID_PCV_DEPOSIT_ROLE");
     /// @notice granted to illiquid PCV Deposits
-    bytes32 internal constant ILLIQUID_PCV_DEPOSIT_ROLE =
+    bytes32 internal constant ILLIQUID_PCV_DEPOSIT =
         keccak256("ILLIQUID_PCV_DEPOSIT_ROLE");
 }

@@ -11,18 +11,18 @@ contract Permissions is IPermissions, AccessControlEnumerable {
     bytes32 public constant override MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant override PCV_CONTROLLER_ROLE =
         keccak256("PCV_CONTROLLER_ROLE");
-    bytes32 public constant override GOVERN_ROLE = keccak256("GOVERN_ROLE");
+    bytes32 public constant override GOVERNOR_ROLE = keccak256("GOVERNOR_ROLE");
     bytes32 public constant override GUARDIAN_ROLE = keccak256("GUARDIAN_ROLE");
 
     constructor() {
         // Appointed as a governor so guardian can have indirect access to revoke ability
         _setupGovernor(address(this));
 
-        _setRoleAdmin(MINTER_ROLE, GOVERN_ROLE);
-        _setRoleAdmin(BURNER_ROLE, GOVERN_ROLE);
-        _setRoleAdmin(PCV_CONTROLLER_ROLE, GOVERN_ROLE);
-        _setRoleAdmin(GOVERN_ROLE, GOVERN_ROLE);
-        _setRoleAdmin(GUARDIAN_ROLE, GOVERN_ROLE);
+        _setRoleAdmin(MINTER_ROLE, GOVERNOR_ROLE);
+        _setRoleAdmin(BURNER_ROLE, GOVERNOR_ROLE);
+        _setRoleAdmin(PCV_CONTROLLER_ROLE, GOVERNOR_ROLE);
+        _setRoleAdmin(GOVERNOR_ROLE, GOVERNOR_ROLE);
+        _setRoleAdmin(GUARDIAN_ROLE, GOVERNOR_ROLE);
     }
 
     modifier onlyGovernor() {
@@ -75,7 +75,7 @@ contract Permissions is IPermissions, AccessControlEnumerable {
     /// @notice grants governor role to address
     /// @param governor new governor
     function grantGovernor(address governor) external override onlyGovernor {
-        grantRole(GOVERN_ROLE, governor);
+        grantRole(GOVERNOR_ROLE, governor);
     }
 
     /// @notice grants guardian role to address
@@ -107,7 +107,7 @@ contract Permissions is IPermissions, AccessControlEnumerable {
     /// @notice revokes governor role from address
     /// @param governor ex governor
     function revokeGovernor(address governor) external override onlyGovernor {
-        revokeRole(GOVERN_ROLE, governor);
+        revokeRole(GOVERNOR_ROLE, governor);
     }
 
     /// @notice revokes guardian role from address
@@ -124,7 +124,7 @@ contract Permissions is IPermissions, AccessControlEnumerable {
         address account
     ) external override onlyGuardian {
         require(
-            role != GOVERN_ROLE,
+            role != GOVERNOR_ROLE,
             "Permissions: Guardian cannot revoke governor"
         );
 
@@ -169,7 +169,7 @@ contract Permissions is IPermissions, AccessControlEnumerable {
     function isGovernor(
         address _address
     ) public view virtual override returns (bool) {
-        return hasRole(GOVERN_ROLE, _address);
+        return hasRole(GOVERNOR_ROLE, _address);
     }
 
     /// @notice checks if address is a guardian
@@ -183,6 +183,6 @@ contract Permissions is IPermissions, AccessControlEnumerable {
     }
 
     function _setupGovernor(address governor) internal {
-        _setupRole(GOVERN_ROLE, governor);
+        _setupRole(GOVERNOR_ROLE, governor);
     }
 }
