@@ -2,15 +2,14 @@
 pragma solidity 0.8.13;
 
 import {Vm} from "../unit/utils/Vm.sol";
-import {DSTest} from "../unit/utils/DSTest.sol";
+import {Test} from "../../../forge-std/src/Test.sol";
 
 // import everything from SystemV2
 import "../../deployment/SystemV2.sol";
 import {VoltRoles} from "../../core/VoltRoles.sol";
 
-contract IntegrationTestSystemV2 is DSTest {
+contract IntegrationTestSystemV2 is Test {
     SystemV2 systemV2;
-    Vm public constant vm = Vm(HEVM_ADDRESS);
 
     function setUp() public {
         systemV2 = new SystemV2();
@@ -66,6 +65,10 @@ contract IntegrationTestSystemV2 is DSTest {
         );
         assertEq(pcvOracle.getAllVenues()[2], address(systemV2.daipsm()));
         assertEq(pcvOracle.getAllVenues()[3], address(systemV2.usdcpsm()));
+
+        // pcv router
+        PCVRouter pcvRouter = systemV2.pcvRouter();
+        assertTrue(pcvRouter.isPCVSwapper(address(systemV2.pcvSwapperMaker())));
     }
 
     /*
@@ -88,33 +91,29 @@ contract IntegrationTestSystemV2 is DSTest {
         );
 
         // PCV_CONTROLLER
-        assertEq(core.getRoleMemberCount(VoltRoles.PCV_CONTROLLER), 7);
+        assertEq(core.getRoleMemberCount(VoltRoles.PCV_CONTROLLER), 6);
         assertEq(
             core.getRoleMember(VoltRoles.PCV_CONTROLLER, 0),
             address(systemV2.allocator())
         );
         assertEq(
             core.getRoleMember(VoltRoles.PCV_CONTROLLER, 1),
-            address(systemV2.compoundRouter())
-        );
-        assertEq(
-            core.getRoleMember(VoltRoles.PCV_CONTROLLER, 2),
             address(systemV2.pcvGuardian())
         );
         assertEq(
-            core.getRoleMember(VoltRoles.PCV_CONTROLLER, 3),
+            core.getRoleMember(VoltRoles.PCV_CONTROLLER, 2),
             address(systemV2.pcvRouter())
         );
         assertEq(
-            core.getRoleMember(VoltRoles.PCV_CONTROLLER, 4),
+            core.getRoleMember(VoltRoles.PCV_CONTROLLER, 3),
             MainnetAddresses.GOVERNOR
         );
         assertEq(
-            core.getRoleMember(VoltRoles.PCV_CONTROLLER, 5),
+            core.getRoleMember(VoltRoles.PCV_CONTROLLER, 4),
             address(systemV2.daiNonCustodialPsm())
         );
         assertEq(
-            core.getRoleMember(VoltRoles.PCV_CONTROLLER, 6),
+            core.getRoleMember(VoltRoles.PCV_CONTROLLER, 5),
             address(systemV2.usdcNonCustodialPsm())
         );
 
@@ -458,6 +457,108 @@ contract IntegrationTestSystemV2 is DSTest {
             depositDaiBalanceBefore - depositDaiBalanceAfter,
             (995 * amount) / 1000
         );
+    }
+
+    /*
+    After migrating to V2 system, check that we can use PCVRouter + MakerPCVSwapper.
+    Swap DAI to USDC, then USDC to DAI.
+    */
+    function testPcvRouterWithSwap() public {
+        _migratePcv();
+        uint256 amount = 100_000e18;
+        PCVRouter pcvRouter = systemV2.pcvRouter();
+        MorphoCompoundPCVDeposit morphoDaiPCVDeposit = systemV2
+            .morphoDaiPCVDeposit();
+        MorphoCompoundPCVDeposit morphoUsdcPCVDeposit = systemV2
+            .morphoUsdcPCVDeposit();
+
+        uint256 depositDaiBalanceBefore = morphoDaiPCVDeposit.balance();
+        uint256 depositUsdcBalanceBefore = morphoUsdcPCVDeposit.balance();
+
+        // Swap DAI to USDC
+        vm.startPrank(MainnetAddresses.GOVERNOR); // has PCV_MOVER role
+        pcvRouter.movePCV(
+            address(morphoDaiPCVDeposit), // source
+            address(morphoUsdcPCVDeposit), // destination
+            address(systemV2.pcvSwapperMaker()), // swapper
+            amount, // amount
+            address(systemV2.dai()), // sourceAsset
+            address(systemV2.usdc()), // destinationAsset
+            true, // sourceIsLiquid
+            true // destinationIsLiquid
+        );
+        vm.stopPrank();
+
+        uint256 depositDaiBalanceAfter = morphoDaiPCVDeposit.balance();
+        uint256 depositUsdcBalanceAfter = morphoUsdcPCVDeposit.balance();
+
+        // tolerate 0.5% err because morpho withdrawals are not exact
+        assertGt(
+            depositDaiBalanceBefore - depositDaiBalanceAfter,
+            (995 * amount) / 1000
+        );
+        assertGt(
+            depositUsdcBalanceAfter - depositUsdcBalanceBefore,
+            ((995 * amount) / 1e12) / 1000
+        );
+
+        // Swap USDC to DAI (half of previous amount)
+        vm.startPrank(MainnetAddresses.GOVERNOR); // has PCV_MOVER role
+        pcvRouter.movePCV(
+            address(morphoUsdcPCVDeposit), // source
+            address(morphoDaiPCVDeposit), // destination
+            address(systemV2.pcvSwapperMaker()), // swapper
+            amount / 2e12, // amount
+            address(systemV2.usdc()), // sourceAsset
+            address(systemV2.dai()), // destinationAsset
+            true, // sourceIsLiquid
+            true // destinationIsLiquid
+        );
+        vm.stopPrank();
+
+        uint256 depositDaiBalanceFinal = morphoDaiPCVDeposit.balance();
+        uint256 depositUsdcBalanceFinal = morphoUsdcPCVDeposit.balance();
+
+        // tolerate 0.5% err because morpho withdrawals are not exact
+        assertGt(
+            depositDaiBalanceFinal - depositDaiBalanceAfter,
+            (995 * amount) / 2000
+        );
+        assertGt(
+            depositUsdcBalanceAfter - depositUsdcBalanceFinal,
+            ((995 * amount) / 1e12) / 2000
+        );
+    }
+
+    /*
+    After migrating to V2 system, check that we can unset the PCVOracle in Core
+    and that it doesn't break PCV movements (only disables accounting).
+    */
+    function testUnsetPcvOracle() public {
+        _migratePcv();
+        CoreV2 core = systemV2.core();
+        IERC20 dai = systemV2.dai();
+        VoltV2 volt = systemV2.volt();
+        PegStabilityModule daipsm = systemV2.daipsm();
+        PCVGuardian pcvGuardian = systemV2.pcvGuardian();
+        MorphoCompoundPCVDeposit morphoDaiPCVDeposit = systemV2
+            .morphoDaiPCVDeposit();
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        core.setPCVOracle(IPCVOracle(address(0)));
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        pcvGuardian.withdrawToSafeAddress(address(morphoDaiPCVDeposit), 100e18);
+
+        // No revert & PCV moved
+        assertEq(dai.balanceOf(pcvGuardian.safeAddress()), 100e18);
+
+        // User redeems
+        vm.prank(address(systemV2.grlm()));
+        volt.mint(address(this), 100e18);
+        volt.approve(address(daipsm), 100e18);
+        daipsm.redeem(address(this), 100e18, 105e18);
+        assertGt(dai.balanceOf(address(this)), 105e18);
     }
 
     /*

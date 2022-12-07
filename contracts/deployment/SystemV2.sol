@@ -24,7 +24,7 @@ import {ConstantPriceOracle} from "../oracle/ConstantPriceOracle.sol";
 import {PCVOracle} from "../oracle/PCVOracle.sol";
 import {IPCVOracle} from "../oracle/IPCVOracle.sol";
 import {MainnetAddresses} from "../test/integration/fixtures/MainnetAddresses.sol";
-import {CompoundPCVRouter} from "../pcv/compound/CompoundPCVRouter.sol";
+import {MakerPCVSwapper} from "../pcv/maker/MakerPCVSwapper.sol";
 import {PegStabilityModule} from "../peg/PegStabilityModule.sol";
 import {IPCVDeposit, PCVDeposit} from "../pcv/PCVDeposit.sol";
 import {MorphoCompoundPCVDeposit} from "../pcv/morpho/MorphoCompoundPCVDeposit.sol";
@@ -63,7 +63,7 @@ contract SystemV2 {
 
     // PCV Movement
     SystemEntry public systemEntry;
-    CompoundPCVRouter public compoundRouter;
+    MakerPCVSwapper public pcvSwapperMaker;
     PCVGuardian public pcvGuardian;
     PCVRouter public pcvRouter;
 
@@ -229,11 +229,7 @@ contract SystemV2 {
         // PCV Movement
         systemEntry = new SystemEntry(address(core));
 
-        compoundRouter = new CompoundPCVRouter(
-            address(core),
-            PCVDeposit(address(morphoDaiPCVDeposit)),
-            PCVDeposit(address(morphoUsdcPCVDeposit))
-        );
+        pcvSwapperMaker = new MakerPCVSwapper(address(core));
 
         address[] memory pcvGuardianSafeAddresses = new address[](4);
         pcvGuardianSafeAddresses[0] = address(morphoDaiPCVDeposit);
@@ -273,7 +269,6 @@ contract SystemV2 {
         core.grantGovernor(MainnetAddresses.GOVERNOR); // team multisig
 
         core.grantPCVController(address(allocator));
-        core.grantPCVController(address(compoundRouter));
         core.grantPCVController(address(pcvGuardian));
         core.grantPCVController(address(pcvRouter));
         core.grantPCVController(MainnetAddresses.GOVERNOR); // team multisig
@@ -367,6 +362,11 @@ contract SystemV2 {
         isLiquid[2] = true;
         isLiquid[3] = true;
         pcvOracle.addVenues(venues, oracles, isLiquid);
+
+        // Configure PCV Router
+        address[] memory swappers = new address[](1);
+        swappers[0] = address(pcvSwapperMaker);
+        pcvRouter.addPCVSwappers(swappers);
 
         // Cleanup
         timelockController.renounceRole(
