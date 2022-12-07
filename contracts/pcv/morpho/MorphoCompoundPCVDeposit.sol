@@ -68,7 +68,12 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
     /// this is always out of date, except when accrue() is called
     /// in the same block or transaction. This means the value is stale
     /// most of the time.
-    uint256 public lastRecordedBalance;
+    uint128 public lastRecordedBalance;
+    /// @notice track the last amount of profits earned by the contract
+    /// this is always out of date, except when accrue() is called
+    /// in the same block or transaction. This means the value is stale
+    /// most of the time.
+    int128 public lastRecordedProfits;
 
     /// @param _core reference to the core contract
     /// @param _cToken cToken this deposit references
@@ -141,7 +146,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
         /// increment tracked recorded amount
         /// this will be off by a hair, after a single block
         /// negative delta turns to positive delta (assuming no loss).
-        lastRecordedBalance += amount;
+        lastRecordedBalance += uint128(amount);
 
         /// ------ Interactions ------
 
@@ -272,7 +277,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
         /// update last recorded balance amount
         /// if more than is owned is withdrawn, this line will revert
         /// this line of code is both a check, and an effect
-        lastRecordedBalance -= amount;
+        lastRecordedBalance -= uint128(amount);
 
         /// ------ Interactions ------
 
@@ -304,16 +309,22 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
 
         /// currentBalance should always be greater than or equal to
         /// the deposited amount, except on the same block a deposit occurs, or a loss event in morpho
-        int256 profit = currentBalance.toInt256() -
-            lastRecordedBalance.toInt256();
+        /// SLOAD
+        uint128 _lastRecordedBalance = lastRecordedBalance;
+        int128 _lastRecordedProfits = lastRecordedProfits;
+
+        /// Compute profit
+        int128 profit = int128(int256(currentBalance)) -
+            int128(_lastRecordedBalance);
 
         /// ------ Effects ------
 
-        /// record new deposited amount
-        lastRecordedBalance = currentBalance;
+        /// SSTORE: record new amounts
+        lastRecordedProfits = _lastRecordedProfits + profit;
+        lastRecordedBalance = uint128(currentBalance);
 
         /// profit is in underlying token
-        emit Harvest(token, profit, block.timestamp);
+        emit Harvest(token, int256(profit), block.timestamp);
 
         return profit;
     }
