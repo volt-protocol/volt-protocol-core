@@ -24,9 +24,6 @@ contract RoleHierarchy is DSTest {
         roleHierarchy.insert(VoltRoles.GOVERNOR, VoltRoles.GUARDIAN);
         roleHierarchy.insert(VoltRoles.GOVERNOR, VoltRoles.PCV_CONTROLLER);
         roleHierarchy.insert(VoltRoles.GOVERNOR, VoltRoles.MINTER);
-        roleHierarchy.insert(VoltRoles.GOVERNOR, VoltRoles.PCV_GUARD_ADMIN);
-        roleHierarchy.insert(VoltRoles.PCV_GUARD_ADMIN, VoltRoles.PCV_GUARD);
-        roleHierarchy.insert(VoltRoles.GOVERNOR, VoltRoles.PSM_ADMIN_ROLE);
     }
 
     /// load tree to map

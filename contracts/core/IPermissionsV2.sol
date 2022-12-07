@@ -100,7 +100,7 @@ interface IPermissionsV2 is IAccessControl {
     /// it is able to pause and unpause smart contracts,
     /// grant any role to any address, create and then grant new roles,
     /// and revoke roles
-    function GOVERN_ROLE() external view returns (bytes32);
+    function GOVERNOR_ROLE() external view returns (bytes32);
 
     /// @notice minter role is allowed to mint Volt tokens
     function MINTER_ROLE() external view returns (bytes32);
@@ -115,9 +115,15 @@ interface IPermissionsV2 is IAccessControl {
 
     /// @notice granted to peg stability modules that will call in to deplete buffer
     /// and mint Volt
-    function VOLT_RATE_LIMITED_MINTER_ROLE() external view returns (bytes32);
+    function RATE_LIMIT_SYSTEM_ENTRY_DEPLETE_ROLE()
+        external
+        view
+        returns (bytes32);
 
     /// @notice granted to peg stability modules that will call in to replenish the
     /// buffer Volt is minted from
-    function VOLT_RATE_LIMITED_REDEEMER_ROLE() external view returns (bytes32);
+    function RATE_LIMIT_SYSTEM_ENTRY_REPLENISH_ROLE()
+        external
+        view
+        returns (bytes32);
 }

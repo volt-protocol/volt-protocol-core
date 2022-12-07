@@ -56,7 +56,7 @@ contract UnitTestGlobalReentrancyLock is DSTest {
 
     function testLockFailsWithoutRole() public {
         vm.prank(addresses.governorAddress);
-        core.revokeRole(VoltRoles.LOCKER_ROLE, address(lock));
+        core.revokeRole(VoltRoles.LOCKER, address(lock));
         assertTrue(!core.isLocker(address(lock)));
 
         vm.expectRevert("GlobalReentrancyLock: missing locker role");
