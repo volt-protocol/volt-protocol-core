@@ -543,8 +543,8 @@ contract IntegrationTestSystemV2 is Test {
         vm.prank(address(systemV2.grlm()));
         volt.mint(address(this), 100e18);
         volt.approve(address(daipsm), 100e18);
-        daipsm.redeem(address(this), 100e18, 105e18);
-        assertGt(dai.balanceOf(address(this)), 105e18);
+        daipsm.redeem(address(this), 100e18, 104e18);
+        assertGt(dai.balanceOf(address(this)), 104e18);
     }
 
     /*
