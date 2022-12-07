@@ -118,9 +118,9 @@ function getCoreV2() returns (CoreV2) {
 
 function getVoltSystemOracle(
     address _core,
-    uint256 _monthlyChangeRateBasisPoints,
-    uint256 _periodStartTime,
-    uint256 _oraclePrice
+    uint16 _monthlyChangeRateBasisPoints,
+    uint40 _periodStartTime,
+    uint200 _oraclePrice
 ) returns (VoltSystemOracle) {
     VoltSystemOracle oracle = new VoltSystemOracle(
         _core,
@@ -142,14 +142,19 @@ function getOraclePassThrough(
 function getLocalOracleSystem(
     address core
 ) returns (VoltSystemOracle oracle, IOraclePassThrough opt) {
-    oracle = getVoltSystemOracle(core, 100, block.timestamp, 1e18);
+    oracle = getVoltSystemOracle(core, 100, uint40(block.timestamp), 1e18);
     opt = getOraclePassThrough(oracle, TestAddresses.governorAddress);
 }
 
 function getLocalOracleSystem(
     address core,
-    uint256 startPrice
+    uint200 startPrice
 ) returns (VoltSystemOracle oracle, IOraclePassThrough opt) {
-    oracle = getVoltSystemOracle(core, 100, block.timestamp, startPrice);
+    oracle = getVoltSystemOracle(
+        core,
+        100,
+        uint40(block.timestamp),
+        startPrice
+    );
     opt = getOraclePassThrough(oracle, TestAddresses.governorAddress);
 }
