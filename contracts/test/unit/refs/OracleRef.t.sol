@@ -23,7 +23,7 @@ contract UnitTestOracleRef is Test {
         oracle = getVoltSystemOracle(
             address(core),
             0,
-            block.timestamp,
+            uint40(block.timestamp),
             voltStartingPrice
         );
         oracleRef = new MockOracleRef(

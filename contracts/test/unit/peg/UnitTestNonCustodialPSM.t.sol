@@ -104,9 +104,9 @@ contract NonCustodialPSMUnitTest is Test {
 
     /// ---------- ORACLE PARAMS ----------
 
-    uint256 public constant startPrice = 1.05e18;
-    uint256 public constant startTime = 1_000;
-    uint256 public constant monthlyChangeRateBasisPoints = 100;
+    uint200 public constant startPrice = 1.05e18;
+    uint40 public constant startTime = 1_000;
+    uint16 public constant monthlyChangeRateBasisPoints = 100;
 
     function setUp() public {
         vm.warp(startTime); /// warp past 0

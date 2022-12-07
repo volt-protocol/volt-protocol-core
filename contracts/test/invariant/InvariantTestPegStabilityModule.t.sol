@@ -61,8 +61,8 @@ contract InvariantTestPegStabilityModule is DSTest, DSInvariantTest {
         oracle = new VoltSystemOracle(
             address(core),
             0,
-            block.timestamp,
-            voltFloorPrice + 1
+            uint40(block.timestamp),
+            uint200(voltFloorPrice + 1)
         );
         psm = new PegStabilityModule(
             address(core),
