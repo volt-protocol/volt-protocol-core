@@ -28,6 +28,14 @@ interface IPCVOracle {
         uint256 oldLiquidity,
         uint256 newLiquidity
     );
+    /// @notice emitted when total profits change in a venue
+    event VenueProfitsUpdated(
+        address indexed venue,
+        bool isIliquid,
+        uint256 timestamp,
+        int256 oldProfits,
+        int256 newProfits
+    );
 
     /// @notice emitted when market governance oracle is updated
     event VoltSystemOracleUpdated(address oldOracle, address newOracle);
@@ -90,12 +98,18 @@ interface IPCVOracle {
     // ----------- PCVDeposit-only State changing API --------------
 
     /// @notice hook on PCV deposit, callable when pcv oracle is set
-    /// updates the oracle with the new liquid balance delta
-    function updateLiquidBalance(int256 pcvDelta) external;
+    /// updates the oracle with the new liquid balance delta and profits
+    function updateLiquidBalance(
+        int256 deltaBalance,
+        int256 deltaProfit
+    ) external;
 
     /// @notice hook on PCV deposit, callable when pcv oracle is set
-    /// updates the oracle with the new liquid balance delta
-    function updateIlliquidBalance(int256 pcvDelta) external;
+    /// updates the oracle with the new liquid balance delta and profits
+    function updateIlliquidBalance(
+        int256 deltaBalance,
+        int256 deltaProfit
+    ) external;
 
     // ----------- Governor-only State changing API ----------------
 

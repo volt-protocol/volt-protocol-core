@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 import {Test} from "../../../../forge-std/src/Test.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
+import {IPCVOracle} from "../../../oracle/IPCVOracle.sol";
 import {PCVOracle} from "../../../oracle/PCVOracle.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
@@ -48,6 +49,13 @@ contract PCVOracleUnitTest is Test {
         uint256 timestamp,
         uint256 oldLiquidity,
         uint256 newLiquidity
+    );
+    event VenueProfitsUpdated(
+        address indexed venue,
+        bool isIliquid,
+        uint256 timestamp,
+        int256 oldProfits,
+        int256 newProfits
     );
     event VoltSystemOracleUpdated(address oldOracle, address newOracle);
 
@@ -472,7 +480,17 @@ contract PCVOracleUnitTest is Test {
         // A call from an illiquid PCVDeposit refreshes the state
         vm.startPrank(address(deposit2));
         core.lock(1);
-        pcvOracle.updateIlliquidBalance(int256(400e6));
+        vm.expectEmit(true, false, false, true, address(pcvOracle));
+        emit PCVUpdated(address(deposit2), false, block.timestamp, 0, 400e18);
+        vm.expectEmit(true, false, false, true, address(pcvOracle));
+        emit VenueProfitsUpdated(
+            address(deposit2),
+            false,
+            block.timestamp,
+            int256(0),
+            int256(150e18)
+        );
+        pcvOracle.updateIlliquidBalance(int256(400e6), int256(150e6));
         core.unlock(0);
         vm.stopPrank();
         assertEq(pcvOracle.lastIlliquidBalance(), 400e18); // 400$ illiquid
@@ -482,12 +500,32 @@ contract PCVOracleUnitTest is Test {
         // A call from a liquid PCVDeposit refreshes the state
         vm.startPrank(address(deposit1));
         core.lock(1);
-        pcvOracle.updateLiquidBalance(int256(300e18));
+        vm.expectEmit(true, false, false, true, address(pcvOracle));
+        emit PCVUpdated(
+            address(deposit1),
+            true,
+            block.timestamp,
+            100e18,
+            400e18
+        );
+        vm.expectEmit(true, false, false, true, address(pcvOracle));
+        emit VenueProfitsUpdated(
+            address(deposit1),
+            true,
+            block.timestamp,
+            int256(0),
+            int256(100e18)
+        );
+        pcvOracle.updateLiquidBalance(int256(300e18), int256(100e18));
         core.unlock(0);
         vm.stopPrank();
         assertEq(pcvOracle.lastIlliquidBalance(), 400e18); // 400$ illiquid
         assertEq(pcvOracle.lastLiquidBalance(), 400e18); // 400$ liquid
         assertEq(pcvOracle.lastLiquidVenuePercentage(), 0.5e18); // 50% liquid
+
+        // Accumulative profits should be stored
+        assertEq(pcvOracle.lastVenueProfits(address(deposit2)), 150e18);
+        assertEq(pcvOracle.lastVenueProfits(address(deposit1)), 100e18);
     }
 
     function testGetPcvRevertIfOracleInvalid() public {
@@ -516,27 +554,15 @@ contract PCVOracleUnitTest is Test {
         pcvOracle.getTotalPcv();
     }
 
-    // -------------------------------------------------
-    // PCV Deposit hooks, accounting checks
-    // -------------------------------------------------
-
-    // updateLiquidBalance()
-    // updateIlliquidBalance()
-
-    // TODO: the 2 happy paths, check events etc
-    // TODO: updateActualRate() is called, check the change on liquidReserves
-    // TODO: calling PCVDeposit has the role, but isn't listed in the venues
-    // TODO: Oracle Invalid
-
     // ---------------- Access Control -----------------
 
     function testUpdateLiquidBalanceAcl() public {
         vm.expectRevert(bytes("UNAUTHORIZED"));
-        pcvOracle.updateLiquidBalance(0.5e18);
+        pcvOracle.updateLiquidBalance(0.5e18, 0);
     }
 
     function testUpdateIlliquidBalanceAcl() public {
         vm.expectRevert(bytes("UNAUTHORIZED"));
-        pcvOracle.updateIlliquidBalance(0.5e18);
+        pcvOracle.updateIlliquidBalance(0.5e18, 0);
     }
 }

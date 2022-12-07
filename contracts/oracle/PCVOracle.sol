@@ -46,6 +46,9 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     /// @notice last liquid balance
     uint256 public lastLiquidBalance;
 
+    /// @notice last accumulative profits of each venue
+    mapping(address => int256) public lastVenueProfits;
+
     /// @param _core reference to the core smart contract
     constructor(address _core) CoreRefV2(_core) {}
 
@@ -166,15 +169,17 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     /// only callable by a liquid pcv deposit that has previously been listed
     /// in the PCV Oracle, because an oracle has to be set for the msg.sender.
     /// this allows for lazy evaluation of the TWAPCV
-    /// @param pcvDelta the amount of PCV change in the venue
+    /// @param deltaBalance the amount of PCV change in the venue
+    /// @param deltaProfit the amount of profit in the venue
     function updateLiquidBalance(
-        int256 pcvDelta
+        int256 deltaBalance,
+        int256 deltaProfit
     )
         public
         onlyVoltRole(VoltRoles.LIQUID_PCV_DEPOSIT_ROLE)
         isGlobalReentrancyLocked
     {
-        _updateBalance(_getUsdPcvDelta(msg.sender, pcvDelta), true);
+        _updateBalance(msg.sender, deltaBalance, deltaProfit, true);
         _afterActionHook();
     }
 
@@ -182,15 +187,17 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     /// only callable by an illiquid pcv deposit that has previously been listed
     /// in the PCV Oracle, because an oracle has to be set for the msg.sender.
     /// this allows for lazy evaluation of the TWAPCV
-    /// @param pcvDelta the amount of PCV change in the venue
+    /// @param deltaProfit the amount of profit in the venue
+    /// @param deltaBalance the amount of PCV change in the venue
     function updateIlliquidBalance(
-        int256 pcvDelta
+        int256 deltaBalance,
+        int256 deltaProfit
     )
         public
         onlyVoltRole(VoltRoles.ILLIQUID_PCV_DEPOSIT_ROLE)
         isGlobalReentrancyLocked
     {
-        _updateBalance(_getUsdPcvDelta(msg.sender, pcvDelta), false);
+        _updateBalance(msg.sender, deltaBalance, deltaProfit, false);
         _afterActionHook();
     }
 
@@ -234,10 +241,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
             if (balance != 0) {
                 nonZeroBalances = true;
                 // no need for safe cast here because balance is always > 0
-                _updateBalance(
-                    _getUsdPcvDelta(venues[i], int256(balance)),
-                    isLiquid[i]
-                );
+                _updateBalance(venues[i], int256(balance), 0, isLiquid[i]);
             }
 
             unchecked {
@@ -268,10 +272,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
             if (balance != 0) {
                 nonZeroBalances = true;
                 // no need for safe cast here because balance is always > 0
-                _updateBalance(
-                    _getUsdPcvDelta(venues[i], -1 * int256(balance)),
-                    isLiquid[i]
-                );
+                _updateBalance(venues[i], -1 * int256(balance), 0, isLiquid[i]);
             }
 
             // remove venue from state
@@ -306,17 +307,6 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         emit VenueOracleUpdated(venue, oldOracle, newOracle);
     }
 
-    function _getUsdPcvDelta(
-        address venue,
-        int256 pcvDelta
-    ) private view returns (int256) {
-        address oracle = venueToOracle[venue];
-        require(oracle != address(0), "PCVOracle: invalid caller deposit");
-        (uint256 oracleValue, bool oracleValid) = IOracleV2(oracle).read();
-        require(oracleValid, "PCVOracle: invalid oracle value");
-        return (int256(oracleValue) * pcvDelta) / 1e18;
-    }
-
     function _afterActionHook() private {
         if (voltOracle != address(0)) {
             DynamicVoltSystemOracle(voltOracle).updateActualRate(
@@ -325,21 +315,38 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         }
     }
 
-    function _updateBalance(int256 pcvDeltaUSD, bool isLiquid) private {
+    function _updateBalance(
+        address venue,
+        int256 deltaBalance,
+        int256 deltaProfit,
+        bool isLiquid
+    ) private {
+        // Read oracle to get USD values of delta
+        address oracle = venueToOracle[venue];
+        require(oracle != address(0), "PCVOracle: invalid caller deposit");
+        (uint256 oracleValue, bool oracleValid) = IOracleV2(oracle).read();
+        require(oracleValid, "PCVOracle: invalid oracle value");
+        // Compute USD values of delta
+        int256 deltaBalanceUSD = (int256(oracleValue) * deltaBalance) / 1e18;
+        int256 deltaProfitUSD = (int256(oracleValue) * deltaProfit) / 1e18;
+
+        // SLOAD cached liquidity
         uint256 oldLiquidity = isLiquid
             ? lastLiquidBalance
             : lastIlliquidBalance;
 
+        // Compute new liquidity value
         uint256 newLiquidity;
-        if (pcvDeltaUSD < 0) {
-            newLiquidity = oldLiquidity - (pcvDeltaUSD * -1).toUint256();
+        if (deltaBalanceUSD < 0) {
+            newLiquidity = oldLiquidity - (deltaBalanceUSD * -1).toUint256();
         } else {
-            newLiquidity = oldLiquidity + pcvDeltaUSD.toUint256();
+            newLiquidity = oldLiquidity + deltaBalanceUSD.toUint256();
         }
-
+        // SSTORE new liquidity's new value
         if (isLiquid) lastLiquidBalance = newLiquidity;
         else lastIlliquidBalance = newLiquidity;
 
+        // Emit event
         emit PCVUpdated(
             msg.sender,
             isLiquid,
@@ -347,6 +354,23 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
             oldLiquidity,
             newLiquidity
         );
+
+        // SLOAD accumulative profits of the venue
+        int256 oldProfits = lastVenueProfits[venue];
+        int256 newProfits = oldProfits + deltaProfitUSD;
+        // SSTORE accumulative profits of the venue, if different,
+        // and emit event.
+        if (oldProfits != newProfits) {
+            lastVenueProfits[venue] = newProfits;
+
+            emit VenueProfitsUpdated(
+                venue,
+                isLiquid,
+                block.timestamp,
+                oldProfits,
+                newProfits
+            );
+        }
     }
 
     function _addVenue(address venue, bool isLiquid) private {
