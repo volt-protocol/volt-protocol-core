@@ -5,7 +5,11 @@ import {VoltRoles} from "contracts/core/VoltRoles.sol";
 contract AllRolesConfig {
     /// @notice all roles
     bytes32[5] public allRoles = [
-        VoltRoles.GOVERN,
+        // cannot use VoltRoles.GOVERNOR, because hashed string
+        // changed in V2 from GOVERN_ROLE to GOVERNOR_ROLE.
+        // When V2 goes live, this integration test will need
+        // updating, and we'll be able to use VoltRoles.GOVERNOR
+        keccak256("GOVERN_ROLE"),
         VoltRoles.GUARDIAN,
         VoltRoles.PCV_CONTROLLER,
         VoltRoles.MINTER,

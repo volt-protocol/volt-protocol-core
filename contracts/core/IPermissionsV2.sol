@@ -100,7 +100,7 @@ interface IPermissionsV2 is IAccessControl {
     /// it is able to pause and unpause smart contracts,
     /// grant any role to any address, create and then grant new roles,
     /// and revoke roles
-    function GOVERN_ROLE() external view returns (bytes32);
+    function GOVERNOR_ROLE() external view returns (bytes32);
 
     /// @notice minter role is allowed to mint Volt tokens
     function MINTER_ROLE() external view returns (bytes32);

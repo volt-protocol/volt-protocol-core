@@ -274,11 +274,11 @@ contract SystemV2 {
         core.grantPCVController(address(daiNonCustodialPsm));
         core.grantPCVController(address(usdcNonCustodialPsm));
 
-        core.createRole(VoltRoles.PCV_MOVER, VoltRoles.GOVERN);
+        core.createRole(VoltRoles.PCV_MOVER, VoltRoles.GOVERNOR);
         core.grantRole(VoltRoles.PCV_MOVER, MainnetAddresses.GOVERNOR); // team multisig
 
-        core.createRole(VoltRoles.LIQUID_PCV_DEPOSIT, VoltRoles.GOVERN);
-        core.createRole(VoltRoles.ILLIQUID_PCV_DEPOSIT, VoltRoles.GOVERN);
+        core.createRole(VoltRoles.LIQUID_PCV_DEPOSIT, VoltRoles.GOVERNOR);
+        core.createRole(VoltRoles.ILLIQUID_PCV_DEPOSIT, VoltRoles.GOVERNOR);
         core.grantRole(VoltRoles.LIQUID_PCV_DEPOSIT, address(daipsm));
         core.grantRole(VoltRoles.LIQUID_PCV_DEPOSIT, address(usdcpsm));
         core.grantRole(

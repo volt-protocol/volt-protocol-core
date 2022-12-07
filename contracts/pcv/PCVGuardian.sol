@@ -134,7 +134,7 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
         external
         override
         hasAnyOfThreeRoles(
-            VoltRoles.GOVERN,
+            VoltRoles.GOVERNOR,
             VoltRoles.GUARDIAN,
             VoltRoles.PCV_GUARD
         )
@@ -152,7 +152,7 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
         external
         override
         hasAnyOfThreeRoles(
-            VoltRoles.GOVERN,
+            VoltRoles.GOVERNOR,
             VoltRoles.GUARDIAN,
             VoltRoles.PCV_GUARD
         )
@@ -174,7 +174,7 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
         external
         override
         hasAnyOfThreeRoles(
-            VoltRoles.GOVERN,
+            VoltRoles.GOVERNOR,
             VoltRoles.GUARDIAN,
             VoltRoles.PCV_GUARD
         )
@@ -194,7 +194,7 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
         external
         override
         hasAnyOfThreeRoles(
-            VoltRoles.GOVERN,
+            VoltRoles.GOVERNOR,
             VoltRoles.GUARDIAN,
             VoltRoles.PCV_GUARD
         )

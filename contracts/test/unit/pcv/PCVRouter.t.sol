@@ -106,7 +106,7 @@ contract PCVRouterUnitTest is Test {
         core.grantLocker(address(depositToken2Illiquid));
         core.grantLocker(address(pcvRouter));
         core.grantPCVController(address(pcvRouter));
-        core.createRole(VoltRoles.PCV_MOVER, VoltRoles.GOVERN);
+        core.createRole(VoltRoles.PCV_MOVER, VoltRoles.GOVERNOR);
         core.grantRole(VoltRoles.PCV_MOVER, address(this));
         vm.stopPrank();
 

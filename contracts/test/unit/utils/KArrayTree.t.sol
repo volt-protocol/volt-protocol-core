@@ -12,10 +12,10 @@ contract KArrayTreeUnitTest is DSTest {
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
     function setUp() public {
-        tree.setRole(VoltRoles.GOVERN);
-        tree.insert(VoltRoles.GOVERN, VoltRoles.PCV_CONTROLLER);
-        tree.insert(VoltRoles.GOVERN, VoltRoles.MINTER);
-        tree.insert(VoltRoles.GOVERN, VoltRoles.GUARDIAN);
+        tree.setRole(VoltRoles.GOVERNOR);
+        tree.insert(VoltRoles.GOVERNOR, VoltRoles.PCV_CONTROLLER);
+        tree.insert(VoltRoles.GOVERNOR, VoltRoles.MINTER);
+        tree.insert(VoltRoles.GOVERNOR, VoltRoles.GUARDIAN);
     }
 
     function testSetup() public {
@@ -29,12 +29,12 @@ contract KArrayTreeUnitTest is DSTest {
 
     function testAddDuplicateFails() public {
         vm.expectRevert("cannot insert duplicate");
-        tree.insert(VoltRoles.GOVERN);
+        tree.insert(VoltRoles.GOVERNOR);
     }
 
     function testAddDuplicateFailsFind() public {
         vm.expectRevert("cannot insert duplicate");
-        tree.insert(VoltRoles.GOVERN, VoltRoles.GUARDIAN);
+        tree.insert(VoltRoles.GOVERNOR, VoltRoles.GUARDIAN);
     }
 
     function testCanChangeRole() public {
@@ -48,7 +48,7 @@ contract KArrayTreeUnitTest is DSTest {
 
     function testCannotChangeToExistingRole() public {
         vm.expectRevert("cannot set duplicate");
-        tree.setRole(VoltRoles.GOVERN);
+        tree.setRole(VoltRoles.GOVERNOR);
     }
 
     function testFree() public {

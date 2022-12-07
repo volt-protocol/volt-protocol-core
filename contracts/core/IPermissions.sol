@@ -39,7 +39,7 @@ interface IPermissions is IAccessControl, IPermissionsRead {
 
     function GUARDIAN_ROLE() external view returns (bytes32);
 
-    function GOVERN_ROLE() external view returns (bytes32);
+    function GOVERNOR_ROLE() external view returns (bytes32);
 
     function BURNER_ROLE() external view returns (bytes32);
 

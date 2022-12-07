@@ -65,7 +65,7 @@ contract CompoundPCVRouter is CoreRefV2 {
     )
         external
         hasAnyOfThreeRoles(
-            VoltRoles.GOVERN,
+            VoltRoles.GOVERNOR,
             VoltRoles.PCV_CONTROLLER,
             VoltRoles.PCV_GUARD
         )
@@ -86,7 +86,7 @@ contract CompoundPCVRouter is CoreRefV2 {
     )
         external
         hasAnyOfThreeRoles(
-            VoltRoles.GOVERN,
+            VoltRoles.GOVERNOR,
             VoltRoles.PCV_CONTROLLER,
             VoltRoles.PCV_GUARD
         )

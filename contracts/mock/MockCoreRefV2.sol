@@ -19,6 +19,10 @@ contract MockCoreRefV2 is CoreRefV2 {
 
     function testStateGovernorMinter()
         public
-        hasAnyOfThreeRoles(VoltRoles.LOCKER, VoltRoles.GOVERN, VoltRoles.MINTER)
+        hasAnyOfThreeRoles(
+            VoltRoles.LOCKER,
+            VoltRoles.GOVERNOR,
+            VoltRoles.MINTER
+        )
     {}
 }

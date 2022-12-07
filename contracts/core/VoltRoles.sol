@@ -15,7 +15,7 @@ library VoltRoles {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice the ultimate role of Volt. Controls all other roles and protocol functionality.
-    bytes32 internal constant GOVERN = keccak256("GOVERN_ROLE");
+    bytes32 internal constant GOVERNOR = keccak256("GOVERNOR_ROLE");
 
     /// @notice the protector role of Volt. Admin of pause, veto, revoke, and minor roles
     bytes32 internal constant GUARDIAN = keccak256("GUARDIAN_ROLE");

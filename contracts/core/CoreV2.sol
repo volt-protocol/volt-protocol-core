@@ -36,7 +36,7 @@ contract CoreV2 is ICoreV2, PermissionsV2, GlobalReentrancyLock {
         volt = IVolt(newVolt);
 
         /// msg.sender already has the VOLT Minting abilities, so grant them governor as well
-        _setupRole(GOVERN_ROLE, msg.sender);
+        _setupRole(GOVERNOR_ROLE, msg.sender);
     }
 
     /// @notice governor only function to set the VCON token

@@ -79,14 +79,14 @@ contract IntegrationTestSystemV2 is Test {
         CoreV2 core = systemV2.core();
 
         // GOVERNOR
-        assertEq(core.getRoleMemberCount(VoltRoles.GOVERN), 3);
-        assertEq(core.getRoleMember(VoltRoles.GOVERN, 0), address(core));
+        assertEq(core.getRoleMemberCount(VoltRoles.GOVERNOR), 3);
+        assertEq(core.getRoleMember(VoltRoles.GOVERNOR, 0), address(core));
         assertEq(
-            core.getRoleMember(VoltRoles.GOVERN, 1),
+            core.getRoleMember(VoltRoles.GOVERNOR, 1),
             MainnetAddresses.GOVERNOR
         );
         assertEq(
-            core.getRoleMember(VoltRoles.GOVERN, 2),
+            core.getRoleMember(VoltRoles.GOVERNOR, 2),
             address(systemV2.timelockController())
         );
 
