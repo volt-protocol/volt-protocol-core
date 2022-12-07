@@ -9,6 +9,7 @@ import {ICore} from "../../../core/ICore.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
 import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
+import {IOldPegStabilityModule} from "../../../peg/IOldPegStabilityModule.sol";
 
 import "hardhat/console.sol";
 
@@ -99,7 +100,7 @@ contract MintRedeemVerification {
         uint256 amountUnderlyingIn,
         bool doLogging
     ) private {
-        if (psm.paused()) {
+        if (psm.paused() || IOldPegStabilityModule(address(psm)).mintPaused()) {
             if (doLogging) {
                 console.log(
                     "not verifying psm minting, paused: ",
