@@ -6,13 +6,18 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {Vm} from "./../utils/Vm.sol";
 import {DSTest} from "./../utils/DSTest.sol";
+import {CoreV2} from "../../../core/CoreV2.sol";
 import {Decimal} from "./../../../external/Decimal.sol";
+import {getCoreV2} from "./../utils/Fixtures.sol";
 import {Constants} from "./../../../Constants.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
+import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 
 contract VoltSystemOracleUnitTest is DSTest {
     using Decimal for Decimal.D256;
     using SafeCast for *;
+
+    CoreV2 private core;
 
     /// @notice reference to the volt system oracle
     VoltSystemOracle private voltSystemOracle;
@@ -29,7 +34,10 @@ contract VoltSystemOracleUnitTest is DSTest {
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
     function setUp() public {
+        core = getCoreV2();
+
         voltSystemOracle = new VoltSystemOracle(
+            address(core),
             monthlyChangeRateBasisPoints,
             startTime,
             startPrice
@@ -360,7 +368,14 @@ contract VoltSystemOracleUnitTest is DSTest {
                 voltSystemOracle.periodStartTime() + duration;
 
             if (isTimeEnded) {
-                voltSystemOracle.compoundInterest();
+                if (periods % 2 == 0) {
+                    voltSystemOracle.compoundInterest();
+                } else {
+                    testGovernorUpdateChangeRateSucceeds(
+                        uint16(voltSystemOracle.monthlyChangeRateBasisPoints())
+                    );
+                }
+
                 assertEq(
                     periodStartTime + voltSystemOracle.TIMEFRAME(),
                     voltSystemOracle.periodStartTime()
@@ -377,6 +392,23 @@ contract VoltSystemOracleUnitTest is DSTest {
                 );
             }
         }
+    }
+
+    function testNonGovernorUpdateChangeRateFails() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        voltSystemOracle.updateChangeRateBasisPoints(0);
+    }
+
+    function testGovernorUpdateChangeRateSucceeds(uint16 newChangeRate) public {
+        vm.assume(newChangeRate <= 10_000);
+
+        vm.prank(addresses.governorAddress);
+        voltSystemOracle.updateChangeRateBasisPoints(newChangeRate);
+
+        assertEq(
+            voltSystemOracle.monthlyChangeRateBasisPoints(),
+            newChangeRate
+        );
     }
 
     /// Linear Interpolation Formula

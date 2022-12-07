@@ -58,7 +58,12 @@ contract InvariantTestPegStabilityModule is DSTest, DSInvariantTest {
         pcvOracle = new MockPCVOracle();
         core = getCoreV2();
         token = new MockERC20();
-        oracle = new VoltSystemOracle(0, block.timestamp, voltFloorPrice + 1);
+        oracle = new VoltSystemOracle(
+            address(core),
+            0,
+            block.timestamp,
+            voltFloorPrice + 1
+        );
         psm = new PegStabilityModule(
             address(core),
             address(oracle),

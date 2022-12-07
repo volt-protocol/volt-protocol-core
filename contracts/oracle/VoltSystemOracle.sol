@@ -5,16 +5,15 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {Decimal} from "../external/Decimal.sol";
 import {Constants} from "./../Constants.sol";
+import {CoreRefV2} from "../refs/CoreRefV2.sol";
 import {IVoltSystemOracle} from "./IVoltSystemOracle.sol";
 
 /// @notice contract that receives a fixed interest rate upon construction,
 /// and then linearly interpolates that rate over a 30.42 day period into the VOLT price
 /// after the oracle start time.
-/// Interest can compound annually. Assumption is that this oracle will only be used until
-/// Volt 2.0 ships. Maximum amount of compounding periods on this contract at 2% APR
-/// is 6192 years, which is more than enough for this use case.
+/// Interest compounds once per month.
 /// @author Elliot Friedman
-contract VoltSystemOracle is IVoltSystemOracle {
+contract VoltSystemOracle is IVoltSystemOracle, CoreRefV2 {
     using Decimal for Decimal.D256;
 
     /// ---------- Mutable Variables ----------
@@ -27,10 +26,12 @@ contract VoltSystemOracle is IVoltSystemOracle {
     /// current ScalingPriceOracle price will be snapshotted and saved
     uint256 public periodStartTime;
 
-    /// ---------- Immutable Variables ----------
+    /// ---------- Mutable Variable ----------
 
     /// @notice current amount that oracle price is inflating by monthly in basis points
-    uint256 public immutable monthlyChangeRateBasisPoints;
+    uint256 public monthlyChangeRateBasisPoints;
+
+    /// ---------- Immutable Variable ----------
 
     /// @notice the time frame over which all changes in the APR are applied
     /// one month was chosen because this is a temporary oracle
@@ -40,10 +41,11 @@ contract VoltSystemOracle is IVoltSystemOracle {
     /// @param _periodStartTime start time at which oracle starts interpolating prices
     /// @param _oraclePrice starting oracle price
     constructor(
+        address _core,
         uint256 _monthlyChangeRateBasisPoints,
         uint256 _periodStartTime,
         uint256 _oraclePrice
-    ) {
+    ) CoreRefV2(_core) {
         monthlyChangeRateBasisPoints = _monthlyChangeRateBasisPoints;
         periodStartTime = _periodStartTime;
         oraclePrice = _oraclePrice;
@@ -70,6 +72,7 @@ contract VoltSystemOracle is IVoltSystemOracle {
     }
 
     /// @notice function to get the current oracle price for the OracleRef contract
+    /// valid is always true, price expressed as a decimal.
     function read()
         external
         view
@@ -86,19 +89,40 @@ contract VoltSystemOracle is IVoltSystemOracle {
     /// @notice public function that allows compounding of interest after duration has passed
     /// Sets accumulator to the current accrued interest, and then resets the timer.
     function compoundInterest() external override {
-        uint256 periodEndTime = periodStartTime + TIMEFRAME; /// save a single warm SLOAD when writing to periodStartTime
         require(
-            block.timestamp >= periodEndTime,
+            block.timestamp >= periodStartTime + TIMEFRAME,
             "VoltSystemOracle: not past end time"
         );
 
+        _compoundInterest();
+    }
+
+    /// @notice update the change rate in basis points
+    /// callable only by the governor
+    /// when called, interest accrued is compounded and then new rate is set
+    function updateChangeRateBasisPoints(
+        uint256 newMonthlyChangeRateBasisPoints
+    ) external override onlyGovernor {
+        _compoundInterest(); /// compound interest before updating change rate
+
+        uint256 oldChangeRateBasisPoints = monthlyChangeRateBasisPoints;
+        monthlyChangeRateBasisPoints = newMonthlyChangeRateBasisPoints;
+
+        emit ChangeRateUpdated(
+            oldChangeRateBasisPoints,
+            newMonthlyChangeRateBasisPoints
+        );
+    }
+
+    /// @notice helper function to compound interest
+    function _compoundInterest() private {
         /// first set Oracle Price to interpolated value
         oraclePrice = getCurrentOraclePrice();
 
         /// set periodStartTime to periodStartTime + timeframe,
         /// this is equivalent to init timed, which wipes out all unaccumulated compounded interest
         /// and cleanly sets the start time.
-        periodStartTime = periodEndTime;
+        periodStartTime = periodStartTime + TIMEFRAME;
 
         emit InterestCompounded(periodStartTime, oraclePrice);
     }

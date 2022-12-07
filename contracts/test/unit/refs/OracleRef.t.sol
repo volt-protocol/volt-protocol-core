@@ -20,7 +20,12 @@ contract UnitTestOracleRef is Test {
 
     function setUp() public {
         core = getCoreV2();
-        oracle = getVoltSystemOracle(0, block.timestamp, voltStartingPrice);
+        oracle = getVoltSystemOracle(
+            address(core),
+            0,
+            block.timestamp,
+            voltStartingPrice
+        );
         oracleRef = new MockOracleRef(
             address(core),
             address(oracle),

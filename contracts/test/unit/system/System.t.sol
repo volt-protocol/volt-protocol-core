@@ -127,6 +127,7 @@ contract SystemUnitTest is Test {
         dai = IERC20Mintable(address(new MockERC20()));
         usdc = IERC20Mintable(address(new MockERC20()));
         oracle = new VoltSystemOracle(
+            address(core),
             monthlyChangeRateBasisPoints,
             startTime,
             startPrice

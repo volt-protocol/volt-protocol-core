@@ -117,6 +117,7 @@ contract NonCustodialPSMUnitTest is Test {
         entry = new SystemEntry(address(core));
         dai = IERC20Mintable(address(new MockERC20()));
         oracle = new VoltSystemOracle(
+            coreAddress,
             monthlyChangeRateBasisPoints,
             startTime,
             startPrice
