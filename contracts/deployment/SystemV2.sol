@@ -18,8 +18,6 @@ import {PCVRouter} from "../pcv/PCVRouter.sol";
 import {MockCoreRefV2} from "../mock/MockCoreRefV2.sol";
 import {ERC20Allocator} from "../pcv/utils/ERC20Allocator.sol";
 import {NonCustodialPSM} from "../peg/NonCustodialPSM.sol";
-import {DynamicVoltRateModel} from "../oracle/DynamicVoltRateModel.sol";
-import {DynamicVoltSystemOracle} from "../oracle/DynamicVoltSystemOracle.sol";
 import {ConstantPriceOracle} from "../oracle/ConstantPriceOracle.sol";
 import {PCVOracle} from "../oracle/PCVOracle.sol";
 import {IPCVOracle} from "../oracle/IPCVOracle.sol";
@@ -47,8 +45,8 @@ contract SystemV2 {
     GlobalSystemExitRateLimiter public gserl;
 
     // VOLT rate
-    DynamicVoltRateModel public vrm;
-    DynamicVoltSystemOracle public vso;
+    // TODO: use an actual system oracle
+    ConstantPriceOracle public vso;
 
     // PCV Deposits
     MorphoCompoundPCVDeposit public morphoDaiPCVDeposit;
@@ -151,18 +149,7 @@ contract SystemV2 {
         );
 
         // VOLT rate
-        vrm = new DynamicVoltRateModel(
-            0.3e18, // at less than 30% liquid reserves, rate jumps
-            0.5e18 // maximum APR for the VOLT rate = 50%
-        );
-        vso = new DynamicVoltSystemOracle(
-            address(core),
-            VOLT_APR,
-            VOLT_APR,
-            VOLT_APR_START_TIME,
-            address(vrm),
-            MainnetAddresses.VOLT_SYSTEM_ORACLE_144_BIPS
-        );
+        vso = new ConstantPriceOracle(address(core), 1.05e18);
 
         // PCV Deposits
         morphoDaiPCVDeposit = new MorphoCompoundPCVDeposit(

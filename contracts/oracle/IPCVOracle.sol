@@ -25,8 +25,8 @@ interface IPCVOracle {
         address indexed venue,
         bool isIliquid,
         uint256 timestamp,
-        uint256 oldLiquidity,
-        uint256 newLiquidity
+        int256 deltaBalance,
+        int256 deltaProfit
     );
     /// @notice emitted when total profits change in a venue
     event VenueProfitsUpdated(
@@ -47,15 +47,6 @@ interface IPCVOracle {
     /// know the USD value of PCV deployed in a given venue.
     function venueToOracle(address venue) external returns (address oracle);
 
-    /// @notice reference to the market governance oracle smart contract
-    function voltOracle() external returns (address);
-
-    /// @notice last illiquid balance
-    function lastIlliquidBalance() external returns (uint256);
-
-    /// @notice last liquid balance
-    function lastLiquidBalance() external returns (uint256);
-
     /// @notice return all addresses listed as liquid venues
     function getLiquidVenues() external view returns (address[] memory);
 
@@ -64,12 +55,6 @@ interface IPCVOracle {
 
     /// @notice return all addresses that are liquid or illiquid venues
     function getAllVenues() external view returns (address[] memory);
-
-    /// @return the ratio of liquid to illiquid assets in the Volt system
-    /// using stale values and not factoring any interest or losses sustained
-    /// but not realized within the system
-    /// value is scaled up by 18 decimal places
-    function lastLiquidVenuePercentage() external view returns (uint256);
 
     /// @notice check if a venue is in the list of illiquid venues
     /// @param illiquidVenue address to check
@@ -136,9 +121,4 @@ interface IPCVOracle {
         address[] calldata venues,
         bool[] calldata isLiquid
     ) external;
-
-    /// @notice set the VOLT System Oracle address
-    /// only callable by governor
-    /// @param _voltOracle new address of the market governance oracle
-    function setVoltOracle(address _voltOracle) external;
 }

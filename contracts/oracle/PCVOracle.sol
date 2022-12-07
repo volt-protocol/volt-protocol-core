@@ -9,7 +9,6 @@ import {IPCVOracle} from "./IPCVOracle.sol";
 import {VoltRoles} from "../core/VoltRoles.sol";
 import {CoreRefV2} from "../refs/CoreRefV2.sol";
 import {IPCVDepositV2} from "../pcv/IPCVDepositV2.sol";
-import {DynamicVoltSystemOracle} from "./DynamicVoltSystemOracle.sol";
 
 /// @notice Contract to centralize information about PCV in the Volt system.
 /// This contract will emit events relevant for building offchain dashboards
@@ -36,15 +35,6 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
 
     ///@notice set of whitelisted pcvDeposit addresses for withdrawal
     EnumerableSet.AddressSet private illiquidVenues;
-
-    /// @notice reference to the volt system oracle smart contract
-    address public voltOracle;
-
-    /// @notice last illiquid balance
-    uint256 public lastIlliquidBalance;
-
-    /// @notice last liquid balance
-    uint256 public lastLiquidBalance;
 
     /// @notice last accumulative profits of each venue
     mapping(address => int256) public lastVenueProfits;
@@ -88,17 +78,6 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         }
 
         return allVenues;
-    }
-
-    /// @return the ratio of liquid to illiquid assets in the Volt system
-    /// using stale values and not factoring any interest or losses sustained
-    /// but not realized within the system
-    /// value is scaled up by 18 decimal places
-    function lastLiquidVenuePercentage() public view returns (uint256) {
-        uint256 _lastLiquidBalance = lastLiquidBalance;
-        uint256 totalBalance = _lastLiquidBalance + lastIlliquidBalance;
-        if (totalBalance == 0) return 1e18; // by convention, 100% liquid if empty
-        return (1e18 * _lastLiquidBalance) / totalBalance;
     }
 
     /// @notice check if a venue is in the list of illiquid venues
@@ -180,7 +159,6 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         isGlobalReentrancyLocked
     {
         _updateBalance(msg.sender, deltaBalance, deltaProfit, true);
-        _afterActionHook();
     }
 
     /// @notice update the cumulative and last updated times
@@ -198,7 +176,6 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         isGlobalReentrancyLocked
     {
         _updateBalance(msg.sender, deltaBalance, deltaProfit, false);
-        _afterActionHook();
     }
 
     /// ------------- Governor Only API -------------
@@ -248,7 +225,6 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
                 ++i;
             }
         }
-        if (nonZeroBalances) _afterActionHook();
     }
 
     /// @notice remove venues from the oracle
@@ -283,17 +259,6 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
                 ++i;
             }
         }
-        if (nonZeroBalances) _afterActionHook();
-    }
-
-    /// @notice set the VOLT System Oracle address
-    /// only callable by governor
-    /// @param _voltOracle new address of the volt system oracle
-    function setVoltOracle(address _voltOracle) external onlyGovernor {
-        address oldVoltOracle = voltOracle;
-        voltOracle = _voltOracle;
-
-        emit VoltSystemOracleUpdated(oldVoltOracle, _voltOracle);
     }
 
     /// ------------- Helper Methods -------------
@@ -305,14 +270,6 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
 
         // emit event
         emit VenueOracleUpdated(venue, oldOracle, newOracle);
-    }
-
-    function _afterActionHook() private {
-        if (voltOracle != address(0)) {
-            DynamicVoltSystemOracle(voltOracle).updateActualRate(
-                lastLiquidVenuePercentage()
-            );
-        }
     }
 
     function _updateBalance(
@@ -330,29 +287,13 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         int256 deltaBalanceUSD = (int256(oracleValue) * deltaBalance) / 1e18;
         int256 deltaProfitUSD = (int256(oracleValue) * deltaProfit) / 1e18;
 
-        // SLOAD cached liquidity
-        uint256 oldLiquidity = isLiquid
-            ? lastLiquidBalance
-            : lastIlliquidBalance;
-
-        // Compute new liquidity value
-        uint256 newLiquidity;
-        if (deltaBalanceUSD < 0) {
-            newLiquidity = oldLiquidity - (deltaBalanceUSD * -1).toUint256();
-        } else {
-            newLiquidity = oldLiquidity + deltaBalanceUSD.toUint256();
-        }
-        // SSTORE new liquidity's new value
-        if (isLiquid) lastLiquidBalance = newLiquidity;
-        else lastIlliquidBalance = newLiquidity;
-
         // Emit event
         emit PCVUpdated(
             msg.sender,
             isLiquid,
             block.timestamp,
-            oldLiquidity,
-            newLiquidity
+            deltaBalanceUSD,
+            deltaProfitUSD
         );
 
         // SLOAD accumulative profits of the venue

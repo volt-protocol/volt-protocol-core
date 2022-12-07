@@ -47,8 +47,8 @@ contract PCVOracleUnitTest is Test {
         address indexed venue,
         bool isIliquid,
         uint256 timestamp,
-        uint256 oldLiquidity,
-        uint256 newLiquidity
+        int256 deltaBalance,
+        int256 deltaProfit
     );
     event VenueProfitsUpdated(
         address indexed venue,
@@ -90,40 +90,14 @@ contract PCVOracleUnitTest is Test {
     }
 
     function testSetup() public {
-        assertEq(pcvOracle.voltOracle(), address(0));
-        assertEq(pcvOracle.lastIlliquidBalance(), 0);
-        assertEq(pcvOracle.lastLiquidBalance(), 0);
         assertEq(pcvOracle.getLiquidVenues().length, 0);
         assertEq(pcvOracle.getIlliquidVenues().length, 0);
         assertEq(pcvOracle.getAllVenues().length, 0);
-        assertEq(pcvOracle.lastLiquidVenuePercentage(), 1e18);
         (uint256 liquidPcv, uint256 illiquidPcv, uint256 totalPcv) = pcvOracle
             .getTotalPcv();
         assertEq(liquidPcv, 0);
         assertEq(illiquidPcv, 0);
         assertEq(totalPcv, 0);
-    }
-
-    // -------------------------------------------------
-    // Governor-only setup after deployment
-    // -------------------------------------------------
-
-    function testSetVoltOracle() public {
-        assertEq(pcvOracle.voltOracle(), address(0));
-
-        vm.prank(addresses.governorAddress);
-        vm.expectEmit(false, false, false, true, address(pcvOracle));
-        emit VoltSystemOracleUpdated(address(0), address(this));
-        pcvOracle.setVoltOracle(address(this));
-
-        assertEq(pcvOracle.voltOracle(), address(this));
-    }
-
-    // ---------------- Access Control -----------------
-
-    function testSetVoltOracleAcl() public {
-        vm.expectRevert(bytes("CoreRef: Caller is not a governor"));
-        pcvOracle.setVoltOracle(address(this));
     }
 
     // -------------------------------------------------
@@ -374,11 +348,6 @@ contract PCVOracleUnitTest is Test {
         assertEq(illiquidPcv1, 0); // 0$ illiquid
         assertEq(totalPcv1, 100e18); // 100$ total
 
-        // initial add already persisted in state
-        assertEq(pcvOracle.lastIlliquidBalance(), 0);
-        assertEq(pcvOracle.lastLiquidBalance(), 100e18);
-        assertEq(pcvOracle.lastLiquidVenuePercentage(), 1e18); // 100%
-
         // remove venue
         vm.prank(addresses.governorAddress);
         pcvOracle.removeVenues(venues, isLiquid);
@@ -392,11 +361,6 @@ contract PCVOracleUnitTest is Test {
         assertEq(liquidPcv2, 0); // 0$ liquid
         assertEq(illiquidPcv2, 0); // 0$ illiquid
         assertEq(totalPcv2, 0); // 0$ total
-
-        // removed from state
-        assertEq(pcvOracle.lastIlliquidBalance(), 0);
-        assertEq(pcvOracle.lastLiquidBalance(), 0);
-        assertEq(pcvOracle.lastLiquidVenuePercentage(), 1e18); // 100% by convention
     }
 
     function testAccountingOnHook() public {
@@ -431,15 +395,6 @@ contract PCVOracleUnitTest is Test {
         assertEq(illiquidPcv1, 0); // 0$ illiquid
         assertEq(totalPcv1, 100e18); // 100$ total
 
-        // the balances have not persisted in the state yet,
-        // except for the initial 1$ liquid that was already here
-        // when the liquid pcvdeposit was added to the oracle,
-        // because there has been no hook calls from PCVdeposits
-        // or addition/removal of venues in the PCV Oracle's state.
-        assertEq(pcvOracle.lastIlliquidBalance(), 0);
-        assertEq(pcvOracle.lastLiquidBalance(), 100e18);
-        assertEq(pcvOracle.lastLiquidVenuePercentage(), 1e18); // 100%
-
         // grant roles to pcv deposits
         vm.startPrank(addresses.governorAddress);
         core.createRole(VoltRoles.LIQUID_PCV_DEPOSIT, VoltRoles.GOVERNOR);
@@ -465,20 +420,17 @@ contract PCVOracleUnitTest is Test {
         assertEq(illiquidPcv2, 400e18); // 400$ illiquid
         assertEq(totalPcv2, 800e18); // 800$ total
 
-        // the balances have not persisted in the state yet,
-        // except for the initial 100$ liquid that was already here
-        // when the liquid pcvdeposit was added to the oracle,
-        // because there has been no hook calls from PCVdeposits
-        // or addition/removal of venues in the PCV Oracle's state.
-        assertEq(pcvOracle.lastIlliquidBalance(), 0);
-        assertEq(pcvOracle.lastLiquidBalance(), 100e18);
-        assertEq(pcvOracle.lastLiquidVenuePercentage(), 1e18); // 100%
-
         // A call from an illiquid PCVDeposit refreshes the state
         vm.startPrank(address(deposit2));
         core.lock(1);
         vm.expectEmit(true, false, false, true, address(pcvOracle));
-        emit PCVUpdated(address(deposit2), false, block.timestamp, 0, 400e18);
+        emit PCVUpdated(
+            address(deposit2),
+            false,
+            block.timestamp,
+            400e18,
+            150e18
+        );
         vm.expectEmit(true, false, false, true, address(pcvOracle));
         emit VenueProfitsUpdated(
             address(deposit2),
@@ -490,9 +442,7 @@ contract PCVOracleUnitTest is Test {
         pcvOracle.updateIlliquidBalance(int256(400e6), int256(150e6));
         core.unlock(0);
         vm.stopPrank();
-        assertEq(pcvOracle.lastIlliquidBalance(), 400e18); // 400$ illiquid
-        assertEq(pcvOracle.lastLiquidBalance(), 100e18); // 100$ liquid
-        assertEq(pcvOracle.lastLiquidVenuePercentage(), 0.2e18); // 20% liquid
+        assertEq(pcvOracle.lastVenueProfits(address(deposit2)), 150e18);
 
         // A call from a liquid PCVDeposit refreshes the state
         vm.startPrank(address(deposit1));
@@ -502,8 +452,8 @@ contract PCVOracleUnitTest is Test {
             address(deposit1),
             true,
             block.timestamp,
-            100e18,
-            400e18
+            300e18,
+            100e18
         );
         vm.expectEmit(true, false, false, true, address(pcvOracle));
         emit VenueProfitsUpdated(
@@ -516,12 +466,8 @@ contract PCVOracleUnitTest is Test {
         pcvOracle.updateLiquidBalance(int256(300e18), int256(100e18));
         core.unlock(0);
         vm.stopPrank();
-        assertEq(pcvOracle.lastIlliquidBalance(), 400e18); // 400$ illiquid
-        assertEq(pcvOracle.lastLiquidBalance(), 400e18); // 400$ liquid
-        assertEq(pcvOracle.lastLiquidVenuePercentage(), 0.5e18); // 50% liquid
 
         // Accumulative profits should be stored
-        assertEq(pcvOracle.lastVenueProfits(address(deposit2)), 150e18);
         assertEq(pcvOracle.lastVenueProfits(address(deposit1)), 100e18);
     }
 
