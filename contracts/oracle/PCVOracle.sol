@@ -191,26 +191,29 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         address newOracle
     ) external onlyGovernor {
         if (isLiquid) {
-            require(isLiquidVenue(venue), "PCVOracle: invalid venue");
+            require(isLiquidVenue(venue), "PCVOracle: invalid liquid venue");
         } else {
-            require(isIlliquidVenue(venue), "PCVOracle: invalid venue");
+            require(
+                isIlliquidVenue(venue),
+                "PCVOracle: invalid illiquid venue"
+            );
         }
 
+        // Read oracles and check validity
         address oldOracle = venueToOracle[venue];
+        (uint256 oldOracleValue, bool oldOracleValid) = IOracleV2(oldOracle)
+            .read();
+        (uint256 newOracleValue, bool newOracleValid) = IOracleV2(newOracle)
+            .read();
+        require(oldOracleValid, "PCVOracle: invalid old oracle");
+        require(newOracleValid, "PCVOracle: invalid new oracle");
+
+        // Update state
         _setVenueOracle(venue, newOracle);
 
-        uint256 venueBalance = IPCVDepositV2(venue).accrue();
-
         // If the venue is not empty, update accounting
+        uint256 venueBalance = IPCVDepositV2(venue).accrue();
         if (venueBalance != 0) {
-            // Read oracles
-            (uint256 oldOracleValue, bool oldOracleValid) = IOracleV2(oldOracle)
-                .read();
-            (uint256 newOracleValue, bool newOracleValid) = IOracleV2(newOracle)
-                .read();
-            require(oldOracleValid, "PCVOracle: invalid old oracle");
-            require(newOracleValid, "PCVOracle: invalid new oracle");
-
             // Compute balance diff
             uint256 oldBalanceUSD = (venueBalance * oldOracleValue) / 1e18;
             uint256 newBalanceUSD = (venueBalance * newOracleValue) / 1e18;

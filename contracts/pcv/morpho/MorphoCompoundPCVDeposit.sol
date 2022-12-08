@@ -69,6 +69,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
     /// in the same block or transaction. This means the value is stale
     /// most of the time.
     uint128 public lastRecordedBalance;
+
     /// @notice track the last amount of profits earned by the contract
     /// this is always out of date, except when accrue() is called
     /// in the same block or transaction. This means the value is stale

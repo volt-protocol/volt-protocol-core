@@ -149,11 +149,11 @@ contract PCVOracleUnitTest is Test {
 
     function testSetVenueOracleRevertIfDepositDoesntExist() public {
         vm.prank(addresses.governorAddress);
-        vm.expectRevert(bytes("PCVOracle: invalid venue"));
+        vm.expectRevert(bytes("PCVOracle: invalid liquid venue"));
         pcvOracle.setVenueOracle(address(deposit1), true, address(oracle1));
 
         vm.prank(addresses.governorAddress);
-        vm.expectRevert(bytes("PCVOracle: invalid venue"));
+        vm.expectRevert(bytes("PCVOracle: invalid illiquid venue"));
         pcvOracle.setVenueOracle(address(deposit2), false, address(oracle2));
     }
 
@@ -163,6 +163,9 @@ contract PCVOracleUnitTest is Test {
         entry.deposit(address(deposit1));
         token2.mint(address(deposit2), 100e18);
         entry.deposit(address(deposit2));
+
+        oracle1.setValues(1e18, true);
+        oracle2.setValues(1e18, true);
 
         // add deposits in PCVOracle
         address[] memory venues = new address[](2);
@@ -181,14 +184,14 @@ contract PCVOracleUnitTest is Test {
         MockOracleV2 newOracle = new MockOracleV2();
 
         // revert case 1
-        newOracle.setValues(0.5e18, true);
+        newOracle.setValues(1e18, true);
         oracle1.setValues(1e18, false);
         vm.prank(addresses.governorAddress);
         vm.expectRevert("PCVOracle: invalid old oracle");
         pcvOracle.setVenueOracle(address(deposit1), true, address(newOracle));
 
         // revert case 2
-        newOracle.setValues(0.5e18, false);
+        newOracle.setValues(1e18, false);
         oracle1.setValues(1e18, true);
         vm.prank(addresses.governorAddress);
         vm.expectRevert("PCVOracle: invalid new oracle");
@@ -535,7 +538,7 @@ contract PCVOracleUnitTest is Test {
         oracle1.setValues(123456, true); // oracle valid
 
         // add venues
-        address[] memory venues = new address[](21);
+        address[] memory venues = new address[](2);
         venues[0] = address(deposit1);
         venues[1] = address(deposit2);
         address[] memory oracles = new address[](2);
@@ -590,8 +593,11 @@ contract PCVOracleUnitTest is Test {
         // reverts because we need to call addVenue before otherwise
         // even if the PCVDeposit has the proper roles, it doesn't have
         // an oracle configured.
-        vm.prank(address(newDeposit));
+        vm.startPrank(address(newDeposit));
+        core.lock(1);
         vm.expectRevert(bytes("PCVOracle: invalid caller deposit"));
-        pcvOracle.updateLiquidBalance(0.5e18, 0);
+        pcvOracle.updateLiquidBalance(1e18, 0);
+        core.unlock(0);
+        vm.stopPrank();
     }
 }
