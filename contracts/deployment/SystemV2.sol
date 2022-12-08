@@ -172,6 +172,7 @@ contract SystemV2 {
             MainnetAddresses.MORPHO,
             MainnetAddresses.MORPHO_LENS
         );
+
         morphoUsdcPCVDeposit = new MorphoCompoundPCVDeposit(
             address(core),
             MainnetAddresses.CUSDC,
