@@ -140,18 +140,22 @@ contract VoltSystemOracle is IVoltSystemOracle, CoreRefV2, IOracleV2 {
 
     /// @notice helper function to compound interest
     function _compoundInterest() private {
+        uint200 newOraclePrice = uint200(getCurrentOraclePrice());
+        uint40 newStartTime = uint40(_periodStartTime + TIMEFRAME);
+
+        /// SSTORE
         /// first set Oracle Price to interpolated value
         /// this should never remove accuracy as price would need to be greater than
         /// 1606938044000000000000000000000000000000000000000000000000000
         /// for this to fail.
         /// starting price -> 1000000000000000000
-        _oraclePrice = uint200(getCurrentOraclePrice());
+        _oraclePrice = newOraclePrice;
 
         /// set periodStartTime to periodStartTime + timeframe,
         /// this is equivalent to init timed, which wipes out all unaccumulated compounded interest
         /// and cleanly sets the start time.
-        _periodStartTime = uint40(_periodStartTime + TIMEFRAME);
+        _periodStartTime = newStartTime;
 
-        emit InterestCompounded(_periodStartTime, _oraclePrice);
+        emit InterestCompounded(newStartTime, newOraclePrice);
     }
 }
