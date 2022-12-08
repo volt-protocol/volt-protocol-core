@@ -151,6 +151,48 @@ contract PCVOracleUnitTest is Test {
         vm.prank(addresses.governorAddress);
         vm.expectRevert(bytes("PCVOracle: invalid venue"));
         pcvOracle.setVenueOracle(address(deposit1), true, address(oracle1));
+
+        vm.prank(addresses.governorAddress);
+        vm.expectRevert(bytes("PCVOracle: invalid venue"));
+        pcvOracle.setVenueOracle(address(deposit2), false, address(oracle2));
+    }
+
+    function testSetVenueOracleRevertIfOracleInvalid() public {
+        // make deposit1 non-empty
+        token1.mint(address(deposit1), 100e18);
+        entry.deposit(address(deposit1));
+        token2.mint(address(deposit2), 100e18);
+        entry.deposit(address(deposit2));
+
+        // add deposits in PCVOracle
+        address[] memory venues = new address[](2);
+        venues[0] = address(deposit1);
+        venues[1] = address(deposit2);
+        address[] memory oracles = new address[](2);
+        oracles[0] = address(oracle1);
+        oracles[1] = address(oracle2);
+        bool[] memory isLiquid = new bool[](2);
+        isLiquid[0] = true;
+        isLiquid[1] = false;
+        vm.prank(addresses.governorAddress);
+        pcvOracle.addVenues(venues, oracles, isLiquid);
+
+        // create new oracle
+        MockOracleV2 newOracle = new MockOracleV2();
+
+        // revert case 1
+        newOracle.setValues(0.5e18, true);
+        oracle1.setValues(1e18, false);
+        vm.prank(addresses.governorAddress);
+        vm.expectRevert("PCVOracle: invalid old oracle");
+        pcvOracle.setVenueOracle(address(deposit1), true, address(newOracle));
+
+        // revert case 2
+        newOracle.setValues(0.5e18, false);
+        oracle1.setValues(1e18, true);
+        vm.prank(addresses.governorAddress);
+        vm.expectRevert("PCVOracle: invalid new oracle");
+        pcvOracle.setVenueOracle(address(deposit1), true, address(newOracle));
     }
 
     function testAddVenues() public {
@@ -199,6 +241,7 @@ contract PCVOracleUnitTest is Test {
         pcvOracle.addVenues(venues, oracles, isLiquid);
 
         // post-add check
+        assertEq(pcvOracle.getAllVenues().length, 2);
         assertEq(pcvOracle.isVenue(address(deposit1)), true);
         assertEq(pcvOracle.isLiquidVenue(address(deposit1)), true);
         assertEq(pcvOracle.isIlliquidVenue(address(deposit1)), false);
@@ -492,17 +535,29 @@ contract PCVOracleUnitTest is Test {
         oracle1.setValues(123456, true); // oracle valid
 
         // add venues
-        address[] memory venues = new address[](1);
+        address[] memory venues = new address[](21);
         venues[0] = address(deposit1);
-        address[] memory oracles = new address[](1);
+        venues[1] = address(deposit2);
+        address[] memory oracles = new address[](2);
         oracles[0] = address(oracle1);
-        bool[] memory isLiquid = new bool[](1);
+        oracles[1] = address(oracle2);
+        bool[] memory isLiquid = new bool[](2);
         isLiquid[0] = true;
+        isLiquid[1] = false;
         vm.prank(addresses.governorAddress);
         pcvOracle.addVenues(venues, oracles, isLiquid);
 
         // set oracle values
-        oracle1.setValues(123456, false); // oracle unvalid
+        oracle1.setValues(123456, false); // oracle invalid
+        oracle2.setValues(1e18, true);
+
+        // getPcv() reverts because oracle is invalid
+        vm.expectRevert(bytes("PCVOracle: invalid oracle value"));
+        pcvOracle.getTotalPcv();
+
+        // set oracle values
+        oracle1.setValues(1e18, true);
+        oracle2.setValues(123456, false); // oracle invalid
 
         // getPcv() reverts because oracle is invalid
         vm.expectRevert(bytes("PCVOracle: invalid oracle value"));
@@ -519,5 +574,24 @@ contract PCVOracleUnitTest is Test {
     function testUpdateIlliquidBalanceAcl() public {
         vm.expectRevert(bytes("UNAUTHORIZED"));
         pcvOracle.updateIlliquidBalance(0.5e18, 0);
+    }
+
+    function testUpdateLiquidBalanceUnconfiguredDeposit() public {
+        MockPCVDepositV3 newDeposit = new MockPCVDepositV3(
+            address(core),
+            address(token1)
+        );
+        vm.startPrank(addresses.governorAddress);
+        core.grantLocker(address(newDeposit));
+        core.createRole(VoltRoles.LIQUID_PCV_DEPOSIT, VoltRoles.GOVERNOR);
+        core.grantRole(VoltRoles.LIQUID_PCV_DEPOSIT, address(newDeposit));
+        vm.stopPrank();
+
+        // reverts because we need to call addVenue before otherwise
+        // even if the PCVDeposit has the proper roles, it doesn't have
+        // an oracle configured.
+        vm.prank(address(newDeposit));
+        vm.expectRevert(bytes("PCVOracle: invalid caller deposit"));
+        pcvOracle.updateLiquidBalance(0.5e18, 0);
     }
 }

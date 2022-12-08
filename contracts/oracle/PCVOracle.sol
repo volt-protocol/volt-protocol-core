@@ -361,16 +361,22 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     }
 
     function _addVenue(address venue, bool isLiquid) private {
-        if (isLiquid) liquidVenues.add(venue);
-        else illiquidVenues.add(venue);
+        if (isLiquid) {
+            liquidVenues.add(venue);
+        } else {
+            illiquidVenues.add(venue);
+        }
 
         emit VenueAdded(venue, isLiquid, block.timestamp);
     }
 
     function _removeVenue(address venue, bool isLiquid) private {
         bool removed;
-        if (isLiquid) removed = liquidVenues.remove(venue);
-        else removed = illiquidVenues.remove(venue);
+        if (isLiquid) {
+            removed = liquidVenues.remove(venue);
+        } else {
+            removed = illiquidVenues.remove(venue);
+        }
         require(removed, "PCVOracle: venue not found");
 
         emit VenueRemoved(venue, isLiquid, block.timestamp);
