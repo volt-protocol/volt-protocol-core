@@ -13,9 +13,6 @@ import {IPCVDepositV2} from "../pcv/IPCVDepositV2.sol";
 /// @notice Contract to centralize information about PCV in the Volt system.
 /// This contract will emit events relevant for building offchain dashboards
 /// of pcv growth, composition, and locations (venues).
-/// This contract keeps track of the percentage of illiquid investments,
-/// which allows dynamic VOLT rate based on the liquidity available for
-/// redemptions (in other parts of the system).
 /// Each PCV Deposit has an oracle, which allows governance to manually
 /// mark down a given PCVDeposit, if losses occur and the implementation
 /// does not automatically detect it & return erroneous balance() values.
@@ -35,9 +32,6 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
 
     ///@notice set of whitelisted pcvDeposit addresses for withdrawal
     EnumerableSet.AddressSet private illiquidVenues;
-
-    /// @notice last accumulative profits of each venue
-    mapping(address => int256) public lastVenueProfits;
 
     /// @param _core reference to the core smart contract
     constructor(address _core) CoreRefV2(_core) {}
@@ -83,16 +77,14 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     /// @notice check if a venue is in the list of illiquid venues
     /// @param illiquidVenue address to check
     /// @return boolean whether or not the illiquidVenue is in the illiquid venue list
-    function isIlliquidVenue(
-        address illiquidVenue
-    ) external view returns (bool) {
+    function isIlliquidVenue(address illiquidVenue) public view returns (bool) {
         return illiquidVenues.contains(illiquidVenue);
     }
 
     /// @notice check if a venue is in the list of illiquid venues
     /// @param liquidVenue address to check
     /// @return boolean whether or not the liquidVenue is in the illiquid venue list
-    function isLiquidVenue(address liquidVenue) external view returns (bool) {
+    function isLiquidVenue(address liquidVenue) public view returns (bool) {
         return liquidVenues.contains(liquidVenue);
     }
 
@@ -158,7 +150,12 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         onlyVoltRole(VoltRoles.LIQUID_PCV_DEPOSIT)
         isGlobalReentrancyLocked
     {
-        _updateBalance(msg.sender, deltaBalance, deltaProfit, true);
+        _readOracleAndUpdateAccounting(
+            msg.sender, // venue
+            deltaBalance, // deltaBalance
+            deltaProfit, // deltaProfit
+            true // isLiquid
+        );
     }
 
     /// @notice update the cumulative and last updated times
@@ -175,7 +172,12 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         onlyVoltRole(VoltRoles.ILLIQUID_PCV_DEPOSIT)
         isGlobalReentrancyLocked
     {
-        _updateBalance(msg.sender, deltaBalance, deltaProfit, false);
+        _readOracleAndUpdateAccounting(
+            msg.sender, // venue
+            deltaBalance, // deltaBalance
+            deltaProfit, // deltaProfit
+            false // isLiquid
+        );
     }
 
     /// ------------- Governor Only API -------------
@@ -185,9 +187,45 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     /// and losses that are not properly reported by the PCVDeposit
     function setVenueOracle(
         address venue,
+        bool isLiquid,
         address newOracle
     ) external onlyGovernor {
+        if (isLiquid) {
+            require(isLiquidVenue(venue), "PCVOracle: invalid venue");
+        } else {
+            require(isIlliquidVenue(venue), "PCVOracle: invalid venue");
+        }
+
         _setVenueOracle(venue, newOracle);
+
+        uint256 venueBalance = IPCVDepositV2(venue).accrue();
+
+        // If the venue is not empty, update accounting
+        if (venueBalance != 0) {
+            address oldOracle = venueToOracle[venue];
+
+            // Read oracles
+            (uint256 oldOracleValue, bool oldOracleValid) = IOracleV2(oldOracle)
+                .read();
+            (uint256 newOracleValue, bool newOracleValid) = IOracleV2(oldOracle)
+                .read();
+            require(oldOracleValid, "PCVOracle: invalid old oracle");
+            require(newOracleValid, "PCVOracle: invalid new oracle");
+
+            // Compute balance diff
+            uint256 oldBalanceUSD = (venueBalance * oldOracleValue) / 1e18;
+            uint256 newBalanceUSD = (venueBalance * newOracleValue) / 1e18;
+            int256 deltaBalanceUSD = int256(newBalanceUSD) -
+                int256(oldBalanceUSD);
+
+            // Update accounting (diff is reported as a profit/loss)
+            _updateAccounting(
+                venue,
+                deltaBalanceUSD,
+                deltaBalanceUSD,
+                isLiquid
+            );
+        }
     }
 
     /// @notice add venues to the oracle
@@ -218,7 +256,12 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
             if (balance != 0) {
                 nonZeroBalances = true;
                 // no need for safe cast here because balance is always > 0
-                _updateBalance(venues[i], int256(balance), 0, isLiquid[i]);
+                _readOracleAndUpdateAccounting(
+                    venues[i],
+                    int256(balance),
+                    0,
+                    isLiquid[i]
+                );
             }
 
             unchecked {
@@ -248,7 +291,12 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
             if (balance != 0) {
                 nonZeroBalances = true;
                 // no need for safe cast here because balance is always > 0
-                _updateBalance(venues[i], -1 * int256(balance), 0, isLiquid[i]);
+                _readOracleAndUpdateAccounting(
+                    venues[i],
+                    -1 * int256(balance),
+                    0,
+                    isLiquid[i]
+                );
             }
 
             // remove venue from state
@@ -272,7 +320,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         emit VenueOracleUpdated(venue, oldOracle, newOracle);
     }
 
-    function _updateBalance(
+    function _readOracleAndUpdateAccounting(
         address venue,
         int256 deltaBalance,
         int256 deltaProfit,
@@ -287,31 +335,30 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         int256 deltaBalanceUSD = (int256(oracleValue) * deltaBalance) / 1e18;
         int256 deltaProfitUSD = (int256(oracleValue) * deltaProfit) / 1e18;
 
+        _updateAccounting(venue, deltaBalanceUSD, deltaProfitUSD, isLiquid);
+    }
+
+    function _updateAccounting(
+        address venue,
+        int256 deltaBalanceUSD,
+        int256 deltaProfitUSD,
+        bool isLiquid
+    ) private {
         // Emit event
         emit PCVUpdated(
-            msg.sender,
+            venue,
             isLiquid,
             block.timestamp,
             deltaBalanceUSD,
             deltaProfitUSD
         );
 
-        // SLOAD accumulative profits of the venue
-        int256 oldProfits = lastVenueProfits[venue];
-        int256 newProfits = oldProfits + deltaProfitUSD;
-        // SSTORE accumulative profits of the venue, if different,
-        // and emit event.
-        if (oldProfits != newProfits) {
-            lastVenueProfits[venue] = newProfits;
-
-            emit VenueProfitsUpdated(
-                venue,
-                isLiquid,
-                block.timestamp,
-                oldProfits,
-                newProfits
-            );
-        }
+        // @dev:
+        // Later, we could store accumulative balances and profits
+        // for each venues here, in stroage if needed by market governance.
+        // For now to save on gas, we only emit events.
+        // The PCVOracle can easily be swapped to a new implementation
+        // by calling setPCVOracle() on Core.
     }
 
     function _addVenue(address venue, bool isLiquid) private {

@@ -50,14 +50,6 @@ contract PCVOracleUnitTest is Test {
         int256 deltaBalance,
         int256 deltaProfit
     );
-    event VenueProfitsUpdated(
-        address indexed venue,
-        bool isIliquid,
-        uint256 timestamp,
-        int256 oldProfits,
-        int256 newProfits
-    );
-    event VoltSystemOracleUpdated(address oldOracle, address newOracle);
 
     // mocked DynamicVoltSystemOracle behavior to prevent reverts
     uint256 private liquidReserves;
@@ -107,6 +99,16 @@ contract PCVOracleUnitTest is Test {
     function testSetVenueOracle() public {
         assertEq(pcvOracle.venueToOracle(address(deposit1)), address(0));
 
+        // add venue
+        address[] memory venues = new address[](1);
+        venues[0] = address(deposit1);
+        address[] memory oracles = new address[](1);
+        oracles[0] = address(oracle1);
+        bool[] memory isLiquid = new bool[](1);
+        isLiquid[0] = true;
+        vm.prank(addresses.governorAddress);
+        pcvOracle.addVenues(venues, oracles, isLiquid);
+
         // check event
         vm.expectEmit(false, false, false, true, address(pcvOracle));
         emit VenueOracleUpdated(
@@ -116,9 +118,15 @@ contract PCVOracleUnitTest is Test {
         );
         // set
         vm.prank(addresses.governorAddress);
-        pcvOracle.setVenueOracle(address(deposit1), address(oracle1));
+        pcvOracle.setVenueOracle(address(deposit1), true, address(oracle1));
 
         assertEq(pcvOracle.venueToOracle(address(deposit1)), address(oracle1));
+    }
+
+    function testSetVenueOracleRevertIfDepositDoesntExist() public {
+        vm.prank(addresses.governorAddress);
+        vm.expectRevert(bytes("PCVOracle: invalid venue"));
+        pcvOracle.setVenueOracle(address(deposit1), true, address(oracle1));
     }
 
     function testAddVenues() public {
@@ -296,7 +304,7 @@ contract PCVOracleUnitTest is Test {
 
     function testSetVenueOracleAcl() public {
         vm.expectRevert(bytes("CoreRef: Caller is not a governor"));
-        pcvOracle.setVenueOracle(address(deposit1), address(oracle1));
+        pcvOracle.setVenueOracle(address(deposit1), true, address(oracle1));
     }
 
     function testAddVenuesAcl() public {
@@ -420,7 +428,7 @@ contract PCVOracleUnitTest is Test {
         assertEq(illiquidPcv2, 400e18); // 400$ illiquid
         assertEq(totalPcv2, 800e18); // 800$ total
 
-        // A call from an illiquid PCVDeposit refreshes the state
+        // A call from an illiquid PCVDeposit refreshes accounting
         vm.startPrank(address(deposit2));
         core.lock(1);
         vm.expectEmit(true, false, false, true, address(pcvOracle));
@@ -431,20 +439,11 @@ contract PCVOracleUnitTest is Test {
             400e18,
             150e18
         );
-        vm.expectEmit(true, false, false, true, address(pcvOracle));
-        emit VenueProfitsUpdated(
-            address(deposit2),
-            false,
-            block.timestamp,
-            int256(0),
-            int256(150e18)
-        );
         pcvOracle.updateIlliquidBalance(int256(400e6), int256(150e6));
         core.unlock(0);
         vm.stopPrank();
-        assertEq(pcvOracle.lastVenueProfits(address(deposit2)), 150e18);
 
-        // A call from a liquid PCVDeposit refreshes the state
+        // A call from a liquid PCVDeposit refreshes accounting
         vm.startPrank(address(deposit1));
         core.lock(1);
         vm.expectEmit(true, false, false, true, address(pcvOracle));
@@ -455,20 +454,9 @@ contract PCVOracleUnitTest is Test {
             300e18,
             100e18
         );
-        vm.expectEmit(true, false, false, true, address(pcvOracle));
-        emit VenueProfitsUpdated(
-            address(deposit1),
-            true,
-            block.timestamp,
-            int256(0),
-            int256(100e18)
-        );
         pcvOracle.updateLiquidBalance(int256(300e18), int256(100e18));
         core.unlock(0);
         vm.stopPrank();
-
-        // Accumulative profits should be stored
-        assertEq(pcvOracle.lastVenueProfits(address(deposit1)), 100e18);
     }
 
     function testGetPcvRevertIfOracleInvalid() public {

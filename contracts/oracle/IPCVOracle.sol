@@ -28,17 +28,6 @@ interface IPCVOracle {
         int256 deltaBalance,
         int256 deltaProfit
     );
-    /// @notice emitted when total profits change in a venue
-    event VenueProfitsUpdated(
-        address indexed venue,
-        bool isIliquid,
-        uint256 timestamp,
-        int256 oldProfits,
-        int256 newProfits
-    );
-
-    /// @notice emitted when market governance oracle is updated
-    event VoltSystemOracleUpdated(address oldOracle, address newOracle);
 
     // ----------- Getters -----------------------------------------
 
@@ -101,7 +90,11 @@ interface IPCVOracle {
     /// @notice set the oracle for a given venue, used to normalize
     /// balances into USD values, and correct for exceptional gains
     /// and losses that are not properly reported by the PCVDeposit
-    function setVenueOracle(address venue, address newOracle) external;
+    function setVenueOracle(
+        address venue,
+        bool isLiquid,
+        address newOracle
+    ) external;
 
     /// @notice add venues to the oracle
     /// only callable by the governor

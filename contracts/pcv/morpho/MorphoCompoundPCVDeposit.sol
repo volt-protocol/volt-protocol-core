@@ -290,6 +290,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
     /// @notice records how much profit or loss has been accrued
     /// since the last call and emits an event with all profit or loss received.
     /// Updates the lastRecordedBalance to include all realized profits or losses.
+    /// @return profit accumulated since last _recordPNL() call.
     function _recordPNL() private returns (int256) {
         /// first accrue interest in Compound and Morpho
         IMorpho(morpho).updateP2PIndexes(cToken);
