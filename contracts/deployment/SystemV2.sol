@@ -18,6 +18,7 @@ import {PCVRouter} from "../pcv/PCVRouter.sol";
 import {MockCoreRefV2} from "../mock/MockCoreRefV2.sol";
 import {ERC20Allocator} from "../pcv/utils/ERC20Allocator.sol";
 import {NonCustodialPSM} from "../peg/NonCustodialPSM.sol";
+import {VoltSystemOracle} from "../oracle/VoltSystemOracle.sol";
 import {ConstantPriceOracle} from "../oracle/ConstantPriceOracle.sol";
 import {PCVOracle} from "../oracle/PCVOracle.sol";
 import {IPCVOracle} from "../oracle/IPCVOracle.sol";
@@ -45,8 +46,7 @@ contract SystemV2 {
     GlobalSystemExitRateLimiter public gserl;
 
     // VOLT rate
-    // TODO: use an actual system oracle
-    ConstantPriceOracle public vso;
+    VoltSystemOracle public vso;
 
     // PCV Deposits
     MorphoCompoundPCVDeposit public morphoDaiPCVDeposit;
@@ -114,8 +114,11 @@ contract SystemV2 {
 
     /// ---------- ORACLE PARAMS ----------
 
-    uint64 public constant VOLT_APR_START_TIME = 1672531200; // 2023-01-01
     uint256 public constant VOLT_APR = 1.0144e18;
+
+    uint200 public constant VOLT_START_PRICE = 1.05e18;
+    uint40 public constant VOLT_START_TIME = 1672531200; // 2023-01-01
+    uint16 public constant MONTHLY_CHANGE_RATE_BASIS_POINTS = 17;
 
     function deploy() public {
         // Core
@@ -149,7 +152,11 @@ contract SystemV2 {
         );
 
         // VOLT rate
-        vso = new ConstantPriceOracle(address(core), 1.05e18);
+        vso = new VoltSystemOracle(
+            MONTHLY_CHANGE_RATE_BASIS_POINTS,
+            VOLT_START_TIME,
+            VOLT_START_PRICE
+        );
 
         // PCV Deposits
         morphoDaiPCVDeposit = new MorphoCompoundPCVDeposit(
