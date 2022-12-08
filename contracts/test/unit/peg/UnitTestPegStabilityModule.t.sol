@@ -60,7 +60,7 @@ contract UnitTestPegStabilityModule is Test {
         underlyingToken = IERC20(address(new MockERC20()));
         core = getCoreV2();
         volt = core.volt();
-        (oracle, ) = getLocalOracleSystem(voltFloorPrice);
+        (oracle, ) = getLocalOracleSystem(address(core), voltFloorPrice);
 
         /// create PSM
         psm = new PegStabilityModule(
