@@ -171,7 +171,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         int256 pcvDelta
     )
         public
-        onlyVoltRole(VoltRoles.LIQUID_PCV_DEPOSIT_ROLE)
+        onlyVoltRole(VoltRoles.LIQUID_PCV_DEPOSIT)
         isGlobalReentrancyLocked
     {
         _updateBalance(_getUsdPcvDelta(msg.sender, pcvDelta), true);
@@ -187,7 +187,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         int256 pcvDelta
     )
         public
-        onlyVoltRole(VoltRoles.ILLIQUID_PCV_DEPOSIT_ROLE)
+        onlyVoltRole(VoltRoles.ILLIQUID_PCV_DEPOSIT)
         isGlobalReentrancyLocked
     {
         _updateBalance(_getUsdPcvDelta(msg.sender, pcvDelta), false);

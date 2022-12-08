@@ -6,7 +6,7 @@ import {IGlobalReentrancyLock} from "./IGlobalReentrancyLock.sol";
 /// @notice inpsired by the openzeppelin reentrancy guard smart contracts
 /// data container size has been changed.
 
-/// @dev allows contracts and addresses with the LOCKER_ROLE to call
+/// @dev allows contracts and addresses with the LOCKER role to call
 /// in and lock and unlock this smart contract.
 /// once locked, only the original caller that locked can unlock the contract
 /// without the governor emergency unlock functionality.

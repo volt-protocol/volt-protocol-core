@@ -26,9 +26,9 @@ contract UnitTestPermissionsV2 is DSTest {
         assertTrue(core.isGovernor(addresses.governorAddress)); /// msg.sender of contract is governor
         assertTrue(!core.isGovernor(address(this))); /// only 2 governors
 
-        bytes32 governRole = core.GOVERN_ROLE();
+        bytes32 governRole = core.GOVERNOR_ROLE();
         /// assert all roles have the proper admin
-        assertEq(core.getRoleAdmin(core.GOVERN_ROLE()), governRole);
+        assertEq(core.getRoleAdmin(core.GOVERNOR_ROLE()), governRole);
         assertEq(core.getRoleAdmin(core.MINTER_ROLE()), governRole);
         assertEq(core.getRoleAdmin(core.GUARDIAN_ROLE()), governRole);
         assertEq(core.getRoleAdmin(core.PCV_CONTROLLER_ROLE()), governRole);
@@ -136,7 +136,7 @@ contract UnitTestPermissionsV2 is DSTest {
         assertEq(core.getRoleMemberCount(core.LOCKER_ROLE()), 1);
 
         vm.prank(addresses.guardianAddress);
-        core.revokeOverride(VoltRoles.LOCKER_ROLE, address(this));
+        core.revokeOverride(VoltRoles.LOCKER, address(this));
         assertTrue(!core.isLocker(address(this)));
         assertEq(core.getRoleMemberCount(core.LOCKER_ROLE()), 0);
     }

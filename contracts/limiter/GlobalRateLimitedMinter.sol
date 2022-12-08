@@ -7,9 +7,9 @@ import {RateLimitedV2} from "../utils/RateLimitedV2.sol";
 
 /// @notice contract to mint Volt on a rate limit.
 /// All minting should flow through this smart contract.
-/// Peg Stability Modules will be granted the VOLT_RATE_LIMITED_MINTER_ROLE to mint Volt
+/// Peg Stability Modules will be granted the RATE_LIMIT_SYSTEM_ENTRY_DEPLETE_ROLE to mint Volt
 /// through this contract on a global rate limit.
-/// Peg Stability Modules will be granted the VOLT_RATE_LIMITED_REDEEMER_ROLE to replenish
+/// Peg Stability Modules will be granted the RATE_LIMIT_SYSTEM_ENTRY_REPLENISH_ROLE to replenish
 /// this contract's on a global rate limit when burning Volt.
 contract GlobalRateLimitedMinter is IGlobalRateLimitedMinter, RateLimitedV2 {
     /// @param _core reference to the core smart contract
@@ -36,7 +36,7 @@ contract GlobalRateLimitedMinter is IGlobalRateLimitedMinter, RateLimitedV2 {
     )
         external
         /// checks
-        onlyVoltRole(VoltRoles.VOLT_RATE_LIMITED_MINTER_ROLE)
+        onlyVoltRole(VoltRoles.RATE_LIMIT_SYSTEM_ENTRY_DEPLETE)
         /// system must be level 1 locked before this function can execute
         /// asserts system is inside PSM mint when this function is called
         globalLock(2)
@@ -52,7 +52,7 @@ contract GlobalRateLimitedMinter is IGlobalRateLimitedMinter, RateLimitedV2 {
     )
         external
         /// checks
-        onlyVoltRole(VoltRoles.VOLT_RATE_LIMITED_REDEEMER_ROLE)
+        onlyVoltRole(VoltRoles.RATE_LIMIT_SYSTEM_ENTRY_REPLENISH)
         /// system must be level 1 locked before this function can execute
         /// asserts system is inside PSM redeem when this function is called
         globalLock(2)
