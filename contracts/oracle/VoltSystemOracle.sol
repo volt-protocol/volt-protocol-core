@@ -124,7 +124,7 @@ contract VoltSystemOracle is IVoltSystemOracle, CoreRefV2, IOracleV2 {
     /// callable only by the governor
     /// when called, interest accrued is compounded and then new rate is set
     function updateChangeRateBasisPoints(
-        uint256 newMonthlyChangeRateBasisPoints
+        uint16 newMonthlyChangeRateBasisPoints
     ) external override onlyGovernor {
         _compoundInterest(); /// compound interest before updating change rate
 

@@ -36,7 +36,7 @@ interface IVoltSystemOracle {
     /// callable only by the governor
     /// @param newMonthlyChangeRateBasisPoints basis points to interpolate price
     function updateChangeRateBasisPoints(
-        uint256 newMonthlyChangeRateBasisPoints
+        uint16 newMonthlyChangeRateBasisPoints
     ) external;
 
     // ----------- Event -----------
