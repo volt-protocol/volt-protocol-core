@@ -196,18 +196,17 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
             require(isIlliquidVenue(venue), "PCVOracle: invalid venue");
         }
 
+        address oldOracle = venueToOracle[venue];
         _setVenueOracle(venue, newOracle);
 
         uint256 venueBalance = IPCVDepositV2(venue).accrue();
 
         // If the venue is not empty, update accounting
         if (venueBalance != 0) {
-            address oldOracle = venueToOracle[venue];
-
             // Read oracles
             (uint256 oldOracleValue, bool oldOracleValid) = IOracleV2(oldOracle)
                 .read();
-            (uint256 newOracleValue, bool newOracleValid) = IOracleV2(oldOracle)
+            (uint256 newOracleValue, bool newOracleValid) = IOracleV2(newOracle)
                 .read();
             require(oldOracleValid, "PCVOracle: invalid old oracle");
             require(newOracleValid, "PCVOracle: invalid new oracle");

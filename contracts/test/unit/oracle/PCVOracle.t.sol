@@ -99,6 +99,13 @@ contract PCVOracleUnitTest is Test {
     function testSetVenueOracle() public {
         assertEq(pcvOracle.venueToOracle(address(deposit1)), address(0));
 
+        // make deposit1 non-empty
+        token1.mint(address(deposit1), 100e18);
+        entry.deposit(address(deposit1));
+
+        // set oracle value to 1$
+        oracle1.setValues(1e18, true);
+
         // add venue
         address[] memory venues = new address[](1);
         venues[0] = address(deposit1);
@@ -109,18 +116,35 @@ contract PCVOracleUnitTest is Test {
         vm.prank(addresses.governorAddress);
         pcvOracle.addVenues(venues, oracles, isLiquid);
 
+        assertEq(pcvOracle.venueToOracle(address(deposit1)), address(oracle1));
+
+        // create new oracle
+        MockOracleV2 newOracle = new MockOracleV2();
+        newOracle.setValues(0.5e18, true);
+
         // check event
         vm.expectEmit(false, false, false, true, address(pcvOracle));
         emit VenueOracleUpdated(
             address(deposit1),
-            address(0),
-            address(oracle1)
+            address(oracle1),
+            address(newOracle)
+        );
+        vm.expectEmit(false, false, false, true, address(pcvOracle));
+        emit PCVUpdated(
+            address(deposit1),
+            true,
+            block.timestamp,
+            -50e18,
+            -50e18
         );
         // set
         vm.prank(addresses.governorAddress);
-        pcvOracle.setVenueOracle(address(deposit1), true, address(oracle1));
+        pcvOracle.setVenueOracle(address(deposit1), true, address(newOracle));
 
-        assertEq(pcvOracle.venueToOracle(address(deposit1)), address(oracle1));
+        assertEq(
+            pcvOracle.venueToOracle(address(deposit1)),
+            address(newOracle)
+        );
     }
 
     function testSetVenueOracleRevertIfDepositDoesntExist() public {
