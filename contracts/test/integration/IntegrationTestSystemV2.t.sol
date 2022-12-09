@@ -10,11 +10,54 @@ import {VoltRoles} from "../../core/VoltRoles.sol";
 
 contract IntegrationTestSystemV2 is Test {
     SystemV2 systemV2;
+    address public constant user = 0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7;
+
+    CoreV2 core;
+    IERC20 dai;
+    IERC20 usdc;
+    VoltV2 volt;
+    NonCustodialPSM daincpsm;
+    PegStabilityModule daipsm;
+    NonCustodialPSM usdcncpsm;
+    PegStabilityModule usdcpsm;
+    GlobalRateLimitedMinter grlm;
+    GlobalSystemExitRateLimiter gserl;
+    ERC20Allocator allocator;
+    PCVOracle pcvOracle;
+    TimelockController timelockController;
+    PCVGuardian pcvGuardian;
+    MorphoCompoundPCVDeposit morphoDaiPCVDeposit;
+    MorphoCompoundPCVDeposit morphoUsdcPCVDeposit;
+    PCVRouter pcvRouter;
+    SystemEntry systemEntry;
 
     function setUp() public {
         systemV2 = new SystemV2();
         systemV2.deploy();
         systemV2.setUp(address(this));
+        core = systemV2.core();
+        dai = systemV2.dai();
+        usdc = systemV2.usdc();
+        volt = systemV2.volt();
+        grlm = systemV2.grlm();
+        gserl = systemV2.gserl();
+        daipsm = systemV2.daipsm();
+        daincpsm = systemV2.daiNonCustodialPsm();
+        usdcncpsm = systemV2.usdcNonCustodialPsm();
+        usdcpsm = systemV2.usdcpsm();
+        allocator = systemV2.allocator();
+        pcvOracle = systemV2.pcvOracle();
+        timelockController = systemV2.timelockController();
+        pcvGuardian = systemV2.pcvGuardian();
+        morphoDaiPCVDeposit = systemV2.morphoDaiPCVDeposit();
+        morphoUsdcPCVDeposit = systemV2.morphoUsdcPCVDeposit();
+        pcvRouter = systemV2.pcvRouter();
+        systemEntry = systemV2.systemEntry();
+
+        uint256 BUFFER_CAP_MINTING = systemV2.BUFFER_CAP_MINTING();
+        uint256 amount = BUFFER_CAP_MINTING / 2;
+
+        deal(address(dai), user, amount);
     }
 
     /*
@@ -22,7 +65,6 @@ contract IntegrationTestSystemV2 is Test {
     */
     function testLinks() public {
         // core references
-        CoreV2 core = systemV2.core();
         assertEq(address(core.volt()), address(systemV2.volt()));
         assertEq(address(core.vcon()), address(0));
         assertEq(
@@ -36,7 +78,6 @@ contract IntegrationTestSystemV2 is Test {
         assertEq(address(core.pcvOracle()), address(systemV2.pcvOracle()));
 
         // psm allocator
-        ERC20Allocator allocator = systemV2.allocator();
         assertEq(
             allocator.pcvDepositToPSM(address(systemV2.morphoUsdcPCVDeposit())),
             address(systemV2.usdcpsm())
@@ -53,7 +94,6 @@ contract IntegrationTestSystemV2 is Test {
         assertEq(psmToken2, address(systemV2.usdc()));
 
         // pcv oracle
-        PCVOracle pcvOracle = systemV2.pcvOracle();
         assertEq(pcvOracle.getAllVenues().length, 4);
         assertEq(
             pcvOracle.getAllVenues()[0],
@@ -67,7 +107,6 @@ contract IntegrationTestSystemV2 is Test {
         assertEq(pcvOracle.getAllVenues()[3], address(systemV2.usdcpsm()));
 
         // pcv router
-        PCVRouter pcvRouter = systemV2.pcvRouter();
         assertTrue(pcvRouter.isPCVSwapper(address(systemV2.pcvSwapperMaker())));
     }
 
@@ -76,8 +115,6 @@ contract IntegrationTestSystemV2 is Test {
     additional roles are granted to unexpected addresses.
     */
     function testRoles() public {
-        CoreV2 core = systemV2.core();
-
         // GOVERNOR
         assertEq(core.getRoleMemberCount(VoltRoles.GOVERNOR), 3);
         assertEq(core.getRoleMember(VoltRoles.GOVERNOR, 0), address(core));
@@ -211,7 +248,7 @@ contract IntegrationTestSystemV2 is Test {
         );
 
         // LOCKER_ROLE
-        assertEq(core.getRoleMemberCount(VoltRoles.LOCKER), 11);
+        assertEq(core.getRoleMemberCount(VoltRoles.LOCKER), 13);
         assertEq(
             core.getRoleMember(VoltRoles.LOCKER, 0),
             address(systemV2.systemEntry())
@@ -256,6 +293,8 @@ contract IntegrationTestSystemV2 is Test {
             core.getRoleMember(VoltRoles.LOCKER, 10),
             address(systemV2.pcvGuardian())
         );
+        assertEq(core.getRoleMember(VoltRoles.LOCKER, 11), address(daincpsm));
+        assertEq(core.getRoleMember(VoltRoles.LOCKER, 12), address(usdcncpsm));
 
         // MINTER
         assertEq(core.getRoleMemberCount(VoltRoles.MINTER), 1);
@@ -289,6 +328,107 @@ contract IntegrationTestSystemV2 is Test {
         );
     }
 
+    function testTimelockRoles() public {
+        bytes32 executor = timelockController.EXECUTOR_ROLE();
+        bytes32 canceller = timelockController.CANCELLER_ROLE();
+        bytes32 proposer = timelockController.PROPOSER_ROLE();
+
+        assertTrue(timelockController.hasRole(executor, address(0))); /// role open
+        assertTrue(
+            timelockController.hasRole(canceller, MainnetAddresses.GOVERNOR)
+        );
+        assertTrue(
+            timelockController.hasRole(proposer, MainnetAddresses.GOVERNOR)
+        );
+        assertTrue(!timelockController.hasRole(canceller, address(0))); /// role closed
+        assertTrue(!timelockController.hasRole(proposer, address(0))); /// role closed
+    }
+
+    function testMultisigProposesTimelock() public {
+        uint256 ethSendAmount = 100 ether;
+        vm.deal(address(timelockController), ethSendAmount);
+
+        assertEq(address(timelockController).balance, ethSendAmount); /// starts with 0 balance
+
+        bytes memory data = "";
+        bytes32 predecessor = bytes32(0);
+        bytes32 salt = bytes32(0);
+        address recipient = address(100);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        timelockController.schedule(
+            recipient,
+            ethSendAmount,
+            data,
+            predecessor,
+            salt,
+            600
+        );
+        bytes32 id = timelockController.hashOperation(
+            recipient,
+            ethSendAmount,
+            data,
+            predecessor,
+            salt
+        );
+
+        uint256 startingEthBalance = recipient.balance;
+
+        assertTrue(!timelockController.isOperationDone(id)); /// operation is not done
+        assertTrue(!timelockController.isOperationReady(id)); /// operation is not ready
+
+        vm.warp(block.timestamp + 600);
+        assertTrue(timelockController.isOperationReady(id)); /// operation is ready
+
+        timelockController.execute(
+            recipient,
+            ethSendAmount,
+            data,
+            predecessor,
+            salt
+        );
+
+        assertTrue(timelockController.isOperationDone(id)); /// operation is done
+
+        assertEq(address(timelockController).balance, 0);
+        assertEq(recipient.balance, ethSendAmount + startingEthBalance); /// assert receiver received their eth
+    }
+
+    function testOraclePriceAndReference() public {
+        address oracleAddress = address(systemV2.vso());
+
+        assertEq(address(systemV2.daipsm().oracle()), oracleAddress);
+        assertEq(address(systemV2.usdcpsm().oracle()), oracleAddress);
+
+        assertEq(
+            systemV2.vso().getCurrentOraclePrice(),
+            systemV2.VOLT_START_PRICE()
+        );
+    }
+
+    function testCoreReferences() public {
+        address coreAddress = address(core);
+
+        assertEq(address(systemV2.daipsm().core()), coreAddress);
+        assertEq(address(systemV2.usdcpsm().core()), coreAddress);
+        assertEq(address(systemV2.volt().core()), coreAddress);
+        assertEq(address(systemV2.grlm().core()), coreAddress);
+        assertEq(address(systemV2.gserl().core()), coreAddress);
+        assertEq(address(systemV2.vso().core()), coreAddress);
+        assertEq(address(systemV2.morphoDaiPCVDeposit().core()), coreAddress);
+        assertEq(address(systemV2.morphoUsdcPCVDeposit().core()), coreAddress);
+        assertEq(address(systemV2.usdcNonCustodialPsm().core()), coreAddress);
+        assertEq(address(systemV2.daiNonCustodialPsm().core()), coreAddress);
+        assertEq(address(systemV2.allocator().core()), coreAddress);
+        assertEq(address(systemV2.systemEntry().core()), coreAddress);
+        assertEq(address(systemV2.pcvSwapperMaker().core()), coreAddress);
+        assertEq(address(systemV2.pcvGuardian().core()), coreAddress);
+        assertEq(address(systemV2.pcvRouter().core()), coreAddress);
+        assertEq(address(systemV2.pcvOracle().core()), coreAddress);
+        assertEq(address(systemV2.daiConstantOracle().core()), coreAddress);
+        assertEq(address(systemV2.usdcConstantOracle().core()), coreAddress);
+    }
+
     /*
     Flow of the first user that mints VOLT in the new system.
     Performs checks on the global rate limits, and accounting
@@ -296,16 +436,8 @@ contract IntegrationTestSystemV2 is Test {
     */
     function testFirstUserMint() public {
         // setup variables
-        address user = 0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7;
         uint256 BUFFER_CAP_MINTING = systemV2.BUFFER_CAP_MINTING();
         uint256 amount = BUFFER_CAP_MINTING / 2;
-        IERC20 dai = systemV2.dai();
-        IERC20 usdc = systemV2.usdc();
-        VoltV2 volt = systemV2.volt();
-        GlobalRateLimitedMinter grlm = systemV2.grlm();
-        PegStabilityModule daipsm = systemV2.daipsm();
-        PegStabilityModule usdcpsm = systemV2.usdcpsm();
-        PCVOracle pcvOracle = systemV2.pcvOracle();
 
         // at system deloy, buffer is full
         assertEq(grlm.buffer(), BUFFER_CAP_MINTING);
@@ -378,6 +510,7 @@ contract IntegrationTestSystemV2 is Test {
             assertEq(illiquidPcv3, 0);
             assertEq(totalPcv3, 2 * amount);
         }
+        vm.snapshot();
 
         // buffer replenishes over time
         vm.warp(block.timestamp + 3 days);
@@ -389,6 +522,146 @@ contract IntegrationTestSystemV2 is Test {
         vm.expectRevert("RateLimited: rate limit hit");
         daipsm.mint(user, BUFFER_CAP_MINTING * 2, 0);
         vm.stopPrank();
+    }
+
+    function testRedeemsDaiPsm(uint88 voltAmount) public {
+        testFirstUserMint();
+
+        uint256 snapshotId = 0; /// roll back to before buffer replenished
+        vm.revertTo(snapshotId);
+        vm.assume(voltAmount <= volt.balanceOf(user));
+
+        {
+            uint256 daiAmountOut = daipsm.getRedeemAmountOut(voltAmount);
+            deal(address(dai), address(daipsm), daiAmountOut);
+
+            vm.startPrank(user);
+
+            uint256 startingBuffer = grlm.buffer();
+            uint256 startingDaiBalance = dai.balanceOf(user);
+
+            volt.approve(address(daipsm), voltAmount);
+            daipsm.redeem(user, voltAmount, daiAmountOut);
+
+            uint256 endingBuffer = grlm.buffer();
+            uint256 endingDaiBalance = dai.balanceOf(user);
+
+            assertEq(endingDaiBalance - startingDaiBalance, daiAmountOut);
+            assertEq(endingBuffer - startingBuffer, voltAmount);
+
+            vm.stopPrank();
+        }
+    }
+
+    function testRedeemsDaiNcPsm(uint80 voltRedeemAmount) public {
+        vm.assume(voltRedeemAmount >= 1e18);
+        vm.assume(voltRedeemAmount <= 475_000e18);
+        testFirstUserMint();
+
+        uint256 snapshotId = 0; /// roll back to before buffer replenished
+        vm.revertTo(snapshotId);
+
+        {
+            uint256 daiAmountOut = daincpsm.getRedeemAmountOut(
+                voltRedeemAmount
+            );
+            deal(address(dai), address(morphoDaiPCVDeposit), daiAmountOut * 2);
+            systemEntry.deposit(address(morphoDaiPCVDeposit));
+
+            vm.startPrank(user);
+
+            uint256 startingBuffer = grlm.buffer();
+            uint256 startingExitBuffer = gserl.buffer();
+            uint256 startingDaiBalance = dai.balanceOf(user);
+
+            volt.approve(address(daincpsm), voltRedeemAmount);
+            daincpsm.redeem(user, voltRedeemAmount, daiAmountOut);
+
+            uint256 endingBuffer = grlm.buffer();
+            uint256 endingExitBuffer = gserl.buffer();
+            uint256 endingDaiBalance = dai.balanceOf(user);
+
+            assertEq(endingBuffer - startingBuffer, voltRedeemAmount); /// grlm buffer replenished
+            assertEq(endingDaiBalance - startingDaiBalance, daiAmountOut);
+            assertEq(startingExitBuffer - endingExitBuffer, daiAmountOut); /// exit buffer depleted
+
+            vm.stopPrank();
+        }
+    }
+
+    function testRedeemsUsdcNcPsm(uint80 voltRedeemAmount) public {
+        vm.assume(voltRedeemAmount >= 1e18);
+        vm.assume(voltRedeemAmount <= 475_000e18);
+        testFirstUserMint();
+
+        uint256 snapshotId = 0; /// roll back to before buffer replenished
+        vm.revertTo(snapshotId);
+
+        {
+            uint256 usdcAmountOut = usdcncpsm.getRedeemAmountOut(
+                voltRedeemAmount
+            );
+            deal(
+                address(usdc),
+                address(morphoUsdcPCVDeposit),
+                usdcAmountOut * 2
+            );
+            systemEntry.deposit(address(morphoUsdcPCVDeposit));
+
+            vm.startPrank(user);
+
+            uint256 startingBuffer = grlm.buffer();
+            uint256 startingExitBuffer = gserl.buffer();
+            uint256 startingUsdcBalance = usdc.balanceOf(user);
+
+            volt.approve(address(usdcncpsm), voltRedeemAmount);
+            usdcncpsm.redeem(user, voltRedeemAmount, usdcAmountOut);
+
+            uint256 endingBuffer = grlm.buffer();
+            uint256 endingExitBuffer = gserl.buffer();
+            uint256 endingUsdcBalance = usdc.balanceOf(user);
+
+            assertEq(endingBuffer - startingBuffer, voltRedeemAmount); /// buffer replenished
+            assertEq(endingUsdcBalance - startingUsdcBalance, usdcAmountOut);
+            assertEq(
+                startingExitBuffer - endingExitBuffer,
+                usdcAmountOut * 1e12
+            ); /// ensure buffer adjusted up 12 decimals, buffer depleted
+
+            vm.stopPrank();
+        }
+    }
+
+    function testRedeemsUsdcPsm(uint80 voltRedeemAmount) public {
+        vm.assume(voltRedeemAmount >= 1e18);
+        vm.assume(voltRedeemAmount <= 475_000e18);
+        testFirstUserMint();
+
+        uint256 snapshotId = 0; /// roll back to before buffer replenished
+        vm.revertTo(snapshotId);
+
+        {
+            uint256 usdcAmountOut = usdcpsm.getRedeemAmountOut(
+                voltRedeemAmount
+            );
+            deal(address(usdc), address(usdcpsm), usdcAmountOut);
+
+            vm.startPrank(user);
+
+            uint256 startingBuffer = grlm.buffer();
+            uint256 startingUsdcBalance = usdc.balanceOf(user);
+
+            volt.approve(address(usdcpsm), voltRedeemAmount);
+            usdcpsm.redeem(user, voltRedeemAmount, usdcAmountOut);
+
+            uint256 endingBuffer = grlm.buffer();
+            uint256 endingUsdcBalance = usdc.balanceOf(user);
+
+            assertEq(endingBuffer - startingBuffer, voltRedeemAmount);
+            assertEq(endingUsdcBalance - startingUsdcBalance, usdcAmountOut);
+
+            vm.stopPrank();
+        }
     }
 
     /*
@@ -415,11 +688,6 @@ contract IntegrationTestSystemV2 is Test {
     function testPcvGuardian() public {
         _migratePcv();
         uint256 amount = 100_000e18;
-        PCVGuardian pcvGuardian = systemV2.pcvGuardian();
-        IERC20 dai = systemV2.dai();
-        MorphoCompoundPCVDeposit morphoDaiPCVDeposit = systemV2
-            .morphoDaiPCVDeposit();
-        TimelockController timelockController = systemV2.timelockController();
 
         uint256 depositDaiBalanceBefore = morphoDaiPCVDeposit.balance();
         uint256 safeAddressDaiBalanceBefore = dai.balanceOf(
@@ -452,11 +720,6 @@ contract IntegrationTestSystemV2 is Test {
     function testPcvRouterWithSwap() public {
         _migratePcv();
         uint256 amount = 100_000e18;
-        PCVRouter pcvRouter = systemV2.pcvRouter();
-        MorphoCompoundPCVDeposit morphoDaiPCVDeposit = systemV2
-            .morphoDaiPCVDeposit();
-        MorphoCompoundPCVDeposit morphoUsdcPCVDeposit = systemV2
-            .morphoUsdcPCVDeposit();
 
         uint256 depositDaiBalanceBefore = morphoDaiPCVDeposit.balance();
         uint256 depositUsdcBalanceBefore = morphoUsdcPCVDeposit.balance();
@@ -522,13 +785,6 @@ contract IntegrationTestSystemV2 is Test {
     */
     function testUnsetPcvOracle() public {
         _migratePcv();
-        CoreV2 core = systemV2.core();
-        IERC20 dai = systemV2.dai();
-        VoltV2 volt = systemV2.volt();
-        PegStabilityModule daipsm = systemV2.daipsm();
-        PCVGuardian pcvGuardian = systemV2.pcvGuardian();
-        MorphoCompoundPCVDeposit morphoDaiPCVDeposit = systemV2
-            .morphoDaiPCVDeposit();
 
         vm.prank(MainnetAddresses.GOVERNOR);
         core.setPCVOracle(IPCVOracle(address(0)));
@@ -551,8 +807,6 @@ contract IntegrationTestSystemV2 is Test {
     Internal helper function, migrate the PCV from current system to V2 system
     */
     function _migratePcv() internal returns (uint256) {
-        IERC20 dai = systemV2.dai();
-        IERC20 usdc = systemV2.usdc();
         MorphoCompoundPCVDeposit oldMorphoDaiPCVDeposit = MorphoCompoundPCVDeposit(
                 MainnetAddresses.MORPHO_COMPOUND_DAI_PCV_DEPOSIT
             );
@@ -560,7 +814,6 @@ contract IntegrationTestSystemV2 is Test {
             MainnetAddresses.MORPHO_COMPOUND_USDC_PCV_DEPOSIT
         );*/
         PCVGuardian oldPCVGuardian = PCVGuardian(MainnetAddresses.PCV_GUARDIAN);
-        SystemEntry systemEntry = systemV2.systemEntry();
 
         uint256 daiBalanceBefore = dai.balanceOf(MainnetAddresses.GOVERNOR);
         uint256 usdcBalanceBefore = usdc.balanceOf(MainnetAddresses.GOVERNOR);
