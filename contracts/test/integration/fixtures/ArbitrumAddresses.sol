@@ -55,12 +55,13 @@ library ArbitrumAddresses {
     /// current active EOA's
     address public constant EOA_1 = 0xB320e376Be6459421695F2b6B1E716AE4bc8129A;
     address public constant EOA_2 = 0xd90E9181B20D8D1B5034d9f5737804Da182039F6;
-    address public constant EOA_3 = 0xA96D4a5c343d6fE141751399Fc230E9E8Ecb6fb6;
     address public constant EOA_4 = 0x6ef71cA9cD708883E129559F5edBFb9d9D5C6148;
 
     /// inactive EOA's
     address public constant REVOKED_EOA_1 =
         0xf8D0387538E8e03F3B4394dA89f221D7565a28Ee;
+    address public constant REVOKED_EOA_3 =
+        0xA96D4a5c343d6fE141751399Fc230E9E8Ecb6fb6;
 
     address public constant DEPRECATED_TIMELOCK =
         0x980A05105a53eCa7745DA40DF1AdE6674fc73eD5;

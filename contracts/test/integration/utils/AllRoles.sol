@@ -39,7 +39,7 @@ contract AllRoles is RoleTesting, AllRolesConfig {
 
         allAddresses[4].push(MainnetAddresses.EOA_1);
         allAddresses[4].push(MainnetAddresses.EOA_2);
-        allAddresses[4].push(MainnetAddresses.EOA_3);
+        allAddresses[4].push(MainnetAddresses.REVOKED_EOA_3);
     }
 
     function _setupArbitrum(Core core) internal {
@@ -67,7 +67,7 @@ contract AllRoles is RoleTesting, AllRolesConfig {
 
         allAddresses[4].push(ArbitrumAddresses.EOA_1);
         allAddresses[4].push(ArbitrumAddresses.EOA_2);
-        allAddresses[4].push(ArbitrumAddresses.EOA_3);
+        allAddresses[4].push(ArbitrumAddresses.REVOKED_EOA_3);
 
         /// sanity check
         assert(numEachRole.length == allRoles.length);

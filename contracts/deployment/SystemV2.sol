@@ -293,7 +293,6 @@ contract SystemV2 {
 
         core.grantPCVGuard(MainnetAddresses.EOA_1);
         core.grantPCVGuard(MainnetAddresses.EOA_2);
-        core.grantPCVGuard(MainnetAddresses.EOA_3);
         core.grantPCVGuard(MainnetAddresses.EOA_4);
 
         core.grantGuardian(address(pcvGuardian));

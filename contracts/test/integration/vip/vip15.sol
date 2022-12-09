@@ -1,6 +1,7 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.8.13;
 
+import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -10,7 +11,6 @@ import {Core} from "../../../core/Core.sol";
 import {IVolt} from "../../../volt/IVolt.sol";
 import {DSTest} from "./../../unit/utils/DSTest.sol";
 import {VoltV2} from "../../../volt/VoltV2.sol";
-import {CoreV2} from "../../../core/CoreV2.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {IPCVDeposit} from "../../../pcv/IPCVDeposit.sol";
 import {VoltMigrator} from "../../../volt/VoltMigrator.sol";
@@ -43,7 +43,7 @@ contract vip15 is DSTest, IVIP {
     PegStabilityModule public voltV2DaiPriceBoundPSM;
     PegStabilityModule public voltV2UsdcPriceBoundPSM;
 
-    CoreV2 public coreV2;
+    Core public core = Core(MainnetAddresses.CORE);
     VoltV2 public voltV2;
     IVolt public oldVolt = IVolt(MainnetAddresses.VOLT);
 
@@ -85,15 +85,6 @@ contract vip15 is DSTest, IVIP {
             return;
         }
 
-        address[] memory toWhitelist = new address[](3);
-        toWhitelist[0] = address(voltV2UsdcPriceBoundPSM);
-        toWhitelist[1] = address(voltV2DaiPriceBoundPSM);
-        toWhitelist[2] = address(voltMigrator);
-
-        address[] memory toRemoveFromWhitelist = new address[](2);
-        toRemoveFromWhitelist[0] = MainnetAddresses.VOLT_USDC_PSM;
-        toRemoveFromWhitelist[1] = MainnetAddresses.VOLT_DAI_PSM;
-
         /// ------- withdraw funds from morpho -------
 
         proposal.push(
@@ -108,17 +99,19 @@ contract vip15 is DSTest, IVIP {
             })
         );
 
-        proposal.push(
-            ITimelockSimulation.action({
-                value: 0,
-                target: MainnetAddresses.PCV_GUARDIAN,
-                arguments: abi.encodeWithSignature(
-                    "withdrawAllToSafeAddress(address)",
-                    MainnetAddresses.MORPHO_COMPOUND_USDC_PCV_DEPOSIT
-                ),
-                description: "Withdraw all USDC from Morpho Compound PCV Deposit"
-            })
-        );
+        /// usdc deposit has no balance, withdrawing when balance is 0 reverts on morpho
+        /// so comment out this part of proposal so it can pass
+        // proposal.push(
+        //     ITimelockSimulation.action({
+        //         value: 0,
+        //         target: MainnetAddresses.PCV_GUARDIAN,
+        //         arguments: abi.encodeWithSignature(
+        //             "withdrawAllToSafeAddress(address)",
+        //             MainnetAddresses.MORPHO_COMPOUND_USDC_PCV_DEPOSIT
+        //         ),
+        //         description: "Withdraw all USDC from Morpho Compound PCV Deposit"
+        //     })
+        // );
 
         /// ------- withdraw funds from psms -------
 
@@ -153,11 +146,11 @@ contract vip15 is DSTest, IVIP {
                 value: 0,
                 target: MainnetAddresses.PCV_GUARDIAN,
                 arguments: abi.encodeWithSignature(
-                    "withdrawAllERC20ToSafeAddress(address)",
+                    "withdrawAllERC20ToSafeAddress(address,address)",
                     MainnetAddresses.VOLT_DAI_PSM,
                     MainnetAddresses.VOLT
                 ),
-                description: "Withdraw all VOLT from PSM"
+                description: "Withdraw all VOLT from DAI PSM"
             })
         );
 
@@ -166,11 +159,11 @@ contract vip15 is DSTest, IVIP {
                 value: 0,
                 target: MainnetAddresses.PCV_GUARDIAN,
                 arguments: abi.encodeWithSignature(
-                    "withdrawAllERC20ToSafeAddress(address)",
+                    "withdrawAllERC20ToSafeAddress(address,address)",
                     MainnetAddresses.VOLT_USDC_PSM,
                     MainnetAddresses.VOLT
                 ),
-                description: "Withdraw all VOLT from PSM"
+                description: "Withdraw all VOLT from USDC PSM"
             })
         );
 
@@ -378,35 +371,9 @@ contract vip15 is DSTest, IVIP {
                 arguments: abi.encodeWithSignature(
                     "grantRole(bytes32,address)",
                     EXECUTOR_ROLE,
-                    MainnetAddresses.EOA_1
+                    address(0)
                 ),
-                description: "Grant executor role to EOA 1"
-            })
-        );
-
-        proposal.push(
-            ITimelockSimulation.action({
-                value: 0,
-                target: MainnetAddresses.TIMELOCK_CONTROLLER,
-                arguments: abi.encodeWithSignature(
-                    "grantRole(bytes32,address)",
-                    EXECUTOR_ROLE,
-                    MainnetAddresses.EOA_2
-                ),
-                description: "Grant executor role to EOA 2"
-            })
-        );
-
-        proposal.push(
-            ITimelockSimulation.action({
-                value: 0,
-                target: MainnetAddresses.TIMELOCK_CONTROLLER,
-                arguments: abi.encodeWithSignature(
-                    "grantRole(bytes32,address)",
-                    EXECUTOR_ROLE,
-                    MainnetAddresses.EOA_4
-                ),
-                description: "Grant executor role to EOA 4"
+                description: "Allow execution by any address"
             })
         );
 
@@ -448,7 +415,47 @@ contract vip15 is DSTest, IVIP {
 
     function mainnetSetup() public override {}
 
-    function mainnetValidate() public override {}
+    function mainnetValidate() public override {
+        assertTrue(!core.isPCVController(address(allocator)));
+        assertTrue(
+            !core.isPCVController(MainnetAddresses.MORPHO_COMPOUND_PCV_ROUTER)
+        );
+        assertTrue(!core.isPCVController(address(allocator)));
+
+        TimelockController tc = TimelockController(
+            payable(MainnetAddresses.TIMELOCK_CONTROLLER)
+        );
+        assertTrue(tc.hasRole(PROPOSER_ROLE, MainnetAddresses.GOVERNOR));
+        assertTrue(tc.hasRole(CANCELLER_ROLE, MainnetAddresses.GOVERNOR));
+
+        /// ensure msig can still propose to the timelock after the proposal
+
+        bytes memory data = "";
+        bytes32 predecessor = bytes32(0);
+        bytes32 salt = bytes32(keccak256(abi.encodePacked(int256(123456789))));
+        uint256 ethSendAmount = 100 ether;
+        uint256 delay = tc.getMinDelay();
+        vm.deal(address(tc), ethSendAmount);
+
+        vm.startPrank(MainnetAddresses.GOVERNOR);
+        tc.schedule(
+            MainnetAddresses.GOVERNOR,
+            ethSendAmount,
+            data,
+            predecessor,
+            salt,
+            delay
+        );
+        vm.warp(block.timestamp + delay);
+        tc.execute(
+            MainnetAddresses.GOVERNOR,
+            ethSendAmount,
+            data,
+            predecessor,
+            salt
+        );
+        vm.stopPrank();
+    }
 
     /// prevent errors by reverting on arbitrum proposal functions being called on this VIP
     function getArbitrumProposal()

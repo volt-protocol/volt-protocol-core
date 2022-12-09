@@ -36,7 +36,9 @@ contract TimelockSimulation is
         bool doLogging
     ) public {
         uint256 delay = timelock.getMinDelay();
-        bytes32 salt = 0x6bbc9ef9b95bd89b71439a61e33a81ec57d51108523f4a590bfa42ae13fc15d9;
+        bytes32 salt = keccak256(abi.encode(proposal[0].description));
+
+        console.log("delay: ", delay);
 
         if (doLogging) {
             console.log("salt: ");
