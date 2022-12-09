@@ -130,7 +130,7 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRefV2 {
         /// Replenishing buffer allows more Volt to be minted.
         volt().burnFrom(msg.sender, amountVoltIn); /// Check and Interaction -- trusted contract
         globalRateLimitedMinter().replenishBuffer(amountVoltIn); /// Effect -- trusted contract
-        globalSystemExitRateLimiter().depleteBuffer(amountOut); /// Effect -- trusted contract
+        globalSystemExitRateLimiter().depleteBuffer(getExitValue(amountOut)); /// Effect -- trusted contract
 
         /// Interaction -- pcv deposit is trusted,
         /// however interacts with external untrusted contracts
