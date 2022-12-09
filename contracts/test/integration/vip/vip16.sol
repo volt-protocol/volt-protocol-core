@@ -39,7 +39,7 @@ contract vip16 is DSTest, IVIP {
                     arguments: abi.encodeWithSignature(
                         "revokeRole(bytes32,address)",
                         PROPOSER_ROLE,
-                        ArbitrumAddresses.EOA_3
+                        ArbitrumAddresses.REVOKED_EOA_3
                     ),
                     description: "Revoke Kassim's proposer role"
                 })
@@ -51,7 +51,7 @@ contract vip16 is DSTest, IVIP {
                     arguments: abi.encodeWithSignature(
                         "revokeRole(bytes32,address)",
                         CANCELLER_ROLE,
-                        ArbitrumAddresses.EOA_3
+                        ArbitrumAddresses.REVOKED_EOA_3
                     ),
                     description: "Revoke Kassim's proposer role"
                 })
@@ -67,7 +67,7 @@ contract vip16 is DSTest, IVIP {
                 arguments: abi.encodeWithSignature(
                     "revokeRole(bytes32,address)",
                     PROPOSER_ROLE,
-                    MainnetAddresses.EOA_3
+                    MainnetAddresses.REVOKED_EOA_3
                 ),
                 description: "Revoke Kassim's proposer role"
             })
@@ -79,7 +79,7 @@ contract vip16 is DSTest, IVIP {
                 arguments: abi.encodeWithSignature(
                     "revokeRole(bytes32,address)",
                     CANCELLER_ROLE,
-                    MainnetAddresses.EOA_3
+                    MainnetAddresses.REVOKED_EOA_3
                 ),
                 description: "Revoke Kassim's proposer role"
             })
@@ -102,8 +102,8 @@ contract vip16 is DSTest, IVIP {
             payable(MainnetAddresses.TIMELOCK_CONTROLLER)
         );
 
-        assertTrue(!tc.hasRole(PROPOSER_ROLE, MainnetAddresses.EOA_3));
-        assertTrue(!tc.hasRole(CANCELLER_ROLE, MainnetAddresses.EOA_3));
+        assertTrue(!tc.hasRole(PROPOSER_ROLE, MainnetAddresses.REVOKED_EOA_3));
+        assertTrue(!tc.hasRole(CANCELLER_ROLE, MainnetAddresses.REVOKED_EOA_3));
     }
 
     function getArbitrumProposal()
@@ -122,7 +122,9 @@ contract vip16 is DSTest, IVIP {
             payable(ArbitrumAddresses.TIMELOCK_CONTROLLER)
         );
 
-        assertTrue(!tc.hasRole(PROPOSER_ROLE, ArbitrumAddresses.EOA_3));
-        assertTrue(!tc.hasRole(CANCELLER_ROLE, ArbitrumAddresses.EOA_3));
+        assertTrue(!tc.hasRole(PROPOSER_ROLE, ArbitrumAddresses.REVOKED_EOA_3));
+        assertTrue(
+            !tc.hasRole(CANCELLER_ROLE, ArbitrumAddresses.REVOKED_EOA_3)
+        );
     }
 }
