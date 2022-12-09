@@ -225,6 +225,42 @@ contract NonCustodialPSMUnitTest is Test {
         assertEq(psm.floor(), custodialPsm.floor());
     }
 
+    function testExitValueInversionPositive(uint96 amount) public {
+        psm = new NonCustodialPSM(
+            coreAddress,
+            address(oracle),
+            address(0),
+            12,
+            false,
+            dai,
+            voltFloorPrice,
+            voltCeilingPrice,
+            IPCVDeposit(address(pcvDeposit))
+        );
+
+        assertEq(psm.getExitValue(amount), amount / (1e12));
+    }
+
+    function testExitValueInversionNegative(uint96 amount) public {
+        psm = new NonCustodialPSM(
+            coreAddress,
+            address(oracle),
+            address(0),
+            -12,
+            false,
+            dai,
+            voltFloorPrice,
+            voltCeilingPrice,
+            IPCVDeposit(address(pcvDeposit))
+        );
+
+        assertEq(psm.getExitValue(amount), uint256(amount) * (1e12));
+    }
+
+    function testExitValueNormalizerZero(uint256 amount) public {
+        assertEq(psm.getExitValue(amount), amount);
+    }
+
     /// @notice PSM is set up correctly and redeem view function is working
     function testGetRedeemAmountOut(uint128 amountVoltIn) public {
         uint256 currentPegPrice = oracle.getCurrentOraclePrice();
