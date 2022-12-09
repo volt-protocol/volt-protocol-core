@@ -524,14 +524,14 @@ contract IntegrationTestSystemV2 is Test {
         vm.stopPrank();
     }
 
-    function testRedeemsDaiPsm() public {
+    function testRedeemsDaiPsm(uint88 voltAmount) public {
         testFirstUserMint();
 
         uint256 snapshotId = 0; /// roll back to before buffer replenished
         vm.revertTo(snapshotId);
+        vm.assume(voltAmount <= volt.balanceOf(user));
 
         {
-            uint256 voltAmount = volt.balanceOf(user);
             uint256 daiAmountOut = daipsm.getRedeemAmountOut(voltAmount);
             deal(address(dai), address(daipsm), daiAmountOut);
 
@@ -553,11 +553,12 @@ contract IntegrationTestSystemV2 is Test {
         }
     }
 
-    function testRedeemsDaiNcPsm() public {
+    function testRedeemsDaiNcPsm(uint80 voltRedeemAmount) public {
+        vm.assume(voltRedeemAmount >= 1e18);
+        vm.assume(voltRedeemAmount <= 475_000e18);
         testFirstUserMint();
 
         uint256 snapshotId = 0; /// roll back to before buffer replenished
-        uint256 voltRedeemAmount = 475_000e18;
         vm.revertTo(snapshotId);
 
         {
@@ -588,11 +589,12 @@ contract IntegrationTestSystemV2 is Test {
         }
     }
 
-    function testRedeemsUsdcNcPsm() public {
+    function testRedeemsUsdcNcPsm(uint80 voltRedeemAmount) public {
+        vm.assume(voltRedeemAmount >= 1e18);
+        vm.assume(voltRedeemAmount <= 475_000e18);
         testFirstUserMint();
 
         uint256 snapshotId = 0; /// roll back to before buffer replenished
-        uint256 voltRedeemAmount = 475_000e18;
         vm.revertTo(snapshotId);
 
         {
@@ -630,11 +632,12 @@ contract IntegrationTestSystemV2 is Test {
         }
     }
 
-    function testRedeemsUsdcPsm() public {
+    function testRedeemsUsdcPsm(uint80 voltRedeemAmount) public {
+        vm.assume(voltRedeemAmount >= 1e18);
+        vm.assume(voltRedeemAmount <= 475_000e18);
         testFirstUserMint();
 
         uint256 snapshotId = 0; /// roll back to before buffer replenished
-        uint256 voltRedeemAmount = 475_000e18;
         vm.revertTo(snapshotId);
 
         {
