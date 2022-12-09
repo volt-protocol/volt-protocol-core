@@ -178,6 +178,8 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRefV2 {
     /// @notice returns inverse of normal value.
     /// Used to normalize decimals to properly deplete
     /// the buffer in Global System Exit Rate Limiter
+    /// @param amount to normalize
+    /// @return normalized amount
     function getExitValue(uint256 amount) public view returns (uint256) {
         uint256 scalingFactor;
 
