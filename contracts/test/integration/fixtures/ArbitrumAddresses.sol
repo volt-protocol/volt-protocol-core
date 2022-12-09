@@ -60,6 +60,7 @@ library ArbitrumAddresses {
     /// inactive EOA's
     address public constant REVOKED_EOA_1 =
         0xf8D0387538E8e03F3B4394dA89f221D7565a28Ee;
+
     address public constant REVOKED_EOA_3 =
         0xA96D4a5c343d6fE141751399Fc230E9E8Ecb6fb6;
 
