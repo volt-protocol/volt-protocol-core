@@ -175,6 +175,24 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRefV2 {
         return _validPrice(readOracle());
     }
 
+    /// @notice returns inverse of normal value.
+    /// Used to normalize decimals to properly deplete
+    /// the buffer in Global System Exit Rate Limiter
+    function getExitValue(uint256 amount) public view returns (uint256) {
+        uint256 scalingFactor;
+
+        if (decimalsNormalizer == 0) {
+            return amount;
+        }
+        if (decimalsNormalizer < 0) {
+            scalingFactor = 10 ** uint256(-decimalsNormalizer);
+            return amount * scalingFactor;
+        } else {
+            scalingFactor = 10 ** uint256(decimalsNormalizer);
+            return amount / scalingFactor;
+        }
+    }
+
     /// ----------- Private Helper Functions -----------
 
     /// @notice helper function to set the PCV deposit

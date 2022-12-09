@@ -80,23 +80,6 @@ abstract contract OracleRefV2 is IOracleRefV2, CoreRefV2 {
         return value;
     }
 
-    /// @notice returns inverse of normal value. Used in NonCustodial PSM
-    /// to normalize decimals to properly deplete the buffer in the
-    /// Global System Exit Rate Limiter
-    function getExitValue(uint256 amount) public view returns (uint256) {
-        uint256 scalingFactor;
-        if (decimalsNormalizer == 0) {
-            return amount;
-        }
-        if (decimalsNormalizer < 0) {
-            scalingFactor = 10 ** uint256(-decimalsNormalizer);
-            return amount * scalingFactor;
-        } else {
-            scalingFactor = 10 ** uint256(decimalsNormalizer);
-            return amount / scalingFactor;
-        }
-    }
-
     function _setOracle(address newOracle) private {
         require(newOracle != address(0), "OracleRefV2: zero address");
         address oldOracle = address(oracle);
