@@ -18,6 +18,7 @@ import {PCVRouter} from "../pcv/PCVRouter.sol";
 import {MockCoreRefV2} from "../mock/MockCoreRefV2.sol";
 import {ERC20Allocator} from "../pcv/utils/ERC20Allocator.sol";
 import {NonCustodialPSM} from "../peg/NonCustodialPSM.sol";
+import {VoltSystemOracle} from "../oracle/VoltSystemOracle.sol";
 import {ConstantPriceOracle} from "../oracle/ConstantPriceOracle.sol";
 import {PCVOracle} from "../oracle/PCVOracle.sol";
 import {IPCVOracle} from "../oracle/IPCVOracle.sol";
@@ -32,45 +33,44 @@ import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "../limi
 contract SystemV2 {
     using SafeCast for *;
 
-    // External
+    /// External
     IERC20 public usdc = IERC20(MainnetAddresses.USDC);
     IERC20 public dai = IERC20(MainnetAddresses.DAI);
     IERC20 public voltV1 = IERC20(0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18);
 
-    // Core
+    /// Core
     VoltV2 public volt;
     CoreV2 public core;
     TimelockController public timelockController;
     GlobalRateLimitedMinter public grlm;
     GlobalSystemExitRateLimiter public gserl;
 
-    // VOLT rate
-    // TODO: use an actual system oracle
-    ConstantPriceOracle public vso;
+    /// VOLT rate
+    VoltSystemOracle public vso;
 
-    // PCV Deposits
+    /// PCV Deposits
     MorphoCompoundPCVDeposit public morphoDaiPCVDeposit;
     MorphoCompoundPCVDeposit public morphoUsdcPCVDeposit;
 
-    // Peg Stability
+    /// Peg Stability
     PegStabilityModule public daipsm;
     PegStabilityModule public usdcpsm;
     NonCustodialPSM public usdcNonCustodialPsm;
     NonCustodialPSM public daiNonCustodialPsm;
     ERC20Allocator public allocator;
 
-    // PCV Movement
+    /// PCV Movement
     SystemEntry public systemEntry;
     MakerPCVSwapper public pcvSwapperMaker;
     PCVGuardian public pcvGuardian;
     PCVRouter public pcvRouter;
 
-    // Accounting
+    /// Accounting
     PCVOracle public pcvOracle;
     ConstantPriceOracle public daiConstantOracle;
     ConstantPriceOracle public usdcConstantOracle;
 
-    // Parameters
+    /// Parameters
     uint256 public constant TIMELOCK_DELAY = 600;
 
     /// ---------- RATE LIMITED MINTER PARAMS ----------
@@ -114,19 +114,19 @@ contract SystemV2 {
 
     /// ---------- ORACLE PARAMS ----------
 
-    uint64 public constant VOLT_APR_START_TIME = 1672531200; // 2023-01-01
-    uint256 public constant VOLT_APR = 1.0144e18;
+    uint40 public constant VOLT_APR_START_TIME = 1672531200; /// 2023-01-01
+    uint200 public constant VOLT_START_PRICE = 1.05e18;
+    uint16 public constant VOLT_MONTHLY_BASIS_POINTS = 18;
 
     function deploy() public {
-        // Core
+        /// Core
         core = new CoreV2(address(voltV1));
 
         volt = new VoltV2(address(core));
 
-        address[] memory executorAddresses = new address[](3);
-        executorAddresses[0] = MainnetAddresses.EOA_1;
-        executorAddresses[1] = MainnetAddresses.EOA_2;
-        executorAddresses[2] = MainnetAddresses.EOA_4;
+        /// all addresses will be able to execute
+        address[] memory executorAddresses = new address[](0);
+
         address[] memory proposerCancellerAddresses = new address[](1);
         proposerCancellerAddresses[0] = MainnetAddresses.GOVERNOR;
         timelockController = new TimelockController(
@@ -148,10 +148,15 @@ contract SystemV2 {
             BUFFER_CAP_EXITING
         );
 
-        // VOLT rate
-        vso = new ConstantPriceOracle(address(core), 1.05e18);
+        /// VOLT rate
+        vso = new VoltSystemOracle(
+            address(core),
+            VOLT_MONTHLY_BASIS_POINTS,
+            VOLT_APR_START_TIME,
+            VOLT_START_PRICE
+        );
 
-        // PCV Deposits
+        /// PCV Deposits
         morphoDaiPCVDeposit = new MorphoCompoundPCVDeposit(
             address(core),
             MainnetAddresses.CDAI,
@@ -167,7 +172,7 @@ contract SystemV2 {
             MainnetAddresses.MORPHO_LENS
         );
 
-        // Peg Stability
+        /// Peg Stability
         daipsm = new PegStabilityModule(
             address(core),
             address(vso),
@@ -212,7 +217,7 @@ contract SystemV2 {
         );
         allocator = new ERC20Allocator(address(core));
 
-        // PCV Movement
+        /// PCV Movement
         systemEntry = new SystemEntry(address(core));
 
         pcvSwapperMaker = new MakerPCVSwapper(address(core));
@@ -230,7 +235,7 @@ contract SystemV2 {
 
         pcvRouter = new PCVRouter(address(core));
 
-        // Accounting
+        /// Accounting
         pcvOracle = new PCVOracle(address(core));
         daiConstantOracle = new ConstantPriceOracle(address(core), 1e18);
         usdcConstantOracle = new ConstantPriceOracle(
@@ -240,7 +245,7 @@ contract SystemV2 {
     }
 
     function setUp(address deployer) public {
-        // Set references in Core
+        /// Set references in Core
         core.setVolt(IVolt(address(volt)));
         core.setGlobalRateLimitedMinter(
             IGlobalRateLimitedMinter(address(grlm))
@@ -250,19 +255,19 @@ contract SystemV2 {
         );
         core.setPCVOracle(IPCVOracle(address(pcvOracle)));
 
-        // Grant Roles
+        /// Grant Roles
         core.grantGovernor(address(timelockController));
-        core.grantGovernor(MainnetAddresses.GOVERNOR); // team multisig
+        core.grantGovernor(MainnetAddresses.GOVERNOR); /// team multisig
 
         core.grantPCVController(address(allocator));
         core.grantPCVController(address(pcvGuardian));
         core.grantPCVController(address(pcvRouter));
-        core.grantPCVController(MainnetAddresses.GOVERNOR); // team multisig
+        core.grantPCVController(MainnetAddresses.GOVERNOR); /// team multisig
         core.grantPCVController(address(daiNonCustodialPsm));
         core.grantPCVController(address(usdcNonCustodialPsm));
 
         core.createRole(VoltRoles.PCV_MOVER, VoltRoles.GOVERNOR);
-        core.grantRole(VoltRoles.PCV_MOVER, MainnetAddresses.GOVERNOR); // team multisig
+        core.grantRole(VoltRoles.PCV_MOVER, MainnetAddresses.GOVERNOR); /// team multisig
 
         core.createRole(VoltRoles.LIQUID_PCV_DEPOSIT, VoltRoles.GOVERNOR);
         core.createRole(VoltRoles.ILLIQUID_PCV_DEPOSIT, VoltRoles.GOVERNOR);
@@ -308,10 +313,12 @@ contract SystemV2 {
         core.grantLocker(address(gserl));
         core.grantLocker(address(pcvRouter));
         core.grantLocker(address(pcvGuardian));
+        core.grantLocker(address(daiNonCustodialPsm));
+        core.grantLocker(address(usdcNonCustodialPsm));
 
         core.grantMinter(address(grlm));
 
-        // Allocator config
+        /// Allocator config
         allocator.connectPSM(
             address(usdcpsm),
             USDC_TARGET_BALANCE,
@@ -328,33 +335,41 @@ contract SystemV2 {
         );
         allocator.connectDeposit(address(daipsm), address(morphoDaiPCVDeposit));
 
-        // Configure PCV Oracle
+        /// Configure PCV Oracle
         address[] memory venues = new address[](4);
         venues[0] = address(morphoDaiPCVDeposit);
         venues[1] = address(morphoUsdcPCVDeposit);
         venues[2] = address(daipsm);
         venues[3] = address(usdcpsm);
+
         address[] memory oracles = new address[](4);
         oracles[0] = address(daiConstantOracle);
         oracles[1] = address(usdcConstantOracle);
         oracles[2] = address(daiConstantOracle);
         oracles[3] = address(usdcConstantOracle);
+
         bool[] memory isLiquid = new bool[](4);
         isLiquid[0] = true;
         isLiquid[1] = true;
         isLiquid[2] = true;
         isLiquid[3] = true;
+
         pcvOracle.addVenues(venues, oracles, isLiquid);
 
-        // Configure PCV Router
+        /// Configure PCV Router
         address[] memory swappers = new address[](1);
         swappers[0] = address(pcvSwapperMaker);
         pcvRouter.addPCVSwappers(swappers);
 
-        // Cleanup
+        /// Allow all addresses to execute proposals once completed
+        timelockController.grantRole(
+            timelockController.EXECUTOR_ROLE(),
+            address(0)
+        );
+        /// Cleanup
         timelockController.renounceRole(
             timelockController.TIMELOCK_ADMIN_ROLE(),
-            address(this)
+            address(this) /// TODO MAKE THIS DEPLOYER ADDRESS
         );
         core.revokeGovernor(deployer); /// remove governor from deployer
         core.revokeGovernor(address(this)); /// remove governor from this
