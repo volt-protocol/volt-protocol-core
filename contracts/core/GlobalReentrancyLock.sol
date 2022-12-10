@@ -96,7 +96,7 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
 
     /// @notice returns the last address that locked this contract
     function lastSender() external view returns (address) {
-        return address(_sender);
+        return _sender;
     }
 
     /// @notice returns true if the contract is not currently entered
@@ -225,5 +225,13 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
         _lockLevel = _NOT_ENTERED;
 
         emit EmergencyUnlock(msg.sender, block.timestamp);
+    }
+
+    /// @notice governor only function to pause the entire system
+    /// sets the lock to level two lock
+    function governanceEmergencyPause() external override onlyGovernor {
+        _lockLevel = _ENTERED_LEVEL_TWO;
+
+        emit EmergencyLock(msg.sender, block.timestamp);
     }
 }
