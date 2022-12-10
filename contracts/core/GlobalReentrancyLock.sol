@@ -66,7 +66,7 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
 
     /// @notice cache the address that locked the system
     /// only this address can unlock it
-    uint160 private _sender;
+    address private _sender;
 
     /// @notice store the last block entered
     /// if last block entered was in the past and status
@@ -139,9 +139,8 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
             /// - lock to level 1 from level 0
 
             uint88 blockEntered = uint88(block.number);
-            uint160 sender = uint160(msg.sender);
 
-            _sender = sender;
+            _sender = msg.sender;
             _lastBlockEntered = blockEntered;
             _lockLevel = toLock;
         } else {
@@ -196,7 +195,7 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
         if (toUnlock == _NOT_ENTERED) {
             /// - unlock to level 0 from level 1, verify sender is original locker
             require(
-                uint160(msg.sender) == _sender,
+                msg.sender == _sender,
                 "GlobalReentrancyLock: caller is not locker"
             );
         }
