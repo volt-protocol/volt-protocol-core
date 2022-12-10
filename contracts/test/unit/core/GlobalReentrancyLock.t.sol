@@ -19,6 +19,9 @@ import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 import {getCoreV2} from "./../utils/Fixtures.sol";
 
 contract UnitTestGlobalReentrancyLock is DSTest {
+    /// @notice emitted when governor does an emergency lock
+    event EmergencyLock(address indexed sender, uint256 timestamp);
+
     CoreV2 private core;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
@@ -250,6 +253,17 @@ contract UnitTestGlobalReentrancyLock is DSTest {
             "GlobalReentrancyLock: governor recovery, system not entered"
         );
         core.governanceEmergencyRecover();
+    }
+
+    function testGovernorEmergencyPauseSucceeds() public {
+        vm.expectEmit(true, false, false, true, address(core));
+        emit EmergencyLock(addresses.governorAddress, block.timestamp);
+
+        vm.prank(addresses.governorAddress);
+        core.governanceEmergencyPause();
+
+        assertTrue(core.isLocked());
+        assertEq(core.lockLevel(), 2);
     }
 
     function testGovernorSystemRecovery() public {
@@ -596,5 +610,10 @@ contract UnitTestGlobalReentrancyLock is DSTest {
     function testGovernorSystemRecoveryFailsNotGovernor() public {
         vm.expectRevert("Permissions: Caller is not a governor");
         core.governanceEmergencyRecover();
+    }
+
+    function testGovernorEmergencyPauseFailsNotGovernor() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.governanceEmergencyPause();
     }
 }
