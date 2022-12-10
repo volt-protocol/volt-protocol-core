@@ -25,12 +25,9 @@ interface IPCVOracle {
         address indexed venue,
         bool isIliquid,
         uint256 timestamp,
-        uint256 oldLiquidity,
-        uint256 newLiquidity
+        int256 deltaBalance,
+        int256 deltaProfit
     );
-
-    /// @notice emitted when market governance oracle is updated
-    event VoltSystemOracleUpdated(address oldOracle, address newOracle);
 
     // ----------- Getters -----------------------------------------
 
@@ -38,15 +35,6 @@ interface IPCVOracle {
     /// value and multiplying by the PCVDeposit's balance(), the PCVOracle can
     /// know the USD value of PCV deployed in a given venue.
     function venueToOracle(address venue) external returns (address oracle);
-
-    /// @notice reference to the market governance oracle smart contract
-    function voltOracle() external returns (address);
-
-    /// @notice last illiquid balance
-    function lastIlliquidBalance() external returns (uint256);
-
-    /// @notice last liquid balance
-    function lastLiquidBalance() external returns (uint256);
 
     /// @notice return all addresses listed as liquid venues
     function getLiquidVenues() external view returns (address[] memory);
@@ -56,12 +44,6 @@ interface IPCVOracle {
 
     /// @notice return all addresses that are liquid or illiquid venues
     function getAllVenues() external view returns (address[] memory);
-
-    /// @return the ratio of liquid to illiquid assets in the Volt system
-    /// using stale values and not factoring any interest or losses sustained
-    /// but not realized within the system
-    /// value is scaled up by 18 decimal places
-    function lastLiquidVenuePercentage() external view returns (uint256);
 
     /// @notice check if a venue is in the list of illiquid venues
     /// @param illiquidVenue address to check
@@ -90,19 +72,29 @@ interface IPCVOracle {
     // ----------- PCVDeposit-only State changing API --------------
 
     /// @notice hook on PCV deposit, callable when pcv oracle is set
-    /// updates the oracle with the new liquid balance delta
-    function updateLiquidBalance(int256 pcvDelta) external;
+    /// updates the oracle with the new liquid balance delta and profits
+    function updateLiquidBalance(
+        int256 deltaBalance,
+        int256 deltaProfit
+    ) external;
 
     /// @notice hook on PCV deposit, callable when pcv oracle is set
-    /// updates the oracle with the new liquid balance delta
-    function updateIlliquidBalance(int256 pcvDelta) external;
+    /// updates the oracle with the new liquid balance delta and profits
+    function updateIlliquidBalance(
+        int256 deltaBalance,
+        int256 deltaProfit
+    ) external;
 
     // ----------- Governor-only State changing API ----------------
 
     /// @notice set the oracle for a given venue, used to normalize
     /// balances into USD values, and correct for exceptional gains
     /// and losses that are not properly reported by the PCVDeposit
-    function setVenueOracle(address venue, address newOracle) external;
+    function setVenueOracle(
+        address venue,
+        bool isLiquid,
+        address newOracle
+    ) external;
 
     /// @notice add venues to the oracle
     /// only callable by the governor
@@ -122,9 +114,4 @@ interface IPCVOracle {
         address[] calldata venues,
         bool[] calldata isLiquid
     ) external;
-
-    /// @notice set the VOLT System Oracle address
-    /// only callable by governor
-    /// @param _voltOracle new address of the market governance oracle
-    function setVoltOracle(address _voltOracle) external;
 }

@@ -130,7 +130,7 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRefV2 {
         /// Replenishing buffer allows more Volt to be minted.
         volt().burnFrom(msg.sender, amountVoltIn); /// Check and Interaction -- trusted contract
         globalRateLimitedMinter().replenishBuffer(amountVoltIn); /// Effect -- trusted contract
-        globalSystemExitRateLimiter().depleteBuffer(amountOut); /// Effect -- trusted contract
+        globalSystemExitRateLimiter().depleteBuffer(getExitValue(amountOut)); /// Effect -- trusted contract
 
         /// Interaction -- pcv deposit is trusted,
         /// however interacts with external untrusted contracts
@@ -173,6 +173,26 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRefV2 {
     /// @notice returns whether or not the current price is valid
     function isPriceValid() external view returns (bool) {
         return _validPrice(readOracle());
+    }
+
+    /// @notice returns inverse of normal value.
+    /// Used to normalize decimals to properly deplete
+    /// the buffer in Global System Exit Rate Limiter
+    /// @param amount to normalize
+    /// @return normalized amount
+    function getExitValue(uint256 amount) public view returns (uint256) {
+        uint256 scalingFactor;
+
+        if (decimalsNormalizer == 0) {
+            return amount;
+        }
+        if (decimalsNormalizer < 0) {
+            scalingFactor = 10 ** uint256(-decimalsNormalizer);
+            return amount * scalingFactor;
+        } else {
+            scalingFactor = 10 ** uint256(decimalsNormalizer);
+            return amount / scalingFactor;
+        }
     }
 
     /// ----------- Private Helper Functions -----------

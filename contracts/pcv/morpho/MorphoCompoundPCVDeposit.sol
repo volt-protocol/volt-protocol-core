@@ -68,7 +68,13 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
     /// this is always out of date, except when accrue() is called
     /// in the same block or transaction. This means the value is stale
     /// most of the time.
-    uint256 public lastRecordedBalance;
+    uint128 public lastRecordedBalance;
+
+    /// @notice track the last amount of profits earned by the contract
+    /// this is always out of date, except when accrue() is called
+    /// in the same block or transaction. This means the value is stale
+    /// most of the time.
+    int128 public lastRecordedProfits;
 
     /// @param _core reference to the core contract
     /// @param _cToken cToken this deposit references
@@ -136,12 +142,12 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
 
         /// compute profit from interest accrued and emit an event
         /// if any profits or losses are realized
-        _recordPNL();
+        int256 profit = _recordPNL();
 
         /// increment tracked recorded amount
         /// this will be off by a hair, after a single block
         /// negative delta turns to positive delta (assuming no loss).
-        lastRecordedBalance += amount;
+        lastRecordedBalance += uint128(amount);
 
         /// ------ Interactions ------
 
@@ -154,7 +160,10 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
 
         int256 endingRecordedBalance = balance().toInt256();
 
-        _liquidPcvOracleHook(endingRecordedBalance - startingRecordedBalance);
+        _liquidPcvOracleHook(
+            endingRecordedBalance - startingRecordedBalance,
+            profit
+        );
 
         emit Deposit(msg.sender, amount);
     }
@@ -180,13 +189,14 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
     function accrue() external globalLock(2) whenNotPaused returns (uint256) {
         int256 startingRecordedBalance = lastRecordedBalance.toInt256();
 
-        _recordPNL(); /// update deposit amount and fire harvest event
+        int256 profit = _recordPNL(); /// update deposit amount and fire harvest event
 
         uint256 endingRecordedBalance = lastRecordedBalance;
 
         /// if any amount of PCV is withdrawn and no gains, delta is negative
         _liquidPcvOracleHook(
-            endingRecordedBalance.toInt256() - startingRecordedBalance
+            endingRecordedBalance.toInt256() - startingRecordedBalance,
+            profit
         );
 
         return endingRecordedBalance; /// return updated pcv amount
@@ -206,12 +216,15 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
     ) external onlyPCVController globalLock(2) {
         int256 startingRecordedBalance = lastRecordedBalance.toInt256();
 
-        _withdraw(to, amount, true);
+        int256 profit = _withdraw(to, amount, true);
 
         int256 endingRecordedBalance = lastRecordedBalance.toInt256();
 
         /// if any amount of PCV is withdrawn and no gains, delta is negative
-        _liquidPcvOracleHook(endingRecordedBalance - startingRecordedBalance);
+        _liquidPcvOracleHook(
+            endingRecordedBalance - startingRecordedBalance,
+            profit
+        );
     }
 
     /// @notice withdraw all tokens from Morpho
@@ -221,7 +234,7 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
         int256 startingRecordedBalance = lastRecordedBalance.toInt256();
 
         /// compute profit from interest accrued and emit an event
-        _recordPNL();
+        int256 profit = _recordPNL();
 
         /// withdraw last recorded amount as this was updated in record pnl
         _withdraw(to, lastRecordedBalance, false);
@@ -229,7 +242,10 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
         int256 endingRecordedBalance = lastRecordedBalance.toInt256();
 
         /// all PCV withdrawn, send call in with amount withdrawn negative if any amount is withdrawn
-        _liquidPcvOracleHook(endingRecordedBalance - startingRecordedBalance);
+        _liquidPcvOracleHook(
+            endingRecordedBalance - startingRecordedBalance,
+            profit
+        );
     }
 
     /// ------------------------------------------
@@ -247,18 +263,22 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
     /// @param amount to withdraw
     /// @param recordPnl whether or not to record PnL. Set to false in withdrawAll
     /// as the function _recordPNL() is already called before _withdraw
-    function _withdraw(address to, uint256 amount, bool recordPnl) private {
+    function _withdraw(
+        address to,
+        uint256 amount,
+        bool recordPnl
+    ) private returns (int256 profit) {
         /// ------ Effects ------
 
         if (recordPnl) {
             /// compute profit from interest accrued and emit a Harvest event
-            _recordPNL();
+            profit = _recordPNL();
         }
 
         /// update last recorded balance amount
         /// if more than is owned is withdrawn, this line will revert
         /// this line of code is both a check, and an effect
-        lastRecordedBalance -= amount;
+        lastRecordedBalance -= uint128(amount);
 
         /// ------ Interactions ------
 
@@ -271,7 +291,8 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
     /// @notice records how much profit or loss has been accrued
     /// since the last call and emits an event with all profit or loss received.
     /// Updates the lastRecordedBalance to include all realized profits or losses.
-    function _recordPNL() private {
+    /// @return profit accumulated since last _recordPNL() call.
+    function _recordPNL() private returns (int256) {
         /// first accrue interest in Compound and Morpho
         IMorpho(morpho).updateP2PIndexes(cToken);
 
@@ -285,20 +306,28 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
         /// there is no profit or loss to record and no reason
         /// to update lastRecordedBalance
         if (currentBalance == 0 && lastRecordedBalance == 0) {
-            return;
+            return 0;
         }
 
         /// currentBalance should always be greater than or equal to
         /// the deposited amount, except on the same block a deposit occurs, or a loss event in morpho
-        int256 profit = currentBalance.toInt256() -
-            lastRecordedBalance.toInt256();
+        /// SLOAD
+        uint128 _lastRecordedBalance = lastRecordedBalance;
+        int128 _lastRecordedProfits = lastRecordedProfits;
+
+        /// Compute profit
+        int128 profit = int128(int256(currentBalance)) -
+            int128(_lastRecordedBalance);
 
         /// ------ Effects ------
 
-        /// record new deposited amount
-        lastRecordedBalance = currentBalance;
+        /// SSTORE: record new amounts
+        lastRecordedProfits = _lastRecordedProfits + profit;
+        lastRecordedBalance = uint128(currentBalance);
 
         /// profit is in underlying token
-        emit Harvest(token, profit, block.timestamp);
+        emit Harvest(token, int256(profit), block.timestamp);
+
+        return profit;
     }
 }

@@ -86,7 +86,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRefV2, PCVDeposit {
         uint256 amount
     ) external virtual override onlyPCVController globalLock(2) {
         _withdrawERC20(address(underlyingToken), to, amount);
-        _liquidPcvOracleHook(-(amount.toInt256()));
+        _liquidPcvOracleHook(-(amount.toInt256()), 0);
     }
 
     // ----------- Public State Changing API -----------
@@ -126,7 +126,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRefV2, PCVDeposit {
 
         underlyingToken.safeTransfer(to, amountOut); /// Interaction -- untrusted contract
 
-        _liquidPcvOracleHook(-(amountOut.toInt256()));
+        _liquidPcvOracleHook(-(amountOut.toInt256()), 0);
 
         emit Redeem(to, amountVoltIn, amountOut);
     }
@@ -167,7 +167,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRefV2, PCVDeposit {
 
         underlyingToken.safeTransferFrom(msg.sender, address(this), amountIn); /// Interaction -- untrusted contract
 
-        _liquidPcvOracleHook(amountIn.toInt256());
+        _liquidPcvOracleHook(amountIn.toInt256(), 0);
 
         emit Mint(to, amountIn, amountVoltOut);
     }

@@ -104,9 +104,9 @@ contract NonCustodialPSMUnitTest is Test {
 
     /// ---------- ORACLE PARAMS ----------
 
-    uint256 public constant startPrice = 1.05e18;
-    uint256 public constant startTime = 1_000;
-    uint256 public constant monthlyChangeRateBasisPoints = 100;
+    uint200 public constant startPrice = 1.05e18;
+    uint40 public constant startTime = 1_000;
+    uint16 public constant monthlyChangeRateBasisPoints = 100;
 
     function setUp() public {
         vm.warp(startTime); /// warp past 0
@@ -117,6 +117,7 @@ contract NonCustodialPSMUnitTest is Test {
         entry = new SystemEntry(address(core));
         dai = IERC20Mintable(address(new MockERC20()));
         oracle = new VoltSystemOracle(
+            coreAddress,
             monthlyChangeRateBasisPoints,
             startTime,
             startPrice
@@ -222,6 +223,42 @@ contract NonCustodialPSMUnitTest is Test {
         assertEq(psm.decimalsNormalizer(), custodialPsm.decimalsNormalizer());
         assertEq(psm.ceiling(), custodialPsm.ceiling());
         assertEq(psm.floor(), custodialPsm.floor());
+    }
+
+    function testExitValueInversionPositive(uint96 amount) public {
+        psm = new NonCustodialPSM(
+            coreAddress,
+            address(oracle),
+            address(0),
+            12,
+            false,
+            dai,
+            voltFloorPrice,
+            voltCeilingPrice,
+            IPCVDeposit(address(pcvDeposit))
+        );
+
+        assertEq(psm.getExitValue(amount), amount / (1e12));
+    }
+
+    function testExitValueInversionNegative(uint96 amount) public {
+        psm = new NonCustodialPSM(
+            coreAddress,
+            address(oracle),
+            address(0),
+            -12,
+            false,
+            dai,
+            voltFloorPrice,
+            voltCeilingPrice,
+            IPCVDeposit(address(pcvDeposit))
+        );
+
+        assertEq(psm.getExitValue(amount), uint256(amount) * (1e12));
+    }
+
+    function testExitValueNormalizerZero(uint256 amount) public {
+        assertEq(psm.getExitValue(amount), amount);
     }
 
     /// @notice PSM is set up correctly and redeem view function is working

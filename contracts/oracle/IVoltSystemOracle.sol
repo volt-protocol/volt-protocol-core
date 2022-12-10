@@ -32,9 +32,22 @@ interface IVoltSystemOracle {
     /// Sets accumulator to the current accrued interest, and then resets the timer.
     function compoundInterest() external;
 
+    /// @notice update the change rate in basis points
+    /// callable only by the governor
+    /// @param newMonthlyChangeRateBasisPoints basis points to interpolate price
+    function updateChangeRateBasisPoints(
+        uint16 newMonthlyChangeRateBasisPoints
+    ) external;
+
     // ----------- Event -----------
 
     /// @notice event emitted when the Volt system oracle compounds
     /// emits the end time of the period that completed and the new oracle price
     event InterestCompounded(uint256 periodStart, uint256 newOraclePrice);
+
+    /// @notice emitted when Volt system oracle change rate updates
+    event ChangeRateUpdated(
+        uint256 oldChangeRateBasisPoints,
+        uint256 newChangeRateBasisPoints
+    );
 }
