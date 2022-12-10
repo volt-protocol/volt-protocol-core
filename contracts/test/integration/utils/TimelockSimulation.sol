@@ -38,8 +38,6 @@ contract TimelockSimulation is
         uint256 delay = timelock.getMinDelay();
         bytes32 salt = keccak256(abi.encode(proposal[0].description));
 
-        console.log("delay: ", delay);
-
         if (doLogging) {
             console.log("salt: ");
             emit log_bytes32(salt);
