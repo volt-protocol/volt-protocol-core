@@ -41,14 +41,10 @@ contract vip15 is DSTest, IVIP {
         keccak256("PCV_GUARD_ADMIN_ROLE");
     bytes32 public constant GOVERN_ROLE = keccak256("GOVERN_ROLE");
 
-    uint256 public voltInUsdcPSM;
-    uint256 public voltInDaiPSM;
-
-    uint256 public usdcInUsdcPSM;
-    uint256 public daiInDaiPSM;
-
-    PegStabilityModule public voltV2DaiPriceBoundPSM;
-    PegStabilityModule public voltV2UsdcPriceBoundPSM;
+    PegStabilityModule public daiPriceBoundPSM =
+        PegStabilityModule(MainnetAddresses.VOLT_DAI_PSM);
+    PegStabilityModule public usdcPriceBoundPSM =
+        PegStabilityModule(MainnetAddresses.VOLT_USDC_PSM);
 
     Core public core = Core(MainnetAddresses.CORE);
     VoltV2 public voltV2;
@@ -58,26 +54,6 @@ contract vip15 is DSTest, IVIP {
     MigratorRouter public migratorRouter;
 
     ITimelockSimulation.action[] private proposal;
-
-    uint256 oldVoltTotalSupply;
-    uint128 voltDaiFloorPrice = 1.04e18;
-    uint128 voltDaiCeilingPrice = 1.1e18;
-
-    uint128 voltUsdcFloorPrice = 1.05e6;
-    uint128 voltUsdcCeilingPrice = 1.1e6;
-
-    /// @notice target token balance for the DAI PSM to hold
-    uint248 private constant targetBalanceDai = 100_000e18;
-
-    /// @notice target token balance for the USDC PSM to hold
-    uint248 private constant targetBalanceUsdc = 100_000e6;
-
-    /// @notice scale up USDC value by 12 decimals in order to account for decimal delta
-    /// and properly update the buffer in ERC20Allocator
-    int8 private constant usdcDecimalNormalizer = 12;
-
-    /// @notice no scaling to do on DAI as decimals are 18
-    int8 private constant daiDecimalNormalizer = 0;
 
     ERC20Allocator private allocator =
         ERC20Allocator(MainnetAddresses.ERC20ALLOCATOR);
@@ -533,6 +509,20 @@ contract vip15 is DSTest, IVIP {
         );
         assertTrue(tc.hasRole(PROPOSER_ROLE, MainnetAddresses.GOVERNOR));
         assertTrue(tc.hasRole(CANCELLER_ROLE, MainnetAddresses.GOVERNOR));
+        assertTrue(tc.hasRole(EXECUTOR_ROLE, address(0)));
+
+        /// paused
+        assertTrue(daiPriceBoundPSM.paused());
+        assertTrue(usdcPriceBoundPSM.paused());
+
+        assertTrue(daiDeposit.paused());
+        assertTrue(usdcDeposit.paused());
+
+        assertTrue(allocator.paused());
+
+        /// pcv deposits
+        assertEq(daiDeposit.balance(), 0);
+        assertEq(usdcDeposit.balance(), 0);
 
         /// ensure msig can still propose to the timelock after the proposal
 
@@ -561,6 +551,12 @@ contract vip15 is DSTest, IVIP {
             salt
         );
         vm.stopPrank();
+
+        /// assert core is still intact and can grant roles
+        vm.prank(address(tc));
+        core.grantGovernor(MainnetAddresses.GOVERNOR);
+        assertTrue(core.isGovernor(MainnetAddresses.GOVERNOR));
+        assertEq(core.getRoleMemberCount(GOVERN_ROLE), 3);
     }
 
     /// prevent errors by reverting on arbitrum proposal functions being called on this VIP
