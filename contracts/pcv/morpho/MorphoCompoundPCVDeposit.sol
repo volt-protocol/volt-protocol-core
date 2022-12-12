@@ -187,19 +187,12 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
     /// to lastRecordedBalance
     /// @return the amount deposited after adding accrued interest or realizing losses
     function accrue() external globalLock(2) whenNotPaused returns (uint256) {
-        int256 startingRecordedBalance = lastRecordedBalance.toInt256();
-
         int256 profit = _recordPNL(); /// update deposit amount and fire harvest event
 
-        uint256 endingRecordedBalance = lastRecordedBalance;
-
         /// if any amount of PCV is withdrawn and no gains, delta is negative
-        _liquidPcvOracleHook(
-            endingRecordedBalance.toInt256() - startingRecordedBalance,
-            profit
-        );
+        _liquidPcvOracleHook(profit, profit);
 
-        return endingRecordedBalance; /// return updated pcv amount
+        return lastRecordedBalance; /// return updated pcv amount
     }
 
     /// ------------------------------------------
@@ -214,38 +207,28 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
         address to,
         uint256 amount
     ) external onlyPCVController globalLock(2) {
-        int256 startingRecordedBalance = lastRecordedBalance.toInt256();
-
+        /// amount is 100
+        ///
         int256 profit = _withdraw(to, amount, true);
 
-        int256 endingRecordedBalance = lastRecordedBalance.toInt256();
-
         /// if any amount of PCV is withdrawn and no gains, delta is negative
-        _liquidPcvOracleHook(
-            endingRecordedBalance - startingRecordedBalance,
-            profit
-        );
+        _liquidPcvOracleHook(-(amount.toInt256()) + profit, profit);
     }
 
     /// @notice withdraw all tokens from Morpho
     /// non-reentrant as state changes and external calls are made
     /// @param to the address PCV will be sent to
     function withdrawAll(address to) external onlyPCVController globalLock(2) {
-        int256 startingRecordedBalance = lastRecordedBalance.toInt256();
-
         /// compute profit from interest accrued and emit an event
         int256 profit = _recordPNL();
+
+        int256 recordedBalance = lastRecordedBalance.toInt256();
 
         /// withdraw last recorded amount as this was updated in record pnl
         _withdraw(to, lastRecordedBalance, false);
 
-        int256 endingRecordedBalance = lastRecordedBalance.toInt256();
-
         /// all PCV withdrawn, send call in with amount withdrawn negative if any amount is withdrawn
-        _liquidPcvOracleHook(
-            endingRecordedBalance - startingRecordedBalance,
-            profit
-        );
+        _liquidPcvOracleHook(-recordedBalance, profit);
     }
 
     /// ------------------------------------------
