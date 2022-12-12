@@ -71,7 +71,7 @@ contract SystemV2 {
     ConstantPriceOracle public usdcConstantOracle;
 
     /// Parameters
-    uint256 public constant TIMELOCK_DELAY = 600;
+    uint256 public constant TIMELOCK_DELAY = 86400;
 
     /// ---------- RATE LIMITED MINTER PARAMS ----------
 
@@ -138,8 +138,8 @@ contract SystemV2 {
         grlm = new GlobalRateLimitedMinter(
             address(core),
             MAX_RATE_LIMIT_PER_SECOND_MINTING,
-            RATE_LIMIT_PER_SECOND_MINTING,
-            BUFFER_CAP_MINTING
+            RATE_LIMIT_PER_SECOND_MINTING, /// todo fix this
+            BUFFER_CAP_MINTING /// todo fix this
         );
         gserl = new GlobalSystemExitRateLimiter(
             address(core),
@@ -151,9 +151,9 @@ contract SystemV2 {
         /// VOLT rate
         vso = new VoltSystemOracle(
             address(core),
-            VOLT_MONTHLY_BASIS_POINTS,
-            VOLT_APR_START_TIME,
-            VOLT_START_PRICE
+            VOLT_MONTHLY_BASIS_POINTS, /// todo double check this
+            VOLT_APR_START_TIME, /// todo fill in actual value
+            VOLT_START_PRICE /// todo fetch this from the old oracle after warping forward 24 hours
         );
 
         /// PCV Deposits
@@ -227,6 +227,7 @@ contract SystemV2 {
         pcvGuardianSafeAddresses[1] = address(morphoUsdcPCVDeposit);
         pcvGuardianSafeAddresses[2] = address(usdcpsm);
         pcvGuardianSafeAddresses[3] = address(daipsm);
+
         pcvGuardian = new PCVGuardian(
             address(core),
             address(timelockController),
@@ -240,7 +241,7 @@ contract SystemV2 {
         daiConstantOracle = new ConstantPriceOracle(address(core), 1e18);
         usdcConstantOracle = new ConstantPriceOracle(
             address(core),
-            1e18 * 10 ** uint256(uint8(USDC_DECIMALS_NORMALIZER))
+            1e18 * 10 ** uint256(uint8(USDC_DECIMALS_NORMALIZER)) /// todo this doesn't look correct, verify
         );
     }
 
