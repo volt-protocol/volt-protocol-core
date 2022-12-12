@@ -245,7 +245,6 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
             isLiquid.length == length,
             "PCVOracle: invalid isLiquid length"
         );
-        bool nonZeroBalances = false;
         for (uint256 i = 0; i < length; ) {
             require(venues[i] != address(0), "PCVOracle: invalid venue");
             require(oracles[i] != address(0), "PCVOracle: invalid oracle");
@@ -256,7 +255,6 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
 
             uint256 balance = IPCVDepositV2(venues[i]).accrue();
             if (balance != 0) {
-                nonZeroBalances = true;
                 // no need for safe cast here because balance is always > 0
                 _readOracleAndUpdateAccounting(
                     venues[i],
@@ -285,13 +283,11 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
             isLiquid.length == length,
             "PCVOracle: invalid isLiquid length"
         );
-        bool nonZeroBalances = false;
         for (uint256 i = 0; i < length; ) {
             require(venues[i] != address(0), "PCVOracle: invalid venue");
 
             uint256 balance = IPCVDepositV2(venues[i]).accrue();
             if (balance != 0) {
-                nonZeroBalances = true;
                 // no need for safe cast here because balance is always > 0
                 _readOracleAndUpdateAccounting(
                     venues[i],
