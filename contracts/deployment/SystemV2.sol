@@ -241,7 +241,7 @@ contract SystemV2 {
         daiConstantOracle = new ConstantPriceOracle(address(core), 1e18);
         usdcConstantOracle = new ConstantPriceOracle(
             address(core),
-            1e18 * 10 ** uint256(uint8(USDC_DECIMALS_NORMALIZER)) /// todo this doesn't look correct, verify
+            1e18 * 10 ** uint256(uint8(USDC_DECIMALS_NORMALIZER))
         );
     }
 

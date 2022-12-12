@@ -207,8 +207,6 @@ contract MorphoCompoundPCVDeposit is PCVDeposit {
         address to,
         uint256 amount
     ) external onlyPCVController globalLock(2) {
-        /// amount is 100
-        ///
         int256 profit = _withdraw(to, amount, true);
 
         /// if any amount of PCV is withdrawn and no gains, delta is negative
