@@ -266,6 +266,16 @@ contract UnitTestGlobalReentrancyLock is DSTest {
         assertEq(core.lockLevel(), 2);
     }
 
+    function testGovernorEmergencyRecoversFromEmergencyPause() public {
+        testGovernorEmergencyPauseSucceeds();
+
+        vm.prank(addresses.governorAddress);
+        core.governanceEmergencyRecover();
+
+        assertTrue(!core.isLocked());
+        assertEq(core.lockLevel(), 0);
+    }
+
     function testGovernorSystemRecovery() public {
         vm.startPrank(addresses.governorAddress);
         core.grantLocker(addresses.governorAddress);
