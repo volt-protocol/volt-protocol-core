@@ -362,7 +362,7 @@ contract IntegrationTestSystemV2 is Test {
             data,
             predecessor,
             salt,
-            600
+            86400
         );
         bytes32 id = timelockController.hashOperation(
             recipient,
