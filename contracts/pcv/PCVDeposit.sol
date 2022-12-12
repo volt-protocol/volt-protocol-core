@@ -17,6 +17,11 @@ abstract contract PCVDeposit is IPCVDeposit, CoreRefV2 {
     /// @param token address of the ERC20 to send
     /// @param to address destination of the ERC20
     /// @param amount quantity of ERC20 to send
+    /// Calling this function will lead to incorrect
+    /// accounting in a PCV deposit that tracks
+    /// profits and or last recorded balance.
+    /// If a deposit records PNL, only use this
+    /// function in an emergency.
     function withdrawERC20(
         address token,
         address to,
