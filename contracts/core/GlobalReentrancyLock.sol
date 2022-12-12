@@ -229,6 +229,9 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
 
     /// @notice governor only function to pause the entire system
     /// sets the lock to level two lock
+    /// in this state, pcv oracle updateLiquid and updateIlliquid hooks
+    /// are allowed to be called, but since the PCV deposits cannot be called
+    /// this presents no issue.
     function governanceEmergencyPause() external override onlyGovernor {
         _lockLevel = _ENTERED_LEVEL_TWO;
 
