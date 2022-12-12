@@ -11,6 +11,7 @@ import {Core} from "../../../core/Core.sol";
 import {IVolt} from "../../../volt/IVolt.sol";
 import {DSTest} from "./../../unit/utils/DSTest.sol";
 import {VoltV2} from "../../../volt/VoltV2.sol";
+import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {IPCVDeposit} from "../../../pcv/IPCVDeposit.sol";
 import {VoltMigrator} from "../../../volt/VoltMigrator.sol";
@@ -30,9 +31,15 @@ contract vip15 is DSTest, IVIP {
     using SafeERC20 for IERC20;
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
+    /// timelock controller roles
     bytes32 public constant EXECUTOR_ROLE = keccak256("EXECUTOR_ROLE");
     bytes32 public constant PROPOSER_ROLE = keccak256("PROPOSER_ROLE");
     bytes32 public constant CANCELLER_ROLE = keccak256("CANCELLER_ROLE");
+
+    /// old core
+    bytes32 public constant PCV_GUARD_ADMIN_ROLE =
+        keccak256("PCV_GUARD_ADMIN_ROLE");
+    bytes32 public constant GOVERN_ROLE = keccak256("GOVERN_ROLE");
 
     uint256 public voltInUsdcPSM;
     uint256 public voltInDaiPSM;
@@ -256,6 +263,91 @@ contract vip15 is DSTest, IVIP {
             })
         );
 
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: MainnetAddresses.CORE,
+                arguments: abi.encodeWithSignature(
+                    "revokePCVController(address)",
+                    MainnetAddresses.PCV_GUARDIAN
+                ),
+                description: "Revoke PCV Controller from PCV_GUARDIAN"
+            })
+        );
+
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: MainnetAddresses.CORE,
+                arguments: abi.encodeWithSignature(
+                    "revokePCVController(address)",
+                    MainnetAddresses.GOVERNOR
+                ),
+                description: "Revoke PCV Controller from multisig"
+            })
+        );
+
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: MainnetAddresses.CORE,
+                arguments: abi.encodeWithSignature(
+                    "revokeGuardian(address)",
+                    MainnetAddresses.PCV_GUARDIAN
+                ),
+                description: "Revoke Guardian from PCV_GUARDIAN"
+            })
+        );
+
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: MainnetAddresses.PCV_GUARD_ADMIN,
+                arguments: abi.encodeWithSignature(
+                    "revokePCVGuardRole(address)",
+                    MainnetAddresses.EOA_1
+                ),
+                description: "Revoke Guardian from EOA_1"
+            })
+        );
+
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: MainnetAddresses.PCV_GUARD_ADMIN,
+                arguments: abi.encodeWithSignature(
+                    "revokePCVGuardRole(address)",
+                    MainnetAddresses.EOA_2
+                ),
+                description: "Revoke Guardian from EOA_2"
+            })
+        );
+
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: MainnetAddresses.PCV_GUARD_ADMIN,
+                arguments: abi.encodeWithSignature(
+                    "revokePCVGuardRole(address)",
+                    MainnetAddresses.EOA_4
+                ),
+                description: "Revoke Guardian from EOA_4"
+            })
+        );
+
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: MainnetAddresses.CORE,
+                arguments: abi.encodeWithSignature(
+                    "revokeRole(bytes32,address)",
+                    PCV_GUARD_ADMIN_ROLE,
+                    MainnetAddresses.PCV_GUARD_ADMIN
+                ),
+                description: "Revoke PCV Guard Admin from PCV_GUARD_ADMIN"
+            })
+        );
+
         /// ------- role revoked in timelock -------
 
         proposal.push(
@@ -416,12 +508,26 @@ contract vip15 is DSTest, IVIP {
     function mainnetSetup() public override {}
 
     function mainnetValidate() public override {
+        /// core roles
+        assertEq(core.getRoleMemberCount(core.PCV_CONTROLLER_ROLE()), 0);
+        assertEq(core.getRoleMemberCount(core.GUARDIAN_ROLE()), 0);
+        assertEq(core.getRoleMemberCount(GOVERN_ROLE), 2);
+        assertEq(core.getRoleMemberCount(core.MINTER_ROLE()), 0);
+        assertEq(core.getRoleMemberCount(core.BURNER_ROLE()), 0);
+        assertEq(core.getRoleMemberCount(PCV_GUARD_ADMIN_ROLE), 0);
+        assertEq(core.getRoleMemberCount(VoltRoles.PCV_GUARD), 0);
+
+        /// address role validation
         assertTrue(!core.isPCVController(address(allocator)));
         assertTrue(
             !core.isPCVController(MainnetAddresses.MORPHO_COMPOUND_PCV_ROUTER)
         );
         assertTrue(!core.isPCVController(address(allocator)));
+        assertTrue(!core.isGovernor(MainnetAddresses.GOVERNOR));
+        assertTrue(core.isGovernor(address(core)));
+        assertTrue(core.isGovernor(MainnetAddresses.TIMELOCK_CONTROLLER));
 
+        /// timelock roles
         TimelockController tc = TimelockController(
             payable(MainnetAddresses.TIMELOCK_CONTROLLER)
         );
@@ -435,8 +541,8 @@ contract vip15 is DSTest, IVIP {
         bytes32 salt = bytes32(keccak256(abi.encodePacked(int256(123456789))));
         uint256 ethSendAmount = 100 ether;
         uint256 delay = tc.getMinDelay();
-        vm.deal(address(tc), ethSendAmount);
 
+        vm.deal(address(tc), ethSendAmount);
         vm.startPrank(MainnetAddresses.GOVERNOR);
         tc.schedule(
             MainnetAddresses.GOVERNOR,
