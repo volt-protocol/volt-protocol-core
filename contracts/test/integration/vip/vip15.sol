@@ -68,6 +68,20 @@ contract vip15 is DSTest, IVIP {
             return;
         }
 
+        /// ------- poker morpho to update p2p indexes -------
+
+        proposal.push(
+            ITimelockSimulation.action({
+                value: 0,
+                target: MainnetAddresses.MORPHO,
+                arguments: abi.encodeWithSignature(
+                    "updateP2PIndexes(address)",
+                    MainnetAddresses.CDAI
+                ),
+                description: "Accrue interest in Morpho CDAI market"
+            })
+        );
+
         /// ------- withdraw funds from morpho -------
 
         proposal.push(
@@ -521,7 +535,7 @@ contract vip15 is DSTest, IVIP {
         assertTrue(allocator.paused());
 
         /// pcv deposits
-        assertEq(daiDeposit.balance(), 0);
+        assertTrue(daiDeposit.balance() < 1e18); /// less than $1 left in Morpho
         assertEq(usdcDeposit.balance(), 0);
 
         /// ensure msig can still propose to the timelock after the proposal
