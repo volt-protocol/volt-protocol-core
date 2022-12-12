@@ -203,7 +203,7 @@ contract vip15 is DSTest, IVIP {
                 value: 0,
                 target: MainnetAddresses.VOLT_DAI_PSM,
                 arguments: abi.encodeWithSignature("pause()"),
-                description: "Pause DAI Morpho Compound PCV Deposit"
+                description: "Pause DAI PSM"
             })
         );
 
