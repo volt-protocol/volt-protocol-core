@@ -33,14 +33,9 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     /// 3. call core and unlock the lock
     modifier globalLock(uint8 level) {
         IGlobalReentrancyLock lock = globalReentrancyLock();
-        uint8 startingLevel = lock.lockLevel();
-        require(
-            startingLevel < level,
-            "CoreRef: cannot lock less than current level"
-        );
         lock.lock(level);
         _;
-        lock.unlock(startingLevel);
+        lock.unlock(level - 1);
     }
 
     modifier isGlobalReentrancyLocked() {

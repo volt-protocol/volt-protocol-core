@@ -243,7 +243,7 @@ contract UnitTestGlobalReentrancyLock is DSTest {
         core.grantLocker(address(lock2));
 
         /// CoreRef modifier globalLock enforces level
-        vm.expectRevert("CoreRef: cannot lock less than current level");
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
         lock2.globalReentrancyFails();
 
         assertTrue(lock.isUnlocked());

@@ -362,14 +362,14 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
 
     function testReentrantAccrueFails() public {
         _reentrantSetup();
-        vm.expectRevert("CoreRef: cannot lock less than current level");
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
         entry.accrue(address(morphoDeposit));
     }
 
     function testReentrantDepositFails() public {
         _reentrantSetup();
         token.mint(address(morphoDeposit), 100);
-        vm.expectRevert("CoreRef: cannot lock less than current level");
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
         entry.deposit(address(morphoDeposit));
     }
 
