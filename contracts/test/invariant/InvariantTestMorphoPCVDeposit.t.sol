@@ -8,6 +8,7 @@ import {Vm} from "../unit/utils/Vm.sol";
 import {CoreV2} from "../../core/CoreV2.sol";
 import {DSTest} from "../unit/utils/DSTest.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
+import {getCoreV2} from "../unit/utils/Fixtures.sol";
 import {MockMorpho} from "../../mock/MockMorpho.sol";
 import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
 import {IPCVOracle} from "../../oracle/IPCVOracle.sol";
@@ -16,7 +17,7 @@ import {MockPCVOracle} from "../../mock/MockPCVOracle.sol";
 import {DSInvariantTest} from "../unit/utils/DSInvariantTest.sol";
 import {MorphoCompoundPCVDeposit} from "../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
-import {getCoreV2} from "../unit/utils/Fixtures.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../core/GlobalReentrancyLock.sol";
 
 /// note all variables have to be public and not immutable otherwise foundry
 /// will not run invariant tests
@@ -31,6 +32,7 @@ contract InvariantTestMorphoCompoundPCVDeposit is DSTest, DSInvariantTest {
     SystemEntry public entry;
     PCVGuardian public pcvGuardian;
     MockPCVOracle public pcvOracle;
+    IGlobalReentrancyLock private lock;
     MorphoPCVDepositTest public morphoTest;
     MorphoCompoundPCVDeposit public morphoDeposit;
 
@@ -47,6 +49,9 @@ contract InvariantTestMorphoCompoundPCVDeposit is DSTest, DSInvariantTest {
             address(token),
             address(morpho),
             address(morpho)
+        );
+        lock = IGlobalReentrancyLock(
+            address(new GlobalReentrancyLock(address(core)))
         );
 
         address[] memory toWhitelist = new address[](1);
@@ -74,8 +79,10 @@ contract InvariantTestMorphoCompoundPCVDeposit is DSTest, DSInvariantTest {
         core.grantPCVGuard(address(morphoTest));
         core.grantPCVController(address(pcvGuardian));
 
+        core.grantLocker(address(entry));
         core.grantLocker(address(pcvGuardian));
         core.grantLocker(address(morphoDeposit));
+        core.setGlobalReentrancyLock(lock);
 
         vm.stopPrank();
 
