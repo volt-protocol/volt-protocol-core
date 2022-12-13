@@ -588,6 +588,8 @@ contract vip13 is DSTest, IVIP {
                 MainnetAddresses.VOLT_DAI_PSM
             )
         );
+        assertTrue(coreV2.isLocker(address(voltV2DaiPriceBoundPSM)));
+        assertTrue(coreV2.isLocker(address(voltV2UsdcPriceBoundPSM)));
     }
 
     /// prevent errors by reverting on arbitrum proposal functions being called on this VIP

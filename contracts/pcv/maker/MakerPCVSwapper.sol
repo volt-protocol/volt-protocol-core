@@ -31,6 +31,12 @@ contract MakerPCVSwapper is IPCVSwapper, CoreRefV2 {
 
     // ----------- IPCVSwapper View API ---------------------
 
+    /// @notice view only function that returns whether a swap
+    /// path is valid.
+    /// @param assetIn asset to sell
+    /// @param assetOut asset to receive
+    /// @return true if swap is valid and not paused,
+    /// otherwise returns false
     function canSwap(
         address assetIn,
         address assetOut
@@ -43,6 +49,12 @@ contract MakerPCVSwapper is IPCVSwapper, CoreRefV2 {
 
     // ----------- IPCVSwapper State-changing API -----------
 
+    /// @notice this contract assumes all funds sent here
+    /// are swapped in the same transaction.
+    /// @param assetIn address of asset to sell
+    /// @param assetOut address of asset to buy
+    /// @param destination address where asset out is sent
+    /// @return amount of asset received
     function swap(
         address assetIn,
         address assetOut,

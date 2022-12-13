@@ -11,12 +11,13 @@ import {MockCToken} from "../../../../mock/MockCToken.sol";
 import {MockMorpho} from "../../../../mock/MockMorpho.sol";
 import {IPCVDeposit} from "../../../../pcv/IPCVDeposit.sol";
 import {PCVGuardian} from "../../../../pcv/PCVGuardian.sol";
+import {getCoreV2} from "./../../utils/Fixtures.sol";
 import {SystemEntry} from "../../../../entry/SystemEntry.sol";
 import {MockERC20, IERC20} from "../../../../mock/MockERC20.sol";
 import {MorphoCompoundPCVDeposit} from "../../../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
-import {MockMorphoMaliciousReentrancy} from "../../../../mock/MockMorphoMaliciousReentrancy.sol";
 import {TestAddresses as addresses} from "../../utils/TestAddresses.sol";
-import {getCoreV2} from "./../../utils/Fixtures.sol";
+import {MockMorphoMaliciousReentrancy} from "../../../../mock/MockMorphoMaliciousReentrancy.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../../core/GlobalReentrancyLock.sol";
 
 contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     using SafeCast for *;
@@ -43,9 +44,15 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     /// @notice token to deposit
     MockERC20 private token;
 
+    /// @notice global reentrancy lock
+    IGlobalReentrancyLock private lock;
+
     function setUp() public {
         core = getCoreV2();
         token = new MockERC20();
+        lock = IGlobalReentrancyLock(
+            address(new GlobalReentrancyLock(address(core)))
+        );
         entry = new SystemEntry(address(core));
         morpho = new MockMorpho(IERC20(address(token)));
         maliciousMorpho = new MockMorphoMaliciousReentrancy(
@@ -75,6 +82,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         core.grantLocker(address(maliciousMorpho));
         core.grantPCVController(address(pcvGuardian));
         core.grantPCVGuard(address(this));
+        core.setGlobalReentrancyLock(lock);
         vm.stopPrank();
 
         vm.label(address(morpho), "Morpho");
@@ -354,14 +362,14 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
 
     function testReentrantAccrueFails() public {
         _reentrantSetup();
-        vm.expectRevert("CoreRef: cannot lock less than current level");
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
         entry.accrue(address(morphoDeposit));
     }
 
     function testReentrantDepositFails() public {
         _reentrantSetup();
         token.mint(address(morphoDeposit), 100);
-        vm.expectRevert("CoreRef: cannot lock less than current level");
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
         entry.deposit(address(morphoDeposit));
     }
 

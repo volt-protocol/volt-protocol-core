@@ -9,6 +9,7 @@ import {DSTest} from "./../unit/utils/DSTest.sol";
 import {CoreV2} from "../../core/CoreV2.sol";
 import {ICoreV2} from "../../core/ICoreV2.sol";
 import {Constants} from "../../Constants.sol";
+import {getCoreV2} from "./../unit/utils/Fixtures.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
@@ -16,7 +17,7 @@ import {IOraclePassThrough} from "../../oracle/IOraclePassThrough.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../limiter/GlobalRateLimitedMinter.sol";
 import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
-import {getCoreV2} from "./../unit/utils/Fixtures.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../core/GlobalReentrancyLock.sol";
 
 import "hardhat/console.sol";
 
@@ -33,6 +34,7 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
     ICoreV2 private core = ICoreV2(MainnetAddresses.CORE);
     CoreV2 private tmpCore;
     IVolt private tmpVolt;
+    GlobalReentrancyLock private lock;
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
     IERC20 private usdc = IERC20(MainnetAddresses.USDC);
     IERC20 private underlyingToken = usdc;
@@ -65,6 +67,7 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
     function setUp() public {
         tmpCore = getCoreV2();
         tmpVolt = tmpCore.volt();
+        lock = new GlobalReentrancyLock(address(tmpCore));
 
         /// create PSM
         cleanPsm = new PegStabilityModule(
@@ -77,8 +80,7 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
             voltFloorPrice,
             voltCeilingPrice
         );
-        vm.prank(addresses.governorAddress);
-        tmpCore.grantLocker(address(cleanPsm));
+
         grlm = new GlobalRateLimitedMinter(
             address(tmpCore),
             maxRateLimitPerSecondMinting,
@@ -87,6 +89,8 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
         );
 
         vm.startPrank(addresses.governorAddress);
+        tmpCore.setGlobalReentrancyLock(IGlobalReentrancyLock(address(lock)));
+        tmpCore.grantLocker(address(cleanPsm));
         tmpCore.setGlobalRateLimitedMinter(
             IGlobalRateLimitedMinter(address(grlm))
         );
@@ -475,7 +479,7 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
     /// @notice withdraw succeeds with correct permissions
     function testWithdrawSuccess() public {
         vm.prank(address(grlm));
-        tmpCore.lock(1);
+        lock.lock(1);
 
         vm.prank(addresses.governorAddress);
         tmpCore.grantPCVController(address(this));

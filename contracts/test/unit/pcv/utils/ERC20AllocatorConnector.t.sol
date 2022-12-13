@@ -13,6 +13,7 @@ import {PCVDeposit} from "../../../../pcv/PCVDeposit.sol";
 import {ERC20Allocator} from "../../../../pcv/utils/ERC20Allocator.sol";
 import {ERC20HoldingPCVDeposit} from "../../../../mock/ERC20HoldingPCVDeposit.sol";
 import {TestAddresses as addresses} from "../../utils/TestAddresses.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../../core/GlobalReentrancyLock.sol";
 import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "../../../../limiter/GlobalSystemExitRateLimiter.sol";
 
 contract UnitTestERC20AllocatorConnector is DSTest {
@@ -58,6 +59,9 @@ contract UnitTestERC20AllocatorConnector is DSTest {
     /// @notice token to push
     MockERC20 private token;
 
+    /// @notice global reentrancy lock
+    IGlobalReentrancyLock private lock;
+
     /// @notice threshold over which to pull tokens from pull deposit
     uint248 private constant targetBalance = 100_000e18;
 
@@ -73,6 +77,9 @@ contract UnitTestERC20AllocatorConnector is DSTest {
     function setUp() public {
         core = getCoreV2();
         token = new MockERC20();
+        lock = IGlobalReentrancyLock(
+            address(new GlobalReentrancyLock(address(core)))
+        );
 
         pcvDeposit = new ERC20HoldingPCVDeposit(
             address(core),
@@ -108,6 +115,7 @@ contract UnitTestERC20AllocatorConnector is DSTest {
         core.setGlobalSystemExitRateLimiter(
             IGlobalSystemExitRateLimiter(address(gserl))
         );
+        core.setGlobalReentrancyLock(lock);
 
         vm.stopPrank();
     }

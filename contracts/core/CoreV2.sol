@@ -5,16 +5,16 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IVolt} from "../volt/IVolt.sol";
 import {ICoreV2} from "./ICoreV2.sol";
-import {PermissionsV2} from "./PermissionsV2.sol";
 import {IPCVOracle} from "../oracle/IPCVOracle.sol";
-import {GlobalReentrancyLock} from "./GlobalReentrancyLock.sol";
+import {PermissionsV2} from "./PermissionsV2.sol";
 import {IGlobalRateLimitedMinter} from "../limiter/IGlobalRateLimitedMinter.sol";
 import {IGlobalSystemExitRateLimiter} from "../limiter/IGlobalSystemExitRateLimiter.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "./GlobalReentrancyLock.sol";
 
 /// @title Source of truth for VOLT Protocol
 /// @author Volt Protocol
 /// @notice maintains roles, access control, Volt, Vcon, and the Vcon treasury
-contract CoreV2 is ICoreV2, PermissionsV2, GlobalReentrancyLock {
+contract CoreV2 is ICoreV2, PermissionsV2 {
     /// @notice address of the Volt token
     IVolt public override volt;
 
@@ -29,6 +29,9 @@ contract CoreV2 is ICoreV2, PermissionsV2, GlobalReentrancyLock {
 
     /// @notice address of the pcv oracle
     IPCVOracle public pcvOracle;
+
+    /// @notice address of the global reentrancy lock
+    IGlobalReentrancyLock public globalReentrancyLock;
 
     /// @notice construct CoreV2
     /// @param newVolt reference to the volt token
@@ -91,6 +94,20 @@ contract CoreV2 is ICoreV2, PermissionsV2, GlobalReentrancyLock {
         emit GlobalSystemExitRateLimiterUpdate(
             oldGserl,
             address(newGlobalSystemExitRateLimiter)
+        );
+    }
+
+    /// @notice governor only function to set the Global Reentrancy Lock
+    /// @param newGlobalReentrancyLock new global reentrancy lock
+    function setGlobalReentrancyLock(
+        IGlobalReentrancyLock newGlobalReentrancyLock
+    ) external onlyGovernor {
+        address oldGrl = address(globalReentrancyLock);
+        globalReentrancyLock = newGlobalReentrancyLock;
+
+        emit GlobalReentrancyLockUpdate(
+            oldGrl,
+            address(newGlobalReentrancyLock)
         );
     }
 }

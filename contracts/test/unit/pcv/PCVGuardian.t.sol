@@ -6,11 +6,12 @@ import {DSTest} from "./../utils/DSTest.sol";
 import {ICoreV2} from "../../../core/ICoreV2.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
+import {getCoreV2} from "./../utils/Fixtures.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {SystemEntry} from "../../../entry/SystemEntry.sol";
 import {MockPCVDepositV2} from "../../../mock/MockPCVDepositV2.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
-import {getCoreV2} from "./../utils/Fixtures.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../core/GlobalReentrancyLock.sol";
 
 contract UnitTestPCVGuardian is DSTest {
     event SafeAddressUpdated(
@@ -24,6 +25,7 @@ contract UnitTestPCVGuardian is DSTest {
     PCVGuardian private pcvGuardian;
     MockERC20 public underlyingToken;
     MockPCVDepositV2 public pcvDeposit;
+    IGlobalReentrancyLock private lock;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
@@ -35,6 +37,9 @@ contract UnitTestPCVGuardian is DSTest {
     function setUp() public {
         core = getCoreV2();
         entry = new SystemEntry(address(core));
+        lock = IGlobalReentrancyLock(
+            address(new GlobalReentrancyLock(address(core)))
+        );
 
         // acts as the underlying token in the pcv depost
         underlyingToken = new MockERC20();
@@ -59,6 +64,8 @@ contract UnitTestPCVGuardian is DSTest {
 
         /// grant the pcvGuardian the PCV controller and Guardian roles
         vm.startPrank(addresses.governorAddress);
+        core.setGlobalReentrancyLock(lock);
+
         core.grantPCVController(address(pcvGuardian));
         core.grantGuardian(address(pcvGuardian));
 

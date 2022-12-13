@@ -1,20 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.8.13;
 
+import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
+
+import {Vm} from "./../unit/utils/Vm.sol";
+import {vip13} from "./vip/vip13.sol";
 import {ICore} from "../../core/ICore.sol";
 import {IVolt} from "../../volt/Volt.sol";
-import {VoltSystemOracle} from "../../oracle/VoltSystemOracle.sol";
-import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
-import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
-import {vip13} from "./vip/vip13.sol";
-import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
-import {IPCVGuardian} from "../../pcv/IPCVGuardian.sol";
 import {stdError} from "../unit/utils/StdLib.sol";
+import {IPCVGuardian} from "../../pcv/IPCVGuardian.sol";
+import {VoltSystemOracle} from "../../oracle/VoltSystemOracle.sol";
+import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
+import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../limiter/GlobalRateLimitedMinter.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../core/GlobalReentrancyLock.sol";
 
 contract IntegrationTestVoltMigratorRouterTest is TimelockSimulation, vip13 {
     using SafeCast for *;
@@ -26,6 +28,7 @@ contract IntegrationTestVoltMigratorRouterTest is TimelockSimulation, vip13 {
     VoltSystemOracle public oracle =
         VoltSystemOracle(MainnetAddresses.ORACLE_PASS_THROUGH);
 
+    IGlobalReentrancyLock public lock;
     GlobalRateLimitedMinter public grlm;
 
     /// ---------- GRLM PARAMS ----------
@@ -59,6 +62,9 @@ contract IntegrationTestVoltMigratorRouterTest is TimelockSimulation, vip13 {
         dai.transfer(address(voltV2DaiPriceBoundPSM), balance);
 
         vm.startPrank(MainnetAddresses.GOVERNOR);
+        lock = IGlobalReentrancyLock(
+            address(new GlobalReentrancyLock(address(coreV2)))
+        );
         grlm = new GlobalRateLimitedMinter(
             address(coreV2),
             maxRateLimitPerSecondMinting,
@@ -69,6 +75,8 @@ contract IntegrationTestVoltMigratorRouterTest is TimelockSimulation, vip13 {
         coreV2.setGlobalRateLimitedMinter(
             IGlobalRateLimitedMinter(address(grlm))
         );
+        coreV2.setGlobalReentrancyLock(lock);
+
         coreV2.grantMinter(address(grlm));
         coreV2.grantRateLimitedRedeemer(address(voltV2DaiPriceBoundPSM));
         coreV2.grantRateLimitedRedeemer(address(voltV2UsdcPriceBoundPSM));

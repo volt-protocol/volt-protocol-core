@@ -43,11 +43,6 @@ contract UnitTestPermissionsV2 is DSTest {
         assertEq(core.getRoleMemberCount(core.LOCKER_ROLE()), 0); /// this role has not been granted
         assertEq(core.getRoleMemberCount(core.LOCKER_ROLE()), 0); /// this role has not been granted
         assertEq(core.getRoleMemberCount(core.PCV_GUARD_ROLE()), 0); /// this role has not been granted
-
-        /// core starts out unlocked and unused
-        assertTrue(core.isUnlocked());
-        assertTrue(!core.isLocked());
-        assertEq(core.lastSender(), address(0));
     }
 
     /// PermissionsV2 Role acl tests

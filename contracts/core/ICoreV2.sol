@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 import {IPCVOracle} from "../oracle/IPCVOracle.sol";
 import {IVolt, IERC20} from "../volt/IVolt.sol";
 import {IPermissionsV2} from "./IPermissionsV2.sol";
+import {IGlobalReentrancyLock} from "../core/IGlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter} from "../limiter/IGlobalRateLimitedMinter.sol";
 import {IGlobalSystemExitRateLimiter} from "../limiter/IGlobalSystemExitRateLimiter.sol";
 
@@ -36,6 +37,12 @@ interface ICoreV2 is IPermissionsV2 {
         address indexed newGserl
     );
 
+    /// @notice emitted when reference to global reentrancy lock is updated
+    event GlobalReentrancyLockUpdate(
+        address indexed oldGrl,
+        address indexed newGrl
+    );
+
     // ----------- Getters -----------
 
     /// @notice returns reference to the VOLT token contract
@@ -53,7 +60,19 @@ interface ICoreV2 is IPermissionsV2 {
     /// @notice returns reference to the pcv oracle
     function pcvOracle() external view returns (IPCVOracle);
 
+    /// @notice returns reference to the global reentrancy lock
+    function globalReentrancyLock()
+        external
+        view
+        returns (IGlobalReentrancyLock);
+
     // ----------- Governance Only API -----------
+
+    /// @notice governor only function to set the Global Reentrancy Lock
+    /// @param newGlobalReentrancyLock new global reentrancy lock
+    function setGlobalReentrancyLock(
+        IGlobalReentrancyLock newGlobalReentrancyLock
+    ) external;
 
     /// @notice governor only function to set the Global Rate Limited Minter
     /// @param newGlobalRateLimitedMinter new volt global rate limited minter

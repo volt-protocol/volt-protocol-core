@@ -38,18 +38,18 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRefV2 {
     /// @notice construct the PSM
     /// @param coreAddress reference to core
     /// @param oracleAddress reference to oracle
-    /// @param backupOracle reference to backup oracle
-    /// @param decimalsNormalizer decimal normalizer for oracle price
-    /// @param doInvert invert oracle price
+    /// @param backupOracleAddress reference to backup oracle
+    /// @param decimalNormalizer decimal normalizer for oracle price
+    /// @param invert invert oracle price
     /// @param underlyingTokenAddress this psm uses
     /// @param floorPrice minimum acceptable oracle price
     /// @param ceilingPrice maximum acceptable oracle price
     constructor(
         address coreAddress,
         address oracleAddress,
-        address backupOracle,
-        int256 decimalsNormalizer,
-        bool doInvert,
+        address backupOracleAddress,
+        int256 decimalNormalizer,
+        bool invert,
         IERC20 underlyingTokenAddress,
         uint128 floorPrice,
         uint128 ceilingPrice,
@@ -58,9 +58,9 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRefV2 {
         OracleRefV2(
             coreAddress,
             oracleAddress,
-            backupOracle,
-            decimalsNormalizer,
-            doInvert
+            backupOracleAddress,
+            decimalNormalizer,
+            invert
         )
     {
         underlyingToken = underlyingTokenAddress;

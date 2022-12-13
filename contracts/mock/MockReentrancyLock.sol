@@ -17,7 +17,7 @@ contract MockReentrancyLock is CoreRefV2 {
     /// that it is always locked during execution
     function testGlobalLock() external globalLock(1) {
         require(
-            IGlobalReentrancyLock(address(core())).isLocked(),
+            core().globalReentrancyLock().isLocked(),
             "System not locked correctly"
         );
         lastBlockNumber = block.number.toUint32();

@@ -1,6 +1,8 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {PermissionsV2} from "./PermissionsV2.sol";
+import {VoltRoles} from "./VoltRoles.sol";
+import {CoreRefV2} from "./../refs/CoreRefV2.sol";
 import {IGlobalReentrancyLock} from "./IGlobalReentrancyLock.sol";
 
 /// @notice inpsired by the openzeppelin reentrancy guard smart contracts
@@ -22,7 +24,7 @@ import {IGlobalReentrancyLock} from "./IGlobalReentrancyLock.sol";
 /// @dev in the EVM. 160bits / 8 bits per byte = 20 bytes
 /// https://docs.soliditylang.org/en/develop/types.html#address
 
-abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
+contract GlobalReentrancyLock is IGlobalReentrancyLock, CoreRefV2 {
     /// -------------------------------------------------
     /// -------------------------------------------------
     /// ------------------- Constants -------------------
@@ -66,7 +68,7 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
 
     /// @notice cache the address that locked the system
     /// only this address can unlock it
-    uint160 private _sender;
+    address private _sender;
 
     /// @notice store the last block entered
     /// if last block entered was in the past and status
@@ -77,15 +79,8 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// @notice system lock level
     uint8 private _lockLevel;
 
-    /// @notice only locker role is allowed to call in and
-    /// set entered or not entered for status level one
-    modifier onlyLocker() {
-        require(
-            hasRole(LOCKER_ROLE, msg.sender),
-            "GlobalReentrancyLock: missing locker role"
-        );
-        _;
-    }
+    /// @param core reference to core
+    constructor(address core) CoreRefV2(core) {}
 
     /// ---------- View Only APIs ----------
 
@@ -96,7 +91,7 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
 
     /// @notice returns the last address that locked this contract
     function lastSender() external view returns (address) {
-        return address(_sender);
+        return _sender;
     }
 
     /// @notice returns true if the contract is not currently entered
@@ -122,7 +117,9 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// @dev only valid state transitions:
     /// - lock to level 1 from level 0
     /// - lock to level 2 from level 1
-    function lock(uint8 toLock) external override onlyLocker {
+    function lock(
+        uint8 toLock
+    ) external override onlyVoltRole(VoltRoles.LOCKER) {
         uint8 currentLevel = _lockLevel; /// cache to save 1 warm SLOAD
 
         require(
@@ -139,9 +136,8 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
             /// - lock to level 1 from level 0
 
             uint88 blockEntered = uint88(block.number);
-            uint160 sender = uint160(msg.sender);
 
-            _sender = sender;
+            _sender = msg.sender;
             _lastBlockEntered = blockEntered;
             _lockLevel = toLock;
         } else {
@@ -172,7 +168,9 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// @dev only valid state transitions:
     /// - unlock to level 0 from level 1 as original locker in same block as lock
     /// - lock from level 2 down to level 1 in same block as lock
-    function unlock(uint8 toUnlock) external override onlyLocker {
+    function unlock(
+        uint8 toUnlock
+    ) external override onlyVoltRole(VoltRoles.LOCKER) {
         uint8 currentLevel = _lockLevel;
 
         require(
@@ -196,7 +194,7 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
         if (toUnlock == _NOT_ENTERED) {
             /// - unlock to level 0 from level 1, verify sender is original locker
             require(
-                uint160(msg.sender) == _sender,
+                msg.sender == _sender,
                 "GlobalReentrancyLock: caller is not locker"
             );
         }
@@ -226,5 +224,16 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
         _lockLevel = _NOT_ENTERED;
 
         emit EmergencyUnlock(msg.sender, block.timestamp);
+    }
+
+    /// @notice governor only function to pause the entire system
+    /// sets the lock to level two lock
+    /// in this state, pcv oracle updateLiquid and updateIlliquid hooks
+    /// are allowed to be called, but since the PCV deposits cannot be called
+    /// this presents no issue.
+    function governanceEmergencyPause() external override onlyGovernor {
+        _lockLevel = _ENTERED_LEVEL_TWO;
+
+        emit EmergencyLock(msg.sender, block.timestamp);
     }
 }

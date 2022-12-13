@@ -10,6 +10,7 @@ import {DSTest} from "./../unit/utils/DSTest.sol";
 import {ICoreV2} from "../../core/ICoreV2.sol";
 import {Constants} from "../../Constants.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
+import {getCoreV2} from "./../unit/utils/Fixtures.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
@@ -19,7 +20,7 @@ import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../limiter/GlobalRateLimitedMinter.sol";
 import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
-import {getCoreV2} from "./../unit/utils/Fixtures.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../core/GlobalReentrancyLock.sol";
 
 contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     using SafeCast for *;
@@ -27,6 +28,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     IVolt private volt;
     ICoreV2 private core;
     PegStabilityModule private psm;
+    IGlobalReentrancyLock public lock;
     GlobalRateLimitedMinter public grlm;
     IERC20 private usdc = IERC20(MainnetAddresses.USDC);
     IERC20 private underlyingToken = usdc;
@@ -61,6 +63,9 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
     function setUp() public {
         core = getCoreV2();
         volt = core.volt();
+        lock = IGlobalReentrancyLock(
+            address(new GlobalReentrancyLock(address(core)))
+        );
 
         /// create PSM
         psm = new PegStabilityModule(
@@ -85,6 +90,8 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
         core.setGlobalRateLimitedMinter(
             IGlobalRateLimitedMinter(address(grlm))
         );
+        core.setGlobalReentrancyLock(lock);
+
         core.grantLocker(address(grlm)); /// allow setting of reentrancy lock
         core.grantMinter(address(grlm));
 

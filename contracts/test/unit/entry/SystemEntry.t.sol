@@ -13,6 +13,7 @@ import {MockOracle} from "../../../mock/MockOracle.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {getCoreV2} from "./../utils/Fixtures.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../core/GlobalReentrancyLock.sol";
 
 contract SystemEntryUnitTest is DSTest {
     CoreV2 private core;
@@ -31,6 +32,7 @@ contract SystemEntryUnitTest is DSTest {
     // test Oracles
     MockOracle private oracle1;
     MockOracle private oracle2;
+    IGlobalReentrancyLock private lock;
 
     // mocked DynamicVoltSystemOracle behavior to prevent reverts
     uint256 private liquidReserves;
@@ -44,17 +46,24 @@ contract SystemEntryUnitTest is DSTest {
         core = CoreV2(address(getCoreV2()));
         pcvOracle = new PCVOracle(address(core));
         entry = new SystemEntry(address(core));
+        lock = IGlobalReentrancyLock(
+            address(new GlobalReentrancyLock(address(core)))
+        );
 
         // mock utils
         oracle1 = new MockOracle();
         token1 = new MockERC20();
         deposit1 = new MockPCVDepositV3(address(core), address(token1));
 
-        // grant role
+        /// grant roles, set global reentrancy lock
         vm.startPrank(addresses.governorAddress);
+
         core.grantLocker(address(entry));
         core.grantLocker(address(pcvOracle));
         core.grantLocker(address(deposit1));
+
+        core.setGlobalReentrancyLock(lock);
+
         vm.stopPrank();
 
         // setup pcv oracle

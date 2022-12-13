@@ -362,7 +362,7 @@ contract IntegrationTestSystemV2 is Test {
             data,
             predecessor,
             salt,
-            600
+            86400
         );
         bytes32 id = timelockController.hashOperation(
             recipient,
@@ -377,7 +377,7 @@ contract IntegrationTestSystemV2 is Test {
         assertTrue(!timelockController.isOperationDone(id)); /// operation is not done
         assertTrue(!timelockController.isOperationReady(id)); /// operation is not ready
 
-        vm.warp(block.timestamp + 600);
+        vm.warp(block.timestamp + timelockController.getMinDelay());
         assertTrue(timelockController.isOperationReady(id)); /// operation is ready
 
         timelockController.execute(

@@ -22,6 +22,13 @@ interface IGlobalReentrancyLock {
     /// if true, and locked in the same block, it is possible to unlock
     function lockLevel() external view returns (uint8);
 
+    /// @notice governor only function to pause the entire system
+    /// sets the lock to level two lock
+    /// in this state, pcv oracle updateLiquid and updateIlliquid hooks
+    /// are allowed to be called, but since the PCV deposits cannot be called
+    /// this presents no issue.
+    function governanceEmergencyPause() external;
+
     /// @notice function to recover the system from an incorrect state
     /// in case of emergency by setting status to not entered
     /// only callable if system is entered
@@ -48,4 +55,7 @@ interface IGlobalReentrancyLock {
 
     /// @notice emitted when governor does an emergency unlock
     event EmergencyUnlock(address indexed sender, uint256 timestamp);
+
+    /// @notice emitted when governor does an emergency lock
+    event EmergencyLock(address indexed sender, uint256 timestamp);
 }

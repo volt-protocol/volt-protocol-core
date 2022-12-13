@@ -10,6 +10,7 @@ import {CoreV2} from "../../core/CoreV2.sol";
 import {DSTest} from "../unit/utils/DSTest.sol";
 import {IDSSPSM} from "../../pcv/maker/IDSSPSM.sol";
 import {Constants} from "../../Constants.sol";
+import {getCoreV2} from "./../unit/utils/Fixtures.sol";
 import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
 import {SystemEntry} from "../../entry/SystemEntry.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
@@ -17,7 +18,7 @@ import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 import {MorphoCompoundPCVDeposit} from "../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
-import {getCoreV2} from "./../unit/utils/Fixtures.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../core/GlobalReentrancyLock.sol";
 
 contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     using SafeCast for *;
@@ -26,6 +27,7 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
 
     CoreV2 private core;
     SystemEntry public entry;
+    GlobalReentrancyLock private lock;
     MorphoCompoundPCVDeposit private daiDeposit;
     MorphoCompoundPCVDeposit private usdcDeposit;
 
@@ -48,6 +50,7 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
 
     function setUp() public {
         core = getCoreV2();
+        lock = new GlobalReentrancyLock(address(core));
         daiDeposit = new MorphoCompoundPCVDeposit(
             address(core),
             MainnetAddresses.CDAI,
@@ -91,6 +94,8 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
         vm.stopPrank();
 
         vm.startPrank(addresses.governorAddress);
+
+        core.setGlobalReentrancyLock(IGlobalReentrancyLock(address(lock)));
 
         core.grantPCVGuard(address(this));
         core.grantPCVController(address(pcvGuardian));
@@ -260,7 +265,7 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     function testWithdrawNonPCVControllerFails() public {
         vm.startPrank(addresses.governorAddress);
         core.grantLocker(addresses.governorAddress);
-        core.lock(1);
+        lock.lock(1);
         vm.stopPrank();
 
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
@@ -273,7 +278,7 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     function testWithdrawAllNonPCVControllerFails() public {
         vm.startPrank(addresses.governorAddress);
         core.grantLocker(addresses.governorAddress);
-        core.lock(1);
+        lock.lock(1);
         vm.stopPrank();
 
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
