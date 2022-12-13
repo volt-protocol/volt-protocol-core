@@ -84,7 +84,7 @@ contract vip4 is DSTest, IVIP, AllRoles {
         proposal[7].value = 0;
         proposal[7].arguments = abi.encodeWithSignature(
             "grantPCVGuardRole(address)",
-            MainnetAddresses.EOA_3
+            MainnetAddresses.REVOKED_EOA_3
         );
         proposal[7].description = "Grant EOA 3 PCV Guard Role";
     }
@@ -162,7 +162,7 @@ contract vip4 is DSTest, IVIP, AllRoles {
         proposal[5].value = 0;
         proposal[5].arguments = abi.encodeWithSignature(
             "grantPCVGuardRole(address)",
-            ArbitrumAddresses.EOA_3
+            ArbitrumAddresses.REVOKED_EOA_3
         );
         proposal[5].description = "Grant EOA 3 PCV Guard Role";
     }

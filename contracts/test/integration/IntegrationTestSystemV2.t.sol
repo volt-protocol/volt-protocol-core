@@ -184,7 +184,7 @@ contract IntegrationTestSystemV2 is Test {
         assertEq(core.getRoleMemberCount(VoltRoles.ILLIQUID_PCV_DEPOSIT), 0);
 
         // PCV_GUARD
-        assertEq(core.getRoleMemberCount(VoltRoles.PCV_GUARD), 4);
+        assertEq(core.getRoleMemberCount(VoltRoles.PCV_GUARD), 3);
         assertEq(
             core.getRoleMember(VoltRoles.PCV_GUARD, 0),
             MainnetAddresses.EOA_1
@@ -195,10 +195,6 @@ contract IntegrationTestSystemV2 is Test {
         );
         assertEq(
             core.getRoleMember(VoltRoles.PCV_GUARD, 2),
-            MainnetAddresses.EOA_3
-        );
-        assertEq(
-            core.getRoleMember(VoltRoles.PCV_GUARD, 3),
             MainnetAddresses.EOA_4
         );
 

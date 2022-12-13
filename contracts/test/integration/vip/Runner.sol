@@ -1,6 +1,6 @@
 pragma solidity =0.8.13;
 
-import {vip13} from "./vip13.sol";
+import {vip15} from "./vip15.sol";
 // import {vipx} from "./vipx.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {TimelockSimulation} from "../utils/TimelockSimulation.sol";
@@ -10,7 +10,7 @@ import {PCVGuardian} from "./../../../pcv/PCVGuardian.sol";
 
 /// @dev test harness for running and simulating VOLT Improvement Proposals
 /// inherit the proposal to simulate
-contract Runner is TimelockSimulation, vip13 {
+contract Runner is TimelockSimulation, vip15 {
     /// @notice mainnet PCV Guardian
     PCVGuardian private immutable mainnetPCVGuardian =
         PCVGuardian(MainnetAddresses.PCV_GUARDIAN);
