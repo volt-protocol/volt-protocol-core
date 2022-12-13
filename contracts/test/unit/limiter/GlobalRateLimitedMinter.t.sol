@@ -11,6 +11,7 @@ import {MockMinter} from "../../../mock/MockMinter.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../../limiter/GlobalRateLimitedMinter.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 import {getCoreV2, getVoltAddresses, VoltAddresses} from "./../utils/Fixtures.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../core/GlobalReentrancyLock.sol";
 
 /// deployment steps
 /// 1. core v2
@@ -26,6 +27,7 @@ contract GlobalRateLimitedMinterUnitTest is Test {
     VoltAddresses public guardianAddresses = getVoltAddresses();
 
     GlobalRateLimitedMinter public grlm;
+    IGlobalReentrancyLock private lock;
     address private coreAddress;
     MockMinter private minter;
     ICoreV2 private core;
@@ -54,6 +56,9 @@ contract GlobalRateLimitedMinterUnitTest is Test {
             bufferCapMinting
         );
         minter = new MockMinter(coreAddress, address(grlm));
+        lock = IGlobalReentrancyLock(
+            address(new GlobalReentrancyLock(address(core)))
+        );
 
         vm.startPrank(addresses.governorAddress);
 
@@ -71,6 +76,7 @@ contract GlobalRateLimitedMinterUnitTest is Test {
         core.setGlobalRateLimitedMinter(
             IGlobalRateLimitedMinter(address(grlm))
         );
+        core.setGlobalReentrancyLock(lock);
 
         vm.stopPrank();
 

@@ -27,6 +27,7 @@ import {MakerPCVSwapper} from "../pcv/maker/MakerPCVSwapper.sol";
 import {PegStabilityModule} from "../peg/PegStabilityModule.sol";
 import {IPCVDeposit, PCVDeposit} from "../pcv/PCVDeposit.sol";
 import {MorphoCompoundPCVDeposit} from "../pcv/morpho/MorphoCompoundPCVDeposit.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../core/GlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../limiter/GlobalRateLimitedMinter.sol";
 import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "../limiter/GlobalSystemExitRateLimiter.sol";
 
@@ -42,6 +43,7 @@ contract SystemV2 {
     VoltV2 public volt;
     CoreV2 public core;
     TimelockController public timelockController;
+    GlobalReentrancyLock public lock;
     GlobalRateLimitedMinter public grlm;
     GlobalSystemExitRateLimiter public gserl;
 
@@ -123,6 +125,8 @@ contract SystemV2 {
         core = new CoreV2(address(voltV1));
 
         volt = new VoltV2(address(core));
+
+        lock = new GlobalReentrancyLock(address(core));
 
         /// all addresses will be able to execute
         address[] memory executorAddresses = new address[](0);
@@ -255,6 +259,7 @@ contract SystemV2 {
             IGlobalSystemExitRateLimiter(address(gserl))
         );
         core.setPCVOracle(IPCVOracle(address(pcvOracle)));
+        core.setGlobalReentrancyLock(IGlobalReentrancyLock(address(lock)));
 
         /// Grant Roles
         core.grantGovernor(address(timelockController));

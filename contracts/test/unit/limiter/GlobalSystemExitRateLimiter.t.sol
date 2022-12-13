@@ -11,6 +11,7 @@ import {TestAddresses} from "./../utils/TestAddresses.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "../../../limiter/GlobalSystemExitRateLimiter.sol";
 import {getCoreV2, getVoltAddresses, VoltAddresses} from "./../utils/Fixtures.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../core/GlobalReentrancyLock.sol";
 
 /// deployment steps
 /// 1. core v2
@@ -25,10 +26,11 @@ contract GlobalSystemExitRateLimiterUnitTest is Test {
 
     VoltAddresses public guardianAddresses = getVoltAddresses();
 
-    GlobalSystemExitRateLimiter public gserl;
-    address private coreAddress;
     CoreV2 private core;
     IERC20 private volt;
+    address private coreAddress;
+    GlobalReentrancyLock public lock;
+    GlobalSystemExitRateLimiter public gserl;
 
     /// ---------- GSERL PARAMS ----------
 
@@ -45,6 +47,7 @@ contract GlobalSystemExitRateLimiterUnitTest is Test {
         vm.warp(1); /// warp past 0
         core = getCoreV2();
         coreAddress = address(core);
+        lock = new GlobalReentrancyLock(coreAddress);
         volt = core.volt();
         gserl = new GlobalSystemExitRateLimiter(
             coreAddress,
@@ -54,6 +57,8 @@ contract GlobalSystemExitRateLimiterUnitTest is Test {
         );
 
         vm.startPrank(addresses.governorAddress);
+
+        core.setGlobalReentrancyLock(IGlobalReentrancyLock(address(lock)));
 
         core.grantLocker(address(this));
         core.grantLocker(address(gserl));
@@ -122,7 +127,7 @@ contract GlobalSystemExitRateLimiterUnitTest is Test {
 
         uint256 startingBuffer = gserl.buffer();
 
-        core.lock(1);
+        lock.lock(1);
         gserl.depleteBuffer(amount);
 
         uint256 endingBuffer = gserl.buffer();

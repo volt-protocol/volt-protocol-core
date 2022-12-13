@@ -1,6 +1,8 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {PermissionsV2} from "./PermissionsV2.sol";
+import {VoltRoles} from "./VoltRoles.sol";
+import {CoreRefV2} from "./../refs/CoreRefV2.sol";
 import {IGlobalReentrancyLock} from "./IGlobalReentrancyLock.sol";
 
 /// @notice inpsired by the openzeppelin reentrancy guard smart contracts
@@ -22,7 +24,7 @@ import {IGlobalReentrancyLock} from "./IGlobalReentrancyLock.sol";
 /// @dev in the EVM. 160bits / 8 bits per byte = 20 bytes
 /// https://docs.soliditylang.org/en/develop/types.html#address
 
-abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
+contract GlobalReentrancyLock is IGlobalReentrancyLock, CoreRefV2 {
     /// -------------------------------------------------
     /// -------------------------------------------------
     /// ------------------- Constants -------------------
@@ -77,15 +79,8 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// @notice system lock level
     uint8 private _lockLevel;
 
-    /// @notice only locker role is allowed to call in and
-    /// set entered or not entered for status level one
-    modifier onlyLocker() {
-        require(
-            hasRole(LOCKER_ROLE, msg.sender),
-            "GlobalReentrancyLock: missing locker role"
-        );
-        _;
-    }
+    /// @param core reference to core
+    constructor(address core) CoreRefV2(core) {}
 
     /// ---------- View Only APIs ----------
 
@@ -122,7 +117,9 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// @dev only valid state transitions:
     /// - lock to level 1 from level 0
     /// - lock to level 2 from level 1
-    function lock(uint8 toLock) external override onlyLocker {
+    function lock(
+        uint8 toLock
+    ) external override onlyVoltRole(VoltRoles.LOCKER) {
         uint8 currentLevel = _lockLevel; /// cache to save 1 warm SLOAD
 
         require(
@@ -171,7 +168,9 @@ abstract contract GlobalReentrancyLock is IGlobalReentrancyLock, PermissionsV2 {
     /// @dev only valid state transitions:
     /// - unlock to level 0 from level 1 as original locker in same block as lock
     /// - lock from level 2 down to level 1 in same block as lock
-    function unlock(uint8 toUnlock) external override onlyLocker {
+    function unlock(
+        uint8 toUnlock
+    ) external override onlyVoltRole(VoltRoles.LOCKER) {
         uint8 currentLevel = _lockLevel;
 
         require(

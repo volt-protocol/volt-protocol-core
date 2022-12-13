@@ -9,6 +9,7 @@ import {DSTest} from "./../unit/utils/DSTest.sol";
 import {CoreV2} from "../../core/CoreV2.sol";
 import {ICoreV2} from "../../core/ICoreV2.sol";
 import {Constants} from "../../Constants.sol";
+import {getCoreV2} from "./../unit/utils/Fixtures.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
 import {SystemEntry} from "../../entry/SystemEntry.sol";
@@ -17,7 +18,7 @@ import {IOraclePassThrough} from "../../oracle/IOraclePassThrough.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../limiter/GlobalRateLimitedMinter.sol";
 import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
-import {getCoreV2} from "./../unit/utils/Fixtures.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../core/GlobalReentrancyLock.sol";
 
 /// Differential Test that compares current production PSM to the new PSM
 /// to ensure parity in behavior
@@ -34,6 +35,7 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
     IVolt private tmpVolt;
     CoreV2 private tmpCore;
     SystemEntry public entry;
+    GlobalReentrancyLock private lock;
     GlobalRateLimitedMinter public grlm;
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
     IERC20 private dai = IERC20(MainnetAddresses.DAI);
@@ -67,6 +69,7 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
     function setUp() public {
         tmpCore = getCoreV2();
         tmpVolt = tmpCore.volt();
+        lock = new GlobalReentrancyLock(address(tmpCore));
 
         /// create PSM
         cleanPsm = new PegStabilityModule(
@@ -91,6 +94,7 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
 
         vm.startPrank(addresses.governorAddress);
 
+        tmpCore.setGlobalReentrancyLock(IGlobalReentrancyLock(address(lock)));
         tmpCore.setGlobalRateLimitedMinter(
             IGlobalRateLimitedMinter(address(grlm))
         );
@@ -497,7 +501,7 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
     /// @notice withdraw succeeds with correct permissions
     function testWithdrawSuccess() public {
         vm.prank(address(cleanPsm));
-        tmpCore.lock(1);
+        lock.lock(1);
 
         vm.prank(addresses.governorAddress);
         tmpCore.grantPCVController(address(this));

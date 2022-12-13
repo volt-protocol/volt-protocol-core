@@ -17,9 +17,10 @@ import {Test, console2} from "../../../../forge-std/src/Test.sol";
 import {NonCustodialPSM} from "../../../peg/NonCustodialPSM.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
-import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../../limiter/GlobalRateLimitedMinter.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 import {getCoreV2, getLocalOracleSystem} from "./../../unit/utils/Fixtures.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../core/GlobalReentrancyLock.sol";
+import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../../limiter/GlobalRateLimitedMinter.sol";
 
 /// PSM Unit Test that tests new PSM to ensure proper behavior
 contract UnitTestPegStabilityModule is Test {
@@ -32,8 +33,9 @@ contract UnitTestPegStabilityModule is Test {
     ICoreV2 private core;
     SystemEntry private entry;
     IERC20 private underlyingToken;
-    VoltSystemOracle private oracle;
     PCVGuardian private pcvGuardian;
+    VoltSystemOracle private oracle;
+    IGlobalReentrancyLock private lock;
     GlobalRateLimitedMinter private grlm;
 
     uint256 public constant mintAmount = 10_000_000e18;
@@ -61,6 +63,9 @@ contract UnitTestPegStabilityModule is Test {
         core = getCoreV2();
         volt = core.volt();
         (oracle, ) = getLocalOracleSystem(address(core), voltFloorPrice);
+        lock = IGlobalReentrancyLock(
+            address(new GlobalReentrancyLock(address(core)))
+        );
 
         /// create PSM
         psm = new PegStabilityModule(
@@ -94,10 +99,13 @@ contract UnitTestPegStabilityModule is Test {
 
         vm.startPrank(addresses.governorAddress);
 
-        core.grantPCVController(address(pcvGuardian));
         core.setGlobalRateLimitedMinter(
             IGlobalRateLimitedMinter(address(grlm))
         );
+        core.setGlobalReentrancyLock(lock);
+
+        core.grantPCVController(address(pcvGuardian));
+
         core.grantMinter(address(grlm));
 
         core.grantRateLimitedRedeemer(address(psm));

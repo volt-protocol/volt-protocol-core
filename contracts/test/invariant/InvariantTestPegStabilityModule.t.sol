@@ -8,16 +8,17 @@ import {Vm} from "../unit/utils/Vm.sol";
 import {DSTest} from "../unit/utils/DSTest.sol";
 import {ICoreV2} from "../../core/ICoreV2.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
+import {getCoreV2} from "../unit/utils/Fixtures.sol";
 import {MockMorpho} from "../../mock/MockMorpho.sol";
-import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
 import {IPCVOracle} from "../../oracle/IPCVOracle.sol";
+import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
 import {MockPCVOracle} from "../../mock/MockPCVOracle.sol";
 import {DSInvariantTest} from "../unit/utils/DSInvariantTest.sol";
 import {VoltSystemOracle} from "../../oracle/VoltSystemOracle.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../limiter/GlobalRateLimitedMinter.sol";
 import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
-import {getCoreV2} from "../unit/utils/Fixtures.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../core/GlobalReentrancyLock.sol";
 
 /// note all variables have to be public and not immutable otherwise foundry
 /// will not run invariant tests
@@ -33,6 +34,7 @@ contract InvariantTestPegStabilityModule is DSTest, DSInvariantTest {
     PCVGuardian public pcvGuardian;
     MockPCVOracle public pcvOracle;
     VoltSystemOracle private oracle;
+    IGlobalReentrancyLock private lock;
     GlobalRateLimitedMinter public grlm;
     PegStabilityModuleTest public morphoTest;
 
@@ -57,6 +59,9 @@ contract InvariantTestPegStabilityModule is DSTest, DSInvariantTest {
     function setUp() public {
         pcvOracle = new MockPCVOracle();
         core = getCoreV2();
+        lock = IGlobalReentrancyLock(
+            address(new GlobalReentrancyLock(address(core)))
+        );
         token = new MockERC20();
         oracle = new VoltSystemOracle(
             address(core),
@@ -115,6 +120,7 @@ contract InvariantTestPegStabilityModule is DSTest, DSInvariantTest {
         core.setGlobalRateLimitedMinter(
             IGlobalRateLimitedMinter(address(grlm))
         );
+        core.setGlobalReentrancyLock(lock);
 
         vm.stopPrank();
 

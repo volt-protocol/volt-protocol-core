@@ -5,14 +5,15 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {IGlobalRateLimitedMinter} from "../limiter/IGlobalRateLimitedMinter.sol";
-import {IGlobalSystemExitRateLimiter} from "../limiter/IGlobalSystemExitRateLimiter.sol";
+import {CoreV2} from "../core/CoreV2.sol";
+import {ICoreV2} from "../core/ICoreV2.sol";
 import {VoltRoles} from "./../core/VoltRoles.sol";
 import {ICoreRefV2} from "./ICoreRefV2.sol";
 import {IPCVOracle} from "./../oracle/IPCVOracle.sol";
-import {CoreV2, ICoreV2} from "./../core/CoreV2.sol";
 import {IVolt, IVoltBurn} from "./../volt/IVolt.sol";
 import {IGlobalReentrancyLock} from "./../core/IGlobalReentrancyLock.sol";
+import {IGlobalRateLimitedMinter} from "../limiter/IGlobalRateLimitedMinter.sol";
+import {IGlobalSystemExitRateLimiter} from "../limiter/IGlobalSystemExitRateLimiter.sol";
 
 /// @title A Reference to Core
 /// @author Volt Protocol
@@ -31,21 +32,21 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     /// 2. execute the code
     /// 3. call core and unlock the lock
     modifier globalLock(uint8 level) {
-        uint8 startingLevel = _core.lockLevel();
+        IGlobalReentrancyLock lock = globalReentrancyLock();
+        uint8 startingLevel = lock.lockLevel();
         require(
             startingLevel < level,
             "CoreRef: cannot lock less than current level"
         );
-        _core.lock(level);
+        lock.lock(level);
         _;
-        _core.unlock(startingLevel);
+        lock.unlock(startingLevel);
     }
 
     modifier isGlobalReentrancyLocked() {
-        require(
-            IGlobalReentrancyLock(address(_core)).isLocked(),
-            "CoreRef: System not locked"
-        );
+        IGlobalReentrancyLock lock = globalReentrancyLock();
+
+        require(lock.isLocked(), "CoreRef: System not locked");
         _;
     }
 
@@ -185,6 +186,17 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         returns (IGlobalRateLimitedMinter)
     {
         return _core.globalRateLimitedMinter();
+    }
+
+    /// @notice address of the Global Reentrancy Lock contract reference
+    /// @return address as type IGlobalReentrancyLock
+    function globalReentrancyLock()
+        public
+        view
+        override
+        returns (IGlobalReentrancyLock)
+    {
+        return _core.globalReentrancyLock();
     }
 
     /// @notice address of the GlobalSystemExitRateLimiter contract referenced by Core

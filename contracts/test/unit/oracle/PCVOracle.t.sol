@@ -13,6 +13,7 @@ import {SystemEntry} from "../../../entry/SystemEntry.sol";
 import {MockOracleV2} from "../../../mock/MockOracleV2.sol";
 import {MockPCVDepositV3} from "../../../mock/MockPCVDepositV3.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../core/GlobalReentrancyLock.sol";
 
 contract PCVOracleUnitTest is Test {
     CoreV2 private core;
@@ -30,6 +31,8 @@ contract PCVOracleUnitTest is Test {
     // test Oracles
     MockOracleV2 private oracle1;
     MockOracleV2 private oracle2;
+
+    GlobalReentrancyLock public lock;
 
     // PCVOracle events
     event VenueOracleUpdated(
@@ -63,6 +66,7 @@ contract PCVOracleUnitTest is Test {
         core = CoreV2(address(getCoreV2()));
         pcvOracle = new PCVOracle(address(core));
         entry = new SystemEntry(address(core));
+        lock = new GlobalReentrancyLock(address(core));
 
         // mock utils
         oracle1 = new MockOracleV2();
@@ -74,6 +78,7 @@ contract PCVOracleUnitTest is Test {
 
         // grant role
         vm.startPrank(addresses.governorAddress);
+        core.setGlobalReentrancyLock(IGlobalReentrancyLock(address(lock)));
         core.grantLocker(address(entry));
         core.grantLocker(address(pcvOracle));
         core.grantLocker(address(deposit1));
@@ -500,7 +505,7 @@ contract PCVOracleUnitTest is Test {
 
         // A call from an illiquid PCVDeposit refreshes accounting
         vm.startPrank(address(deposit2));
-        core.lock(1);
+        lock.lock(1);
         vm.expectEmit(true, false, false, true, address(pcvOracle));
         emit PCVUpdated(
             address(deposit2),
@@ -510,12 +515,12 @@ contract PCVOracleUnitTest is Test {
             150e18
         );
         pcvOracle.updateIlliquidBalance(int256(400e6), int256(150e6));
-        core.unlock(0);
+        lock.unlock(0);
         vm.stopPrank();
 
         // A call from a liquid PCVDeposit refreshes accounting
         vm.startPrank(address(deposit1));
-        core.lock(1);
+        lock.lock(1);
         vm.expectEmit(true, false, false, true, address(pcvOracle));
         emit PCVUpdated(
             address(deposit1),
@@ -525,7 +530,7 @@ contract PCVOracleUnitTest is Test {
             100e18
         );
         pcvOracle.updateLiquidBalance(int256(300e18), int256(100e18));
-        core.unlock(0);
+        lock.unlock(0);
         vm.stopPrank();
     }
 
@@ -594,10 +599,10 @@ contract PCVOracleUnitTest is Test {
         // even if the PCVDeposit has the proper roles, it doesn't have
         // an oracle configured.
         vm.startPrank(address(newDeposit));
-        core.lock(1);
+        lock.lock(1);
         vm.expectRevert(bytes("PCVOracle: invalid caller deposit"));
         pcvOracle.updateLiquidBalance(1e18, 0);
-        core.unlock(0);
+        lock.unlock(0);
         vm.stopPrank();
     }
 }

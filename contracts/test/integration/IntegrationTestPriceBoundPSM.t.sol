@@ -11,6 +11,7 @@ import {DSTest} from "./../unit/utils/DSTest.sol";
 import {ICoreV2} from "../../core/ICoreV2.sol";
 import {Constants} from "../../Constants.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
+import {getCoreV2} from "../unit/utils/Fixtures.sol";
 import {IPCVDeposit} from "../../pcv/IPCVDeposit.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {MockPCVDepositV2} from "../../mock/MockPCVDepositV2.sol";
@@ -20,7 +21,7 @@ import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../limiter/GlobalRateLimitedMinter.sol";
 import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
-import {getCoreV2} from "../unit/utils/Fixtures.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../core/GlobalReentrancyLock.sol";
 
 contract IntegrationTestPriceBoundPSMTest is DSTest {
     using SafeCast for *;
@@ -28,9 +29,9 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     IVolt private volt;
     ICoreV2 private core;
     PegStabilityModule private psm;
-    IVolt private fei = IVolt(MainnetAddresses.FEI);
-    IVolt private underlyingToken = fei;
+    IGlobalReentrancyLock public lock;
     GlobalRateLimitedMinter public grlm;
+    IVolt private fei = IVolt(MainnetAddresses.FEI);
 
     /// --------------- Minting Params ---------------
 
@@ -63,6 +64,9 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     function setUp() public {
         core = getCoreV2();
         volt = core.volt();
+        lock = IGlobalReentrancyLock(
+            address(new GlobalReentrancyLock(address(core)))
+        );
 
         /// create PSM
         psm = new PegStabilityModule(
@@ -84,9 +88,12 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
         );
 
         vm.startPrank(addresses.governorAddress);
+
         core.setGlobalRateLimitedMinter(
             IGlobalRateLimitedMinter(address(grlm))
         );
+        core.setGlobalReentrancyLock(lock);
+
         core.grantLocker(address(grlm)); /// allow setting of reentrancy lock
         core.grantMinter(address(grlm));
 
@@ -150,13 +157,11 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
         uint256 amountStableIn = 101_000;
         uint256 amountVoltOut = psm.getMintAmountOut(amountStableIn);
 
-        underlyingToken.approve(address(psm), amountStableIn);
+        fei.approve(address(psm), amountStableIn);
         psm.mint(address(this), amountStableIn, amountVoltOut);
 
         uint256 endingUserVoltBalance = volt.balanceOf(address(this));
-        uint256 endingPSMUnderlyingBalance = underlyingToken.balanceOf(
-            address(psm)
-        );
+        uint256 endingPSMUnderlyingBalance = fei.balanceOf(address(psm));
 
         assertEq(
             endingPSMUnderlyingBalance,
@@ -170,7 +175,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
         uint256 userStartingVoltBalance = volt.balanceOf(address(this));
         uint256 minAmountOut = psm.getMintAmountOut(mintAmount);
 
-        underlyingToken.approve(address(psm), mintAmount);
+        fei.approve(address(psm), mintAmount);
         uint256 amountVoltOut = psm.mint(
             address(this),
             mintAmount,
@@ -178,9 +183,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
         );
 
         uint256 endingUserVOLTBalance = volt.balanceOf(address(this));
-        uint256 endingPSMUnderlyingBalance = underlyingToken.balanceOf(
-            address(psm)
-        );
+        uint256 endingPSMUnderlyingBalance = fei.balanceOf(address(psm));
 
         assertEq(
             endingUserVOLTBalance,
@@ -195,19 +198,13 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
 
     /// @notice pcv deposit gets depleted on redeem
     function testSwapFeiForUnderlying() public {
-        uint256 startingUserUnderlyingBalance = underlyingToken.balanceOf(
-            address(this)
-        );
+        uint256 startingUserUnderlyingBalance = fei.balanceOf(address(this));
         volt.approve(address(psm), mintAmount);
         uint256 amountOut = psm.redeem(address(this), mintAmount, mintAmount);
 
         uint256 endingUserVOLTBalance = volt.balanceOf(address(this));
-        uint256 endingUserUnderlyingBalance = underlyingToken.balanceOf(
-            address(this)
-        );
-        uint256 endingPSMUnderlyingBalance = underlyingToken.balanceOf(
-            address(psm)
-        );
+        uint256 endingUserUnderlyingBalance = fei.balanceOf(address(this));
+        uint256 endingPSMUnderlyingBalance = fei.balanceOf(address(psm));
 
         assertEq(endingPSMUnderlyingBalance, mintAmount * 100_000 - amountOut);
         assertEq(endingUserVOLTBalance, 0);
@@ -235,7 +232,7 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
     function testERC20WithdrawFailure() public {
         vm.expectRevert(bytes("CoreRef: Caller is not a PCV controller"));
 
-        psm.withdrawERC20(address(underlyingToken), address(this), 100);
+        psm.withdrawERC20(address(fei), address(this), 100);
     }
 
     /// @notice withdraw erc20 succeeds with correct permissions
@@ -244,11 +241,11 @@ contract IntegrationTestPriceBoundPSMTest is DSTest {
         core.grantPCVController(address(this));
 
         vm.prank(feiDaiPsm);
-        underlyingToken.mint(address(psm), mintAmount);
+        fei.mint(address(psm), mintAmount);
 
-        uint256 startingBalance = underlyingToken.balanceOf(address(this));
-        psm.withdrawERC20(address(underlyingToken), address(this), mintAmount);
-        uint256 endingBalance = underlyingToken.balanceOf(address(this));
+        uint256 startingBalance = fei.balanceOf(address(this));
+        psm.withdrawERC20(address(fei), address(this), mintAmount);
+        uint256 endingBalance = fei.balanceOf(address(this));
 
         assertEq(endingBalance - startingBalance, mintAmount);
     }

@@ -21,6 +21,7 @@ import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {IScalingPriceOracle} from "../../../oracle/IScalingPriceOracle.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../core/GlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../../limiter/GlobalRateLimitedMinter.sol";
 import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "../../../limiter/GlobalSystemExitRateLimiter.sol";
 
@@ -70,6 +71,7 @@ contract NonCustodialPSMUnitTest is Test {
     GlobalSystemExitRateLimiter private gserl;
     MockPCVDepositV3 private pcvDeposit;
     PegStabilityModule private custodialPsm;
+    IGlobalReentrancyLock private lock;
 
     address private voltAddress;
     address private coreAddress;
@@ -114,6 +116,9 @@ contract NonCustodialPSMUnitTest is Test {
         volt = IERC20Mintable(address(core.volt()));
         voltAddress = address(volt);
         coreAddress = address(core);
+        lock = IGlobalReentrancyLock(
+            address(new GlobalReentrancyLock(address(core)))
+        );
         entry = new SystemEntry(address(core));
         dai = IERC20Mintable(address(new MockERC20()));
         oracle = new VoltSystemOracle(
@@ -183,6 +188,7 @@ contract NonCustodialPSMUnitTest is Test {
         core.setGlobalSystemExitRateLimiter(
             IGlobalSystemExitRateLimiter(address(gserl))
         );
+        core.setGlobalReentrancyLock(lock);
 
         vm.stopPrank();
 

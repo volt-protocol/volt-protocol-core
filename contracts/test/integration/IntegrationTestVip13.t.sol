@@ -11,6 +11,7 @@ import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {vip13} from "./vip/vip13.sol";
 import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
 import {IPCVGuardian} from "../../pcv/IPCVGuardian.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../core/GlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../limiter/GlobalRateLimitedMinter.sol";
 
 contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
@@ -26,6 +27,7 @@ contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
     VoltSystemOracle public oracle =
         VoltSystemOracle(MainnetAddresses.ORACLE_PASS_THROUGH);
 
+    IGlobalReentrancyLock public lock;
     GlobalRateLimitedMinter public grlm;
 
     /// ---------- GRLM PARAMS ----------
@@ -69,10 +71,14 @@ contract IntegrationTestVIP13 is TimelockSimulation, vip13 {
             rateLimitPerSecondMinting,
             bufferCapMinting
         );
+        lock = IGlobalReentrancyLock(
+            address(new GlobalReentrancyLock(address(coreV2)))
+        );
 
         coreV2.setGlobalRateLimitedMinter(
             IGlobalRateLimitedMinter(address(grlm))
         );
+        coreV2.setGlobalReentrancyLock(lock);
         coreV2.grantMinter(address(grlm));
         coreV2.grantRateLimitedRedeemer(address(voltV2DaiPriceBoundPSM));
         coreV2.grantRateLimitedRedeemer(address(voltV2UsdcPriceBoundPSM));

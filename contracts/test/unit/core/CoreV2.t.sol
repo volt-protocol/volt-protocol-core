@@ -17,6 +17,7 @@ import {IPCVOracle} from "../../../oracle/IPCVOracle.sol";
 import {IGlobalRateLimitedMinter} from "../../../limiter/IGlobalRateLimitedMinter.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 import {IGlobalSystemExitRateLimiter} from "../../../limiter/IGlobalSystemExitRateLimiter.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../core/GlobalReentrancyLock.sol";
 
 contract UnitTestCoreV2 is DSTest {
     CoreV2 private core;
@@ -141,8 +142,26 @@ contract UnitTestCoreV2 is DSTest {
         assertEq(address(core.pcvOracle()), newPcvOracle);
     }
 
+    function testGovernorSetsGlobalReentrancyLock() public {
+        address newGlobalReentrancyLock = address(8794534168787);
+
+        vm.prank(addresses.governorAddress);
+        core.setGlobalReentrancyLock(
+            IGlobalReentrancyLock(newGlobalReentrancyLock)
+        );
+
+        assertEq(address(core.globalReentrancyLock()), newGlobalReentrancyLock);
+    }
+
     function testNonGovernorFailsSettingPCVOracle() public {
         vm.expectRevert("Permissions: Caller is not a governor");
         core.setPCVOracle(IPCVOracle(addresses.userAddress));
+    }
+
+    function testNonGovernorFailsSettingGlobalReentrancyLock() public {
+        vm.expectRevert("Permissions: Caller is not a governor");
+        core.setGlobalReentrancyLock(
+            IGlobalReentrancyLock(addresses.userAddress)
+        );
     }
 }

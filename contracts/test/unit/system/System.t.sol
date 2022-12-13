@@ -22,6 +22,7 @@ import {IScalingPriceOracle} from "../../../oracle/IScalingPriceOracle.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../../limiter/GlobalRateLimitedMinter.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 import {getCoreV2, getVoltAddresses, VoltAddresses} from "./../utils/Fixtures.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../core/GlobalReentrancyLock.sol";
 
 import "hardhat/console.sol";
 
@@ -73,8 +74,10 @@ contract SystemUnitTest is Test {
     ERC20Allocator private allocator;
     CompoundPCVRouter private router;
     VoltSystemOracle private oracle;
-    TimelockController public timelockController;
-    GlobalRateLimitedMinter public grlm;
+    TimelockController private timelockController;
+    GlobalRateLimitedMinter private grlm;
+    IGlobalReentrancyLock private lock;
+
     address private voltAddress;
     address private coreAddress;
     IERC20Mintable private usdc;
@@ -124,6 +127,9 @@ contract SystemUnitTest is Test {
         volt = IERC20Mintable(address(core.volt()));
         voltAddress = address(volt);
         coreAddress = address(core);
+        lock = IGlobalReentrancyLock(
+            address(new GlobalReentrancyLock(coreAddress))
+        );
         dai = IERC20Mintable(address(new MockERC20()));
         usdc = IERC20Mintable(address(new MockERC20()));
         oracle = new VoltSystemOracle(
@@ -236,6 +242,7 @@ contract SystemUnitTest is Test {
         core.setGlobalRateLimitedMinter(
             IGlobalRateLimitedMinter(address(grlm))
         );
+        core.setGlobalReentrancyLock(lock);
 
         allocator.connectPSM(
             address(usdcpsm),

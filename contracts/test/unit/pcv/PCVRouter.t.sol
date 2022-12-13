@@ -15,6 +15,7 @@ import {SystemEntry} from "../../../entry/SystemEntry.sol";
 import {MockPCVSwapper} from "../../../mock/MockPCVSwapper.sol";
 import {MockPCVDepositV3} from "../../../mock/MockPCVDepositV3.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
+import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../core/GlobalReentrancyLock.sol";
 
 contract PCVRouterUnitTest is Test {
     CoreV2 private core;
@@ -25,6 +26,9 @@ contract PCVRouterUnitTest is Test {
 
     // reference to the volt pcv router
     PCVRouter private pcvRouter;
+
+    // global reentrancy lock
+    IGlobalReentrancyLock private lock;
 
     // test Tokens
     MockERC20 private token1;
@@ -70,6 +74,9 @@ contract PCVRouterUnitTest is Test {
         pcvOracle = new PCVOracle(address(core));
         pcvRouter = new PCVRouter(address(core));
         entry = new SystemEntry(address(core));
+        lock = IGlobalReentrancyLock(
+            address(new GlobalReentrancyLock(address(core)))
+        );
 
         // mock utils
         oracle = new MockOracle();
@@ -108,6 +115,7 @@ contract PCVRouterUnitTest is Test {
         core.grantPCVController(address(pcvRouter));
         core.createRole(VoltRoles.PCV_MOVER, VoltRoles.GOVERNOR);
         core.grantRole(VoltRoles.PCV_MOVER, address(this));
+        core.setGlobalReentrancyLock(lock);
         vm.stopPrank();
 
         // setup deposits
@@ -604,7 +612,7 @@ contract PCVRouterUnitTest is Test {
         vm.prank(addresses.governorAddress);
         core.revokeLocker(address(pcvRouter));
 
-        vm.expectRevert("GlobalReentrancyLock: missing locker role");
+        vm.expectRevert("UNAUTHORIZED");
         pcvRouter.movePCV(
             address(depositToken1Liquid), // source
             address(depositToken1Illiquid), // destination
