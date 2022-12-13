@@ -68,7 +68,7 @@ contract vip15 is DSTest, IVIP {
             return;
         }
 
-        /// ------- poker morpho to update p2p indexes -------
+        /// ------- poke morpho to update p2p indexes -------
 
         proposal.push(
             ITimelockSimulation.action({
