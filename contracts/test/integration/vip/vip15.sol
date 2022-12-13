@@ -297,7 +297,7 @@ contract vip15 is DSTest, IVIP {
                     "revokePCVGuardRole(address)",
                     MainnetAddresses.EOA_1
                 ),
-                description: "Revoke Guardian from EOA_1"
+                description: "Revoke PCV_GUARD from EOA_1"
             })
         );
 
