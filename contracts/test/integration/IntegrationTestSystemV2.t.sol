@@ -10,8 +10,6 @@ import {Test} from "../../../forge-std/src/Test.sol";
 import "../../deployment/SystemV2.sol";
 import {VoltRoles} from "../../core/VoltRoles.sol";
 
-import "hardhat/console.sol";
-
 contract IntegrationTestSystemV2 is Test {
     using SafeCast for *;
     SystemV2 systemV2;
@@ -694,15 +692,11 @@ contract IntegrationTestSystemV2 is Test {
             .pcvOracle()
             .getTotalPcv();
 
-        console.log("totalPcv: ", totalPcv);
-        console.log("liquidPcv: ", liquidPcv);
-        console.log("migratedPcv: ", migratedPcv);
-
         // sanity check
         assertEq(liquidPcv, totalPcv);
         assertEq(illiquidPcv, 0);
-        assertGt(totalPcv, 1_900_000e18 - 20_000e18);
-        assertGt(migratedPcv, 1_900_000e18 - 20_000e18);
+        assertGt(totalPcv, 1_500_000e18);
+        assertGt(migratedPcv, 1_500_000e18);
     }
 
     /*
