@@ -65,8 +65,7 @@ contract UnitTestCoreRefV2 is DSTest {
 
         coreRef.setCore(address(0));
 
-        vm.expectRevert();
-        coreRef.core();
+        assertEq(address(coreRef.core()), address(0));
 
         vm.expectRevert();
         coreRef.sweep(voltAddress, address(this), 0);
