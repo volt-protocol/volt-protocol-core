@@ -261,7 +261,6 @@ contract SystemV2 {
         );
         core.setPCVOracle(IPCVOracle(address(pcvOracle)));
         core.setGlobalReentrancyLock(IGlobalReentrancyLock(address(lock)));
-
         /// Grant Roles
         core.grantGovernor(address(timelockController));
         core.grantGovernor(MainnetAddresses.GOVERNOR); /// team multisig
@@ -342,23 +341,17 @@ contract SystemV2 {
         allocator.connectDeposit(address(daipsm), address(morphoDaiPCVDeposit));
 
         /// Configure PCV Oracle
-        address[] memory venues = new address[](4);
+        address[] memory venues = new address[](2);
         venues[0] = address(morphoDaiPCVDeposit);
         venues[1] = address(morphoUsdcPCVDeposit);
-        venues[2] = address(daipsm);
-        venues[3] = address(usdcpsm);
 
-        address[] memory oracles = new address[](4);
+        address[] memory oracles = new address[](2);
         oracles[0] = address(daiConstantOracle);
         oracles[1] = address(usdcConstantOracle);
-        oracles[2] = address(daiConstantOracle);
-        oracles[3] = address(usdcConstantOracle);
 
-        bool[] memory isLiquid = new bool[](4);
+        bool[] memory isLiquid = new bool[](2);
         isLiquid[0] = true;
         isLiquid[1] = true;
-        isLiquid[2] = true;
-        isLiquid[3] = true;
 
         pcvOracle.addVenues(venues, oracles, isLiquid);
 

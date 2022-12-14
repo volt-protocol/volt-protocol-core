@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+
 import {Vm} from "../unit/utils/Vm.sol";
 import {Test} from "../../../forge-std/src/Test.sol";
 
@@ -8,7 +10,10 @@ import {Test} from "../../../forge-std/src/Test.sol";
 import "../../deployment/SystemV2.sol";
 import {VoltRoles} from "../../core/VoltRoles.sol";
 
+import "hardhat/console.sol";
+
 contract IntegrationTestSystemV2 is Test {
+    using SafeCast for *;
     SystemV2 systemV2;
     address public constant user = 0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7;
 
@@ -94,7 +99,7 @@ contract IntegrationTestSystemV2 is Test {
         assertEq(psmToken2, address(systemV2.usdc()));
 
         // pcv oracle
-        assertEq(pcvOracle.getAllVenues().length, 4);
+        assertEq(pcvOracle.getAllVenues().length, 2);
         assertEq(
             pcvOracle.getAllVenues()[0],
             address(systemV2.morphoDaiPCVDeposit())
@@ -103,8 +108,6 @@ contract IntegrationTestSystemV2 is Test {
             pcvOracle.getAllVenues()[1],
             address(systemV2.morphoUsdcPCVDeposit())
         );
-        assertEq(pcvOracle.getAllVenues()[2], address(systemV2.daipsm()));
-        assertEq(pcvOracle.getAllVenues()[3], address(systemV2.usdcpsm()));
 
         // pcv router
         assertTrue(pcvRouter.isPCVSwapper(address(systemV2.pcvSwapperMaker())));
@@ -434,6 +437,8 @@ contract IntegrationTestSystemV2 is Test {
         // setup variables
         uint256 BUFFER_CAP_MINTING = systemV2.BUFFER_CAP_MINTING();
         uint256 amount = BUFFER_CAP_MINTING / 2;
+        uint256 daiTargetBalance = systemV2.DAI_TARGET_BALANCE();
+        uint256 expectDaiBalance = amount - daiTargetBalance;
 
         // at system deloy, buffer is full
         assertEq(grlm.buffer(), BUFFER_CAP_MINTING);
@@ -465,6 +470,7 @@ contract IntegrationTestSystemV2 is Test {
         // psm received DAI
         assertEq(daipsm.balance(), amount);
 
+        allocator.skim(address(morphoDaiPCVDeposit));
         {
             // after first mint, pcv is = amount
             (
@@ -472,9 +478,17 @@ contract IntegrationTestSystemV2 is Test {
                 uint256 illiquidPcv2,
                 uint256 totalPcv2
             ) = pcvOracle.getTotalPcv();
-            assertEq(liquidPcv2, amount);
+            assertApproxEq(
+                liquidPcv2.toInt256(),
+                expectDaiBalance.toInt256(),
+                0
+            );
+            assertApproxEq(
+                totalPcv2.toInt256(),
+                expectDaiBalance.toInt256(),
+                0
+            );
             assertEq(illiquidPcv2, 0);
-            assertEq(totalPcv2, amount);
         }
 
         // user performs the second mint
@@ -495,6 +509,7 @@ contract IntegrationTestSystemV2 is Test {
         // psm received USDC
         assertEq(usdcpsm.balance(), amount / 1e12);
 
+        allocator.skim(address(morphoUsdcPCVDeposit));
         {
             // after second mint, pcv is = 2 * amount
             (
@@ -502,9 +517,17 @@ contract IntegrationTestSystemV2 is Test {
                 uint256 illiquidPcv3,
                 uint256 totalPcv3
             ) = pcvOracle.getTotalPcv();
-            assertEq(liquidPcv3, 2 * amount);
             assertEq(illiquidPcv3, 0);
-            assertEq(totalPcv3, 2 * amount);
+            assertApproxEq(
+                totalPcv3.toInt256(),
+                2 * expectDaiBalance.toInt256(),
+                0
+            );
+            assertApproxEq(
+                liquidPcv3.toInt256(),
+                2 * expectDaiBalance.toInt256(),
+                0
+            );
         }
         vm.snapshot();
 
@@ -671,11 +694,15 @@ contract IntegrationTestSystemV2 is Test {
             .pcvOracle()
             .getTotalPcv();
 
+        console.log("totalPcv: ", totalPcv);
+        console.log("liquidPcv: ", liquidPcv);
+        console.log("migratedPcv: ", migratedPcv);
+
         // sanity check
         assertEq(liquidPcv, totalPcv);
         assertEq(illiquidPcv, 0);
-        assertGt(totalPcv, 1_900_000e18);
-        assertGt(migratedPcv, 1_900_000e18);
+        assertGt(totalPcv, 1_900_000e18 - 20_000e18);
+        assertGt(migratedPcv, 1_900_000e18 - 20_000e18);
     }
 
     /*
