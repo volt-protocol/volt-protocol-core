@@ -34,7 +34,7 @@ contract IntegrationTestSystemV2 is Test {
     function setUp() public {
         systemV2 = new SystemV2();
         systemV2.deploy();
-        systemV2.setUp(address(this));
+        systemV2.setUp(address(systemV2));
         core = systemV2.core();
         dai = systemV2.dai();
         usdc = systemV2.usdc();
