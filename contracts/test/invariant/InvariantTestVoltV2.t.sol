@@ -86,7 +86,7 @@ contract BalanceSum is DSTest {
         }
     }
 
-    function mint(address to, uint256 amount) public {
+    function mint(address to, uint200 amount) public {
         volt.mint(to, amount);
         unchecked {
             sum += amount;
@@ -105,6 +105,14 @@ contract BalanceSum is DSTest {
     }
 
     function burn(uint256 amount) public {
+        volt.burn(amount);
+        unchecked {
+            sum -= amount;
+        }
+    }
+
+    function burnUserVolt(address from, uint256 amount) public {
+        vm.prank(from);
         volt.burn(amount);
         unchecked {
             sum -= amount;
