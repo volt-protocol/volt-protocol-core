@@ -80,11 +80,11 @@ contract SystemV2 {
     /// maximum rate limit per second is 100 VOLT
     uint256 public constant MAX_RATE_LIMIT_PER_SECOND_MINTING = 100e18;
 
-    /// replenish 500k VOLT per day (5.787 VOLT per second)
-    uint128 public constant RATE_LIMIT_PER_SECOND_MINTING = 5787037037037037000;
+    /// replenish 0 VOLT per day
+    uint128 public constant RATE_LIMIT_PER_SECOND_MINTING = 0;
 
-    /// buffer cap of 1.5m VOLT
-    uint128 public constant BUFFER_CAP_MINTING = 1_500_000e18;
+    /// buffer cap of 3m VOLT
+    uint128 public constant BUFFER_CAP_MINTING = 3_000_000e18;
 
     /// ---------- RATE LIMITED MINTER PARAMS ----------
 
@@ -118,7 +118,7 @@ contract SystemV2 {
 
     uint40 public constant VOLT_APR_START_TIME = 1672531200; /// 2023-01-01
     uint200 public constant VOLT_START_PRICE = 1.05e18;
-    uint16 public constant VOLT_MONTHLY_BASIS_POINTS = 18;
+    uint16 public constant VOLT_MONTHLY_BASIS_POINTS = 14;
 
     function deploy() public {
         /// Core
@@ -142,8 +142,8 @@ contract SystemV2 {
         grlm = new GlobalRateLimitedMinter(
             address(core),
             MAX_RATE_LIMIT_PER_SECOND_MINTING,
-            RATE_LIMIT_PER_SECOND_MINTING, /// todo fix this
-            BUFFER_CAP_MINTING /// todo fix this
+            RATE_LIMIT_PER_SECOND_MINTING,
+            BUFFER_CAP_MINTING
         );
         gserl = new GlobalSystemExitRateLimiter(
             address(core),
@@ -155,7 +155,7 @@ contract SystemV2 {
         /// VOLT rate
         vso = new VoltSystemOracle(
             address(core),
-            VOLT_MONTHLY_BASIS_POINTS, /// todo double check this
+            VOLT_MONTHLY_BASIS_POINTS,
             VOLT_APR_START_TIME, /// todo fill in actual value
             VOLT_START_PRICE /// todo fetch this from the old oracle after warping forward 24 hours
         );
