@@ -529,9 +529,11 @@ contract IntegrationTestSystemV2 is Test {
         }
         vm.snapshot();
 
+        vm.prank(address(core));
+        grlm.setRateLimitPerSecond(5.787e18);
+
         // buffer replenishes over time
         vm.warp(block.timestamp + 3 days);
-        assertEq(grlm.buffer(), BUFFER_CAP_MINTING);
 
         // above limit rate reverts
         vm.startPrank(user);
