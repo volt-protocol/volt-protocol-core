@@ -154,7 +154,7 @@ contract PCVRouterUnitTest is Test {
 
     function testSetup() public {
         assertEq(address(pcvRouter.core()), address(core));
-        assertEq(address(pcvRouter.pcvOracle()), address(pcvOracle));
+        assertEq(address(core.pcvOracle()), address(pcvOracle));
         assertEq(pcvRouter.getPCVSwappers().length, 0);
     }
 

@@ -26,28 +26,7 @@ interface ICoreRefV2 {
 
     function unpause() external;
 
-    // ----------- Getters -----------
+    // ----------- Getter -----------
 
     function core() external view returns (ICoreV2);
-
-    function volt() external view returns (IVoltBurn);
-
-    function vcon() external view returns (IERC20);
-
-    function pcvOracle() external view returns (IPCVOracle);
-
-    function globalRateLimitedMinter()
-        external
-        view
-        returns (IGlobalRateLimitedMinter);
-
-    function globalSystemExitRateLimiter()
-        external
-        view
-        returns (IGlobalSystemExitRateLimiter);
-
-    function globalReentrancyLock()
-        external
-        view
-        returns (IGlobalReentrancyLock);
 }
