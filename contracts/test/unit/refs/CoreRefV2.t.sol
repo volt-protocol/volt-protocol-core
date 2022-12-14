@@ -28,15 +28,7 @@ contract UnitTestCoreRefV2 is DSTest {
     }
 
     function testSetup() public {
-        assertEq(
-            address(coreRef.globalRateLimitedMinter()),
-            address(core.globalRateLimitedMinter())
-        );
-        assertEq(address(coreRef.globalRateLimitedMinter()), address(0));
-        assertEq(address(coreRef.volt()), address(core.volt()));
-        assertEq(address(coreRef.vcon()), address(core.vcon()));
         assertEq(address(coreRef.core()), address(core));
-        assertEq(address(coreRef.pcvOracle()), address(0));
     }
 
     function testMinter(address caller) public {
@@ -60,12 +52,12 @@ contract UnitTestCoreRefV2 is DSTest {
 
         assertEq(address(coreRef.core()), address(core2));
 
-        assertTrue(address(coreRef.volt()) != address(core.volt()));
-        assertTrue(address(coreRef.vcon()) != address(core.vcon()));
+        assertTrue(address(coreRef.core().volt()) != address(core.volt()));
+        assertTrue(address(coreRef.core().vcon()) != address(core.vcon()));
     }
 
     function testSetCoreAddressZeroGovSucceedsBricksContract() public {
-        address voltAddress = address(coreRef.volt());
+        address voltAddress = address(coreRef.core().volt());
 
         vm.prank(addresses.governorAddress);
         vm.expectEmit(true, true, false, true, address(coreRef));
@@ -73,12 +65,7 @@ contract UnitTestCoreRefV2 is DSTest {
 
         coreRef.setCore(address(0));
 
-        vm.expectRevert();
-        coreRef.volt();
-        vm.expectRevert();
-        coreRef.vcon();
-        vm.expectRevert();
-        coreRef.globalRateLimitedMinter();
+        assertEq(address(coreRef.core()), address(0));
 
         vm.expectRevert();
         coreRef.sweep(voltAddress, address(this), 0);
@@ -93,13 +80,6 @@ contract UnitTestCoreRefV2 is DSTest {
         coreRef.setCore(address(0));
 
         assertEq(address(coreRef.core()), address(0));
-
-        /// after setting core to address(0), all calls fail
-        vm.expectRevert();
-        coreRef.volt();
-
-        vm.expectRevert();
-        coreRef.vcon();
 
         vm.prank(addresses.governorAddress);
         vm.expectRevert();
@@ -162,7 +142,7 @@ contract UnitTestCoreRefV2 is DSTest {
 
     function testSweepSucceedsGovernor() public {
         uint256 mintAmount = 100;
-        address voltAddress = address(coreRef.volt());
+        address voltAddress = address(coreRef.core().volt());
 
         MockERC20(voltAddress).mint(address(coreRef), mintAmount);
 
@@ -225,7 +205,7 @@ contract UnitTestCoreRefV2 is DSTest {
         vm.prank(addresses.governorAddress);
         coreRef.emergencyAction(calls);
 
-        assertEq(coreRef.volt().balanceOf(address(this)), mintAmount);
+        assertEq(coreRef.core().volt().balanceOf(address(this)), mintAmount);
     }
 
     function testEmergencyActionSucceedsGovernorSendEth(

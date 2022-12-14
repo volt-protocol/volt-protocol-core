@@ -491,7 +491,6 @@ contract vip13 is DSTest, IVIP {
             address(voltV2UsdcPriceBoundPSM.underlyingToken()),
             MainnetAddresses.USDC
         );
-        assertEq(address(voltV2UsdcPriceBoundPSM.volt()), address(voltV2));
         assertEq(
             voltV2.balanceOf(address(voltV2UsdcPriceBoundPSM)),
             voltInUsdcPSM
@@ -517,7 +516,6 @@ contract vip13 is DSTest, IVIP {
             address(voltV2DaiPriceBoundPSM.underlyingToken()),
             address(MainnetAddresses.DAI)
         );
-        assertEq(address(voltV2DaiPriceBoundPSM.volt()), address(voltV2));
         assertEq(
             voltV2.balanceOf(address(voltV2DaiPriceBoundPSM)),
             voltInDaiPSM

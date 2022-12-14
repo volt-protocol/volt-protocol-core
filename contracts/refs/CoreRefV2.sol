@@ -156,28 +156,27 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
 
     /// @notice address of the Volt contract referenced by Core
     /// @return IVoltBurn implementation address
-    function volt() public view override returns (IVoltBurn) {
+    function volt() internal view returns (IVoltBurn) {
         return IVoltBurn(address(_core.volt()));
     }
 
     /// @notice address of the Vcon contract referenced by Core
     /// @return IERC20 implementation address
-    function vcon() public view override returns (IERC20) {
+    function vcon() internal view returns (IERC20) {
         return _core.vcon();
     }
 
     /// @notice address of the PCVOracle contract referenced by Core
     /// @return IPCVOracle implementation address
-    function pcvOracle() public view override returns (IPCVOracle) {
+    function pcvOracle() internal view returns (IPCVOracle) {
         return _core.pcvOracle();
     }
 
     /// @notice address of the GlobalRateLimitedMinter contract referenced by Core
     /// @return IGlobalRateLimitedMinter implementation address
     function globalRateLimitedMinter()
-        public
+        internal
         view
-        override
         returns (IGlobalRateLimitedMinter)
     {
         return _core.globalRateLimitedMinter();
@@ -186,9 +185,8 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     /// @notice address of the Global Reentrancy Lock contract reference
     /// @return address as type IGlobalReentrancyLock
     function globalReentrancyLock()
-        public
+        internal
         view
-        override
         returns (IGlobalReentrancyLock)
     {
         return _core.globalReentrancyLock();
@@ -197,9 +195,8 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     /// @notice address of the GlobalSystemExitRateLimiter contract referenced by Core
     /// @return IGlobalSystemExitRateLimiter implementation address
     function globalSystemExitRateLimiter()
-        public
+        internal
         view
-        override
         returns (IGlobalSystemExitRateLimiter)
     {
         return _core.globalSystemExitRateLimiter();
