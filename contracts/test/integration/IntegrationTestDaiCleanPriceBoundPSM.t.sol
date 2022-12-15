@@ -12,7 +12,6 @@ import {Constants} from "../../Constants.sol";
 import {getCoreV2} from "./../unit/utils/Fixtures.sol";
 import {IVolt, Volt} from "../../volt/Volt.sol";
 import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
-import {SystemEntry} from "../../entry/SystemEntry.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {IOraclePassThrough} from "../../oracle/IOraclePassThrough.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
@@ -34,7 +33,6 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
 
     IVolt private tmpVolt;
     CoreV2 private tmpCore;
-    SystemEntry public entry;
     GlobalReentrancyLock private lock;
     GlobalRateLimitedMinter public grlm;
     IVolt private volt = IVolt(MainnetAddresses.VOLT);
@@ -90,7 +88,6 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
             rateLimitPerSecondMinting,
             bufferCapMinting
         );
-        entry = new SystemEntry(address(tmpCore));
 
         vm.startPrank(addresses.governorAddress);
 
@@ -103,7 +100,6 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
         tmpCore.grantRateLimitedRedeemer(address(cleanPsm));
         tmpCore.grantLocker(address(cleanPsm));
         tmpCore.grantLocker(address(grlm));
-        tmpCore.grantLocker(address(entry));
 
         vm.stopPrank();
 
@@ -541,18 +537,5 @@ contract IntegrationTestDaiCleanPriceBoundPSM is DSTest {
         uint256 endingBalance = underlyingToken.balanceOf(address(this));
 
         assertEq(endingBalance - startingBalance, mintAmount);
-    }
-
-    function testDepositNoOp() public {
-        entry.deposit(address(cleanPsm));
-    }
-
-    /// @notice deposit fails when paused
-    function testDepositFailsWhenPaused() public {
-        vm.prank(addresses.governorAddress);
-        cleanPsm.pause();
-
-        vm.expectRevert("Pausable: paused");
-        entry.deposit(address(cleanPsm));
     }
 }

@@ -91,6 +91,14 @@ interface IPegStabilityModule {
 
     // ----------- Events -----------
 
+    /// @notice event emitted when erc20 tokens are withdrawn
+    event WithdrawERC20(
+        address indexed _caller,
+        address indexed _token,
+        address indexed _to,
+        uint256 _amount
+    );
+
     /// @notice event emitted when excess PCV is allocated
     event AllocateSurplus(address indexed caller, uint256 amount);
 
