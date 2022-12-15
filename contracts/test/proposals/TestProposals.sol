@@ -6,7 +6,8 @@ import {Test} from "../../../forge-std/src/Test.sol";
 import {Addresses} from "./Addresses.sol";
 import {Proposal} from "./proposalTypes/Proposal.sol";
 
-import {vip00} from "./vips/vip00.sol";
+import {vip15} from "./vips/vip15.sol";
+import {vip16} from "./vips/vip16.sol";
 
 /*
 How to use:
@@ -28,7 +29,8 @@ contract TestProposals is Test {
     function setUp() public {
         addresses = new Addresses();
 
-        proposals.push(Proposal(address(new vip00())));
+        proposals.push(Proposal(address(new vip15())));
+        proposals.push(Proposal(address(new vip16())));
     }
 
     function setDebug(bool value) public {
