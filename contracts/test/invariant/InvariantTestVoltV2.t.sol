@@ -11,6 +11,7 @@ import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
 
 /// @dev Modified from Solmate ERC20 Invariant Test (https://github.com/transmissions11/solmate/blob/main/src/test/ERC20.t.sol)
 contract InvariantTestVoltV2 is DSTest, DSInvariantTest {
+    Vm private vm = Vm(HEVM_ADDRESS);
     BalanceSum public balanceSum;
     VoltV2 public volt;
     ICoreV2 public core;
@@ -19,6 +20,9 @@ contract InvariantTestVoltV2 is DSTest, DSInvariantTest {
         core = getCoreV2();
         volt = new VoltV2(address(core));
         balanceSum = new BalanceSum(volt);
+
+        vm.prank(addresses.governorAddress);
+        core.grantMinter(address(balanceSum));
 
         addTargetContract(address(balanceSum));
     }
@@ -82,8 +86,7 @@ contract BalanceSum is DSTest {
         }
     }
 
-    function mint(address to, uint256 amount) public {
-        vm.prank(addresses.governorAddress);
+    function mint(address to, uint200 amount) public {
         volt.mint(to, amount);
         unchecked {
             sum += amount;
@@ -102,6 +105,14 @@ contract BalanceSum is DSTest {
     }
 
     function burn(uint256 amount) public {
+        volt.burn(amount);
+        unchecked {
+            sum -= amount;
+        }
+    }
+
+    function burnUserVolt(address from, uint256 amount) public {
+        vm.prank(from);
         volt.burn(amount);
         unchecked {
             sum -= amount;
