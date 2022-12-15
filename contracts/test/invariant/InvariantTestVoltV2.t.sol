@@ -96,6 +96,10 @@ contract BalanceSum is DSTest {
     }
 
     function burnFrom(address from, uint256 amount) public {
+        if (volt.allowance(from, address(this)) < amount) {
+            return;
+        }
+
         volt.burnFrom(from, amount);
         unchecked {
             sum -= amount;
@@ -105,17 +109,29 @@ contract BalanceSum is DSTest {
     }
 
     function burn(uint256 amount) public {
+        if (volt.balanceOf(address(this)) < amount) {
+            return;
+        }
+
         volt.burn(amount);
         unchecked {
             sum -= amount;
+            checkpointUser(address(this));
+            balances[address(this)] -= amount;
         }
     }
 
     function burnUserVolt(address from, uint256 amount) public {
+        if (volt.balanceOf(from) < amount) {
+            return;
+        }
+
         vm.prank(from);
         volt.burn(amount);
         unchecked {
             sum -= amount;
+            checkpointUser(from);
+            balances[from] -= amount;
         }
     }
 
@@ -125,6 +141,10 @@ contract BalanceSum is DSTest {
     }
 
     function transferFrom(address from, address to, uint256 amount) public {
+        if (volt.allowance(from, to) < amount) {
+            return;
+        }
+
         volt.transferFrom(from, to, amount);
 
         checkpointUser(to);
@@ -137,11 +157,31 @@ contract BalanceSum is DSTest {
     }
 
     function transfer(address to, uint256 amount) public {
+        if (volt.balanceOf(address(this)) < amount) {
+            return;
+        }
+
         volt.transfer(to, amount);
 
         checkpointUser(to);
         unchecked {
             balances[to] += amount;
+            balances[address(this)] -= amount;
+        }
+    }
+
+    function transferUserVolt(address from, address to, uint256 amount) public {
+        if (volt.balanceOf(from) < amount) {
+            return;
+        }
+
+        vm.prank(from);
+        volt.transfer(to, amount);
+
+        checkpointUser(to);
+        unchecked {
+            balances[to] += amount;
+            balances[from] -= amount;
         }
     }
 
