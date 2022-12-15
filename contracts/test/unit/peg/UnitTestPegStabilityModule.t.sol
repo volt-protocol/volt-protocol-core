@@ -423,18 +423,6 @@ contract UnitTestPegStabilityModule is Test {
         assertEq(endingBalance - startingBalance, mintAmount);
     }
 
-    function testDepositNoOp() public {
-        entry.deposit(address(psm));
-    }
-
-    /// @notice deposit fails when paused
-    function testDepositFailsWhenPaused() public {
-        vm.prank(addresses.governorAddress);
-        psm.pause();
-        vm.expectRevert("Pausable: paused");
-        entry.deposit(address(psm));
-    }
-
     /// ----------- ACL TESTS -----------
 
     /// @notice withdraw fails without correct permissions
