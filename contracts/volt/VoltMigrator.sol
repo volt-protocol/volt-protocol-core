@@ -83,6 +83,8 @@ contract VoltMigrator is IVoltMigrator, CoreRefV2 {
         address to,
         uint256 amount
     ) external override onlyGovernor {
+        /// this check is worthless because emergency action will allow
+        /// arbitrary calldata with arbitrary addresses
         require(
             token != address(newVolt),
             "VoltMigrator: cannot sweep new Volt"
