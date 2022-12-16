@@ -71,9 +71,13 @@ contract IntegrationTestSystemV2 is Test {
         uint256 amount = BUFFER_CAP_MINTING / 2;
 
         deal(address(dai), user, amount);
+        vm.label(address(dai), "dai");
+        vm.label(address(usdc), "usdc");
         vm.label(address(volt), "new volt");
-        vm.label(address(this), "address this");
+        vm.label(address(daipsm), "daipsm");
+        vm.label(address(usdcpsm), "usdcpsm");
         vm.label(address(oldVolt), "old volt");
+        vm.label(address(this), "address this");
         vm.label(address(voltMigrator), "Volt Migrator");
         vm.label(address(migratorRouter), "Migrator Router");
     }
@@ -1204,5 +1208,191 @@ contract IntegrationTestSystemV2 is Test {
             amountToSweep
         );
         vm.stopPrank();
+    }
+
+    function testRedeemUsdc(uint72 amountVoltIn) public {
+        _migratorSetup();
+
+        oldVolt.approve(address(migratorRouter), type(uint256).max);
+
+        vm.prank(addresses.minterAddress);
+        volt.mint(address(voltMigrator), amountVoltIn);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        CoreV2(MainnetAddresses.CORE).grantMinter(address(this));
+        oldVolt.mint(address(this), amountVoltIn);
+
+        uint256 startBalance = usdc.balanceOf(address(this));
+        uint256 minAmountOut = usdcpsm.getRedeemAmountOut(amountVoltIn);
+
+        deal(address(usdc), address(usdcpsm), minAmountOut);
+
+        uint256 currentPegPrice = systemV2.vso().getCurrentOraclePrice() / 1e12;
+        uint256 amountOut = (amountVoltIn * currentPegPrice) / 1e18;
+
+        uint256 redeemedAmount = migratorRouter.redeemUSDC(
+            amountVoltIn,
+            minAmountOut
+        );
+        uint256 endBalance = usdc.balanceOf(address(this));
+
+        assertApproxEq(minAmountOut.toInt256(), amountOut.toInt256(), 0);
+        assertEq(minAmountOut, endBalance - startBalance);
+        assertEq(redeemedAmount, minAmountOut);
+    }
+
+    function testRedeemDai(uint72 amountVoltIn) public {
+        _migratorSetup();
+
+        oldVolt.approve(address(migratorRouter), type(uint256).max);
+
+        vm.prank(addresses.minterAddress);
+        volt.mint(address(voltMigrator), amountVoltIn);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        CoreV2(MainnetAddresses.CORE).grantMinter(address(this));
+        oldVolt.mint(address(this), amountVoltIn);
+
+        uint256 startBalance = dai.balanceOf(address(this));
+        uint256 minAmountOut = daipsm.getRedeemAmountOut(amountVoltIn);
+
+        deal(address(dai), address(daipsm), minAmountOut);
+
+        uint256 currentPegPrice = systemV2.vso().getCurrentOraclePrice();
+        uint256 amountOut = (amountVoltIn * currentPegPrice) / 1e18;
+
+        uint256 redeemedAmount = migratorRouter.redeemDai(
+            amountVoltIn,
+            minAmountOut
+        );
+        uint256 endBalance = dai.balanceOf(address(this));
+
+        assertApproxEq(minAmountOut.toInt256(), amountOut.toInt256(), 0);
+        assertEq(minAmountOut, endBalance - startBalance);
+        assertEq(redeemedAmount, minAmountOut);
+    }
+
+    function testRedeemDaiFailsUserNotEnoughVolt() public {
+        oldVolt.approve(address(migratorRouter), type(uint256).max);
+
+        uint256 minAmountOut = daipsm.getRedeemAmountOut(mintAmount);
+
+        vm.expectRevert("ERC20: transfer amount exceeds balance");
+        migratorRouter.redeemDai(mintAmount, minAmountOut);
+    }
+
+    function testRedeemUsdcFailsUserNotEnoughVolt() public {
+        oldVolt.approve(address(migratorRouter), type(uint256).max);
+
+        uint256 minAmountOut = daipsm.getRedeemAmountOut(mintAmount);
+
+        vm.expectRevert("ERC20: transfer amount exceeds balance");
+        migratorRouter.redeemUSDC(mintAmount, minAmountOut);
+    }
+
+    function testRedeemDaiFailUnderfundedPSM() public {
+        _migratorSetup();
+
+        oldVolt.approve(address(migratorRouter), type(uint256).max);
+
+        vm.prank(addresses.minterAddress);
+        volt.mint(address(voltMigrator), mintAmount);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        CoreV2(MainnetAddresses.CORE).grantMinter(address(this));
+        oldVolt.mint(address(this), mintAmount);
+
+        uint256 balance = dai.balanceOf(address(daipsm));
+        vm.prank(address(daipsm));
+        dai.transfer(address(0), balance);
+
+        uint256 minAmountOut = daipsm.getRedeemAmountOut(mintAmount);
+
+        vm.expectRevert("Dai/insufficient-balance");
+        migratorRouter.redeemDai(mintAmount, minAmountOut);
+    }
+
+    function testRedeemUsdcFailUnderfundedPSM() public {
+        _migratorSetup();
+
+        oldVolt.approve(address(migratorRouter), type(uint256).max);
+
+        vm.prank(addresses.minterAddress);
+        volt.mint(address(voltMigrator), mintAmount);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        CoreV2(MainnetAddresses.CORE).grantMinter(address(this));
+        oldVolt.mint(address(this), mintAmount);
+
+        uint256 balance = usdc.balanceOf(address(usdcpsm));
+        vm.prank(address(usdcpsm));
+        usdc.transfer(address(1), balance);
+
+        uint256 minAmountOut = usdcpsm.getRedeemAmountOut(mintAmount);
+
+        vm.expectRevert("ERC20: transfer amount exceeds balance");
+        migratorRouter.redeemUSDC(mintAmount, minAmountOut);
+    }
+
+    function testRedeemDaiFailNoUserApproval() public {
+        _migratorSetup();
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        CoreV2(MainnetAddresses.CORE).grantMinter(address(this));
+        oldVolt.mint(address(this), mintAmount);
+
+        vm.prank(addresses.minterAddress);
+        volt.mint(address(voltMigrator), mintAmount);
+
+        uint256 minAmountOut = daipsm.getRedeemAmountOut(mintAmount);
+
+        vm.expectRevert("ERC20: transfer amount exceeds allowance");
+        migratorRouter.redeemDai(mintAmount, minAmountOut);
+    }
+
+    function testRedeemUsdcFailNoUserApproval() public {
+        _migratorSetup();
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        CoreV2(MainnetAddresses.CORE).grantMinter(address(this));
+        oldVolt.mint(address(this), mintAmount);
+
+        vm.prank(addresses.minterAddress);
+        volt.mint(address(voltMigrator), mintAmount);
+
+        uint256 minAmountOut = daipsm.getRedeemAmountOut(mintAmount);
+
+        vm.expectRevert("ERC20: transfer amount exceeds allowance");
+        migratorRouter.redeemUSDC(mintAmount, minAmountOut);
+    }
+
+    function testRedeemDaiFailUnderfundedMigrator() public {
+        _migratorSetup();
+
+        oldVolt.approve(address(migratorRouter), type(uint256).max);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        CoreV2(MainnetAddresses.CORE).grantMinter(address(this));
+        oldVolt.mint(address(this), mintAmount);
+
+        uint256 minAmountOut = usdcpsm.getRedeemAmountOut(mintAmount);
+
+        vm.expectRevert(stdError.arithmeticError);
+        migratorRouter.redeemDai(mintAmount, minAmountOut);
+    }
+
+    function testRedeemUsdcFailUnderfundedMigrator() public {
+        _migratorSetup();
+
+        oldVolt.approve(address(migratorRouter), type(uint256).max);
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        CoreV2(MainnetAddresses.CORE).grantMinter(address(this));
+        oldVolt.mint(address(this), mintAmount);
+
+        uint256 minAmountOut = usdcpsm.getRedeemAmountOut(mintAmount);
+
+        vm.expectRevert(stdError.arithmeticError);
+        migratorRouter.redeemUSDC(mintAmount, minAmountOut);
     }
 }
