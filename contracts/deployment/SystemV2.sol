@@ -6,27 +6,29 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {Test} from "../../forge-std/src/Test.sol";
-import {CoreV2} from "../core/CoreV2.sol";
-import {Deviation} from "../utils/Deviation.sol";
-import {SystemEntry} from "../entry/SystemEntry.sol";
 import {IVolt} from "../volt/IVolt.sol";
+import {CoreV2} from "../core/CoreV2.sol";
 import {VoltV2} from "../volt/VoltV2.sol";
 import {VoltRoles} from "../core/VoltRoles.sol";
 import {MockERC20} from "../mock/MockERC20.sol";
-import {PCVGuardian} from "../pcv/PCVGuardian.sol";
 import {PCVRouter} from "../pcv/PCVRouter.sol";
-import {MockCoreRefV2} from "../mock/MockCoreRefV2.sol";
-import {ERC20Allocator} from "../pcv/utils/ERC20Allocator.sol";
-import {NonCustodialPSM} from "../peg/NonCustodialPSM.sol";
-import {VoltSystemOracle} from "../oracle/VoltSystemOracle.sol";
-import {ConstantPriceOracle} from "../oracle/ConstantPriceOracle.sol";
+import {Deviation} from "../utils/Deviation.sol";
 import {PCVOracle} from "../oracle/PCVOracle.sol";
 import {IPCVOracle} from "../oracle/IPCVOracle.sol";
-import {MainnetAddresses} from "../test/integration/fixtures/MainnetAddresses.sol";
+import {PCVGuardian} from "../pcv/PCVGuardian.sol";
+import {SystemEntry} from "../entry/SystemEntry.sol";
+import {MockCoreRefV2} from "../mock/MockCoreRefV2.sol";
+import {MigratorRouter} from "../pcv/MigratorRouter.sol";
+import {ERC20Allocator} from "../pcv/utils/ERC20Allocator.sol";
+import {NonCustodialPSM} from "../peg/NonCustodialPSM.sol";
 import {MakerPCVSwapper} from "../pcv/maker/MakerPCVSwapper.sol";
+import {VoltSystemOracle} from "../oracle/VoltSystemOracle.sol";
+import {MainnetAddresses} from "../test/integration/fixtures/MainnetAddresses.sol";
 import {PegStabilityModule} from "../peg/PegStabilityModule.sol";
+import {ConstantPriceOracle} from "../oracle/ConstantPriceOracle.sol";
 import {IPCVDeposit, PCVDeposit} from "../pcv/PCVDeposit.sol";
 import {MorphoCompoundPCVDeposit} from "../pcv/morpho/MorphoCompoundPCVDeposit.sol";
+import {IVoltMigrator, VoltMigrator} from "../volt/VoltMigrator.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../core/GlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../limiter/GlobalRateLimitedMinter.sol";
 import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "../limiter/GlobalSystemExitRateLimiter.sol";
@@ -49,6 +51,10 @@ contract SystemV2 {
 
     /// VOLT rate
     VoltSystemOracle public vso;
+
+    /// Volt Migration
+    VoltMigrator public voltMigrator;
+    MigratorRouter public migratorRouter;
 
     /// PCV Deposits
     MorphoCompoundPCVDeposit public morphoDaiPCVDeposit;
@@ -221,6 +227,15 @@ contract SystemV2 {
             IPCVDeposit(address(morphoDaiPCVDeposit))
         );
         allocator = new ERC20Allocator(address(core));
+
+        voltMigrator = new VoltMigrator(address(core), IVolt(address(volt)));
+
+        migratorRouter = new MigratorRouter(
+            IVolt(address(volt)),
+            IVoltMigrator(address(voltMigrator)),
+            daipsm,
+            usdcpsm
+        );
 
         /// PCV Movement
         systemEntry = new SystemEntry(address(core));
