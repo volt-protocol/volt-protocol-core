@@ -46,7 +46,6 @@ contract SystemV2DeployScript is Script, SystemV2 {
         console.log("PCV_ORACLE =", address(pcvOracle));
         console.log("ORACLE_CONSTANT_DAI =", address(daiConstantOracle));
         console.log("ORACLE_CONSTANT_USDC =", address(usdcConstantOracle));
-        console.log("ORACLE_CONSTANT_USDC =", address(usdcConstantOracle));
         console.log("VOLT_MIGRATOR =", address(voltMigrator));
         console.log("MIGRATOR_ROUTER =", address(migratorRouter));
     }
