@@ -141,7 +141,10 @@ contract BalanceSum is DSTest {
     }
 
     function transferFrom(address from, address to, uint256 amount) public {
-        if (volt.allowance(from, to) < amount) {
+        if (
+            volt.balanceOf(from) < amount ||
+            volt.allowance(from, address(this)) < amount
+        ) {
             return;
         }
 
@@ -164,6 +167,7 @@ contract BalanceSum is DSTest {
         volt.transfer(to, amount);
 
         checkpointUser(to);
+        checkpointUser(address(this)); /// sent from this contract
         unchecked {
             balances[to] += amount;
             balances[address(this)] -= amount;
@@ -179,6 +183,7 @@ contract BalanceSum is DSTest {
         volt.transfer(to, amount);
 
         checkpointUser(to);
+        checkpointUser(from);
         unchecked {
             balances[to] += amount;
             balances[from] -= amount;
