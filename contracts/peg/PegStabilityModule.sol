@@ -12,7 +12,7 @@ import {PCVDeposit} from "./../pcv/PCVDeposit.sol";
 import {IPCVDeposit} from "./../pcv/IPCVDeposit.sol";
 import {IPegStabilityModule} from "./IPegStabilityModule.sol";
 
-contract PegStabilityModule is IPegStabilityModule, OracleRefV2, PCVDeposit {
+contract PegStabilityModule is IPegStabilityModule, OracleRefV2 {
     using SafeERC20 for IERC20;
     using SafeCast for *;
 
@@ -84,9 +84,21 @@ contract PegStabilityModule is IPegStabilityModule, OracleRefV2, PCVDeposit {
     function withdraw(
         address to,
         uint256 amount
-    ) external virtual override onlyPCVController globalLock(2) {
-        _withdrawERC20(address(underlyingToken), to, amount);
-        _liquidPcvOracleHook(-(amount.toInt256()), 0);
+    ) external virtual onlyPCVController globalLock(2) {
+        underlyingToken.safeTransfer(to, amount);
+    }
+
+    /// @notice withdraw ERC20 from the contract
+    /// @param token address of the ERC20 to send
+    /// @param to address destination of the ERC20
+    /// @param amount quantity of ERC20 to send
+    function withdrawERC20(
+        address token,
+        address to,
+        uint256 amount
+    ) external onlyPCVController {
+        IERC20(token).safeTransfer(to, amount);
+        emit WithdrawERC20(msg.sender, token, to, amount);
     }
 
     // ----------- Public State Changing API -----------
@@ -125,8 +137,6 @@ contract PegStabilityModule is IPegStabilityModule, OracleRefV2, PCVDeposit {
         globalRateLimitedMinter().replenishBuffer(amountVoltIn); /// Effect -- trusted contract
 
         underlyingToken.safeTransfer(to, amountOut); /// Interaction -- untrusted contract
-
-        _liquidPcvOracleHook(-(amountOut.toInt256()), 0);
 
         emit Redeem(to, amountVoltIn, amountOut);
     }
@@ -167,25 +177,8 @@ contract PegStabilityModule is IPegStabilityModule, OracleRefV2, PCVDeposit {
 
         underlyingToken.safeTransferFrom(msg.sender, address(this), amountIn); /// Interaction -- untrusted contract
 
-        _liquidPcvOracleHook(amountIn.toInt256(), 0);
-
         emit Mint(to, amountIn, amountVoltOut);
     }
-
-    /// @notice no-op to maintain backwards compatability with IPCVDeposit
-    /// pauseable to stop integration if this contract is deprecated
-    function deposit() external override globalLock(2) whenNotPaused {}
-
-    /// @notice no-op to maintain compatability with IPCVDepositV2
-    /// pauseable to stop integration if this contract is deprecated
-    /// @return balance of underlying token
-    function accrue() external globalLock(2) whenNotPaused returns (uint256) {
-        return balance();
-    }
-
-    /// @notice no-op to maintain backwards compatability with IPCVDepositV2
-    /// pauseable to stop integration if this contract is deprecated
-    function harvest() external globalLock(2) whenNotPaused {}
 
     /// ----------- Public View-Only API ----------
 
@@ -252,12 +245,12 @@ contract PegStabilityModule is IPegStabilityModule, OracleRefV2, PCVDeposit {
     }
 
     /// @notice function from PCVDeposit that must be overriden
-    function balance() public view virtual override returns (uint256) {
+    function balance() public view returns (uint256) {
         return underlyingToken.balanceOf(address(this));
     }
 
     /// @notice returns address of token this contracts balance is reported in
-    function balanceReportedIn() public view override returns (address) {
+    function balanceReportedIn() public view returns (address) {
         return address(underlyingToken);
     }
 

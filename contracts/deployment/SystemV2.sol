@@ -6,27 +6,29 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {Test} from "../../forge-std/src/Test.sol";
-import {CoreV2} from "../core/CoreV2.sol";
-import {Deviation} from "../utils/Deviation.sol";
-import {SystemEntry} from "../entry/SystemEntry.sol";
 import {IVolt} from "../volt/IVolt.sol";
+import {CoreV2} from "../core/CoreV2.sol";
 import {VoltV2} from "../volt/VoltV2.sol";
 import {VoltRoles} from "../core/VoltRoles.sol";
 import {MockERC20} from "../mock/MockERC20.sol";
-import {PCVGuardian} from "../pcv/PCVGuardian.sol";
 import {PCVRouter} from "../pcv/PCVRouter.sol";
-import {MockCoreRefV2} from "../mock/MockCoreRefV2.sol";
-import {ERC20Allocator} from "../pcv/utils/ERC20Allocator.sol";
-import {NonCustodialPSM} from "../peg/NonCustodialPSM.sol";
-import {VoltSystemOracle} from "../oracle/VoltSystemOracle.sol";
-import {ConstantPriceOracle} from "../oracle/ConstantPriceOracle.sol";
+import {Deviation} from "../utils/Deviation.sol";
 import {PCVOracle} from "../oracle/PCVOracle.sol";
 import {IPCVOracle} from "../oracle/IPCVOracle.sol";
-import {MainnetAddresses} from "../test/integration/fixtures/MainnetAddresses.sol";
+import {PCVGuardian} from "../pcv/PCVGuardian.sol";
+import {SystemEntry} from "../entry/SystemEntry.sol";
+import {MockCoreRefV2} from "../mock/MockCoreRefV2.sol";
+import {MigratorRouter} from "../pcv/MigratorRouter.sol";
+import {ERC20Allocator} from "../pcv/utils/ERC20Allocator.sol";
+import {NonCustodialPSM} from "../peg/NonCustodialPSM.sol";
 import {MakerPCVSwapper} from "../pcv/maker/MakerPCVSwapper.sol";
+import {VoltSystemOracle} from "../oracle/VoltSystemOracle.sol";
+import {MainnetAddresses} from "../test/integration/fixtures/MainnetAddresses.sol";
 import {PegStabilityModule} from "../peg/PegStabilityModule.sol";
+import {ConstantPriceOracle} from "../oracle/ConstantPriceOracle.sol";
 import {IPCVDeposit, PCVDeposit} from "../pcv/PCVDeposit.sol";
 import {MorphoCompoundPCVDeposit} from "../pcv/morpho/MorphoCompoundPCVDeposit.sol";
+import {IVoltMigrator, VoltMigrator} from "../volt/VoltMigrator.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../core/GlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../limiter/GlobalRateLimitedMinter.sol";
 import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "../limiter/GlobalSystemExitRateLimiter.sol";
@@ -49,6 +51,10 @@ contract SystemV2 {
 
     /// VOLT rate
     VoltSystemOracle public vso;
+
+    /// Volt Migration
+    VoltMigrator public voltMigrator;
+    MigratorRouter public migratorRouter;
 
     /// PCV Deposits
     MorphoCompoundPCVDeposit public morphoDaiPCVDeposit;
@@ -80,11 +86,11 @@ contract SystemV2 {
     /// maximum rate limit per second is 100 VOLT
     uint256 public constant MAX_RATE_LIMIT_PER_SECOND_MINTING = 100e18;
 
-    /// replenish 500k VOLT per day (5.787 VOLT per second)
-    uint128 public constant RATE_LIMIT_PER_SECOND_MINTING = 5787037037037037000;
+    /// replenish 0 VOLT per day
+    uint128 public constant RATE_LIMIT_PER_SECOND_MINTING = 0;
 
-    /// buffer cap of 1.5m VOLT
-    uint128 public constant BUFFER_CAP_MINTING = 1_500_000e18;
+    /// buffer cap of 3m VOLT
+    uint128 public constant BUFFER_CAP_MINTING = 3_000_000e18;
 
     /// ---------- RATE LIMITED MINTER PARAMS ----------
 
@@ -118,7 +124,7 @@ contract SystemV2 {
 
     uint40 public constant VOLT_APR_START_TIME = 1672531200; /// 2023-01-01
     uint200 public constant VOLT_START_PRICE = 1.05e18;
-    uint16 public constant VOLT_MONTHLY_BASIS_POINTS = 18;
+    uint16 public constant VOLT_MONTHLY_BASIS_POINTS = 14;
 
     function deploy() public {
         /// Core
@@ -142,8 +148,8 @@ contract SystemV2 {
         grlm = new GlobalRateLimitedMinter(
             address(core),
             MAX_RATE_LIMIT_PER_SECOND_MINTING,
-            RATE_LIMIT_PER_SECOND_MINTING, /// todo fix this
-            BUFFER_CAP_MINTING /// todo fix this
+            RATE_LIMIT_PER_SECOND_MINTING,
+            BUFFER_CAP_MINTING
         );
         gserl = new GlobalSystemExitRateLimiter(
             address(core),
@@ -155,7 +161,7 @@ contract SystemV2 {
         /// VOLT rate
         vso = new VoltSystemOracle(
             address(core),
-            VOLT_MONTHLY_BASIS_POINTS, /// todo double check this
+            VOLT_MONTHLY_BASIS_POINTS,
             VOLT_APR_START_TIME, /// todo fill in actual value
             VOLT_START_PRICE /// todo fetch this from the old oracle after warping forward 24 hours
         );
@@ -222,6 +228,15 @@ contract SystemV2 {
         );
         allocator = new ERC20Allocator(address(core));
 
+        voltMigrator = new VoltMigrator(address(core), IVolt(address(volt)));
+
+        migratorRouter = new MigratorRouter(
+            IVolt(address(volt)),
+            IVoltMigrator(address(voltMigrator)),
+            daipsm,
+            usdcpsm
+        );
+
         /// PCV Movement
         systemEntry = new SystemEntry(address(core));
 
@@ -261,7 +276,6 @@ contract SystemV2 {
         );
         core.setPCVOracle(IPCVOracle(address(pcvOracle)));
         core.setGlobalReentrancyLock(IGlobalReentrancyLock(address(lock)));
-
         /// Grant Roles
         core.grantGovernor(address(timelockController));
         core.grantGovernor(MainnetAddresses.GOVERNOR); /// team multisig
@@ -342,23 +356,17 @@ contract SystemV2 {
         allocator.connectDeposit(address(daipsm), address(morphoDaiPCVDeposit));
 
         /// Configure PCV Oracle
-        address[] memory venues = new address[](4);
+        address[] memory venues = new address[](2);
         venues[0] = address(morphoDaiPCVDeposit);
         venues[1] = address(morphoUsdcPCVDeposit);
-        venues[2] = address(daipsm);
-        venues[3] = address(usdcpsm);
 
-        address[] memory oracles = new address[](4);
+        address[] memory oracles = new address[](2);
         oracles[0] = address(daiConstantOracle);
         oracles[1] = address(usdcConstantOracle);
-        oracles[2] = address(daiConstantOracle);
-        oracles[3] = address(usdcConstantOracle);
 
-        bool[] memory isLiquid = new bool[](4);
+        bool[] memory isLiquid = new bool[](2);
         isLiquid[0] = true;
         isLiquid[1] = true;
-        isLiquid[2] = true;
-        isLiquid[3] = true;
 
         pcvOracle.addVenues(venues, oracles, isLiquid);
 

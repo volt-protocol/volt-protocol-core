@@ -24,8 +24,6 @@ import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 import {getCoreV2, getVoltAddresses, VoltAddresses} from "./../utils/Fixtures.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../core/GlobalReentrancyLock.sol";
 
-import "hardhat/console.sol";
-
 /// deployment steps
 /// 1. core v2
 /// 2. Volt system oracle
@@ -460,9 +458,6 @@ contract SystemUnitTest is Test {
         uint256 bufferAfterRedeem = grlm.buffer();
 
         uint256 endingBalance = dai.balanceOf(address(this));
-
-        console.log("startingBuffer: ", startingBuffer);
-        console.log("bufferAfterRedeem: ", bufferAfterRedeem);
 
         assertEq(bufferAfterRedeem - voltBalance, bufferAfterMint); /// assert buffer
         assertEq(
