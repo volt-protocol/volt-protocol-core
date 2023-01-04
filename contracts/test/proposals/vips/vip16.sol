@@ -362,6 +362,7 @@ contract vip16 is Proposal {
         core.grantPCVGuard(addresses.mainnet("EOA_4"));
 
         core.grantGuardian(addresses.mainnet("PCV_GUARDIAN"));
+        core.grantGuardian(addresses.mainnet("GOVERNOR")); /// team multisig
 
         core.grantRateLimitedMinter(addresses.mainnet("PSM_DAI"));
         core.grantRateLimitedMinter(addresses.mainnet("PSM_USDC"));

@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import "hardhat/console.sol";
 
-import {vip00 as vip} from "./vips/vip00.sol";
+import {vip16 as vip} from "./vips/vip16.sol";
 import {Script} from "../../../forge-std/src/Script.sol";
 import {Addresses} from "./Addresses.sol";
 

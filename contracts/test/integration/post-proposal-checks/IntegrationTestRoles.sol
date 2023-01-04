@@ -1,32 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {Vm} from "../unit/utils/Vm.sol";
-import {Test} from "../../../forge-std/src/Test.sol";
+import {PostProposalCheck} from "./PostProposalCheck.sol";
 
-import {Addresses} from "../proposals/Addresses.sol";
-import {TestProposals} from "../proposals/TestProposals.sol";
+import {CoreV2} from "../../../core/CoreV2.sol";
+import {VoltRoles} from "../../../core/VoltRoles.sol";
 
-import {CoreV2} from "../../core/CoreV2.sol";
-import {VoltRoles} from "../../core/VoltRoles.sol";
-import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
-
-contract IntegrationTestMainnetRoles is Test {
-    Addresses addresses;
-
-    function setUp() public {
-        // Run all pending proposals before doing e2e tests
-        TestProposals proposals = new TestProposals();
-        proposals.setUp();
-        proposals.setDebug(false);
-        proposals.testProposals();
-        addresses = proposals.addresses();
-    }
-
-    function testRoles() public {
+contract IntegrationTestRoles is PostProposalCheck {
+    function testMainnetRoles() public {
         CoreV2 core = CoreV2(addresses.mainnet("CORE"));
 
         // GOVERNOR
+        assertEq(core.getRoleAdmin(VoltRoles.GOVERNOR), VoltRoles.GOVERNOR);
         assertEq(core.getRoleMemberCount(VoltRoles.GOVERNOR), 3);
         assertEq(
             core.getRoleMember(VoltRoles.GOVERNOR, 0),
@@ -42,6 +27,10 @@ contract IntegrationTestMainnetRoles is Test {
         );
 
         // PCV_CONTROLLER
+        assertEq(
+            core.getRoleAdmin(VoltRoles.PCV_CONTROLLER),
+            VoltRoles.GOVERNOR
+        );
         assertEq(core.getRoleMemberCount(VoltRoles.PCV_CONTROLLER), 6);
         assertEq(
             core.getRoleMember(VoltRoles.PCV_CONTROLLER, 0),
@@ -69,6 +58,7 @@ contract IntegrationTestMainnetRoles is Test {
         );
 
         // PCV_MOVER
+        assertEq(core.getRoleAdmin(VoltRoles.PCV_MOVER), VoltRoles.GOVERNOR);
         assertEq(core.getRoleMemberCount(VoltRoles.PCV_MOVER), 1);
         assertEq(
             core.getRoleMember(VoltRoles.PCV_MOVER, 0),
@@ -76,6 +66,10 @@ contract IntegrationTestMainnetRoles is Test {
         );
 
         // LIQUID_PCV_DEPOSIT_ROLE
+        assertEq(
+            core.getRoleAdmin(VoltRoles.LIQUID_PCV_DEPOSIT),
+            VoltRoles.GOVERNOR
+        );
         assertEq(core.getRoleMemberCount(VoltRoles.LIQUID_PCV_DEPOSIT), 4);
         assertEq(
             core.getRoleMember(VoltRoles.LIQUID_PCV_DEPOSIT, 0),
@@ -95,9 +89,14 @@ contract IntegrationTestMainnetRoles is Test {
         );
 
         // ILLIQUID_PCV_DEPOSIT_ROLE
+        assertEq(
+            core.getRoleAdmin(VoltRoles.ILLIQUID_PCV_DEPOSIT),
+            VoltRoles.GOVERNOR
+        );
         assertEq(core.getRoleMemberCount(VoltRoles.ILLIQUID_PCV_DEPOSIT), 0);
 
         // PCV_GUARD
+        assertEq(core.getRoleAdmin(VoltRoles.PCV_GUARD), VoltRoles.GOVERNOR);
         assertEq(core.getRoleMemberCount(VoltRoles.PCV_GUARD), 3);
         assertEq(
             core.getRoleMember(VoltRoles.PCV_GUARD, 0),
@@ -113,13 +112,22 @@ contract IntegrationTestMainnetRoles is Test {
         );
 
         // GUARDIAN
-        assertEq(core.getRoleMemberCount(VoltRoles.GUARDIAN), 1);
+        assertEq(core.getRoleAdmin(VoltRoles.GUARDIAN), VoltRoles.GOVERNOR);
+        assertEq(core.getRoleMemberCount(VoltRoles.GUARDIAN), 2);
         assertEq(
             core.getRoleMember(VoltRoles.GUARDIAN, 0),
             addresses.mainnet("PCV_GUARDIAN")
         );
+        assertEq(
+            core.getRoleMember(VoltRoles.GUARDIAN, 1),
+            addresses.mainnet("GOVERNOR") // team multisig
+        );
 
         // RATE_LIMIT_SYSTEM_ENTRY_DEPLETE_ROLE
+        assertEq(
+            core.getRoleAdmin(VoltRoles.RATE_LIMIT_SYSTEM_ENTRY_DEPLETE),
+            VoltRoles.GOVERNOR
+        );
         assertEq(
             core.getRoleMemberCount(VoltRoles.RATE_LIMIT_SYSTEM_ENTRY_DEPLETE),
             2
@@ -134,6 +142,10 @@ contract IntegrationTestMainnetRoles is Test {
         );
 
         // RATE_LIMIT_SYSTEM_ENTRY_REPLENISH_ROLE
+        assertEq(
+            core.getRoleAdmin(VoltRoles.RATE_LIMIT_SYSTEM_ENTRY_REPLENISH),
+            VoltRoles.GOVERNOR
+        );
         assertEq(
             core.getRoleMemberCount(
                 VoltRoles.RATE_LIMIT_SYSTEM_ENTRY_REPLENISH
@@ -158,6 +170,7 @@ contract IntegrationTestMainnetRoles is Test {
         );
 
         // LOCKER_ROLE
+        assertEq(core.getRoleAdmin(VoltRoles.LOCKER), VoltRoles.GOVERNOR);
         assertEq(core.getRoleMemberCount(VoltRoles.LOCKER), 13);
         assertEq(
             core.getRoleMember(VoltRoles.LOCKER, 0),
@@ -213,6 +226,7 @@ contract IntegrationTestMainnetRoles is Test {
         );
 
         // MINTER
+        assertEq(core.getRoleAdmin(VoltRoles.MINTER), VoltRoles.GOVERNOR);
         assertEq(core.getRoleMemberCount(VoltRoles.MINTER), 1);
         assertEq(
             core.getRoleMember(VoltRoles.MINTER, 0),
@@ -220,6 +234,10 @@ contract IntegrationTestMainnetRoles is Test {
         );
 
         /// SYSTEM EXIT RATE LIMIT DEPLETER
+        assertEq(
+            core.getRoleAdmin(VoltRoles.RATE_LIMIT_SYSTEM_EXIT_DEPLETE),
+            VoltRoles.GOVERNOR
+        );
         assertEq(
             core.getRoleMemberCount(VoltRoles.RATE_LIMIT_SYSTEM_EXIT_DEPLETE),
             2
@@ -235,6 +253,10 @@ contract IntegrationTestMainnetRoles is Test {
 
         /// SYSTEM EXIT RATE LIMIT REPLENISH
         assertEq(
+            core.getRoleAdmin(VoltRoles.RATE_LIMIT_SYSTEM_EXIT_REPLENISH),
+            VoltRoles.GOVERNOR
+        );
+        assertEq(
             core.getRoleMemberCount(VoltRoles.RATE_LIMIT_SYSTEM_EXIT_REPLENISH),
             1
         );
@@ -242,30 +264,5 @@ contract IntegrationTestMainnetRoles is Test {
             core.getRoleMember(VoltRoles.RATE_LIMIT_SYSTEM_EXIT_REPLENISH, 0),
             addresses.mainnet("PSM_ALLOCATOR")
         );
-    }
-
-    function testTimelockRoles() public {
-        TimelockController timelockController = TimelockController(
-            payable(addresses.mainnet("TIMELOCK_CONTROLLER"))
-        );
-        bytes32 EXECUTOR_ROLE = timelockController.EXECUTOR_ROLE();
-        bytes32 CANCELLER_ROLE = timelockController.CANCELLER_ROLE();
-        bytes32 PROPOSER_ROLE = timelockController.PROPOSER_ROLE();
-
-        assertTrue(timelockController.hasRole(EXECUTOR_ROLE, address(0))); /// role open
-        assertTrue(
-            timelockController.hasRole(
-                CANCELLER_ROLE,
-                addresses.mainnet("GOVERNOR")
-            )
-        );
-        assertTrue(
-            timelockController.hasRole(
-                PROPOSER_ROLE,
-                addresses.mainnet("GOVERNOR")
-            )
-        );
-        assertTrue(!timelockController.hasRole(CANCELLER_ROLE, address(0))); /// role closed
-        assertTrue(!timelockController.hasRole(PROPOSER_ROLE, address(0))); /// role closed
     }
 }

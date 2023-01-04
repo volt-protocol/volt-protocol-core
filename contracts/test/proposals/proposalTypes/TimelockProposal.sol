@@ -4,7 +4,6 @@ import "hardhat/console.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
 import {Proposal} from "./Proposal.sol";
-import {Addresses} from "../Addresses.sol";
 
 abstract contract TimelockProposal is Proposal {
     struct TimelockAction {

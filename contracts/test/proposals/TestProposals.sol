@@ -8,6 +8,7 @@ import {Proposal} from "./proposalTypes/Proposal.sol";
 
 import {vip15} from "./vips/vip15.sol";
 import {vip16} from "./vips/vip16.sol";
+import {vip17} from "./vips/vip17.sol";
 
 /*
 How to use:
@@ -31,6 +32,7 @@ contract TestProposals is Test {
 
         proposals.push(Proposal(address(new vip15())));
         proposals.push(Proposal(address(new vip16())));
+        proposals.push(Proposal(address(new vip17())));
     }
 
     function setDebug(bool value) public {
@@ -40,13 +42,18 @@ contract TestProposals is Test {
         }
     }
 
-    function testProposals() public {
-        if (DEBUG)
+    function testProposals()
+        public
+        returns (uint256[] memory postProposalVmSnapshots)
+    {
+        if (DEBUG) {
             console.log(
                 "TestProposals: running",
                 proposals.length,
                 "proposals."
             );
+        }
+        postProposalVmSnapshots = new uint256[](proposals.length);
         for (uint256 i = 0; i < proposals.length; i++) {
             string memory name = proposals[i].name();
 
@@ -87,6 +94,10 @@ contract TestProposals is Test {
             proposals[i].validate(addresses, address(proposals[i]));
 
             if (DEBUG) console.log("Proposal", name, "done.");
+
+            postProposalVmSnapshots[i] = vm.snapshot();
         }
+
+        return postProposalVmSnapshots;
     }
 }
