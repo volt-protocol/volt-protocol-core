@@ -30,6 +30,8 @@
     "deploy:fuse": "DEPLOY_FILE=compoundPCVDeposit npx hardhat run --network mainnet scripts/deploy/migrations.ts",
     "deploy:timelock": "DEPLOY_FILE=optimisticTimelockDeploy npx hardhat run --network mainnet scripts/deploy/migrations.ts",
     "deploy:stw": "DEPLOY_FILE=deployStakedTokenWrapper npx hardhat run --network mainnet scripts/deploy/migrations.ts",
+    "deploy:forge": "forge script contracts/test/proposals/DeployProposal.s.sol:DeployProposal -vvvv --rpc-url $ETH_RPC_URL",
+    "deploy:forge:broadcast": "forge script contracts/test/proposals/DeployProposal.s.sol:DeployProposal -vvvv --rpc-url $ETH_RPC_URL --broadcast",
     "abis": "node scripts/utils/abis.js",
     "calldata": "npx hardhat run scripts/simulation/getProposalCalldata.ts",
     "calldata:arbitrum": "ENABLE_ARBITRUM_FORKING=true npx hardhat run scripts/simulation/getProposalCalldata.ts",
