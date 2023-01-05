@@ -19,14 +19,17 @@ import {IPCVOracle} from "../../../oracle/IPCVOracle.sol";
 import {SystemEntry} from "../../../entry/SystemEntry.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {MockCoreRefV2} from "../../../mock/MockCoreRefV2.sol";
+import {MigratorRouter} from "../../../pcv/MigratorRouter.sol";
 import {ERC20Allocator} from "../../../pcv/utils/ERC20Allocator.sol";
 import {NonCustodialPSM} from "../../../peg/NonCustodialPSM.sol";
 import {MakerPCVSwapper} from "../../../pcv/maker/MakerPCVSwapper.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
+import {IPegStabilityModule} from "../../../peg/IPegStabilityModule.sol";
 import {ConstantPriceOracle} from "../../../oracle/ConstantPriceOracle.sol";
 import {IPCVDeposit, PCVDeposit} from "../../../pcv/PCVDeposit.sol";
 import {MorphoCompoundPCVDeposit} from "../../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
+import {IVoltMigrator, VoltMigrator} from "../../../volt/VoltMigrator.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../core/GlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../../limiter/GlobalRateLimitedMinter.sol";
 import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "../../../limiter/GlobalSystemExitRateLimiter.sol";
@@ -48,11 +51,11 @@ contract vip16 is Proposal {
     /// maximum rate limit per second is 100 VOLT
     uint256 public constant MAX_RATE_LIMIT_PER_SECOND_MINTING = 100e18;
 
-    /// replenish 500k VOLT per day (5.787 VOLT per second)
-    uint128 public constant RATE_LIMIT_PER_SECOND_MINTING = 5787037037037037000;
+    /// replenish 0 VOLT per day
+    uint128 public constant RATE_LIMIT_PER_SECOND_MINTING = 0;
 
-    /// buffer cap of 1.5m VOLT
-    uint128 public constant BUFFER_CAP_MINTING = 1_500_000e18;
+    /// buffer cap of 3m VOLT
+    uint128 public constant BUFFER_CAP_MINTING = 3_000_000e18;
 
     /// ---------- RATE LIMITED MINTER PARAMS ----------
 
@@ -86,7 +89,7 @@ contract vip16 is Proposal {
 
     uint40 public constant VOLT_APR_START_TIME = 1672531200; /// 2023-01-01
     uint200 public constant VOLT_START_PRICE = 1.05e18;
-    uint16 public constant VOLT_MONTHLY_BASIS_POINTS = 18;
+    uint16 public constant VOLT_MONTHLY_BASIS_POINTS = 14;
 
     function deploy(Addresses addresses) public {
         /// Core
@@ -116,8 +119,8 @@ contract vip16 is Proposal {
             GlobalRateLimitedMinter grlm = new GlobalRateLimitedMinter(
                 addresses.mainnet("CORE"),
                 MAX_RATE_LIMIT_PER_SECOND_MINTING,
-                RATE_LIMIT_PER_SECOND_MINTING, /// todo fix this
-                BUFFER_CAP_MINTING /// todo fix this
+                RATE_LIMIT_PER_SECOND_MINTING,
+                BUFFER_CAP_MINTING
             );
             GlobalSystemExitRateLimiter gserl = new GlobalSystemExitRateLimiter(
                 addresses.mainnet("CORE"),
@@ -141,7 +144,7 @@ contract vip16 is Proposal {
         {
             VoltSystemOracle vso = new VoltSystemOracle(
                 addresses.mainnet("CORE"),
-                VOLT_MONTHLY_BASIS_POINTS, /// todo double check this
+                VOLT_MONTHLY_BASIS_POINTS,
                 VOLT_APR_START_TIME, /// todo fill in actual value
                 VOLT_START_PRICE /// todo fetch this from the old oracle after warping forward 24 hours
             );
@@ -236,6 +239,30 @@ contract vip16 is Proposal {
                 address(daiNonCustodialPsm)
             );
             addresses.addMainnet("PSM_ALLOCATOR", address(allocator));
+        }
+
+        /// Volt Migration
+        {
+            VoltMigrator voltMigrator = new VoltMigrator(
+                addresses.mainnet("CORE"),
+                IVolt(addresses.mainnet("VOLT"))
+            );
+
+            MigratorRouter migratorRouter = new MigratorRouter(
+                IVolt(addresses.mainnet("VOLT")),
+                IVoltMigrator(address(voltMigrator)),
+                IPegStabilityModule(addresses.mainnet("PSM_DAI")),
+                IPegStabilityModule(addresses.mainnet("PSM_USDC"))
+            );
+
+            addresses.addMainnet(
+                "V1_MIGRATION_MIGRATOR",
+                address(voltMigrator)
+            );
+            addresses.addMainnet(
+                "V1_MIGRATION_ROUTER",
+                address(migratorRouter)
+            );
         }
 
         /// PCV Movement
@@ -424,23 +451,17 @@ contract vip16 is Proposal {
         );
 
         /// Configure PCV Oracle
-        address[] memory venues = new address[](4);
+        address[] memory venues = new address[](2);
         venues[0] = addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI");
         venues[1] = addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC");
-        venues[2] = addresses.mainnet("PSM_DAI");
-        venues[3] = addresses.mainnet("PSM_USDC");
 
-        address[] memory oracles = new address[](4);
+        address[] memory oracles = new address[](2);
         oracles[0] = addresses.mainnet("ORACLE_CONSTANT_DAI");
         oracles[1] = addresses.mainnet("ORACLE_CONSTANT_USDC");
-        oracles[2] = addresses.mainnet("ORACLE_CONSTANT_DAI");
-        oracles[3] = addresses.mainnet("ORACLE_CONSTANT_USDC");
 
-        bool[] memory isLiquid = new bool[](4);
+        bool[] memory isLiquid = new bool[](2);
         isLiquid[0] = true;
         isLiquid[1] = true;
-        isLiquid[2] = true;
-        isLiquid[3] = true;
 
         pcvOracle.addVenues(venues, oracles, isLiquid);
 

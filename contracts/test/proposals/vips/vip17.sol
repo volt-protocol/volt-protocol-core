@@ -101,7 +101,12 @@ contract vip17 is MultisigProposal {
     function teardown(Addresses addresses, address deployer) public pure {}
 
     function validate(Addresses addresses, address /* deployer*/) public {
-        uint256 expectedPcvUsd = PCV_DAI + PCV_USDC * 1e12;
+        uint256 expectedPcvUsd = PCV_DAI +
+            PCV_USDC *
+            1e12 -
+            2 *
+            PSM_LIQUID_RESERVE *
+            1e18;
         (, , uint256 totalPcv) = PCVOracle(addresses.mainnet("PCV_ORACLE"))
             .getTotalPcv();
         // tolerate 1 USD "loss" on migration because morpho accounting is pessimistic
