@@ -39,20 +39,34 @@ contract IntegrationTestProposalPSMOracle is Test {
         ).readOracle();
 
         // Check oracle values are the same
-        require(
-            oraclePriceBeforeDaiPSM == oraclePricesAfterDaiPSM,
+        emit log_named_uint("oraclePrice DAI  before", oraclePriceBeforeDaiPSM);
+        emit log_named_uint("oraclePrice DAI  after ", oraclePricesAfterDaiPSM);
+        emit log_named_uint(
+            "oraclePrice USDC before",
+            oraclePricesBeforeUsdcPSM
+        );
+        emit log_named_uint(
+            "oraclePrice USDC after ",
+            oraclePricesAfterUsdcPSM
+        );
+        assertEq(
+            oraclePriceBeforeDaiPSM,
+            oraclePricesAfterDaiPSM,
             "PSM Oracle value changed (DAI old->DAI new)"
         );
-        require(
-            oraclePriceBeforeDaiPSM / 1e12 == oraclePricesAfterUsdcPSM,
+        assertEq(
+            oraclePriceBeforeDaiPSM / 1e12,
+            oraclePricesAfterUsdcPSM,
             "PSM Oracle value changed (DAI old->USDC new)"
         );
-        require(
-            oraclePricesBeforeUsdcPSM == oraclePricesAfterDaiPSM,
+        assertEq(
+            oraclePricesBeforeUsdcPSM,
+            oraclePricesAfterDaiPSM,
             "PSM Oracle value changed (USDC old->DAI new)"
         );
-        require(
-            oraclePricesBeforeUsdcPSM / 1e12 == oraclePricesAfterUsdcPSM,
+        assertEq(
+            oraclePricesBeforeUsdcPSM / 1e12,
+            oraclePricesAfterUsdcPSM,
             "PSM Oracle value changed (USDC old->USDC new)"
         );
     }

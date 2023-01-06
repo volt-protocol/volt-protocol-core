@@ -85,12 +85,6 @@ contract vip16 is Proposal {
     int8 public constant USDC_DECIMALS_NORMALIZER = 12;
     int8 public constant DAI_DECIMALS_NORMALIZER = 0;
 
-    /// ---------- ORACLE PARAMS ----------
-
-    uint40 public constant VOLT_APR_START_TIME = 1672531200; /// 2023-01-01
-    uint200 public constant VOLT_START_PRICE = 1.05e18;
-    uint16 public constant VOLT_MONTHLY_BASIS_POINTS = 14;
-
     function deploy(Addresses addresses) public {
         /// Core
         {
@@ -142,11 +136,24 @@ contract vip16 is Proposal {
 
         /// VOLT rate
         {
+            // read current on-chain oracle, and copy its values
+            // to deploy the new oracle
+            // todo: fill in actual hardcoded values, or deploy VIP16
+            // at the start / in the middle of a compounding period.
+            VoltSystemOracle oldVso = VoltSystemOracle(
+                0xB8Ac4931A618B06498966cba3a560B867D8f567F
+            );
+            uint16 monthlyChangeRateBasisPoints = uint16(
+                oldVso.monthlyChangeRateBasisPoints()
+            );
+            uint40 periodStartTime = uint40(oldVso.periodStartTime());
+            uint200 oraclePrice = uint200(oldVso.oraclePrice());
+
             VoltSystemOracle vso = new VoltSystemOracle(
                 addresses.mainnet("CORE"),
-                VOLT_MONTHLY_BASIS_POINTS,
-                VOLT_APR_START_TIME, /// todo fill in actual value
-                VOLT_START_PRICE /// todo fetch this from the old oracle after warping forward 24 hours
+                monthlyChangeRateBasisPoints,
+                periodStartTime,
+                oraclePrice
             );
 
             addresses.addMainnet("VOLT_SYSTEM_ORACLE", address(vso));
