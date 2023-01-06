@@ -11,6 +11,7 @@ contract Addresses {
 
     constructor() {
         // ---------- VOLT ADDRESSES ----------
+        mainnet["V1_CORE"] = 0xEC7AD284f7Ad256b64c6E69b84Eb0F48f42e8196;
         mainnet["CORE"] = 0xEC7AD284f7Ad256b64c6E69b84Eb0F48f42e8196;
         mainnet["ERC20ALLOCATOR"] = 0x37518BbE48fEaE49ECBD83F7e9C01c1A6b4c2F69;
         mainnet["GOVERNOR"] = 0xcBB83206698E8788F85EFbEeeCAd17e53366EBDf;
@@ -74,6 +75,7 @@ contract Addresses {
         ] = 0x7842186CDd11270C4Af8C0A99A5E0589c7F249ce;
 
         // ---------- TOKEN ADDRESSES ----------
+        mainnet["V1_VOLT"] = 0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18;
         mainnet["VOLT"] = 0x559eBC30b0E58a45Cc9fF573f77EF1e5eb1b3E18;
         mainnet["USDC"] = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
         mainnet["FEI"] = 0x956F47F50A910163D8BF957Cf5846D573E7f87CA;

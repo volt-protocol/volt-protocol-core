@@ -15,10 +15,10 @@ import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
 import {PCVRouter} from "../../../pcv/PCVRouter.sol";
 import {PCVOracle} from "../../../oracle/PCVOracle.sol";
+import {CoreRefV2} from "../../../refs/CoreRefV2.sol";
 import {IPCVOracle} from "../../../oracle/IPCVOracle.sol";
 import {SystemEntry} from "../../../entry/SystemEntry.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
-import {MockCoreRefV2} from "../../../mock/MockCoreRefV2.sol";
 import {MigratorRouter} from "../../../pcv/MigratorRouter.sol";
 import {ERC20Allocator} from "../../../pcv/utils/ERC20Allocator.sol";
 import {NonCustodialPSM} from "../../../peg/NonCustodialPSM.sol";
@@ -487,5 +487,190 @@ contract vip16 is Proposal {
 
     function teardown(Addresses addresses, address deployer) public pure {}
 
-    function validate(Addresses addresses, address deployer) public pure {}
+    function validate(Addresses addresses, address /* deployer*/) public {
+        CoreV2 core = CoreV2(addresses.mainnet("CORE"));
+        ERC20Allocator allocator = ERC20Allocator(
+            addresses.mainnet("PSM_ALLOCATOR")
+        );
+        PCVOracle pcvOracle = PCVOracle(addresses.mainnet("PCV_ORACLE"));
+        PCVRouter pcvRouter = PCVRouter(addresses.mainnet("PCV_ROUTER"));
+        MigratorRouter migratorRouter = MigratorRouter(
+            addresses.mainnet("V1_MIGRATION_ROUTER")
+        );
+
+        /*--------------------------------------------------------------------
+        Validate that everything reference Core properly
+        --------------------------------------------------------------------*/
+        assertEq(
+            address(CoreRefV2(addresses.mainnet("VOLT")).core()),
+            address(core)
+        );
+        assertEq(
+            address(CoreRefV2(addresses.mainnet("GLOBAL_LOCK")).core()),
+            address(core)
+        );
+        // TIMELOCK_CONTROLLER is not CoreRef
+        assertEq(
+            address(
+                CoreRefV2(addresses.mainnet("GLOBAL_RATE_LIMITED_MINTER"))
+                    .core()
+            ),
+            address(core)
+        );
+        assertEq(
+            address(
+                CoreRefV2(addresses.mainnet("GLOBAL_SYSTEM_EXIT_RATE_LIMITER"))
+                    .core()
+            ),
+            address(core)
+        );
+        assertEq(
+            address(CoreRefV2(addresses.mainnet("VOLT_SYSTEM_ORACLE")).core()),
+            address(core)
+        );
+        assertEq(
+            address(
+                CoreRefV2(addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")).core()
+            ),
+            address(core)
+        );
+        assertEq(
+            address(
+                CoreRefV2(addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")).core()
+            ),
+            address(core)
+        );
+        assertEq(
+            address(CoreRefV2(addresses.mainnet("PSM_DAI")).core()),
+            address(core)
+        );
+        assertEq(
+            address(CoreRefV2(addresses.mainnet("PSM_USDC")).core()),
+            address(core)
+        );
+        assertEq(
+            address(
+                CoreRefV2(addresses.mainnet("PSM_NONCUSTODIAL_USDC")).core()
+            ),
+            address(core)
+        );
+        assertEq(
+            address(
+                CoreRefV2(addresses.mainnet("PSM_NONCUSTODIAL_DAI")).core()
+            ),
+            address(core)
+        );
+        assertEq(
+            address(CoreRefV2(addresses.mainnet("PSM_ALLOCATOR")).core()),
+            address(core)
+        );
+        assertEq(
+            address(
+                CoreRefV2(addresses.mainnet("V1_MIGRATION_MIGRATOR")).core()
+            ),
+            address(core)
+        );
+        // V1_MIGRATION_ROUTER is not CoreRef, it is only a util contract to call other contracts
+        assertEq(
+            address(CoreRefV2(addresses.mainnet("SYSTEM_ENTRY")).core()),
+            address(core)
+        );
+        assertEq(
+            address(CoreRefV2(addresses.mainnet("PCV_SWAPPER_MAKER")).core()),
+            address(core)
+        );
+        assertEq(
+            address(CoreRefV2(addresses.mainnet("PCV_GUARDIAN")).core()),
+            address(core)
+        );
+        assertEq(
+            address(CoreRefV2(addresses.mainnet("PCV_ROUTER")).core()),
+            address(core)
+        );
+        assertEq(
+            address(CoreRefV2(addresses.mainnet("PCV_ORACLE")).core()),
+            address(core)
+        );
+        assertEq(
+            address(CoreRefV2(addresses.mainnet("ORACLE_CONSTANT_DAI")).core()),
+            address(core)
+        );
+        assertEq(
+            address(
+                CoreRefV2(addresses.mainnet("ORACLE_CONSTANT_USDC")).core()
+            ),
+            address(core)
+        );
+
+        /*--------------------------------------------------------------------
+        Validate that the smart contracts are correctly linked to each other.
+        --------------------------------------------------------------------*/
+        // core references
+        assertEq(address(core.volt()), addresses.mainnet("VOLT"));
+        assertEq(address(core.vcon()), address(0));
+        assertEq(
+            address(core.globalRateLimitedMinter()),
+            addresses.mainnet("GLOBAL_RATE_LIMITED_MINTER")
+        );
+        assertEq(
+            address(core.globalSystemExitRateLimiter()),
+            addresses.mainnet("GLOBAL_SYSTEM_EXIT_RATE_LIMITER")
+        );
+        assertEq(address(core.pcvOracle()), addresses.mainnet("PCV_ORACLE"));
+
+        // psm allocator
+        assertEq(
+            allocator.pcvDepositToPSM(
+                addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
+            ),
+            addresses.mainnet("PSM_USDC")
+        );
+        assertEq(
+            allocator.pcvDepositToPSM(
+                addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
+            ),
+            addresses.mainnet("PSM_DAI")
+        );
+        (address psmToken1, , ) = allocator.allPSMs(
+            addresses.mainnet("PSM_DAI")
+        );
+        (address psmToken2, , ) = allocator.allPSMs(
+            addresses.mainnet("PSM_USDC")
+        );
+        assertEq(psmToken1, addresses.mainnet("DAI"));
+        assertEq(psmToken2, addresses.mainnet("USDC"));
+
+        // pcv oracle
+        assertEq(pcvOracle.getAllVenues().length, 2);
+        assertEq(
+            pcvOracle.getAllVenues()[0],
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
+        );
+        assertEq(
+            pcvOracle.getAllVenues()[1],
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
+        );
+
+        // pcv router
+        assertTrue(
+            pcvRouter.isPCVSwapper(addresses.mainnet("PCV_SWAPPER_MAKER"))
+        );
+
+        // oracle references
+        assertEq(
+            address(PegStabilityModule(addresses.mainnet("PSM_DAI")).oracle()),
+            addresses.mainnet("VOLT_SYSTEM_ORACLE")
+        );
+        assertEq(
+            address(PegStabilityModule(addresses.mainnet("PSM_USDC")).oracle()),
+            addresses.mainnet("VOLT_SYSTEM_ORACLE")
+        );
+
+        // volt v1 migration references
+        assertEq(address(migratorRouter.newVolt()), addresses.mainnet("VOLT"));
+        assertEq(
+            address(migratorRouter.OLD_VOLT()),
+            addresses.mainnet("V1_VOLT")
+        );
+    }
 }

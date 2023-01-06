@@ -11,7 +11,7 @@ contract PostProposalCheck is Test {
     uint256 preProposalsSnapshot;
     uint256 postProposalsSnapshot;
 
-    function setUp() public {
+    function setUp() public virtual {
         preProposalsSnapshot = vm.snapshot();
 
         // Run all pending proposals before doing e2e tests

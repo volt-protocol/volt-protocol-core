@@ -32,11 +32,6 @@ contract IntegrationTestUsePSMs is PostProposalCheck {
 
         // do redeem
         volt.approve(address(psm), receivedVolt);
-        token.balanceOf(address(psm));
-        token.balanceOf(address(this));
-        volt.balanceOf(address(psm));
-        volt.balanceOf(address(this));
-        volt.totalSupply();
         psm.redeem(address(this), receivedVolt, 0);
 
         // check received tokens (tolerance of 1 wei for round-down)
@@ -64,11 +59,6 @@ contract IntegrationTestUsePSMs is PostProposalCheck {
 
         // do redeem
         volt.approve(address(psm), receivedVolt);
-        token.balanceOf(address(psm));
-        token.balanceOf(address(this));
-        volt.balanceOf(address(psm));
-        volt.balanceOf(address(this));
-        volt.totalSupply();
         psm.redeem(address(this), receivedVolt, 0);
 
         // check received tokens (tolerance of 1 wei for round-down)

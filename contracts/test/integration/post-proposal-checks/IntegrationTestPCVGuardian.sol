@@ -6,7 +6,7 @@ import {PostProposalCheck} from "./PostProposalCheck.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 
-contract IntegrationTestWithdrawAllToSafeAddress is PostProposalCheck {
+contract IntegrationTestPCVGuardian is PostProposalCheck {
     function testWithdrawAllToSafeAddress() public {
         PCVGuardian pcvGuardian = PCVGuardian(
             addresses.mainnet("PCV_GUARDIAN")
