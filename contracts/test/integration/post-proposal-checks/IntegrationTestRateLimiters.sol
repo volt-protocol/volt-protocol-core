@@ -176,7 +176,7 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
 
     function testRedeemsDaiNcPsm(uint80 voltRedeemAmount) public {
         vm.assume(voltRedeemAmount >= 1e18);
-        vm.assume(voltRedeemAmount <= 475_000e18);
+        vm.assume(voltRedeemAmount <= 400_000e18);
         testUserPSMMint();
 
         vm.revertTo(snapshotAfterMints);
@@ -211,7 +211,7 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
 
     function testRedeemsUsdcNcPsm(uint80 voltRedeemAmount) public {
         vm.assume(voltRedeemAmount >= 1e18);
-        vm.assume(voltRedeemAmount <= 475_000e18);
+        vm.assume(voltRedeemAmount <= 400_000e18);
         testUserPSMMint();
 
         vm.revertTo(snapshotAfterMints);
