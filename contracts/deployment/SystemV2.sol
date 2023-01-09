@@ -122,7 +122,7 @@ contract SystemV2 {
 
     /// ---------- ORACLE PARAMS ----------
 
-    uint40 public constant VOLT_APR_START_TIME = 1672531200; /// 2023-01-01
+    uint40 public constant VOLT_APR_START_TIME = 1704096000; /// 2023-01-01
     uint200 public constant VOLT_START_PRICE = 1.05e18;
     uint16 public constant VOLT_MONTHLY_BASIS_POINTS = 14;
 
