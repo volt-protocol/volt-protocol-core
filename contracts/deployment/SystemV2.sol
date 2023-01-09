@@ -292,8 +292,6 @@ contract SystemV2 {
 
         core.createRole(VoltRoles.LIQUID_PCV_DEPOSIT, VoltRoles.GOVERNOR);
         core.createRole(VoltRoles.ILLIQUID_PCV_DEPOSIT, VoltRoles.GOVERNOR);
-        core.grantRole(VoltRoles.LIQUID_PCV_DEPOSIT, address(daipsm));
-        core.grantRole(VoltRoles.LIQUID_PCV_DEPOSIT, address(usdcpsm));
         core.grantRole(
             VoltRoles.LIQUID_PCV_DEPOSIT,
             address(morphoDaiPCVDeposit)
