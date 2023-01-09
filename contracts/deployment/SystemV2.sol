@@ -122,8 +122,8 @@ contract SystemV2 {
 
     /// ---------- ORACLE PARAMS ----------
 
-    uint40 public constant VOLT_APR_START_TIME = 1704096000; /// 2023-01-01
-    uint200 public constant VOLT_START_PRICE = 1.05e18;
+    uint40 public constant VOLT_APR_START_TIME = 1704096000; /// 2024-01-01 TODO change this based on when the system starts
+    uint200 public constant VOLT_START_PRICE = 1.05e18; /// TODO change this based on when the system starts
     uint16 public constant VOLT_MONTHLY_BASIS_POINTS = 14;
 
     function deploy() public {
