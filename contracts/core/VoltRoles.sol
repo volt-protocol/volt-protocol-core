@@ -36,6 +36,16 @@ library VoltRoles {
     /// lock. this allows for a system wide reentrancy lock.
     bytes32 internal constant LOCKER = keccak256("LOCKER_ROLE");
 
+    /// @notice is able to mint VCON arbitrarily
+    bytes32 internal constant VCON_MINTER = keccak256("VCON_MINTER_ROLE");
+
+    /// @notice is able to burn VCON arbitrarily
+    bytes32 internal constant VCON_BURNER = keccak256("VCON_MINTER_ROLE");
+
+    /// @notice is able to manage VCON gauges
+    bytes32 internal constant VCON_GAUGE_MANAGER =
+        keccak256("VCON_GAUGE_MANAGER_ROLE");
+
     /// ----------- Rate limiters for Global System Entry / Exit ---------------
 
     /// @notice can mint VOLT through GlobalRateLimitedMinter on a rate limit

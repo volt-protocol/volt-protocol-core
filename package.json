@@ -57,6 +57,7 @@
     "eslint-utils": "3.0.0",
     "hardhat": "2.11.0",
     "mimic-fn": "1.2.0",
+    "solmate": "^6.6.1",
     "string-template": "^1.0.0"
   },
   "devDependencies": {

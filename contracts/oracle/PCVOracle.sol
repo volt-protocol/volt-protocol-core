@@ -109,29 +109,41 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         /// so keep the math unchecked to save on gas
         unchecked {
             for (uint256 i = 0; i < liquidVenueLength; i++) {
-                address depositAddress = liquidVenues.at(i);
-                (uint256 oracleValue, bool oracleValid) = IOracleV2(
-                    venueToOracle[depositAddress]
-                ).read();
-                require(oracleValid, "PCVOracle: invalid oracle value");
-
-                uint256 balance = IPCVDepositV2(depositAddress).balance();
-                liquidPcv += (oracleValue * balance) / 1e18;
+                liquidPcv += getVenueUSDBalance(liquidVenues.at(i));
             }
 
             for (uint256 i = 0; i < illiquidVenueLength; i++) {
-                address depositAddress = illiquidVenues.at(i);
-                (uint256 oracleValue, bool oracleValid) = IOracleV2(
-                    venueToOracle[depositAddress]
-                ).read();
-                require(oracleValid, "PCVOracle: invalid oracle value");
-
-                uint256 balance = IPCVDepositV2(depositAddress).balance();
-                illiquidPcv += (oracleValue * balance) / 1e18;
+                illiquidPcv += getVenueUSDBalance(illiquidVenues.at(i));
             }
 
             totalPcv = liquidPcv + illiquidPcv;
         }
+    }
+
+    /// @notice get the PCV balance of a venue, in USD
+    function getVenueUSDBalance(
+        address venue
+    ) public view returns (uint256 venueUSDBalance) {
+        (uint256 oracleValue, bool oracleValid) = IOracleV2(
+            venueToOracle[venue]
+        ).read();
+        require(oracleValid, "PCVOracle: invalid oracle value");
+
+        uint256 balance = IPCVDepositV2(venue).balance();
+        venueUSDBalance = (oracleValue * balance) / 1e18;
+    }
+
+    /// @notice get the cummulative profits of a venue, in USD
+    function getVenueUSDProfit(
+        address venue
+    ) public view returns (int256 venueUSDProfits) {
+        (uint256 oracleValue, bool oracleValid) = IOracleV2(
+            venueToOracle[venue]
+        ).read();
+        require(oracleValid, "PCVOracle: invalid oracle value");
+
+        // TODO, need recording of the deltaProfit in updateLiquidBalance
+        // + updateIlliquidBalance, and conversion of this value using the oracle
     }
 
     /// ------------- PCV Deposit Only API -------------
