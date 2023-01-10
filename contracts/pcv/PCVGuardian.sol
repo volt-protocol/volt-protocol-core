@@ -129,11 +129,15 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
     // -----------------------------------------------------
     // -------------------  WARNING!!! ---------------------
     // -----------------------------------------------------
-    //     USING THESE FUNCTIONS WILL BREAK ACCOUNTING
-    //   IN THE PCV ORACLE. ONLY USE FUNCTIONS IN AN
+    //   USING THESE FUNCTIONS WILL MAKE THE PCVORACLE THINK
+    //   THAT ASSETS FLOWED OUT OF THE SYSTEM, BECAUSE TOKEN
+    //   BALANCES ON THE SAFE ADDRESS (DAO TIMELOCK) ARE NOT
+    //   COUNTED AS PART OF PCV. ONLY USE FUNCTIONS IN AN
     //   EMERGENCY SITUATION IF WITHDRAWING FROM PCV DEPOSITS.
     // -----------------------------------------------------
-    //   WITHDRAWING FROM A PSM WILL NOT BREAK ACCOUNTING.
+    //   WITHDRAWING FROM A PSM WILL NOT HAVE THE SAME
+    //   EFFECT BECAUSE ASSETS IN PSM ARE ALREADY COUNTED
+    //   OUT OF THE SYSTEM FROM AN ACCOUNTING PERSPECTIVE.
     // -----------------------------------------------------
     // -----------------------------------------------------
 
