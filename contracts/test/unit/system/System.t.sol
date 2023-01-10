@@ -523,4 +523,66 @@ contract SystemUnitTest is Test {
         assertTrue(startingBalance >= endingBalance);
         assertEq(volt.balanceOf(address(usdcpsm)), 0);
     }
+
+    function _emergencyPause() private {
+        vm.prank(addresses.governorAddress);
+        lock.governanceEmergencyPause();
+
+        assertEq(lock.lockLevel(), 2);
+        assertTrue(lock.isLocked());
+        assertTrue(!lock.isUnlocked());
+    }
+
+    function testPsmFailureOnSystemEmergencyPause() public {
+        _emergencyPause();
+
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        usdcpsm.mint(address(this), 0, 0);
+
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        usdcpsm.redeem(address(this), 0, 0);
+
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        daipsm.mint(address(this), 0, 0);
+
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        daipsm.redeem(address(this), 0, 0);
+    }
+
+    function testAllocatorFailureOnSystemEmergencyPause() public {
+        _emergencyPause();
+
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        allocator.drip(address(pcvDepositDai));
+
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        allocator.skim(address(pcvDepositDai));
+    }
+
+    function testPcvGuardianFailureOnSystemEmergencyPause() public {
+        _emergencyPause();
+
+        vm.prank(addresses.userAddress);
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        pcvGuardian.withdrawAllERC20ToSafeAddress(
+            address(pcvDepositDai),
+            address(dai)
+        );
+
+        vm.prank(addresses.userAddress);
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        pcvGuardian.withdrawERC20ToSafeAddress(
+            address(pcvDepositDai),
+            address(dai),
+            0
+        );
+
+        vm.prank(addresses.userAddress);
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        pcvGuardian.withdrawToSafeAddress(address(pcvDepositDai), 0);
+
+        vm.prank(addresses.userAddress);
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        pcvGuardian.withdrawAllToSafeAddress(address(pcvDepositDai));
+    }
 }
