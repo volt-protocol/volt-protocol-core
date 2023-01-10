@@ -11,4 +11,6 @@ interface IPCVDepositV2 is IPCVDeposit {
     function harvest() external;
 
     function accrue() external returns (uint256);
+
+    function token() external returns (address);
 }
