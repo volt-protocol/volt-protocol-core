@@ -372,6 +372,32 @@ contract vip16 is Proposal {
         core.createRole(VoltRoles.PCV_MOVER, VoltRoles.GOVERNOR);
         core.grantRole(VoltRoles.PCV_MOVER, addresses.mainnet("GOVERNOR")); /// team multisig
 
+        core.createRole(
+            VoltRoles.RATE_LIMIT_SYSTEM_EXIT_DEPLETE,
+            VoltRoles.GOVERNOR
+        );
+        core.grantRole(
+            VoltRoles.RATE_LIMIT_SYSTEM_EXIT_DEPLETE,
+            addresses.mainnet("PSM_ALLOCATOR")
+        );
+        core.grantRole(
+            VoltRoles.RATE_LIMIT_SYSTEM_EXIT_DEPLETE,
+            addresses.mainnet("PSM_NONCUSTODIAL_DAI")
+        );
+        core.grantRole(
+            VoltRoles.RATE_LIMIT_SYSTEM_EXIT_DEPLETE,
+            addresses.mainnet("PSM_NONCUSTODIAL_USDC")
+        );
+
+        core.createRole(
+            VoltRoles.RATE_LIMIT_SYSTEM_EXIT_REPLENISH,
+            VoltRoles.GOVERNOR
+        );
+        core.grantRole(
+            VoltRoles.RATE_LIMIT_SYSTEM_EXIT_REPLENISH,
+            addresses.mainnet("PSM_ALLOCATOR")
+        );
+
         core.createRole(VoltRoles.LIQUID_PCV_DEPOSIT, VoltRoles.GOVERNOR);
         core.createRole(VoltRoles.ILLIQUID_PCV_DEPOSIT, VoltRoles.GOVERNOR);
         core.grantRole(
