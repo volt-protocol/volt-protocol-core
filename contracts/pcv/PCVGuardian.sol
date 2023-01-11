@@ -124,6 +124,23 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
         }
     }
 
+    // ---------- PCV Guardian State-Changing API ----------
+
+    // -----------------------------------------------------
+    // -------------------  WARNING!!! ---------------------
+    // -----------------------------------------------------
+    //   USING THESE FUNCTIONS WILL MAKE THE PCVORACLE THINK
+    //   THAT ASSETS FLOWED OUT OF THE SYSTEM, BECAUSE TOKEN
+    //   BALANCES ON THE SAFE ADDRESS (DAO TIMELOCK) ARE NOT
+    //   COUNTED AS PART OF PCV. ONLY USE FUNCTIONS IN AN
+    //   EMERGENCY SITUATION IF WITHDRAWING FROM PCV DEPOSITS.
+    // -----------------------------------------------------
+    //   WITHDRAWING FROM A PSM WILL NOT HAVE THE SAME
+    //   EFFECT BECAUSE ASSETS IN PSM ARE ALREADY COUNTED
+    //   OUT OF THE SYSTEM FROM AN ACCOUNTING PERSPECTIVE.
+    // -----------------------------------------------------
+    // -----------------------------------------------------
+
     /// @notice governor-or-guardian-or-pcv-guard method to withdraw funds from a pcv deposit, by calling the withdraw() method on it
     /// @param pcvDeposit the address of the pcv deposit contract
     /// @param amount the amount to withdraw
