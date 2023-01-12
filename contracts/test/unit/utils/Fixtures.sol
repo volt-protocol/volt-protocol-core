@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 import {Vm} from "../../../../forge-std/src/Test.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
 import {MockERC20} from "./../../../mock/MockERC20.sol";
+import {GenericCallMock} from "./../../../mock/GenericCallMock.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {IOraclePassThrough} from "../../../oracle/IOraclePassThrough.sol";
 import {IScalingPriceOracle} from "../../../oracle/IScalingPriceOracle.sol";
@@ -118,16 +119,34 @@ function getCoreV2() returns (CoreV2) {
 
 function getVoltSystemOracle(
     address _core,
-    uint16 _monthlyChangeRateBasisPoints,
-    uint40 _periodStartTime,
-    uint200 _oraclePrice
+    uint256 _monthlyChangeRate,
+    uint32 _periodStartTime,
+    uint224 _oraclePrice
 ) returns (VoltSystemOracle) {
-    VoltSystemOracle oracle = new VoltSystemOracle(
-        _core,
-        _monthlyChangeRateBasisPoints,
-        _periodStartTime,
-        _oraclePrice
+    address HEVM_ADDRESS = address(
+        bytes20(uint160(uint256(keccak256("hevm cheat code"))))
     );
+    Vm vm = Vm(HEVM_ADDRESS);
+
+    GenericCallMock mock = new GenericCallMock();
+    VoltSystemOracle oracle = new VoltSystemOracle(_core);
+
+    uint256 oraclePrice = _oraclePrice;
+    mock.setResponseToCall(
+        address(0),
+        "",
+        abi.encode(oraclePrice),
+        bytes4(keccak256("getCurrentOraclePrice()"))
+    );
+
+    uint256 currentTimeStamp = block.timestamp;
+    vm.warp(_periodStartTime);
+
+    // Deploy Core from Governor address
+    vm.prank(TestAddresses.governorAddress);
+    oracle.initialize(address(mock), _monthlyChangeRate);
+
+    vm.warp(currentTimeStamp);
 
     return oracle;
 }
@@ -142,7 +161,7 @@ function getOraclePassThrough(
 function getLocalOracleSystem(
     address core
 ) returns (VoltSystemOracle oracle, IOraclePassThrough opt) {
-    oracle = getVoltSystemOracle(core, 100, uint40(block.timestamp), 1e18);
+    oracle = getVoltSystemOracle(core, 100, uint32(block.timestamp), 1e18);
     opt = getOraclePassThrough(oracle, TestAddresses.governorAddress);
 }
 
@@ -153,7 +172,7 @@ function getLocalOracleSystem(
     oracle = getVoltSystemOracle(
         core,
         100,
-        uint40(block.timestamp),
+        uint32(block.timestamp),
         startPrice
     );
     opt = getOraclePassThrough(oracle, TestAddresses.governorAddress);
