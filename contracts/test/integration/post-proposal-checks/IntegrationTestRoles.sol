@@ -240,14 +240,18 @@ contract IntegrationTestRoles is PostProposalCheck {
         );
         assertEq(
             core.getRoleMemberCount(VoltRoles.RATE_LIMIT_SYSTEM_EXIT_DEPLETE),
-            2
+            3
         );
         assertEq(
             core.getRoleMember(VoltRoles.RATE_LIMIT_SYSTEM_EXIT_DEPLETE, 0),
-            addresses.mainnet("PSM_NONCUSTODIAL_DAI")
+            addresses.mainnet("PSM_ALLOCATOR")
         );
         assertEq(
             core.getRoleMember(VoltRoles.RATE_LIMIT_SYSTEM_EXIT_DEPLETE, 1),
+            addresses.mainnet("PSM_NONCUSTODIAL_DAI")
+        );
+        assertEq(
+            core.getRoleMember(VoltRoles.RATE_LIMIT_SYSTEM_EXIT_DEPLETE, 2),
             addresses.mainnet("PSM_NONCUSTODIAL_USDC")
         );
 
