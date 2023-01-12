@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
@@ -14,7 +15,12 @@ import {IVoltSystemOracle} from "./IVoltSystemOracle.sol";
 /// after the oracle start time.
 /// Interest compounds once per month.
 /// @author Elliot Friedman
-contract VoltSystemOracle is IVoltSystemOracle, CoreRefV2, IOracleV2 {
+contract VoltSystemOracle is
+    IVoltSystemOracle,
+    CoreRefV2,
+    IOracleV2,
+    Initializable
+{
     using SafeCast for *;
 
     /// ----------------------------------------
@@ -24,15 +30,15 @@ contract VoltSystemOracle is IVoltSystemOracle, CoreRefV2, IOracleV2 {
 
     /// @notice acts as an accumulator for interest earned in previous periods
     /// returns the oracle price from the end of the last period
-    uint200 private _oraclePrice;
+    uint224 public oraclePrice;
 
     /// @notice start time at which point interest will start accruing, and the
     /// current ScalingPriceOracle price will be snapshotted and saved
-    uint40 private _periodStartTime;
+    uint32 public periodStartTime;
 
-    /// @notice current amount that oracle price is inflating by monthly in basis points
-    /// cannot be greater than 65,535 basis points per month
-    uint16 private _monthlyChangeRateBasisPoints;
+    /// @notice current amount that oracle price is inflating by monthly in
+    /// percentage terms scaled by 1e18
+    uint256 public monthlyChangeRate;
 
     /// ---------- Immutable Variable ----------
 
@@ -41,18 +47,30 @@ contract VoltSystemOracle is IVoltSystemOracle, CoreRefV2, IOracleV2 {
     uint256 public constant TIMEFRAME = 30.42 days;
 
     /// @param _core reference
-    /// @param startingMonthlyChangeRateBasisPoints monthly change rate in the Volt price
-    /// @param startingPeriodStartTime start time at which oracle starts interpolating prices
-    /// @param startingoraclePrice starting oracle price
-    constructor(
-        address _core,
-        uint16 startingMonthlyChangeRateBasisPoints,
-        uint40 startingPeriodStartTime,
-        uint200 startingoraclePrice
-    ) CoreRefV2(_core) {
-        _monthlyChangeRateBasisPoints = startingMonthlyChangeRateBasisPoints;
-        _periodStartTime = startingPeriodStartTime;
-        _oraclePrice = startingoraclePrice;
+    constructor(address _core) CoreRefV2(_core) {}
+
+    // ----------- Initializer -----------
+
+    /// @notice initializes the oracle, setting start time to the current block timestamp,
+    /// start price gets set to the previous oracle's current price.
+    /// change rate is provided by governance.
+    /// @param previousOracle address of the previous oracle
+    /// @param startingMonthlyChangeRate starting interest change rate of the oracle
+    function initialize(
+        address previousOracle,
+        uint256 startingMonthlyChangeRate
+    ) external override onlyGovernor initializer {
+        uint224 startingOraclePrice = IVoltSystemOracle(previousOracle)
+            .getCurrentOraclePrice()
+            .toUint224();
+        uint32 startingTime = block.timestamp.toUint32();
+
+        /// 1st SSTORE
+        oraclePrice = startingOraclePrice;
+        periodStartTime = startingTime;
+
+        /// 2nd SSTORE
+        monthlyChangeRate = startingMonthlyChangeRate;
     }
 
     // ----------- Getters -----------
@@ -62,14 +80,14 @@ contract VoltSystemOracle is IVoltSystemOracle, CoreRefV2, IOracleV2 {
     /// scaled by 18 decimals
     // prettier-ignore
     function getCurrentOraclePrice() public view override returns (uint256) {
-        uint256 cachedStartTime = _periodStartTime; /// save a single warm SLOAD if condition is false
+        uint256 cachedStartTime = periodStartTime; /// save a single warm SLOAD if condition is false
         if (cachedStartTime >= block.timestamp) { /// only accrue interest after start time
-            return _oraclePrice;
+            return oraclePrice;
         }
 
-        uint256 cachedOraclePrice = _oraclePrice; /// save a single warm SLOAD by using the stack
+        uint256 cachedOraclePrice = oraclePrice; /// save a single warm SLOAD by using the stack
         uint256 timeDelta = Math.min(block.timestamp - cachedStartTime, TIMEFRAME);
-        uint256 pricePercentageChange = cachedOraclePrice * _monthlyChangeRateBasisPoints / Constants.BASIS_POINTS_GRANULARITY;
+        uint256 pricePercentageChange = cachedOraclePrice * monthlyChangeRate / Constants.ETH_GRANULARITY;
         uint256 priceDelta = pricePercentageChange * timeDelta / TIMEFRAME;
 
         return cachedOraclePrice + priceDelta;
@@ -82,19 +100,6 @@ contract VoltSystemOracle is IVoltSystemOracle, CoreRefV2, IOracleV2 {
         valid = true;
     }
 
-    /// @notice oracle price. starts off at 1e18 and compounds monthly
-    /// acts as an accumulator for interest earned in previous epochs
-    /// returns the oracle price from the end of the last period
-    function oraclePrice() external view override returns (uint256) {
-        return _oraclePrice;
-    }
-
-    /// @notice start time at which point interest will start accruing, and the
-    /// current ScalingPriceOracle price will be snapshotted and saved
-    function periodStartTime() external view override returns (uint256) {
-        return _periodStartTime;
-    }
-
     /// @notice current amount that oracle price is inflating by monthly in basis points
     /// does not support negative rates because PCV will not be deposited into negatively
     /// yielding venues.
@@ -104,7 +109,7 @@ contract VoltSystemOracle is IVoltSystemOracle, CoreRefV2, IOracleV2 {
         override
         returns (uint256)
     {
-        return _monthlyChangeRateBasisPoints;
+        return monthlyChangeRate;
     }
 
     /// ------------- Public State Changing API -------------
@@ -113,35 +118,35 @@ contract VoltSystemOracle is IVoltSystemOracle, CoreRefV2, IOracleV2 {
     /// Sets accumulator to the current accrued interest, and then resets the timer.
     function compoundInterest() external override {
         require(
-            block.timestamp >= _periodStartTime + TIMEFRAME,
+            block.timestamp >= periodStartTime + TIMEFRAME,
             "VoltSystemOracle: not past end time"
         );
 
         _compoundInterest();
     }
 
+    /// ------------- Governor Only State Changing API -------------
+
     /// @notice update the change rate in basis points
     /// callable only by the governor
     /// when called, interest accrued is compounded and then new rate is set
     function updateChangeRateBasisPoints(
-        uint16 newMonthlyChangeRateBasisPoints
+        uint256 newMonthlyChangeRate
     ) external override onlyGovernor {
         _compoundInterest(); /// compound interest before updating change rate
 
-        uint256 oldChangeRateBasisPoints = _monthlyChangeRateBasisPoints;
-        _monthlyChangeRateBasisPoints = newMonthlyChangeRateBasisPoints
-            .toUint16();
+        uint256 oldChangeRateBasisPoints = monthlyChangeRate;
+        monthlyChangeRate = newMonthlyChangeRate;
 
-        emit ChangeRateUpdated(
-            oldChangeRateBasisPoints,
-            newMonthlyChangeRateBasisPoints
-        );
+        emit ChangeRateUpdated(oldChangeRateBasisPoints, newMonthlyChangeRate);
     }
+
+    /// ------------- Internal Helper -------------
 
     /// @notice helper function to compound interest
     function _compoundInterest() private {
-        uint200 newOraclePrice = uint200(getCurrentOraclePrice());
-        uint40 newStartTime = uint40(_periodStartTime + TIMEFRAME);
+        uint224 newOraclePrice = getCurrentOraclePrice().toUint224();
+        uint32 newStartTime = (periodStartTime + TIMEFRAME).toUint32();
 
         /// SSTORE
         /// first set Oracle Price to interpolated value
@@ -149,12 +154,12 @@ contract VoltSystemOracle is IVoltSystemOracle, CoreRefV2, IOracleV2 {
         /// 1606938044000000000000000000000000000000000000000000000000000
         /// for this to fail.
         /// starting price -> 1000000000000000000
-        _oraclePrice = newOraclePrice;
+        oraclePrice = newOraclePrice;
 
         /// set periodStartTime to periodStartTime + timeframe,
         /// this is equivalent to init timed, which wipes out all unaccumulated compounded interest
         /// and cleanly sets the start time.
-        _periodStartTime = newStartTime;
+        periodStartTime = newStartTime;
 
         emit InterestCompounded(newStartTime, newOraclePrice);
     }
