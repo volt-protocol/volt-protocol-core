@@ -7,6 +7,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {Timed} from "./../../utils/Timed.sol";
+import {VoltRoles} from "../../core/VoltRoles.sol";
 import {CoreRefV2} from "./../../refs/CoreRefV2.sol";
 import {PCVDeposit} from "./../PCVDeposit.sol";
 import {IERC20Allocator} from "./IERC20Allocator.sol";
@@ -141,8 +142,15 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2 {
     }
 
     /// @notice delete an existing deposit
+    /// Callable by Governor and PCV Sentinel
     /// @param pcvDeposit PCV Deposit to remove connection to PSM
-    function deleteDeposit(address pcvDeposit) external override onlyGovernor {
+    function deleteDeposit(
+        address pcvDeposit
+    )
+        external
+        override
+        hasAnyOfTwoRoles(VoltRoles.GOVERNOR, VoltRoles.PCV_SENTINEL)
+    {
         delete pcvDepositToPSM[pcvDeposit];
 
         emit DepositDeleted(pcvDeposit);
