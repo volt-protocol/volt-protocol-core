@@ -7,50 +7,15 @@ import {CoreRefV2} from "../../refs/CoreRefV2.sol";
 import {PCVGuardian} from "../PCVGuardian.sol";
 import {IComptroller} from "./IComptroller.sol";
 import {ERC20Allocator} from "../utils/ERC20Allocator.sol";
+import {ICompoundBadDebtSentinel} from "./ICompoundBadDebtSentinel.sol";
 
 /// @notice Contract that removes all funds from Compound
 /// when bad debt goes over a certain threshold.
 /// After funds are removed from Compound, disconnect
 /// the PCV Deposits from the ERC20 Allocator.
 /// @dev requires PCV Guardian role and the PCV SENTINEL role.
-contract CompoundBadDebtSentinel is CoreRefV2 {
+contract CompoundBadDebtSentinel is ICompoundBadDebtSentinel, CoreRefV2 {
     using EnumerableSet for EnumerableSet.AddressSet;
-
-    /// @notice event emitted when bad debt is detected and funds are removed from Compound PCV Deposits
-    event BadDebtDetected(
-        uint256 timestamp,
-        address indexed caller,
-        address[] pcvDeposits
-    );
-
-    /// @notice event emitted when compound pcv deposit is added to sentinel
-    event PCVDepositAdded(
-        uint256 timestamp,
-        address indexed caller,
-        address indexed pcvDeposit
-    );
-
-    /// @notice event emitted when compound pcv deposit is removed from sentinel
-    event PCVDepositRemoved(
-        uint256 timestamp,
-        address indexed caller,
-        address indexed pcvDeposit
-    );
-
-    /// @notice event emitted when PCV Guardian is updated
-    event PCVGuardianUpdated(
-        address indexed oldPCVGuardian,
-        address indexed newPCVGuardian
-    );
-
-    /// @notice event emitted when ERC20 Allocator is updated
-    event ERC20AllocatorUpdated(
-        address indexed oldAllocator,
-        address indexed newAllocator
-    );
-
-    /// @notice event emitted when ERC20 Allocator is updated
-    event BadDebtThresholdUpdated(uint256 oldThreshold, uint256 newThreshold);
 
     ///@notice set of whitelisted compound PCV Deposits
     EnumerableSet.AddressSet private compoundPcvDeposits;
@@ -114,7 +79,7 @@ contract CompoundBadDebtSentinel is CoreRefV2 {
     function rescueFromCompound(
         address[] calldata addresses,
         address[] calldata pcvDeposits
-    ) external {
+    ) external override {
         uint256 pcvDepositsLength = pcvDeposits.length;
         uint256 accountsLength = addresses.length;
 
@@ -168,7 +133,7 @@ contract CompoundBadDebtSentinel is CoreRefV2 {
     /// @param newPcvDeposits to add to the sentinel
     function addPCVDeposits(
         address[] calldata newPcvDeposits
-    ) external onlyGovernor {
+    ) external override onlyGovernor {
         uint256 pcvDepositsLength = newPcvDeposits.length;
 
         unchecked {
@@ -187,7 +152,7 @@ contract CompoundBadDebtSentinel is CoreRefV2 {
     /// @param pcvDeposits to remove from this sentinel
     function removePCVDeposits(
         address[] calldata pcvDeposits
-    ) external onlyGovernor {
+    ) external override onlyGovernor {
         uint256 pcvDepositsLength = pcvDeposits.length;
 
         unchecked {
@@ -207,7 +172,9 @@ contract CompoundBadDebtSentinel is CoreRefV2 {
 
     /// @notice update the PCV Guardian
     /// @param newPCVGuardian to pull funds through
-    function updatePCVGuardian(address newPCVGuardian) external onlyGovernor {
+    function updatePCVGuardian(
+        address newPCVGuardian
+    ) external override onlyGovernor {
         address oldPCVGuardian = pcvGuardian;
 
         pcvGuardian = newPCVGuardian;
@@ -217,7 +184,9 @@ contract CompoundBadDebtSentinel is CoreRefV2 {
 
     /// @notice update the ERC20 Allocator
     /// @param newAllocator to point to
-    function updateERC20Allocator(address newAllocator) external onlyGovernor {
+    function updateERC20Allocator(
+        address newAllocator
+    ) external override onlyGovernor {
         address oldAllocator = erc20Allocator;
 
         erc20Allocator = newAllocator;
@@ -229,7 +198,7 @@ contract CompoundBadDebtSentinel is CoreRefV2 {
     /// @param newBadDebtThreshold over which the sentinel can be triggered.
     function updateBadDebtThreshold(
         uint256 newBadDebtThreshold
-    ) external onlyGovernor {
+    ) external override onlyGovernor {
         uint256 oldBadDebtThreshold = badDebtThreshold;
 
         badDebtThreshold = newBadDebtThreshold;
