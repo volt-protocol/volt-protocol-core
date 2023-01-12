@@ -159,12 +159,7 @@ contract SystemV2 {
         );
 
         /// VOLT rate
-        vso = new VoltSystemOracle(
-            address(core),
-            VOLT_MONTHLY_BASIS_POINTS,
-            VOLT_APR_START_TIME, /// todo fill in actual value
-            VOLT_START_PRICE /// todo fetch this from the old oracle after warping forward 24 hours
-        );
+        vso = new VoltSystemOracle(address(core));
 
         /// PCV Deposits
         morphoDaiPCVDeposit = new MorphoCompoundPCVDeposit(
