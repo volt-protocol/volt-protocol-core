@@ -142,7 +142,7 @@ function getVoltSystemOracle(
     uint256 currentTimeStamp = block.timestamp;
     vm.warp(_periodStartTime);
 
-    // Deploy Core from Governor address
+    /// Initialize Core from Governor address
     vm.prank(TestAddresses.governorAddress);
     oracle.initialize(address(mock), _monthlyChangeRate);
 
