@@ -19,6 +19,7 @@ contract IntegrationTestSystemV2 is Test {
     SystemV2 systemV2;
     address public constant user = 0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7;
     uint224 public constant mintAmount = 100_000_000e18;
+    uint256 monthlyChangeRate = 0.01e18;
 
     CoreV2 core;
     IERC20 dai;
@@ -41,6 +42,7 @@ contract IntegrationTestSystemV2 is Test {
     SystemEntry systemEntry;
     VoltMigrator voltMigrator;
     MigratorRouter migratorRouter;
+    VoltSystemOracle oracle;
 
     function setUp() public {
         systemV2 = new SystemV2();
@@ -66,6 +68,7 @@ contract IntegrationTestSystemV2 is Test {
         systemEntry = systemV2.systemEntry();
         voltMigrator = systemV2.voltMigrator();
         migratorRouter = systemV2.migratorRouter();
+        oracle = systemV2.vso();
 
         uint256 BUFFER_CAP_MINTING = systemV2.BUFFER_CAP_MINTING();
         uint256 amount = BUFFER_CAP_MINTING / 2;
@@ -80,6 +83,12 @@ contract IntegrationTestSystemV2 is Test {
         vm.label(address(this), "address this");
         vm.label(address(voltMigrator), "Volt Migrator");
         vm.label(address(migratorRouter), "Migrator Router");
+
+        vm.prank(MainnetAddresses.GOVERNOR);
+        oracle.initialize(
+            MainnetAddresses.VOLT_SYSTEM_ORACLE_144_BIPS,
+            monthlyChangeRate
+        );
     }
 
     /*
@@ -418,7 +427,8 @@ contract IntegrationTestSystemV2 is Test {
 
         assertEq(
             systemV2.vso().getCurrentOraclePrice(),
-            systemV2.VOLT_START_PRICE()
+            VoltSystemOracle(MainnetAddresses.VOLT_SYSTEM_ORACLE_144_BIPS)
+                .getCurrentOraclePrice()
         );
     }
 
@@ -593,7 +603,7 @@ contract IntegrationTestSystemV2 is Test {
 
     function testRedeemsDaiNcPsm(uint80 voltRedeemAmount) public {
         vm.assume(voltRedeemAmount >= 1e18);
-        vm.assume(voltRedeemAmount <= 475_000e18);
+        vm.assume(daincpsm.getRedeemAmountOut(voltRedeemAmount) <= 500_000e18);
         testFirstUserMint();
 
         uint256 snapshotId = 0; /// roll back to before buffer replenished
@@ -629,7 +639,7 @@ contract IntegrationTestSystemV2 is Test {
 
     function testRedeemsUsdcNcPsm(uint80 voltRedeemAmount) public {
         vm.assume(voltRedeemAmount >= 1e18);
-        vm.assume(voltRedeemAmount <= 475_000e18);
+        vm.assume(usdcncpsm.getRedeemAmountOut(voltRedeemAmount) <= 500_000e6);
         testFirstUserMint();
 
         uint256 snapshotId = 0; /// roll back to before buffer replenished
