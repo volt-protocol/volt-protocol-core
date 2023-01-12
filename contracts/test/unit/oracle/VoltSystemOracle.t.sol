@@ -7,10 +7,10 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Vm} from "./../utils/Vm.sol";
 import {DSTest} from "./../utils/DSTest.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
-import {getCoreV2} from "./../utils/Fixtures.sol";
 import {Constants} from "./../../../Constants.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
+import {getCoreV2, getVoltSystemOracle} from "./../utils/Fixtures.sol";
 
 contract VoltSystemOracleUnitTest is DSTest {
     using SafeCast for *;
@@ -21,22 +21,22 @@ contract VoltSystemOracleUnitTest is DSTest {
     VoltSystemOracle private voltSystemOracle;
 
     /// @notice increase the volt target price by 2% monthly
-    uint16 public constant monthlyChangeRateBasisPoints = 200;
+    uint256 public constant monthlyChangeRate = 0.02e18;
 
     /// @notice block time at which the VSO (Volt System Oracle) will start accruing interest
-    uint40 public constant startTime = 100_000;
+    uint32 public immutable startTime = 100_000;
 
     /// @notice actual starting oracle price on mainnet
-    uint200 public constant startPrice = 1045095352308302897;
+    uint224 public constant startPrice = 1045095352308302897;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
     function setUp() public {
         core = getCoreV2();
 
-        voltSystemOracle = new VoltSystemOracle(
+        voltSystemOracle = getVoltSystemOracle(
             address(core),
-            monthlyChangeRateBasisPoints,
+            monthlyChangeRate,
             startTime,
             startPrice
         );
@@ -44,10 +44,7 @@ contract VoltSystemOracleUnitTest is DSTest {
 
     function testSetup() public {
         assertEq(voltSystemOracle.oraclePrice(), startPrice);
-        assertEq(
-            voltSystemOracle.monthlyChangeRateBasisPoints(),
-            monthlyChangeRateBasisPoints
-        );
+        assertEq(voltSystemOracle.monthlyChangeRate(), monthlyChangeRate);
         assertEq(voltSystemOracle.periodStartTime(), startTime);
         assertEq(voltSystemOracle.getCurrentOraclePrice(), startPrice);
     }
@@ -62,13 +59,24 @@ contract VoltSystemOracleUnitTest is DSTest {
         voltSystemOracle.compoundInterest();
     }
 
+    function testCannotInitializeNonGovernor() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        voltSystemOracle.initialize(address(0), 0);
+    }
+
+    function testCannotInitializeWhenInitialized() public {
+        vm.expectRevert("Initializable: contract is already initialized");
+        vm.prank(addresses.governorAddress);
+        voltSystemOracle.initialize(address(0), 0);
+    }
+
     function _testLERP(uint256 lerpStartTime) internal {
         vm.warp(lerpStartTime);
 
         uint256 oraclePrice = voltSystemOracle.oraclePrice();
         uint256 endingOraclePrice = _calculateDelta(
             oraclePrice,
-            monthlyChangeRateBasisPoints + Constants.BASIS_POINTS_GRANULARITY
+            monthlyChangeRate + Constants.ETH_GRANULARITY
         );
         uint256 periodStartTime = voltSystemOracle.periodStartTime();
         uint256 expectedOraclePrice = _calculateLinearInterpolation(
@@ -98,7 +106,7 @@ contract VoltSystemOracleUnitTest is DSTest {
         uint256 oraclePrice = voltSystemOracle.oraclePrice();
         uint256 expectedOraclePrice = _calculateDelta(
             oraclePrice,
-            monthlyChangeRateBasisPoints + Constants.BASIS_POINTS_GRANULARITY
+            monthlyChangeRate + Constants.ETH_GRANULARITY
         );
         uint256 previousStartTime = voltSystemOracle.periodStartTime();
         assertEq(voltSystemOracle.getCurrentOraclePrice(), expectedOraclePrice);
@@ -157,7 +165,9 @@ contract VoltSystemOracleUnitTest is DSTest {
     function testMultipleSequentialPeriodCompounds() public {
         /// anything over this amount of periods gets the oracle price into
         /// a zone where it could overflow during call to getCurrentOraclePrice
-        uint16 periods = 4500;
+        /// now we can support less periods because the change rate is scaled up by 1e18,
+        /// meaning the overflow gets hit faster
+        uint16 periods = 1600;
         vm.warp(
             voltSystemOracle.periodStartTime() +
                 (periods * voltSystemOracle.TIMEFRAME())
@@ -170,8 +180,7 @@ contract VoltSystemOracleUnitTest is DSTest {
             voltSystemOracle.compoundInterest(); /// compound interest periods amount of times
             expectedOraclePrice = _calculateDelta(
                 expectedOraclePrice,
-                voltSystemOracle.monthlyChangeRateBasisPoints() +
-                    Constants.BASIS_POINTS_GRANULARITY
+                voltSystemOracle.monthlyChangeRate() + Constants.ETH_GRANULARITY
             );
             assertEq(expectedOraclePrice, voltSystemOracle.oraclePrice());
             assertEq(
@@ -196,8 +205,7 @@ contract VoltSystemOracleUnitTest is DSTest {
                 voltSystemOracle.getCurrentOraclePrice(),
                 _calculateDelta(
                     cachedOraclePrice,
-                    monthlyChangeRateBasisPoints +
-                        Constants.BASIS_POINTS_GRANULARITY
+                    monthlyChangeRate + Constants.ETH_GRANULARITY
                 )
             );
         } else {
@@ -205,7 +213,7 @@ contract VoltSystemOracleUnitTest is DSTest {
                 voltSystemOracle.periodStartTime();
             uint256 pricePercentageChange = _calculateDelta(
                 cachedOraclePrice,
-                voltSystemOracle.monthlyChangeRateBasisPoints()
+                voltSystemOracle.monthlyChangeRate()
             );
             uint256 priceDelta = (pricePercentageChange * timeDelta) /
                 voltSystemOracle.TIMEFRAME();
@@ -215,8 +223,7 @@ contract VoltSystemOracleUnitTest is DSTest {
             );
             uint256 endingOraclePrice = _calculateDelta(
                 cachedOraclePrice,
-                monthlyChangeRateBasisPoints +
-                    Constants.BASIS_POINTS_GRANULARITY
+                monthlyChangeRate + Constants.ETH_GRANULARITY
             );
             uint256 periodStartTime = voltSystemOracle.periodStartTime();
             uint256 duration = voltSystemOracle.TIMEFRAME();
@@ -253,8 +260,7 @@ contract VoltSystemOracleUnitTest is DSTest {
                     voltSystemOracle.getCurrentOraclePrice(),
                     _calculateDelta(
                         cachedOraclePrice,
-                        monthlyChangeRateBasisPoints +
-                            Constants.BASIS_POINTS_GRANULARITY
+                        monthlyChangeRate + Constants.ETH_GRANULARITY
                     )
                 );
             } else {
@@ -264,7 +270,7 @@ contract VoltSystemOracleUnitTest is DSTest {
                 );
                 uint256 pricePercentageChange = _calculateDelta(
                     cachedOraclePrice,
-                    voltSystemOracle.monthlyChangeRateBasisPoints()
+                    voltSystemOracle.monthlyChangeRate()
                 );
                 uint256 priceDelta = (pricePercentageChange * timeDelta) /
                     voltSystemOracle.TIMEFRAME();
@@ -274,8 +280,7 @@ contract VoltSystemOracleUnitTest is DSTest {
                 );
                 uint256 endingOraclePrice = _calculateDelta(
                     cachedOraclePrice,
-                    monthlyChangeRateBasisPoints +
-                        Constants.BASIS_POINTS_GRANULARITY
+                    monthlyChangeRate + Constants.ETH_GRANULARITY
                 );
                 uint256 periodStartTime = voltSystemOracle.periodStartTime();
                 uint256 duration = voltSystemOracle.TIMEFRAME();
@@ -310,8 +315,7 @@ contract VoltSystemOracleUnitTest is DSTest {
                     voltSystemOracle.oraclePrice(),
                     _calculateDelta(
                         cachedOraclePrice,
-                        monthlyChangeRateBasisPoints +
-                            Constants.BASIS_POINTS_GRANULARITY
+                        monthlyChangeRate + Constants.ETH_GRANULARITY
                     )
                 );
             }
@@ -332,8 +336,7 @@ contract VoltSystemOracleUnitTest is DSTest {
             uint256 duration = voltSystemOracle.TIMEFRAME();
             uint256 endingOraclePrice = _calculateDelta(
                 cachedOraclePrice,
-                monthlyChangeRateBasisPoints +
-                    Constants.BASIS_POINTS_GRANULARITY
+                monthlyChangeRate + Constants.ETH_GRANULARITY
             );
             uint256 periodStartTime = voltSystemOracle.periodStartTime();
             /// double check contract's math and use LERP to verify both algorithms generate the same price at t
@@ -371,7 +374,7 @@ contract VoltSystemOracleUnitTest is DSTest {
                     voltSystemOracle.compoundInterest();
                 } else {
                     testGovernorUpdateChangeRateSucceeds(
-                        uint16(voltSystemOracle.monthlyChangeRateBasisPoints())
+                        voltSystemOracle.monthlyChangeRate()
                     );
                 }
 
@@ -385,8 +388,7 @@ contract VoltSystemOracleUnitTest is DSTest {
                     voltSystemOracle.oraclePrice(),
                     _calculateDelta(
                         cachedOraclePrice,
-                        monthlyChangeRateBasisPoints +
-                            Constants.BASIS_POINTS_GRANULARITY
+                        monthlyChangeRate + Constants.ETH_GRANULARITY
                     )
                 );
             }
@@ -398,16 +400,15 @@ contract VoltSystemOracleUnitTest is DSTest {
         voltSystemOracle.updateChangeRateBasisPoints(0);
     }
 
-    function testGovernorUpdateChangeRateSucceeds(uint16 newChangeRate) public {
+    function testGovernorUpdateChangeRateSucceeds(
+        uint256 newChangeRate
+    ) public {
         vm.assume(newChangeRate <= 10_000);
 
         vm.prank(addresses.governorAddress);
         voltSystemOracle.updateChangeRateBasisPoints(newChangeRate);
 
-        assertEq(
-            voltSystemOracle.monthlyChangeRateBasisPoints(),
-            newChangeRate
-        );
+        assertEq(voltSystemOracle.monthlyChangeRate(), newChangeRate);
     }
 
     /// Linear Interpolation Formula
@@ -435,9 +436,8 @@ contract VoltSystemOracleUnitTest is DSTest {
 
     function _calculateDelta(
         uint256 oldOraclePrice,
-        uint256 changeRateBasisPoints
+        uint256 changeRate
     ) internal pure returns (uint256) {
-        uint256 basisPoints = Constants.BASIS_POINTS_GRANULARITY;
-        return (oldOraclePrice * changeRateBasisPoints) / basisPoints;
+        return (oldOraclePrice * changeRate) / Constants.ETH_GRANULARITY;
     }
 }
