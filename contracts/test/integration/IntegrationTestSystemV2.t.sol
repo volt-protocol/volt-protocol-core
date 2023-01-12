@@ -191,21 +191,13 @@ contract IntegrationTestSystemV2 is Test {
         );
 
         // LIQUID_PCV_DEPOSIT_ROLE
-        assertEq(core.getRoleMemberCount(VoltRoles.LIQUID_PCV_DEPOSIT), 4);
+        assertEq(core.getRoleMemberCount(VoltRoles.LIQUID_PCV_DEPOSIT), 2);
         assertEq(
             core.getRoleMember(VoltRoles.LIQUID_PCV_DEPOSIT, 0),
-            address(systemV2.daipsm())
-        );
-        assertEq(
-            core.getRoleMember(VoltRoles.LIQUID_PCV_DEPOSIT, 1),
-            address(systemV2.usdcpsm())
-        );
-        assertEq(
-            core.getRoleMember(VoltRoles.LIQUID_PCV_DEPOSIT, 2),
             address(systemV2.morphoDaiPCVDeposit())
         );
         assertEq(
-            core.getRoleMember(VoltRoles.LIQUID_PCV_DEPOSIT, 3),
+            core.getRoleMember(VoltRoles.LIQUID_PCV_DEPOSIT, 1),
             address(systemV2.morphoUsdcPCVDeposit())
         );
 
