@@ -10,12 +10,12 @@ interface IVoltSystemOracle {
 
     /// @notice start time at which point interest will start accruing, and the
     /// current ScalingPriceOracle price will be snapshotted and saved
-    function periodStartTime() external view returns (uint256);
+    function periodStartTime() external view returns (uint32);
 
     /// @notice oracle price. starts off at 1e18 and compounds monthly
     /// acts as an accumulator for interest earned in previous epochs
     /// returns the oracle price from the end of the last period
-    function oraclePrice() external view returns (uint256);
+    function oraclePrice() external view returns (uint224);
 
     /// @notice current amount that oracle price is inflating by monthly in basis points
     /// does not support negative rates because PCV will not be deposited into negatively
@@ -32,12 +32,22 @@ interface IVoltSystemOracle {
     /// Sets accumulator to the current accrued interest, and then resets the timer.
     function compoundInterest() external;
 
+    /// ------------- Governor Only State Changing API -------------
+
+    /// @notice initializes the oracle, setting start time to the current block timestamp,
+    /// start price gets set to the previous oracle's current price.
+    /// change rate is provided by governance.
+    /// @param previousOracle address of the previous oracle
+    /// @param startingMonthlyChangeRate starting interest change rate of the oracle
+    function initialize(
+        address previousOracle,
+        uint256 startingMonthlyChangeRate
+    ) external;
+
     /// @notice update the change rate in basis points
     /// callable only by the governor
-    /// @param newMonthlyChangeRateBasisPoints basis points to interpolate price
-    function updateChangeRateBasisPoints(
-        uint16 newMonthlyChangeRateBasisPoints
-    ) external;
+    /// @param newMonthlyChangeRate interest rate to interpolate price
+    function updateChangeRateBasisPoints(uint256 newMonthlyChangeRate) external;
 
     // ----------- Event -----------
 
