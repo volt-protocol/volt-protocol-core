@@ -11,18 +11,22 @@ import {Deviation} from "../../../utils/Deviation.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
 import {PCVDeposit} from "../../../pcv/PCVDeposit.sol";
+import {SystemEntry} from "../../../entry/SystemEntry.sol";
+import {IPCVDepositBalances} from "../../../pcv/IPCVDepositBalances.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {MockCoreRefV2} from "../../../mock/MockCoreRefV2.sol";
 import {ERC20Allocator} from "../../../pcv/utils/ERC20Allocator.sol";
+import {GenericCallMock} from "../../../mock/GenericCallMock.sol";
 import {MockPCVDepositV2} from "../../../mock/MockPCVDepositV2.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {IScalingPriceOracle} from "../../../oracle/IScalingPriceOracle.sol";
-import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../../limiter/GlobalRateLimitedMinter.sol";
+import {MorphoCompoundPCVDeposit} from "../../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 import {getCoreV2, getVoltAddresses, VoltAddresses} from "./../utils/Fixtures.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../core/GlobalReentrancyLock.sol";
+import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../../limiter/GlobalRateLimitedMinter.sol";
 
 /// deployment steps
 /// 1. core v2
@@ -64,6 +68,7 @@ contract SystemUnitTest is Test {
     VoltAddresses public guardianAddresses = getVoltAddresses();
 
     ICoreV2 private core;
+    SystemEntry private entry;
     PegStabilityModule private daipsm;
     PegStabilityModule private usdcpsm;
     MockPCVDepositV2 private pcvDepositDai;
@@ -122,6 +127,7 @@ contract SystemUnitTest is Test {
     function setUp() public {
         vm.warp(startTime); /// warp past 0
         core = getCoreV2();
+        entry = new SystemEntry(address(core));
         volt = IERC20Mintable(address(core.volt()));
         voltAddress = address(volt);
         coreAddress = address(core);
@@ -232,9 +238,9 @@ contract SystemUnitTest is Test {
 
         core.grantLocker(address(pcvGuardian));
         core.grantLocker(address(allocator));
-        core.grantLocker(address(daipsm));
         core.grantLocker(address(usdcpsm));
-
+        core.grantLocker(address(daipsm));
+        core.grantLocker(address(entry));
         core.grantLocker(address(grlm));
 
         core.setGlobalRateLimitedMinter(
@@ -264,6 +270,7 @@ contract SystemUnitTest is Test {
         usdc.mint(address(pcvDepositUsdc), usdcTargetBalance);
 
         vm.label(address(timelockController), "Timelock Controller");
+        vm.label(address(entry), "entry");
         vm.label(address(daipsm), "daipsm");
         vm.label(address(usdcpsm), "usdcpsm");
         vm.label(address(pcvDepositDai), "pcvDepositDai");
@@ -522,5 +529,132 @@ contract SystemUnitTest is Test {
         assertEq(bufferAfterRedeem, startingBuffer);
         assertTrue(startingBalance >= endingBalance);
         assertEq(volt.balanceOf(address(usdcpsm)), 0);
+    }
+
+    function _emergencyPause() private {
+        vm.prank(addresses.governorAddress);
+        lock.governanceEmergencyPause();
+
+        assertEq(lock.lockLevel(), 2);
+        assertTrue(lock.isLocked());
+        assertTrue(!lock.isUnlocked());
+    }
+
+    function testPsmFailureOnSystemEmergencyPause() public {
+        _emergencyPause();
+
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        usdcpsm.mint(address(this), 0, 0);
+
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        usdcpsm.redeem(address(this), 0, 0);
+
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        daipsm.mint(address(this), 0, 0);
+
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        daipsm.redeem(address(this), 0, 0);
+    }
+
+    function testAllocatorFailureOnSystemEmergencyPause() public {
+        _emergencyPause();
+
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        allocator.drip(address(pcvDepositDai));
+
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        allocator.skim(address(pcvDepositDai));
+    }
+
+    function testPcvGuardianFailureOnSystemEmergencyPause() public {
+        _emergencyPause();
+
+        vm.prank(addresses.userAddress);
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        pcvGuardian.withdrawAllERC20ToSafeAddress(
+            address(pcvDepositDai),
+            address(dai)
+        );
+
+        vm.prank(addresses.userAddress);
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        pcvGuardian.withdrawERC20ToSafeAddress(
+            address(pcvDepositDai),
+            address(dai),
+            0
+        );
+
+        vm.prank(addresses.userAddress);
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        pcvGuardian.withdrawToSafeAddress(address(pcvDepositDai), 0);
+
+        vm.prank(addresses.userAddress);
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        pcvGuardian.withdrawAllToSafeAddress(address(pcvDepositDai));
+    }
+
+    function testReentrancyLockMaliciousExternalVenue() public {
+        /// fake deposit
+        GenericCallMock mock = new GenericCallMock();
+
+        mock.setResponseToCall(
+            address(0),
+            "",
+            abi.encode(usdc),
+            IPCVDepositBalances.balanceReportedIn.selector
+        );
+
+        /// ctoken response
+        mock.setResponseToCall(
+            address(0),
+            "",
+            abi.encode(usdc),
+            bytes4(keccak256("underlying()"))
+        );
+
+        /// morpho lens response
+        mock.setResponseToCall(
+            address(0),
+            "",
+            abi.encode(usdc),
+            bytes4(keccak256("getCurrentSupplyBalanceInOf(address,address)"))
+        );
+
+        /// morpho response
+        mock.setResponseToCall(
+            address(0),
+            "",
+            "",
+            bytes4(keccak256("supply(address,address,uint256)"))
+        );
+
+        MorphoCompoundPCVDeposit deposit = new MorphoCompoundPCVDeposit(
+            address(core),
+            address(mock),
+            address(usdc),
+            address(mock),
+            address(mock)
+        );
+
+        vm.prank(addresses.governorAddress);
+        core.grantLocker(address(deposit));
+
+        /// call to morpo update indexes attempts reentry
+        mock.setResponseToCall(
+            address(entry),
+            abi.encodeWithSignature("accrue(address)", address(deposit)),
+            "",
+            bytes4(keccak256("updateP2PIndexes(address)"))
+        );
+
+        vm.prank(addresses.governorAddress);
+        allocator.connectDeposit(address(usdcpsm), address(deposit));
+
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        entry.accrue(address(deposit));
+
+        deal(address(usdc), address(deposit), 1);
+        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
+        entry.deposit(address(deposit));
     }
 }
