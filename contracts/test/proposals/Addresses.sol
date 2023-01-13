@@ -26,6 +26,7 @@ contract Addresses {
         // ---------- LIVE PSM ADDRESSES ----------
         mainnet["VOLT_DAI_PSM"] = 0x42ea9cC945fca2dfFd0beBb7e9B3022f134d9Bdd;
         mainnet["VOLT_USDC_PSM"] = 0x0b9A7EA2FCA868C93640Dd77cF44df335095F501;
+        mainnet["PSM_USDC"] = 0x0b9A7EA2FCA868C93640Dd77cF44df335095F501;
 
         /// contracts that are routers and interact with maker routers
         mainnet["MAKER_ROUTER"] = 0xC403da9AaC46d3AdcD1a1bBe774601C0ddc542F7;

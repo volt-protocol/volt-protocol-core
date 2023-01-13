@@ -31,34 +31,47 @@ contract IntegrationTestProposalNoPCVLeak is Test {
         proposals.setUp();
         proposals.setDebug(false); // no prints
         uint256[] memory postProposalVmSnapshots = proposals.testProposals();
+        addresses = proposals.addresses(); // get post-proposal addresses
 
+        // Sum the tolerated percentages of change
+        uint256 expectedPcvChangePercent = 0;
         for (uint256 i = 0; i < postProposalVmSnapshots.length; i++) {
-            if (proposals.proposals(i).EXPECT_PCV_CHANGE()) {
-                continue;
-            }
-
-            vm.revertTo(postProposalVmSnapshots[i]);
-
-            addresses = proposals.addresses(); // get post-proposal addresses
-
-            // Read post-proposal PCV
-            pcvOracle = PCVOracle(addresses.mainnet("PCV_ORACLE"));
-            uint256 totalPcvPostProposal = 0;
-            if (address(pcvOracle) != address(0)) {
-                (, , totalPcvPostProposal) = pcvOracle.getTotalPcv();
-            }
-
-            // Assert no PCV leaked out of the system : check 3 bips leak at most
-            string memory errorMessage = string(
-                abi.encodePacked(
-                    "PCV leak in proposal ",
-                    proposals.proposals(i).name()
-                )
-            );
-            assertTrue(
-                totalPcvPostProposal >= (totalPcvPreProposal * 9997) / 10000,
-                errorMessage
-            );
+            expectedPcvChangePercent += proposals
+                .proposals(i)
+                .EXPECT_PCV_CHANGE();
         }
+
+        // Read post-proposal PCV
+        pcvOracle = PCVOracle(addresses.mainnet("PCV_ORACLE"));
+        uint256 totalPcvPostProposal = 0;
+        if (address(pcvOracle) != address(0)) {
+            (, , totalPcvPostProposal) = pcvOracle.getTotalPcv();
+        }
+
+        // Check pcv leak
+        uint256 toleratedPcvLoss = (expectedPcvChangePercent *
+            totalPcvPreProposal) / 1e18;
+        int256 proposalLeakedPcv = int256(totalPcvPreProposal) -
+            int256(totalPcvPostProposal);
+        if (proposalLeakedPcv >= int256(toleratedPcvLoss)) {
+            emit log_named_uint(
+                "expectedPcvChangePercent ",
+                expectedPcvChangePercent
+            );
+            emit log_named_uint(
+                "totalPcvPreProposal      ",
+                totalPcvPreProposal
+            );
+            emit log_named_uint("toleratedPcvLoss         ", toleratedPcvLoss);
+            emit log_named_uint(
+                "totalPcvPostProposal     ",
+                totalPcvPostProposal
+            );
+            emit log_named_int("proposalLeakedPcv        ", proposalLeakedPcv);
+        }
+        assertTrue(
+            proposalLeakedPcv < int256(toleratedPcvLoss),
+            "PCV Leak in proposals"
+        );
     }
 }

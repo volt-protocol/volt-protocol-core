@@ -9,24 +9,34 @@ import {Addresses} from "./Addresses.sol";
 
 /*
 How to use:
-1/ Update the PRIVATE_KEY variable in this script to read the proper env variable
-2/ Configure DO_DEPLOY, DO_AFTERDEPLOY, DO_TEARDOWN in this file as needed
-2/ Import and inherit the proper VIP proposal script
-3/ Run the following command, with correct RPC url :
 forge script contracts/test/proposals/DeployProposal.s.sol:DeployProposal \
     -vvvv \
-    --rpc-url $LOCAL_RPC_URL \
+    --rpc-url $ETH_RPC_URL \
     --broadcast
 Remove --broadcast if you want to try locally first, without paying any gas.
 */
 
 contract DeployProposal is Script, vip {
-    uint256 public PRIVATE_KEY = vm.envUint("ANVIL0_PRIVATE_KEY");
-    bool public DO_DEPLOY = true;
-    bool public DO_AFTERDEPLOY = true;
-    bool public DO_TEARDOWN = false;
+    uint256 public PRIVATE_KEY;
+    bool public DO_DEPLOY;
+    bool public DO_AFTERDEPLOY;
+    bool public DO_TEARDOWN;
 
-    function setUp() public {}
+    function setUp() public {
+        // Default behavior: do debug prints
+        DEBUG = vm.envOr("DEBUG", true);
+        // Default behavior: use Anvil 0 private key
+        PRIVATE_KEY = vm.envOr(
+            "ETH_PRIVATE_KEY",
+            77814517325470205911140941194401928579557062014761831930645393041380819009408
+        );
+        // Default behavior: do deploy
+        DO_DEPLOY = vm.envOr("DO_DEPLOY", true);
+        // Default behavior: do after-deploy
+        DO_DEPLOY = vm.envOr("DO_AFTERDEPLOY", true);
+        // Default behavior: don't do teardown
+        DO_DEPLOY = vm.envOr("DO_TEARDOWN", false);
+    }
 
     function run() public {
         Addresses addresses = new Addresses();

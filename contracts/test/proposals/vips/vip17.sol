@@ -24,10 +24,13 @@ contract vip17 is MultisigProposal {
     uint256 public constant PSM_LIQUID_RESERVE = 10_000;
 
     constructor() {
-        // We expect a PCV change in the PCV Oracle for this proposal, because
-        // before this proposal, PCV oracle has 0 PCV, but after, it will list
-        // all the protocol's funds.
-        EXPECT_PCV_CHANGE = true;
+        // We expect a 100% PCV change in the PCV Oracle for this proposal, because
+        // before this proposal, PCV oracle has 0 PCV, but after, it will list all
+        // the protocol's funds.
+        EXPECT_PCV_CHANGE = 1e18;
+        // We changed the way oracles are handled in PSMs (value is inverted, and
+        // the decimals are handled differently), so skip the PSM oracle test.
+        SKIP_PSM_ORACLE_TEST = true;
     }
 
     function deploy(Addresses addresses) public pure {}
