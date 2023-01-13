@@ -521,11 +521,21 @@ contract IntegrationTestCleanPriceBoundPSM is DSTest {
         assertEq(endingBalance - startingBalance, mintAmount);
     }
 
-    /// TODO add these tests
+    /// @notice redeem fails without locker role
+    function testRedeemFailsWithoutLockerRole() public {
+        vm.prank(addresses.governorAddress);
+        tmpCore.revokeLocker(address(cleanPsm));
 
-    /// @notice redeem fails when paused
-    function testRedeemFailsWithoutGlobalStateRole() public {}
+        vm.expectRevert("UNAUTHORIZED");
+        cleanPsm.redeem(address(0), 0, 0);
+    }
 
-    /// @notice mint fails when paused
-    function testMintFailsWithoutGlobalStateRole() public {}
+    /// @notice mint fails without locker role
+    function testMintFailsWithoutLockerRole() public {
+        vm.prank(addresses.governorAddress);
+        tmpCore.revokeLocker(address(cleanPsm));
+
+        vm.expectRevert("UNAUTHORIZED");
+        cleanPsm.mint(address(0), 0, 0);
+    }
 }

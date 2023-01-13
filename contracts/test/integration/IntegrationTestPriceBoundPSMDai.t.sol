@@ -18,11 +18,11 @@ import {Vm} from "./../unit/utils/Vm.sol";
 import {DSTest} from "./../unit/utils/DSTest.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {Constants} from "../../Constants.sol";
-import {vip7} from "./vip/vip7.sol";
 import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
 import {IPCVGuardian} from "../../pcv/IPCVGuardian.sol";
+import {Test} from "../../../forge-std/src/Test.sol";
 
-contract IntegrationTestPriceBoundPSMDaiTest is TimelockSimulation, vip7 {
+contract IntegrationTestPriceBoundPSMDaiTest is Test {
     using SafeCast for *;
     PegStabilityModule private psm;
     ICore private core = ICore(MainnetAddresses.CORE);
