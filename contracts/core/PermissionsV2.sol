@@ -64,6 +64,7 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         _setRoleAdmin(RATE_LIMIT_SYSTEM_EXIT_DEPLETE_ROLE, GOVERNOR_ROLE);
     }
 
+    /// @notice callable only by governor
     modifier onlyGovernor() {
         require(
             isGovernor(msg.sender),
@@ -72,6 +73,7 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
         _;
     }
 
+    /// @notice callable only by guardian
     modifier onlyGuardian() {
         require(
             isGuardian(msg.sender),
@@ -304,14 +306,16 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     /// @notice checks if address has globalLocker role
     /// @param _address address to check
     /// @return true _address is globalLocker
-    function isLocker(address _address) public view override returns (bool) {
+    function isLocker(address _address) external view override returns (bool) {
         return hasRole(LOCKER_ROLE, _address);
     }
 
     /// @notice checks if address has PCV Guard role
     /// @param _address address to check
     /// @return true if _address has PCV Guard role
-    function isPCVGuard(address _address) public view override returns (bool) {
+    function isPCVGuard(
+        address _address
+    ) external view override returns (bool) {
         return hasRole(PCV_GUARD_ROLE, _address);
     }
 
@@ -320,7 +324,7 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     /// @return true if _address has Volt Minter Role
     function isRateLimitedMinter(
         address _address
-    ) public view override returns (bool) {
+    ) external view override returns (bool) {
         return hasRole(RATE_LIMIT_SYSTEM_ENTRY_DEPLETE_ROLE, _address);
     }
 
@@ -329,7 +333,7 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     /// @return true if _address has Volt Redeemer Role
     function isRateLimitedRedeemer(
         address _address
-    ) public view override returns (bool) {
+    ) external view override returns (bool) {
         return hasRole(RATE_LIMIT_SYSTEM_ENTRY_REPLENISH_ROLE, _address);
     }
 
@@ -338,7 +342,7 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     /// @return true if _address has Volt Rate Limited Replenisher Role
     function isSystemExitRateLimitReplenisher(
         address _address
-    ) public view override returns (bool) {
+    ) external view override returns (bool) {
         return hasRole(RATE_LIMIT_SYSTEM_EXIT_REPLENISH_ROLE, _address);
     }
 
@@ -347,7 +351,7 @@ contract PermissionsV2 is IPermissionsV2, AccessControlEnumerable {
     /// @return true if _address has Volt Rate Limited Depleter Role
     function isSystemExitRateLimitDepleter(
         address _address
-    ) public view override returns (bool) {
+    ) external view override returns (bool) {
         return hasRole(RATE_LIMIT_SYSTEM_EXIT_DEPLETE_ROLE, _address);
     }
 }
