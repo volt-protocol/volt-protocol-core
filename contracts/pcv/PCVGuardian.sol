@@ -58,7 +58,7 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
 
     /// @notice returns all whitelisted pcvDeposit addresses
     function getWhitelistAddresses()
-        public
+        external
         view
         override
         returns (address[] memory)
@@ -225,12 +225,12 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
         );
     }
 
-    // ---------- Internal Functions ----------
+    // ---------- Private Functions ----------
 
     function _withdrawToSafeAddress(
         address pcvDeposit,
         uint256 amount
-    ) internal {
+    ) private {
         if (pcvDeposit._paused()) {
             pcvDeposit._unpause();
             IPCVDeposit(pcvDeposit).withdraw(safeAddress, amount);
@@ -246,12 +246,12 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
         address pcvDeposit,
         address token,
         uint256 amount
-    ) internal {
+    ) private {
         IPCVDeposit(pcvDeposit).withdrawERC20(token, safeAddress, amount);
         emit PCVGuardianERC20Withdrawal(pcvDeposit, token, amount);
     }
 
-    function _addWhitelistAddress(address pcvDeposit) internal {
+    function _addWhitelistAddress(address pcvDeposit) private {
         require(
             whitelistAddresses.add(pcvDeposit),
             "PCVGuardian: Failed to add address to whitelist"
@@ -259,7 +259,7 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
         emit WhitelistAddressAdded(pcvDeposit);
     }
 
-    function _removeWhitelistAddress(address pcvDeposit) internal {
+    function _removeWhitelistAddress(address pcvDeposit) private {
         require(
             whitelistAddresses.remove(pcvDeposit),
             "PCVGuardian: Failed to remove address from whitelist"
