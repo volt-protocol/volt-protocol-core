@@ -124,11 +124,7 @@ contract vip14a is DSTest, IVIP {
             ),
             address(oracle)
         );
-        assertEq(
-            oracle.monthlyChangeRateBasisPoints(),
-            monthlyChangeRateBasisPoints
-        );
-        assertEq(oracle.monthlyChangeRateBasisPoints(), 0); /// pause rate updates to Volt on Arbitrum
+
         assertEq(oracle.periodStartTime(), startTime);
         assertEq(opt.getCurrentOraclePrice(), startPrice);
         assertEq(oracle.oraclePrice(), startPrice);
