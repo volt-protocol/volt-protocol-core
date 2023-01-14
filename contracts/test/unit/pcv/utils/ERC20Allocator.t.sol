@@ -339,7 +339,7 @@ contract UnitTestERC20Allocator is DSTest {
     }
 
     function testDeleteDepositNonGovFails() public {
-        vm.expectRevert("UNAUTHORIZED");
+        vm.expectRevert("CoreRef: Caller is not a governor");
         allocator.deleteDeposit(address(0));
     }
 
