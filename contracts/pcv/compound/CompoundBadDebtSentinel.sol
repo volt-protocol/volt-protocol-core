@@ -62,7 +62,7 @@ contract CompoundBadDebtSentinel is ICompoundBadDebtSentinel, CoreRefV2 {
     /// @notice returns true if the addresses are ordered from least to greatest and contain no duplicates
     /// @param addresses to check
     /// @return true if array contains no duplicates and the address are ordered
-    /// returns false if the array has duplicates or is incorrect ordered.
+    /// returns false if the array has duplicates or is incorrectly ordered.
     function noDuplicatesAndOrdered(
         address[] memory addresses
     ) public pure returns (bool) {
