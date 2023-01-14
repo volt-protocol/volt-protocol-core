@@ -55,11 +55,6 @@ library VoltRoles {
     bytes32 internal constant RATE_LIMIT_SYSTEM_EXIT_REPLENISH =
         keccak256("RATE_LIMIT_SYSTEM_EXIT_REPLENISH_ROLE");
 
-    /// ----------- Sentinel Roles ---------------
-
-    /// @notice can remove a pcv deposit in the PCV Guardian
-    bytes32 internal constant PCV_SENTINEL = keccak256("PCV_SENTINEL_ROLE");
-
     /*///////////////////////////////////////////////////////////////
                                  Minor Roles
     //////////////////////////////////////////////////////////////*/
