@@ -30,15 +30,15 @@ contract VoltSystemOracle is
 
     /// @notice acts as an accumulator for interest earned in previous periods
     /// returns the oracle price from the end of the last period
-    uint224 public oraclePrice;
+    uint112 public oraclePrice;
+
+    /// @notice current amount that oracle price is inflating by monthly in
+    /// percentage terms scaled by 1e18
+    uint112 public monthlyChangeRate;
 
     /// @notice start time at which point interest will start accruing, and the
     /// current ScalingPriceOracle price will be snapshotted and saved
     uint32 public periodStartTime;
-
-    /// @notice current amount that oracle price is inflating by monthly in
-    /// percentage terms scaled by 1e18
-    uint256 public monthlyChangeRate;
 
     /// ---------- Immutable Variable ----------
 
@@ -58,18 +58,22 @@ contract VoltSystemOracle is
     /// @param startingMonthlyChangeRate starting interest change rate of the oracle
     function initialize(
         address previousOracle,
-        uint256 startingMonthlyChangeRate
+        uint112 startingMonthlyChangeRate
     ) external override onlyGovernor initializer {
-        uint224 startingOraclePrice = IVoltSystemOracle(previousOracle)
-            .getCurrentOraclePrice()
-            .toUint224();
+        uint256 startingOraclePrice = IVoltSystemOracle(previousOracle)
+            .getCurrentOraclePrice();
         uint32 startingTime = block.timestamp.toUint32();
 
-        /// 1st SSTORE
-        oraclePrice = startingOraclePrice;
-        periodStartTime = startingTime;
+        require(
+            startingOraclePrice <= type(uint112).max,
+            "SafeCast: value doesn't fit in 112 bits"
+        );
 
-        /// 2nd SSTORE
+        uint112 currentOraclePrice = uint112(startingOraclePrice);
+
+        /// SINGLE SSTORE
+        oraclePrice = currentOraclePrice;
+        periodStartTime = startingTime;
         monthlyChangeRate = startingMonthlyChangeRate;
     }
 
@@ -100,18 +104,6 @@ contract VoltSystemOracle is
         valid = true;
     }
 
-    /// @notice current amount that oracle price is inflating by monthly in basis points
-    /// does not support negative rates because PCV will not be deposited into negatively
-    /// yielding venues.
-    function monthlyChangeRateBasisPoints()
-        external
-        view
-        override
-        returns (uint256)
-    {
-        return monthlyChangeRate;
-    }
-
     /// ------------- Public State Changing API -------------
 
     /// @notice public function that allows compounding of interest after duration has passed
@@ -127,11 +119,10 @@ contract VoltSystemOracle is
 
     /// ------------- Governor Only State Changing API -------------
 
-    /// @notice update the change rate in basis points
-    /// callable only by the governor
+    /// @notice update the change rate, callable only by the governor
     /// when called, interest accrued is compounded and then new rate is set
-    function updateChangeRateBasisPoints(
-        uint256 newMonthlyChangeRate
+    function updateChangeRate(
+        uint112 newMonthlyChangeRate
     ) external override onlyGovernor {
         _compoundInterest(); /// compound interest before updating change rate
 
@@ -145,7 +136,13 @@ contract VoltSystemOracle is
 
     /// @notice helper function to compound interest
     function _compoundInterest() private {
-        uint224 newOraclePrice = getCurrentOraclePrice().toUint224();
+        uint256 currentOraclePrice = getCurrentOraclePrice();
+        require(
+            currentOraclePrice <= type(uint112).max,
+            "SafeCast: value doesn't fit in 112 bits"
+        );
+
+        uint112 newOraclePrice = uint112(currentOraclePrice);
         uint32 newStartTime = (periodStartTime + TIMEFRAME).toUint32();
 
         /// SSTORE
