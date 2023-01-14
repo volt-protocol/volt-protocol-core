@@ -3,7 +3,7 @@ pragma solidity =0.8.13;
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {Vm} from "./../../utils/Vm.sol";
-import {DSTest} from "./../../utils/DSTest.sol";
+import {Test} from "../../../../../forge-std/src/Test.sol";
 import {CoreV2} from "../../../../core/CoreV2.sol";
 import {stdError} from "../../../unit/utils/StdLib.sol";
 import {getCoreV2} from "./../../utils/Fixtures.sol";
@@ -22,7 +22,7 @@ import {TestAddresses as addresses} from "../../utils/TestAddresses.sol";
 import {MockMorphoMaliciousReentrancy} from "../../../../mock/MockMorphoMaliciousReentrancy.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../../core/GlobalReentrancyLock.sol";
 
-contract UnitTestCompoundBadDebtSentinel is DSTest {
+contract UnitTestCompoundBadDebtSentinel is Test {
     using SafeCast for *;
 
     event Deposit(address indexed _from, uint256 _amount);
@@ -39,7 +39,6 @@ contract UnitTestCompoundBadDebtSentinel is DSTest {
     SystemEntry private entry;
     MockMorpho private morpho;
     PCVGuardian private pcvGuardian;
-    MockERC20 private underlyingToken;
     GenericCallMock private comptroller;
     MockPCVDepositV3 private safeAddress;
     MorphoCompoundPCVDeposit private morphoDeposit;
@@ -47,13 +46,16 @@ contract UnitTestCompoundBadDebtSentinel is DSTest {
 
     uint256 public badDebtThreshold = 1_000_000e18;
 
-    Vm public constant vm = Vm(HEVM_ADDRESS);
+    mapping(address => bool) public depositsAdded;
 
     /// @notice token to deposit
     MockERC20 private token;
 
     /// @notice global reentrancy lock
     IGlobalReentrancyLock private lock;
+
+    /// @notice amount to deposit in morpho
+    uint256 depositAmount = 100_000_000e18;
 
     function setUp() public {
         core = getCoreV2();
@@ -63,11 +65,7 @@ contract UnitTestCompoundBadDebtSentinel is DSTest {
         );
         morpho = new MockMorpho(IERC20(address(token)));
         comptroller = new GenericCallMock();
-        underlyingToken = new MockERC20();
-        safeAddress = new MockPCVDepositV3(
-            address(core),
-            address(underlyingToken)
-        );
+        safeAddress = new MockPCVDepositV3(address(core), address(token));
 
         morphoDeposit = new MorphoCompoundPCVDeposit(
             address(core),
@@ -112,9 +110,9 @@ contract UnitTestCompoundBadDebtSentinel is DSTest {
         core.setGlobalReentrancyLock(lock);
         vm.stopPrank();
 
-        vm.label(address(morpho), "Morpho");
+        vm.label(address(morpho), "Mock Morpho Market");
         vm.label(address(token), "Token");
-        vm.label(address(morphoDeposit), "MorphoDeposit");
+        vm.label(address(morphoDeposit), "Morpho PCV Deposit");
         vm.label(address(badDebtSentinel), "Bad Debt Sentinel");
     }
 
@@ -177,6 +175,33 @@ contract UnitTestCompoundBadDebtSentinel is DSTest {
         }
     }
 
+    function _bubbleSort(
+        address[] memory deposits
+    ) private pure returns (uint8) {
+        uint256 depositLength = deposits.length;
+        if (depositLength == 0) {
+            return 1;
+        }
+
+        /// do a bubble sort on input
+        unchecked {
+            for (uint256 i = 0; i < depositLength - 1; i++) {
+                for (uint256 j = 0; j < depositLength - i - 1; j++) {
+                    if (deposits[j] == deposits[j + 1]) {
+                        /// if there are duplicates, return
+                        return 1;
+                    } else if (deposits[j] > deposits[j + 1]) {
+                        address deposit = deposits[j];
+                        deposits[j] = deposits[j + 1];
+                        deposits[j + 1] = deposit;
+                    }
+                }
+            }
+        }
+
+        return 0;
+    }
+
     function testGovernorCanAddAndThenRemoveDeposits(
         address[4] memory depositsToAdd
     ) public {
@@ -185,29 +210,28 @@ contract UnitTestCompoundBadDebtSentinel is DSTest {
             deposits[i] = depositsToAdd[i];
         }
 
-        /// do a bubble sort on inputs
-        for (uint256 i = 0; i < 3; i++) {
-            for (uint256 j = 0; j < 4 - i - 1; j++) {
-                if (deposits[j] == deposits[j + 1]) {
-                    /// if there are duplicates, return
-                    return;
-                } else if (deposits[j] > deposits[j + 1]) {
-                    address deposit = deposits[j];
-                    deposits[j] = deposits[j + 1];
-                    deposits[j + 1] = deposit;
-                }
-            }
+        if (_bubbleSort(deposits) == 1) {
+            return;
         }
 
         vm.prank(addresses.governorAddress);
         badDebtSentinel.addPCVDeposits(deposits);
+        assertEq(badDebtSentinel.allPcvDeposits().length, 4);
 
         for (uint256 i = 0; i < deposits.length; i++) {
             assertTrue(badDebtSentinel.isCompoundPcvDeposit(deposits[i]));
+            depositsAdded[deposits[i]] = true;
+        }
+
+        address[] memory retrievedDeposits = badDebtSentinel.allPcvDeposits();
+
+        for (uint256 i = 0; i < retrievedDeposits.length; i++) {
+            assertTrue(depositsAdded[retrievedDeposits[i]]);
         }
 
         vm.prank(addresses.governorAddress);
         badDebtSentinel.removePCVDeposits(deposits);
+        assertEq(badDebtSentinel.allPcvDeposits().length, 0);
 
         for (uint256 i = 0; i < deposits.length; i++) {
             assertTrue(!badDebtSentinel.isCompoundPcvDeposit(deposits[i]));
@@ -217,5 +241,82 @@ contract UnitTestCompoundBadDebtSentinel is DSTest {
     function testGetTotalBadDebt(address[] calldata users) public {
         uint256 totalBadDebt = badDebtSentinel.getTotalBadDebt(users);
         assertEq(totalBadDebt, 100_000e18 * users.length);
+    }
+
+    function testNoDuplicatesAndOrdered(address[] calldata users) public {
+        bool isOrdered = true;
+        for (uint256 i = 0; i < users.length; i++) {
+            if (depositsAdded[users[i]] == true) {
+                isOrdered = false;
+                break;
+            }
+
+            if (i + 1 < users.length) {
+                if (users[i] >= users[i + 1]) {
+                    isOrdered = false;
+                    break;
+                }
+            }
+
+            depositsAdded[users[i]] = true;
+        }
+
+        assertEq(isOrdered, badDebtSentinel.noDuplicatesAndOrdered(users));
+    }
+
+    function _setupRescue(address[] memory users) private returns (uint8) {
+        if (_bubbleSort(users) == 1) {
+            return 1;
+        }
+
+        address[] memory pcvDeposit = new address[](1);
+        pcvDeposit[0] = address(morphoDeposit);
+
+        vm.prank(addresses.governorAddress);
+        badDebtSentinel.addPCVDeposits(pcvDeposit);
+
+        deal(address(token), address(morpho), depositAmount);
+        morpho.setBalance(address(morphoDeposit), depositAmount);
+        token.balanceOf(address(morpho));
+
+        return 0;
+    }
+
+    function testRescueFromCompound(address[] memory users) public {
+        address[] memory pcvDeposit = new address[](1);
+        pcvDeposit[0] = address(morphoDeposit);
+
+        if (_setupRescue(users) == 1) {
+            return;
+        }
+
+        badDebtSentinel.rescueFromCompound(users, pcvDeposit);
+
+        if (users.length >= 10) {
+            assertEq(morpho.balances(address(morphoDeposit)), 0);
+            assertEq(token.balanceOf(address(this)), depositAmount);
+        } else {
+            assertEq(morpho.balances(address(morphoDeposit)), depositAmount);
+            assertEq(token.balanceOf(address(this)), 0);
+        }
+    }
+
+    function testRescueAllFromCompound(address[] memory users) public {
+        address[] memory pcvDeposit = new address[](1);
+        pcvDeposit[0] = address(morphoDeposit);
+
+        if (_setupRescue(users) == 1) {
+            return;
+        }
+
+        badDebtSentinel.rescueAllFromCompound(users);
+
+        if (users.length >= 10) {
+            assertEq(morpho.balances(address(morphoDeposit)), 0);
+            assertEq(token.balanceOf(address(this)), depositAmount);
+        } else {
+            assertEq(morpho.balances(address(morphoDeposit)), depositAmount);
+            assertEq(token.balanceOf(address(this)), 0);
+        }
     }
 }
