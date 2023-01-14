@@ -119,9 +119,9 @@ function getCoreV2() returns (CoreV2) {
 
 function getVoltSystemOracle(
     address _core,
-    uint256 _monthlyChangeRate,
+    uint112 _monthlyChangeRate,
     uint32 _periodStartTime,
-    uint224 _oraclePrice
+    uint112 _oraclePrice
 ) returns (VoltSystemOracle) {
     address HEVM_ADDRESS = address(
         bytes20(uint160(uint256(keccak256("hevm cheat code"))))
@@ -167,7 +167,7 @@ function getLocalOracleSystem(
 
 function getLocalOracleSystem(
     address core,
-    uint200 startPrice
+    uint112 startPrice
 ) returns (VoltSystemOracle oracle, IOraclePassThrough opt) {
     oracle = getVoltSystemOracle(
         core,

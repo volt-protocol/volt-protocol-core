@@ -21,13 +21,13 @@ contract VoltSystemOracleUnitTest is DSTest {
     VoltSystemOracle private voltSystemOracle;
 
     /// @notice increase the volt target price by 2% monthly
-    uint256 public constant monthlyChangeRate = 0.02e18;
+    uint112 public constant monthlyChangeRate = 0.02e18;
+
+    /// @notice actual starting oracle price on mainnet
+    uint112 public constant startPrice = 1045095352308302897;
 
     /// @notice block time at which the VSO (Volt System Oracle) will start accruing interest
     uint32 public immutable startTime = 100_000;
-
-    /// @notice actual starting oracle price on mainnet
-    uint224 public constant startPrice = 1045095352308302897;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
@@ -397,16 +397,16 @@ contract VoltSystemOracleUnitTest is DSTest {
 
     function testNonGovernorUpdateChangeRateFails() public {
         vm.expectRevert("CoreRef: Caller is not a governor");
-        voltSystemOracle.updateChangeRateBasisPoints(0);
+        voltSystemOracle.updateChangeRate(0);
     }
 
     function testGovernorUpdateChangeRateSucceeds(
-        uint256 newChangeRate
+        uint112 newChangeRate
     ) public {
         vm.assume(newChangeRate <= 10_000);
 
         vm.prank(addresses.governorAddress);
-        voltSystemOracle.updateChangeRateBasisPoints(newChangeRate);
+        voltSystemOracle.updateChangeRate(newChangeRate);
 
         assertEq(voltSystemOracle.monthlyChangeRate(), newChangeRate);
     }
