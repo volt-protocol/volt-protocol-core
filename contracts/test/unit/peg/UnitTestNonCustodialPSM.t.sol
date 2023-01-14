@@ -6,7 +6,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {Test} from "../../../../forge-std/src/Test.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
-import {getCoreV2} from "./../utils/Fixtures.sol";
 import {Deviation} from "../../../utils/Deviation.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
@@ -21,6 +20,7 @@ import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {IScalingPriceOracle} from "../../../oracle/IScalingPriceOracle.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
+import {getCoreV2, getVoltSystemOracle} from "./../utils/Fixtures.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../core/GlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../../limiter/GlobalRateLimitedMinter.sol";
 import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "../../../limiter/GlobalSystemExitRateLimiter.sol";
@@ -106,9 +106,9 @@ contract NonCustodialPSMUnitTest is Test {
 
     /// ---------- ORACLE PARAMS ----------
 
-    uint200 public constant startPrice = 1.05e18;
-    uint40 public constant startTime = 1_000;
-    uint16 public constant monthlyChangeRateBasisPoints = 100;
+    uint112 public constant monthlyChangeRate = 0.01e18; /// 100 basis points
+    uint112 public constant startPrice = 1.05e18;
+    uint32 public constant startTime = 1_000;
 
     function setUp() public {
         vm.warp(startTime); /// warp past 0
@@ -121,9 +121,9 @@ contract NonCustodialPSMUnitTest is Test {
         );
         entry = new SystemEntry(address(core));
         dai = IERC20Mintable(address(new MockERC20()));
-        oracle = new VoltSystemOracle(
+        oracle = getVoltSystemOracle(
             coreAddress,
-            monthlyChangeRateBasisPoints,
+            monthlyChangeRate,
             startTime,
             startPrice
         );
@@ -211,10 +211,7 @@ contract NonCustodialPSMUnitTest is Test {
         assertTrue(core.isPCVController(address(psm)));
 
         assertEq(address(core.globalRateLimitedMinter()), address(grlm));
-        assertEq(
-            oracle.monthlyChangeRateBasisPoints(),
-            monthlyChangeRateBasisPoints
-        );
+        assertEq(oracle.monthlyChangeRate(), monthlyChangeRate);
 
         assertEq(psm.floor(), voltFloorPrice);
         assertEq(psm.ceiling(), voltCeilingPrice);

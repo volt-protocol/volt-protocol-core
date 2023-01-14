@@ -26,6 +26,8 @@ import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../core/GlobalReen
 contract InvariantTestMorphoCompoundPCVDeposit is DSTest, DSInvariantTest {
     using SafeCast for *;
 
+    /// TODO add invariant test for profit tracking
+
     CoreV2 public core;
     MockERC20 public token;
     MockMorpho public morpho;

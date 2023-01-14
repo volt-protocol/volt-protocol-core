@@ -97,6 +97,20 @@ contract PCVOracleUnitTest is Test {
         assertEq(totalPcv, 0);
     }
 
+    function testGetTotalPcvFailsWhileEntered() public {
+        vm.prank(address(deposit2));
+        lock.lock(1);
+
+        vm.expectRevert("PCVOracle: cannot read while entered");
+        pcvOracle.getTotalPcv();
+
+        vm.prank(address(deposit2));
+        lock.lock(2);
+
+        vm.expectRevert("PCVOracle: cannot read while entered");
+        pcvOracle.getTotalPcv();
+    }
+
     // -------------------------------------------------
     // Venues management (add/remove/set oracle)
     // -------------------------------------------------
@@ -506,6 +520,7 @@ contract PCVOracleUnitTest is Test {
         // A call from an illiquid PCVDeposit refreshes accounting
         vm.startPrank(address(deposit2));
         lock.lock(1);
+        lock.lock(2);
         vm.expectEmit(true, false, false, true, address(pcvOracle));
         emit PCVUpdated(
             address(deposit2),
@@ -515,12 +530,10 @@ contract PCVOracleUnitTest is Test {
             150e18
         );
         pcvOracle.updateIlliquidBalance(int256(400e6), int256(150e6));
-        lock.unlock(0);
         vm.stopPrank();
 
         // A call from a liquid PCVDeposit refreshes accounting
         vm.startPrank(address(deposit1));
-        lock.lock(1);
         vm.expectEmit(true, false, false, true, address(pcvOracle));
         emit PCVUpdated(
             address(deposit1),
@@ -530,7 +543,6 @@ contract PCVOracleUnitTest is Test {
             100e18
         );
         pcvOracle.updateLiquidBalance(int256(300e18), int256(100e18));
-        lock.unlock(0);
         vm.stopPrank();
     }
 
@@ -599,10 +611,15 @@ contract PCVOracleUnitTest is Test {
         // even if the PCVDeposit has the proper roles, it doesn't have
         // an oracle configured.
         vm.startPrank(address(newDeposit));
+
         lock.lock(1);
-        vm.expectRevert(bytes("PCVOracle: invalid caller deposit"));
+        vm.expectRevert("CoreRef: System not at lock level");
         pcvOracle.updateLiquidBalance(1e18, 0);
-        lock.unlock(0);
+
+        lock.lock(2);
+        vm.expectRevert("PCVOracle: invalid caller deposit");
+        pcvOracle.updateLiquidBalance(1e18, 0);
+
         vm.stopPrank();
     }
 }

@@ -111,7 +111,7 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRefV2 {
         address to,
         uint256 amountVoltIn,
         uint256 minAmountOut
-    ) external virtual override globalLock(1) returns (uint256 amountOut) {
+    ) external override globalLock(1) returns (uint256 amountOut) {
         /// ------- Checks -------
         /// 1. current price from oracle is correct
         /// 2. how much underlying token to receive
@@ -123,17 +123,19 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRefV2 {
             "PegStabilityModule: Redeem not enough out"
         );
 
-        /// ------- Effects / Interactions -------
+        /// ------- Check / Effects / Trusted Interactions -------
 
         /// Do effect after interaction because you don't want to give tokens before
         /// taking the corresponding amount of Volt from the account.
         /// Replenishing buffer allows more Volt to be minted.
-        volt().burnFrom(msg.sender, amountVoltIn); /// Check and Interaction -- trusted contract
+        /// None of these three external calls make calls external to the Volt System.
+        volt().burnFrom(msg.sender, amountVoltIn); /// Check and Effect -- trusted contract
         globalRateLimitedMinter().replenishBuffer(amountVoltIn); /// Effect -- trusted contract
-        globalSystemExitRateLimiter().depleteBuffer(getExitValue(amountOut)); /// Effect -- trusted contract
+        globalSystemExitRateLimiter().depleteBuffer(getExitValue(amountOut)); /// Check and Effect -- trusted contract, reverts if buffer exhausted
 
         /// Interaction -- pcv deposit is trusted,
-        /// however interacts with external untrusted contracts
+        /// however this interacts with external untrusted contracts to withdraw funds from a venue
+        /// and then transfer an untrusted token to the recipient
         pcvDeposit.withdraw(to, amountOut);
 
         /// No PCV Oracle hooks needed here as PCV deposit will update PCV Oracle
@@ -199,7 +201,7 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRefV2 {
 
     /// @notice helper function to set the PCV deposit
     /// @param newPCVDeposit the new PCV deposit that this PSM will pull assets from and deposit assets into
-    function _setPCVDeposit(IPCVDeposit newPCVDeposit) internal {
+    function _setPCVDeposit(IPCVDeposit newPCVDeposit) private {
         require(
             newPCVDeposit.balanceReportedIn() == address(underlyingToken),
             "PegStabilityModule: Underlying token mismatch"
