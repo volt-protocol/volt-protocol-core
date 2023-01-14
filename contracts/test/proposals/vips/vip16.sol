@@ -169,6 +169,15 @@ contract vip16 is Proposal {
             );
         }
 
+        /// VOLT rate
+        {
+            VoltSystemOracle vso = new VoltSystemOracle(
+                addresses.mainnet("CORE")
+            );
+
+            addresses.addMainnet("VOLT_SYSTEM_ORACLE", address(vso));
+        }
+
         /// Peg Stability
         {
             PegStabilityModule daipsm = new PegStabilityModule(
@@ -309,15 +318,6 @@ contract vip16 is Proposal {
                 "ORACLE_CONSTANT_USDC",
                 address(usdcConstantOracle)
             );
-        }
-
-        /// VOLT rate
-        {
-            VoltSystemOracle vso = new VoltSystemOracle(
-                addresses.mainnet("CORE")
-            );
-
-            addresses.addMainnet("VOLT_SYSTEM_ORACLE", address(vso));
         }
     }
 
