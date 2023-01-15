@@ -113,7 +113,7 @@ contract IntegrationTestRoles is PostProposalCheck {
 
         // GUARDIAN
         assertEq(core.getRoleAdmin(VoltRoles.GUARDIAN), VoltRoles.GOVERNOR);
-        assertEq(core.getRoleMemberCount(VoltRoles.GUARDIAN), 2);
+        assertEq(core.getRoleMemberCount(VoltRoles.GUARDIAN), 3);
         assertEq(
             core.getRoleMember(VoltRoles.GUARDIAN, 0),
             addresses.mainnet("PCV_GUARDIAN")
@@ -121,6 +121,10 @@ contract IntegrationTestRoles is PostProposalCheck {
         assertEq(
             core.getRoleMember(VoltRoles.GUARDIAN, 1),
             addresses.mainnet("GOVERNOR") // team multisig
+        );
+        assertEq(
+            core.getRoleMember(VoltRoles.GUARDIAN, 2),
+            addresses.mainnet("COMPOUND_BAD_DEBT_SENTINEL")
         );
 
         // RATE_LIMIT_SYSTEM_ENTRY_DEPLETE_ROLE
