@@ -27,6 +27,7 @@ import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {IPegStabilityModule} from "../../../peg/IPegStabilityModule.sol";
 import {ConstantPriceOracle} from "../../../oracle/ConstantPriceOracle.sol";
+import {CompoundBadDebtSentinel} from "../../../pcv/compound/CompoundBadDebtSentinel.sol";
 import {IPCVDeposit, PCVDeposit} from "../../../pcv/PCVDeposit.sol";
 import {MorphoCompoundPCVDeposit} from "../../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {IVoltMigrator, VoltMigrator} from "../../../volt/VoltMigrator.sol";
@@ -52,6 +53,11 @@ contract vip16 is Proposal {
 
     /// @notice price changes by 16 basis points per month
     uint112 monthlyChangeRate = 0.0016e18;
+
+    /// ---------- COMPOUND BAD DEBT SENTINEL PARAM ----------
+
+    /// @notice bad debt threshold is $1m
+    uint256 badDebtThreshold = 1_000_000e18;
 
     /// ---------- RATE LIMITED MINTER PARAMS ----------
 
@@ -291,10 +297,21 @@ contract vip16 is Proposal {
 
             PCVRouter pcvRouter = new PCVRouter(addresses.mainnet("CORE"));
 
+            CompoundBadDebtSentinel badDebtSentinel = new CompoundBadDebtSentinel(
+                    addresses.mainnet("CORE"),
+                    addresses.mainnet("COMPTROLLER"),
+                    address(pcvGuardian),
+                    badDebtThreshold
+                );
+
             addresses.addMainnet("SYSTEM_ENTRY", address(systemEntry));
             addresses.addMainnet("PCV_SWAPPER_MAKER", address(pcvSwapperMaker));
             addresses.addMainnet("PCV_GUARDIAN", address(pcvGuardian));
             addresses.addMainnet("PCV_ROUTER", address(pcvRouter));
+            addresses.addMainnet(
+                "COMPOUND_BAD_DEBT_SENTINEL",
+                address(badDebtSentinel)
+            );
         }
 
         /// Accounting
@@ -497,6 +514,13 @@ contract vip16 is Proposal {
         swappers[0] = addresses.mainnet("PCV_SWAPPER_MAKER");
         pcvRouter.addPCVSwappers(swappers);
 
+        CompoundBadDebtSentinel badDebtSentinel = CompoundBadDebtSentinel(
+            addresses.mainnet("COMPOUND_BAD_DEBT_SENTINEL")
+        );
+
+        /// add morpho PCV deposits to the compound bad debt sentinel
+        badDebtSentinel.addPCVDeposits(venues);
+
         /// Enable new oracle
         oracle.initialize(
             addresses.mainnet("VOLT_SYSTEM_ORACLE_144_BIPS"),
@@ -536,12 +560,22 @@ contract vip16 is Proposal {
         VoltSystemOracle oldOracle = VoltSystemOracle(
             addresses.mainnet("VOLT_SYSTEM_ORACLE_144_BIPS")
         );
+        CompoundBadDebtSentinel badDebtSentinel = CompoundBadDebtSentinel(
+            addresses.mainnet("COMPOUND_BAD_DEBT_SENTINEL")
+        );
 
         /*--------------------------------------------------------------------
         Validate that everything reference Core properly
         --------------------------------------------------------------------*/
         assertEq(
             address(CoreRefV2(addresses.mainnet("VOLT")).core()),
+            address(core)
+        );
+        assertEq(
+            address(
+                CoreRefV2(addresses.mainnet("COMPOUND_BAD_DEBT_SENTINEL"))
+                    .core()
+            ),
             address(core)
         );
         assertEq(
@@ -717,5 +751,26 @@ contract vip16 is Proposal {
             address(migratorRouter.OLD_VOLT()),
             addresses.mainnet("V1_VOLT")
         );
+
+        /// compound bad debt sentinel
+        assertTrue(
+            badDebtSentinel.isCompoundPcvDeposit(
+                addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
+            )
+        );
+        assertTrue(
+            badDebtSentinel.isCompoundPcvDeposit(
+                addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
+            )
+        );
+        assertEq(
+            badDebtSentinel.pcvGuardian(),
+            addresses.mainnet("PCV_GUARDIAN")
+        );
+        assertEq(
+            badDebtSentinel.comptroller(),
+            addresses.mainnet("COMPTROLLER")
+        );
+        assertEq(badDebtSentinel.badDebtThreshold(), badDebtThreshold);
     }
 }
