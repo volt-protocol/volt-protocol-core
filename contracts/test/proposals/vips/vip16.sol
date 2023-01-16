@@ -41,10 +41,17 @@ and tying them together properly.
 */
 
 contract vip16 is Proposal {
+    using SafeCast for *;
+
     string public name = "VIP16";
 
     /// Parameters
     uint256 public constant TIMELOCK_DELAY = 86400;
+
+    /// ---------- ORACLE PARAM ----------
+
+    /// @notice price changes by 16 basis points per month
+    uint112 monthlyChangeRate = 0.0016e18;
 
     /// ---------- RATE LIMITED MINTER PARAMS ----------
 
@@ -65,7 +72,7 @@ contract vip16 is Proposal {
     /// replenish 500k VOLT per day ($5.787 dollars per second)
     uint128 public constant RATE_LIMIT_PER_SECOND_EXIT = 5787037037037037000;
 
-    /// buffer cap of 1.5m VOLT
+    /// buffer cap of 0.5m VOLT
     uint128 public constant BUFFER_CAP_EXITING = 500_000e18;
 
     /// ---------- ALLOCATOR PARAMS ----------
@@ -134,31 +141,6 @@ contract vip16 is Proposal {
             );
         }
 
-        /// VOLT rate
-        {
-            // read current on-chain oracle, and copy its values
-            // to deploy the new oracle
-            // todo: fill in actual hardcoded values, or deploy VIP16
-            // at the start / in the middle of a compounding period.
-            VoltSystemOracle oldVso = VoltSystemOracle(
-                0xB8Ac4931A618B06498966cba3a560B867D8f567F
-            );
-            uint16 monthlyChangeRateBasisPoints = uint16(
-                oldVso.monthlyChangeRateBasisPoints()
-            );
-            uint40 periodStartTime = uint40(oldVso.periodStartTime());
-            uint200 oraclePrice = uint200(oldVso.oraclePrice());
-
-            VoltSystemOracle vso = new VoltSystemOracle(
-                addresses.mainnet("CORE"),
-                monthlyChangeRateBasisPoints,
-                periodStartTime,
-                oraclePrice
-            );
-
-            addresses.addMainnet("VOLT_SYSTEM_ORACLE", address(vso));
-        }
-
         /// PCV Deposits
         {
             MorphoCompoundPCVDeposit morphoDaiPCVDeposit = new MorphoCompoundPCVDeposit(
@@ -185,6 +167,15 @@ contract vip16 is Proposal {
                 "PCV_DEPOSIT_MORPHO_USDC",
                 address(morphoUsdcPCVDeposit)
             );
+        }
+
+        /// VOLT rate
+        {
+            VoltSystemOracle vso = new VoltSystemOracle(
+                addresses.mainnet("CORE")
+            );
+
+            addresses.addMainnet("VOLT_SYSTEM_ORACLE", address(vso));
         }
 
         /// Peg Stability
@@ -340,6 +331,9 @@ contract vip16 is Proposal {
         );
         PCVOracle pcvOracle = PCVOracle(addresses.mainnet("PCV_ORACLE"));
         PCVRouter pcvRouter = PCVRouter(addresses.mainnet("PCV_ROUTER"));
+        VoltSystemOracle oracle = VoltSystemOracle(
+            addresses.mainnet("VOLT_SYSTEM_ORACLE")
+        );
 
         /// Set references in Core
         core.setVolt(IVolt(addresses.mainnet("VOLT")));
@@ -503,6 +497,12 @@ contract vip16 is Proposal {
         swappers[0] = addresses.mainnet("PCV_SWAPPER_MAKER");
         pcvRouter.addPCVSwappers(swappers);
 
+        /// Enable new oracle
+        oracle.initialize(
+            addresses.mainnet("VOLT_SYSTEM_ORACLE_144_BIPS"),
+            monthlyChangeRate
+        );
+
         /// Allow all addresses to execute proposals once completed
         timelockController.grantRole(
             timelockController.EXECUTOR_ROLE(),
@@ -529,6 +529,12 @@ contract vip16 is Proposal {
         PCVRouter pcvRouter = PCVRouter(addresses.mainnet("PCV_ROUTER"));
         MigratorRouter migratorRouter = MigratorRouter(
             addresses.mainnet("V1_MIGRATION_ROUTER")
+        );
+        VoltSystemOracle oracle = VoltSystemOracle(
+            addresses.mainnet("VOLT_SYSTEM_ORACLE")
+        );
+        VoltSystemOracle oldOracle = VoltSystemOracle(
+            addresses.mainnet("VOLT_SYSTEM_ORACLE_144_BIPS")
         );
 
         /*--------------------------------------------------------------------
@@ -633,6 +639,12 @@ contract vip16 is Proposal {
                 CoreRefV2(addresses.mainnet("ORACLE_CONSTANT_USDC")).core()
             ),
             address(core)
+        );
+
+        assertApproxEq(
+            oracle.getCurrentOraclePrice().toInt256(),
+            oldOracle.getCurrentOraclePrice().toInt256(),
+            0
         );
 
         /*--------------------------------------------------------------------

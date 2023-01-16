@@ -10,17 +10,16 @@ interface IVoltSystemOracle {
 
     /// @notice start time at which point interest will start accruing, and the
     /// current ScalingPriceOracle price will be snapshotted and saved
-    function periodStartTime() external view returns (uint256);
+    function periodStartTime() external view returns (uint32);
 
     /// @notice oracle price. starts off at 1e18 and compounds monthly
     /// acts as an accumulator for interest earned in previous epochs
     /// returns the oracle price from the end of the last period
-    function oraclePrice() external view returns (uint256);
+    function oraclePrice() external view returns (uint112);
 
-    /// @notice current amount that oracle price is inflating by monthly in basis points
-    /// does not support negative rates because PCV will not be deposited into negatively
-    /// yielding venues.
-    function monthlyChangeRateBasisPoints() external view returns (uint256);
+    /// @notice current amount that oracle price is inflating by monthly in
+    /// percentage terms scaled by 1e18
+    function monthlyChangeRate() external view returns (uint112);
 
     /// @notice the time frame over which all changes in the APR are applied
     /// one month was chosen because this is a temporary oracle
@@ -32,12 +31,21 @@ interface IVoltSystemOracle {
     /// Sets accumulator to the current accrued interest, and then resets the timer.
     function compoundInterest() external;
 
-    /// @notice update the change rate in basis points
-    /// callable only by the governor
-    /// @param newMonthlyChangeRateBasisPoints basis points to interpolate price
-    function updateChangeRateBasisPoints(
-        uint16 newMonthlyChangeRateBasisPoints
+    /// ------------- Governor Only State Changing API -------------
+
+    /// @notice initializes the oracle, setting start time to the current block timestamp,
+    /// start price gets set to the previous oracle's current price.
+    /// change rate is provided by governance.
+    /// @param previousOracle address of the previous oracle
+    /// @param startingMonthlyChangeRate starting interest change rate of the oracle
+    function initialize(
+        address previousOracle,
+        uint112 startingMonthlyChangeRate
     ) external;
+
+    /// @notice update the change rate, callable only by the governor
+    /// @param newMonthlyChangeRate interest rate to interpolate price
+    function updateChangeRate(uint112 newMonthlyChangeRate) external;
 
     // ----------- Event -----------
 
