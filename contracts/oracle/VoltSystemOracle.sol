@@ -84,15 +84,18 @@ contract VoltSystemOracle is
     /// scaled by 18 decimals
     // prettier-ignore
     function getCurrentOraclePrice() public view override returns (uint256) {
-        uint256 cachedStartTime = periodStartTime; /// save a single warm SLOAD if condition is false
+        /// save a single warm SLOAD by reading from storage once
+        uint256 cachedStartTime = periodStartTime;
+        uint256 cachedOraclePrice = oraclePrice;
+        uint256 cachedMonthlyChangeRate = monthlyChangeRate;
+
         if (cachedStartTime >= block.timestamp) { /// only accrue interest after start time
             return oraclePrice;
         }
 
-        uint256 cachedOraclePrice = oraclePrice; /// save a single warm SLOAD by using the stack
         uint256 timeDelta = Math.min(block.timestamp - cachedStartTime, TIMEFRAME);
-        uint256 pricePercentageChange = cachedOraclePrice * monthlyChangeRate / Constants.ETH_GRANULARITY;
-        uint256 priceDelta = pricePercentageChange * timeDelta / TIMEFRAME;
+        uint256 priceChangeOverPeriod = cachedOraclePrice * cachedMonthlyChangeRate / Constants.ETH_GRANULARITY;
+        uint256 priceDelta = priceChangeOverPeriod * timeDelta / TIMEFRAME;
 
         return cachedOraclePrice + priceDelta;
     }
