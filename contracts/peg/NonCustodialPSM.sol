@@ -10,6 +10,7 @@ import {Constants} from "../Constants.sol";
 import {OracleRefV2} from "./../refs/OracleRefV2.sol";
 import {IPCVDeposit} from "./../pcv/IPCVDeposit.sol";
 import {INonCustodialPSM} from "./INonCustodialPSM.sol";
+import {BasePegStabilityModule} from "./BasePegStabilityModule.sol";
 
 /// @notice this contract needs the PCV controller role to be able to pull funds
 /// from the PCV deposit smart contract.
@@ -19,18 +20,9 @@ import {INonCustodialPSM} from "./INonCustodialPSM.sol";
 /// in order to deplete the buffer in the GlobalSystemExitRateLimiter.
 /// This PSM is not a PCV deposit because it never holds funds, it only has permissions
 /// to pull funds from a pcv deposit and replenish a global buffer.
-contract NonCustodialPSM is INonCustodialPSM, OracleRefV2 {
+contract NonCustodialPSM is BasePegStabilityModule, INonCustodialPSM {
     using SafeERC20 for IERC20;
     using SafeCast for *;
-
-    /// @notice the token this PSM will exchange for VOLT
-    IERC20 public immutable override underlyingToken;
-
-    /// @notice the minimum acceptable oracle price floor
-    uint128 public override floor;
-
-    /// @notice the maximum acceptable oracle price ceiling
-    uint128 public override ceiling;
 
     /// @notice reference to the fully liquid venue redemptions can occur in
     IPCVDeposit public pcvDeposit;
@@ -55,37 +47,21 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRefV2 {
         uint128 ceilingPrice,
         IPCVDeposit pcvDepositAddress
     )
-        OracleRefV2(
+        BasePegStabilityModule(
             coreAddress,
             oracleAddress,
             backupOracleAddress,
             decimalNormalizer,
-            invert
+            invert,
+            underlyingTokenAddress,
+            floorPrice,
+            ceilingPrice
         )
     {
-        underlyingToken = underlyingTokenAddress;
-        _setCeiling(ceilingPrice);
-        _setFloor(floorPrice);
         _setPCVDeposit(pcvDepositAddress);
     }
 
     // ----------- Governor Only State Changing API -----------
-
-    /// @notice sets the new floor price
-    /// @param newFloorPrice new floor price
-    function setOracleFloorPrice(
-        uint128 newFloorPrice
-    ) external override onlyGovernor {
-        _setFloor(newFloorPrice);
-    }
-
-    /// @notice sets the new ceiling price
-    /// @param newCeilingPrice new ceiling price
-    function setOracleCeilingPrice(
-        uint128 newCeilingPrice
-    ) external override onlyGovernor {
-        _setCeiling(newCeilingPrice);
-    }
 
     /// @notice set the target for sending all PCV
     /// @param newTarget new PCV Deposit target for this PSM
@@ -143,38 +119,17 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRefV2 {
         emit Redeem(to, amountVoltIn, amountOut);
     }
 
-    /// ----------- Public View-Only API ----------
-
-    /// @notice calculate the amount of underlying out for a given `amountVoltIn` of Volt
-    /// First get oracle price of token
-    /// Then figure out how many dollars that amount in is worth by multiplying price * amount.
-    /// ensure decimals are normalized if on underlying they are not 18
-    /// @dev reverts if price is out of allowed range
-    function getRedeemAmountOut(
-        uint256 amountVoltIn
-    ) public view override returns (uint256 amountTokenOut) {
-        uint256 oraclePrice = readOracle();
-        _validatePriceRange(oraclePrice);
-
-        /// DAI Example:
-        /// decimals normalizer: 0
-        /// amountVoltIn = 1e18 (1 VOLT)
-        /// oraclePrice = 1.05e18 ($1.05/Volt)
-        /// amountTokenOut = oraclePrice * amountVoltIn / 1e18
-        /// = 1.05e18 DAI out
-
-        /// USDC Example:
-        /// decimals normalizer: -12
-        /// amountVoltIn = 1e18 (1 VOLT)
-        /// oraclePrice = 1.05e6 ($1.05/Volt)
-        /// amountTokenOut = oraclePrice * amountVoltIn / 1e18
-        /// = 1.05e6 USDC out
-        amountTokenOut = (oraclePrice * amountVoltIn) / 1e18;
+    /// @notice overriden and reverts to keep compatability with standard PSM interface
+    function mint(address, uint256, uint256) external pure returns (uint256) {
+        revert("NonCustodialPSM: cannot mint");
     }
 
-    /// @notice returns whether or not the current price is valid
-    function isPriceValid() external view returns (bool) {
-        return _validPrice(readOracle());
+    /// ----------- Public View-Only API ----------
+
+    /// @notice overriden and reverts to keep compatability with standard PSM interface
+    function getMintAmountOut(uint256) public view override returns (uint256) {
+        floor; /// shhh
+        revert("NonCustodialPSM: cannot mint");
     }
 
     /// @notice returns inverse of normal value.
@@ -197,7 +152,7 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRefV2 {
         }
     }
 
-    /// ----------- Private Helper Functions -----------
+    /// ----------- Private Helper Function -----------
 
     /// @notice helper function to set the PCV deposit
     /// @param newPCVDeposit the new PCV deposit that this PSM will pull assets from and deposit assets into
@@ -210,42 +165,5 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRefV2 {
         pcvDeposit = newPCVDeposit;
 
         emit PCVDepositUpdate(oldTarget, newPCVDeposit);
-    }
-
-    /// @notice helper function to set the ceiling in basis points
-    function _setCeiling(uint128 newCeilingPrice) private {
-        require(
-            newCeilingPrice > floor,
-            "PegStabilityModule: ceiling must be greater than floor"
-        );
-        uint128 oldCeiling = ceiling;
-        ceiling = newCeilingPrice;
-
-        emit OracleCeilingUpdate(oldCeiling, ceiling);
-    }
-
-    /// @notice helper function to set the floor in basis points
-    function _setFloor(uint128 newFloorPrice) private {
-        require(newFloorPrice != 0, "PegStabilityModule: invalid floor");
-        require(
-            newFloorPrice < ceiling,
-            "PegStabilityModule: floor must be less than ceiling"
-        );
-        uint128 oldFloor = floor;
-        floor = newFloorPrice;
-
-        emit OracleFloorUpdate(oldFloor, floor);
-    }
-
-    /// @notice helper function to determine if price is within a valid range
-    /// @param price oracle price expressed as a decimal
-    function _validPrice(uint256 price) private view returns (bool valid) {
-        valid = price >= floor && price <= ceiling;
-    }
-
-    /// @notice reverts if the price is greater than or equal to the ceiling or less than or equal to the floor
-    /// @param price oracle price expressed as a decimal
-    function _validatePriceRange(uint256 price) private view {
-        require(_validPrice(price), "PegStabilityModule: price out of bounds");
     }
 }
