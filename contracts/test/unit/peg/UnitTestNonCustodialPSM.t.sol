@@ -231,6 +231,16 @@ contract NonCustodialPSMUnitTest is Test {
         assertEq(psm.floor(), custodialPsm.floor());
     }
 
+    function testMintFails() public {
+        vm.expectRevert("NonCustodialPSM: cannot mint");
+        psm.mint(address(0), 0, 0);
+    }
+
+    function testGetMintAmountOutFails() public {
+        vm.expectRevert("NonCustodialPSM: cannot mint");
+        psm.getMintAmountOut(0);
+    }
+
     function testExitValueInversionPositive(uint96 amount) public {
         psm = new NonCustodialPSM(
             coreAddress,
