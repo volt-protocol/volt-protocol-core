@@ -52,4 +52,32 @@ contract IntegrationTestCompoundBadDebtSentinel is PostProposalCheck {
                 10_000 * 1e6
         );
     }
+
+    function testNoBadDebtBlocksSentinelWithdraw() public {
+        CompoundBadDebtSentinel badDebtSentinel = CompoundBadDebtSentinel(
+            addresses.mainnet("COMPOUND_BAD_DEBT_SENTINEL")
+        );
+        IPCVDepositV2 daiDeposit = IPCVDepositV2(
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
+        );
+        IPCVDepositV2 usdcDeposit = IPCVDepositV2(
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
+        );
+
+        address yearn = 0x342491C093A640c7c2347c4FFA7D8b9cBC84D1EB;
+
+        address[] memory users = new address[](2);
+        users[0] = yearn; /// yearn is less than morpho, place it first to order list
+        users[1] = addresses.mainnet("MORPHO");
+
+        assertEq(badDebtSentinel.getTotalBadDebt(users), 0);
+
+        uint256 daiBalance = daiDeposit.balance();
+        uint256 usdcBalance = usdcDeposit.balance();
+
+        badDebtSentinel.rescueAllFromCompound(users);
+
+        assertEq(daiDeposit.balance(), daiBalance);
+        assertEq(usdcDeposit.balance(), usdcBalance);
+    }
 }
