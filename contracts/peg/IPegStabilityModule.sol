@@ -37,7 +37,7 @@ interface IPegStabilityModule {
         address to,
         uint256 amountIn,
         uint256 minAmountOut
-    ) external returns (uint256 amountFeiOut);
+    ) external returns (uint256 amountVoltOut);
 
     /// @notice function to redeem VOLT for an underlying asset
     /// @dev does not require non-reentrant modifier because this contract
@@ -73,20 +73,17 @@ interface IPegStabilityModule {
     /// @notice return wether the current oracle price is valid or not
     function isPriceValid() external view returns (bool);
 
-    /// @notice calculate the amount of FEI out for a given `amountIn` of underlying
+    /// @notice calculate the amount of Volt out for a given `amountIn` of underlying
     function getMintAmountOut(
         uint256 amountIn
-    ) external view returns (uint256 amountFeiOut);
+    ) external view returns (uint256 amountVoltOut);
 
-    /// @notice calculate the amount of underlying out for a given `amountFeiIn` of FEI
+    /// @notice calculate the amount of underlying out for a given `amountVoltIn` of Volt
     function getRedeemAmountOut(
-        uint256 amountFeiIn
+        uint256 amountVoltIn
     ) external view returns (uint256 amountOut);
 
-    /// @notice the maximum mint amount out
-    function getMaxMintAmountOut() external view returns (uint256);
-
-    /// @notice the underlying token exchanged for FEI
+    /// @notice the underlying token exchanged for Volt
     function underlyingToken() external view returns (IERC20);
 
     // ----------- Events -----------
@@ -109,10 +106,10 @@ interface IPegStabilityModule {
     event AllocateSurplus(address indexed caller, uint256 amount);
 
     /// @notice event emitted upon a redemption
-    event Redeem(address to, uint256 amountFeiIn, uint256 amountAssetOut);
+    event Redeem(address to, uint256 amountVoltIn, uint256 amountAssetOut);
 
-    /// @notice event emitted when fei gets minted
-    event Mint(address to, uint256 amountIn, uint256 amountFeiOut);
+    /// @notice event emitted when Volt gets minted
+    event Mint(address to, uint256 amountIn, uint256 amountVoltOut);
 
     /// @notice event that is emitted when redemptions are paused
     event RedemptionsPaused(address account);
