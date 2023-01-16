@@ -299,7 +299,7 @@ contract vip16 is Proposal {
 
             CompoundBadDebtSentinel badDebtSentinel = new CompoundBadDebtSentinel(
                     addresses.mainnet("CORE"),
-                    addresses.mainnet("COMPTROLLER"),
+                    addresses.mainnet("COMPTROLLER_V2"),
                     address(pcvGuardian),
                     badDebtThreshold
                 );
@@ -770,7 +770,7 @@ contract vip16 is Proposal {
         );
         assertEq(
             badDebtSentinel.comptroller(),
-            addresses.mainnet("COMPTROLLER")
+            addresses.mainnet("COMPTROLLER_V2")
         );
         assertEq(badDebtSentinel.badDebtThreshold(), badDebtThreshold);
     }

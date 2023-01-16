@@ -121,7 +121,10 @@ contract Addresses is Test {
         _addMainnet("CFEI", 0x7713DD9Ca933848F6819F38B8352D9A15EA73F67);
         _addMainnet("CUSDC", 0x39AA39c021dfbaE8faC545936693aC917d5E7563);
         _addMainnet("COMP", 0xc00e94Cb662C3520282E6f5717214004A7f26888);
-        _addMainnet("COMPTROLLER", 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
+        _addMainnet(
+            "COMPTROLLER_V2",
+            0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B
+        );
 
         // ---------- Maker ADDRESSES ----------
         _addMainnet(
