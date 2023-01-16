@@ -68,46 +68,36 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, CoreRefV2 {
 
     /// @notice cache the address that locked the system
     /// only this address can unlock it
-    address private _sender;
+    address public sender;
 
     /// @notice store the last block entered
     /// if last block entered was in the past and status
     /// is entered, the system is in an invalid state
     /// which means that actions should be allowed
-    uint88 private _lastBlockEntered;
+    uint88 public lastBlockEntered;
 
     /// @notice system lock level
-    uint8 private _lockLevel;
+    uint8 public lockLevel;
 
     /// @param core reference to core
     constructor(address core) CoreRefV2(core) {}
 
     /// ---------- View Only APIs ----------
 
-    /// @notice view only function to return the last block entered
-    function lastBlockEntered() external view returns (uint88) {
-        return _lastBlockEntered;
-    }
-
     /// @notice returns the last address that locked this contract
     function lastSender() external view returns (address) {
-        return _sender;
+        return sender;
     }
 
     /// @notice returns true if the contract is not currently entered
     /// at level 1 and 2, returns false otherwise
     function isUnlocked() external view override returns (bool) {
-        return _lockLevel == _NOT_ENTERED;
+        return lockLevel == _NOT_ENTERED;
     }
 
     /// @notice returns whether or not the contract is currently locked
     function isLocked() external view override returns (bool) {
-        return _lockLevel != _NOT_ENTERED;
-    }
-
-    /// @notice returns current lock level
-    function lockLevel() external view override returns (uint8) {
-        return _lockLevel;
+        return lockLevel != _NOT_ENTERED;
     }
 
     /// ---------- Global Locker Role State Changing APIs ----------
@@ -120,7 +110,7 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, CoreRefV2 {
     function lock(
         uint8 toLock
     ) external override onlyVoltRole(VoltRoles.LOCKER) {
-        uint8 currentLevel = _lockLevel; /// cache to save 1 warm SLOAD
+        uint8 currentLevel = lockLevel; /// cache to save 1 warm SLOAD
 
         require(
             toLock == currentLevel + 1,
@@ -137,9 +127,8 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, CoreRefV2 {
 
             uint88 blockEntered = uint88(block.number);
 
-            _sender = msg.sender;
-            _lastBlockEntered = blockEntered;
-            _lockLevel = toLock;
+            sender = msg.sender;
+            lastBlockEntered = blockEntered;
         } else {
             /// - lock to level 2 from level 1
 
@@ -149,12 +138,12 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, CoreRefV2 {
             /// do not update lastBlockEntered because it should be the same, if it isn't, revert
             /// if already entered, ensure entry happened this block
             require(
-                block.number == _lastBlockEntered,
+                block.number == lastBlockEntered,
                 "GlobalReentrancyLock: system not entered this block"
             );
-
-            _lockLevel = toLock;
         }
+
+        lockLevel = toLock;
     }
 
     /// @notice set the status to not entered
@@ -171,10 +160,10 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, CoreRefV2 {
     function unlock(
         uint8 toUnlock
     ) external override onlyVoltRole(VoltRoles.LOCKER) {
-        uint8 currentLevel = _lockLevel;
+        uint8 currentLevel = lockLevel;
 
         require(
-            uint88(block.number) == _lastBlockEntered,
+            uint88(block.number) == lastBlockEntered,
             "GlobalReentrancyLock: not entered this block"
         );
         require(
@@ -194,12 +183,12 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, CoreRefV2 {
         if (toUnlock == _NOT_ENTERED) {
             /// - unlock to level 0 from level 1, verify sender is original locker
             require(
-                msg.sender == _sender,
+                msg.sender == sender,
                 "GlobalReentrancyLock: caller is not locker"
             );
         }
 
-        _lockLevel = toUnlock;
+        lockLevel = toUnlock;
     }
 
     /// ---------- Governor Only State Changing API ----------
@@ -210,18 +199,18 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, CoreRefV2 {
     function governanceEmergencyRecover() external override onlyGovernor {
         /// must be locked either at level one, or at level 2
         require(
-            _lockLevel != _NOT_ENTERED,
+            lockLevel != _NOT_ENTERED,
             "GlobalReentrancyLock: governor recovery, system not entered"
         );
         /// status level 1 or level 2 lock == entered at this point
         /// stop malicious governor from unlocking in the same block as lock happened
         /// if governor is compromised, we're likely in a state FUBAR
         require(
-            block.number != _lastBlockEntered,
+            block.number != lastBlockEntered,
             "GlobalReentrancyLock: cannot unlock in same block as lock"
         );
 
-        _lockLevel = _NOT_ENTERED;
+        lockLevel = _NOT_ENTERED;
 
         emit EmergencyUnlock(msg.sender, block.timestamp);
     }
@@ -232,7 +221,7 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, CoreRefV2 {
     /// are allowed to be called, but since the PCV deposits cannot be called
     /// this presents no issue.
     function governanceEmergencyPause() external override onlyGovernor {
-        _lockLevel = _ENTERED_LEVEL_TWO;
+        lockLevel = _ENTERED_LEVEL_TWO;
 
         emit EmergencyLock(msg.sender, block.timestamp);
     }
