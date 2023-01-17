@@ -82,7 +82,7 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
         );
 
         // read initial pcv
-        (uint256 startLiquidPcv, , ) = pcvOracle.getTotalPcv();
+        uint256 startLiquidPcv = pcvOracle.getTotalPcv();
         // read initial psm balances
         uint256 startPsmDaiBalance = dai.balanceOf(address(daipsm));
         uint256 startPsmUsdcBalance = usdc.balanceOf(address(usdcpsm));
@@ -114,7 +114,7 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
         );
 
         // after first mint, pcv increased by amount
-        (uint256 liquidPcv2, , ) = pcvOracle.getTotalPcv();
+        uint256 liquidPcv2 = pcvOracle.getTotalPcv();
         assertApproxEq(
             liquidPcv2.toInt256(),
             (startLiquidPcv + startPsmDaiBalance + amount - daiPSMTargetBalance)
@@ -140,7 +140,7 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
         allocator.skim(morphoUsdcPCVDeposit);
         {
             // after second mint, pcv is = 2 * amount
-            (uint256 liquidPcv3, , ) = pcvOracle.getTotalPcv();
+            uint256 liquidPcv3 = pcvOracle.getTotalPcv();
             assertApproxEq(
                 liquidPcv3.toInt256(),
                 (liquidPcv2 +

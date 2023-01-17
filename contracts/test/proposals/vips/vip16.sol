@@ -398,22 +398,15 @@ contract vip16 is Proposal {
             addresses.mainnet("PSM_ALLOCATOR")
         );
 
-        core.createRole(VoltRoles.LIQUID_PCV_DEPOSIT, VoltRoles.GOVERNOR);
-        core.createRole(VoltRoles.ILLIQUID_PCV_DEPOSIT, VoltRoles.GOVERNOR);
+        core.createRole(VoltRoles.PCV_DEPOSIT, VoltRoles.GOVERNOR);
+        core.grantRole(VoltRoles.PCV_DEPOSIT, addresses.mainnet("PSM_DAI"));
+        core.grantRole(VoltRoles.PCV_DEPOSIT, addresses.mainnet("PSM_USDC"));
         core.grantRole(
-            VoltRoles.LIQUID_PCV_DEPOSIT,
-            addresses.mainnet("PSM_DAI")
-        );
-        core.grantRole(
-            VoltRoles.LIQUID_PCV_DEPOSIT,
-            addresses.mainnet("PSM_USDC")
-        );
-        core.grantRole(
-            VoltRoles.LIQUID_PCV_DEPOSIT,
+            VoltRoles.PCV_DEPOSIT,
             addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
         );
         core.grantRole(
-            VoltRoles.LIQUID_PCV_DEPOSIT,
+            VoltRoles.PCV_DEPOSIT,
             addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
         );
 
@@ -492,11 +485,7 @@ contract vip16 is Proposal {
         oracles[0] = addresses.mainnet("ORACLE_CONSTANT_DAI");
         oracles[1] = addresses.mainnet("ORACLE_CONSTANT_USDC");
 
-        bool[] memory isLiquid = new bool[](2);
-        isLiquid[0] = true;
-        isLiquid[1] = true;
-
-        pcvOracle.addVenues(venues, oracles, isLiquid);
+        pcvOracle.addVenues(venues, oracles);
 
         /// Configure PCV Router
         address[] memory swappers = new address[](1);
@@ -674,13 +663,13 @@ contract vip16 is Proposal {
         assertEq(psmToken2, addresses.mainnet("USDC"));
 
         // pcv oracle
-        assertEq(pcvOracle.getAllVenues().length, 2);
+        assertEq(pcvOracle.getVenues().length, 2);
         assertEq(
-            pcvOracle.getAllVenues()[0],
+            pcvOracle.getVenues()[0],
             addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
         );
         assertEq(
-            pcvOracle.getAllVenues()[1],
+            pcvOracle.getVenues()[1],
             addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
         );
 

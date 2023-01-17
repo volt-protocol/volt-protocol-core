@@ -91,44 +91,21 @@ contract PCVRouter is IPCVRouter, CoreRefV2 {
     /// @param amount the amount to withdraw and deposit
     /// @param sourceAsset the token address of the source PCV Deposit
     /// @param destinationAsset the token address of the destination PCV Deposit
-    /// @param sourceIsLiquid true if {source} is a liquid PCVDeposit
-    /// @param destinationIsLiquid true if {destination} is a liquid PCVDeposit
     function movePCV(
         address source,
         address destination,
         address swapper,
         uint256 amount,
         address sourceAsset,
-        address destinationAsset,
-        bool sourceIsLiquid,
-        bool destinationIsLiquid
+        address destinationAsset
     ) external whenNotPaused onlyVoltRole(VoltRoles.PCV_MOVER) globalLock(1) {
         // Check both deposits are still valid for PCVOracle
         IPCVOracle _pcvOracle = pcvOracle();
-
-        if (sourceIsLiquid) {
-            require(
-                _pcvOracle.isLiquidVenue(source),
-                "PCVRouter: invalid liquid source"
-            );
-        } else {
-            require(
-                _pcvOracle.isIlliquidVenue(source),
-                "PCVRouter: invalid illiquid source"
-            );
-        }
-
-        if (destinationIsLiquid) {
-            require(
-                _pcvOracle.isLiquidVenue(destination),
-                "PCVRouter: invalid liquid destination"
-            );
-        } else {
-            require(
-                _pcvOracle.isIlliquidVenue(destination),
-                "PCVRouter: invalid illiquid destination"
-            );
-        }
+        require(_pcvOracle.isVenue(source), "PCVRouter: invalid source");
+        require(
+            _pcvOracle.isVenue(destination),
+            "PCVRouter: invalid destination"
+        );
 
         // Check underlying tokens
         require(
@@ -164,7 +141,8 @@ contract PCVRouter is IPCVRouter, CoreRefV2 {
     /// This function requires the highly trusted PCV_CONTROLLER role, and expects
     /// caller to know what they are doing by disabling checks such as the fact
     /// that the 2 PCV Deposits passed as parameter are indeed contracts of the
-    /// Volt Protocol, and that they are compatible for a PCV movement (same token).
+    /// Volt Protocol, and that they are compatible for a PCV movement (same token,
+    /// or using a compatible PCV swapper).
     /// @param source the address of the pcv deposit contract to withdraw from
     /// @param destination the address of the pcv deposit contract to deposit into
     /// @param swapper the PCVSwapper to use for asset conversion, address(0) for no conversion.

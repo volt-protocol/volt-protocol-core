@@ -250,28 +250,12 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     /// ------------------------------------------
 
     /// @notice hook into the pcv oracle, calls into pcv oracle with delta
-    /// if pcv oracle is not set to address 0, and updates the liquid balance
-    function _liquidPcvOracleHook(
-        int256 deltaBalance,
-        int256 deltaProfit
-    ) internal {
+    /// if pcv oracle is not set to address 0, and updates the balance
+    function _pcvOracleHook(int256 deltaBalance, int256 deltaProfit) internal {
         IPCVOracle _pcvOracle = pcvOracle();
         if (address(_pcvOracle) != address(0)) {
             /// if any amount of PCV is withdrawn and no gains, delta is negative
-            _pcvOracle.updateLiquidBalance(deltaBalance, deltaProfit);
-        }
-    }
-
-    /// @notice hook into the pcv oracle, calls into pcv oracle with delta
-    /// if pcv oracle is not set to address 0, and updates the illiquid balance
-    function _illiquidPcvOracleHook(
-        int256 deltaBalance,
-        int256 deltaProfit
-    ) internal {
-        IPCVOracle _pcvOracle = pcvOracle();
-        if (address(_pcvOracle) != address(0)) {
-            /// if any amount of PCV is withdrawn and no gains, delta is negative
-            _pcvOracle.updateIlliquidBalance(deltaBalance, deltaProfit);
+            _pcvOracle.updateBalance(deltaBalance, deltaProfit);
         }
     }
 }

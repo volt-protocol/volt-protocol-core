@@ -34,9 +34,7 @@ contract IntegrationTestPCVRouter is PostProposalCheck {
             addresses.mainnet("PCV_SWAPPER_MAKER"), // swapper
             AMOUNT * 1e18, // amount
             addresses.mainnet("DAI"), // sourceAsset
-            addresses.mainnet("USDC"), // destinationAsset
-            true, // sourceIsLiquid
-            true // destinationIsLiquid
+            addresses.mainnet("USDC") // destinationAsset
         );
         vm.stopPrank();
 
@@ -61,9 +59,7 @@ contract IntegrationTestPCVRouter is PostProposalCheck {
             addresses.mainnet("PCV_SWAPPER_MAKER"), // swapper
             (AMOUNT * 1e18) / 2e12, // amount
             addresses.mainnet("USDC"), // sourceAsset
-            addresses.mainnet("DAI"), // destinationAsset
-            true, // sourceIsLiquid
-            true // destinationIsLiquid
+            addresses.mainnet("DAI") // destinationAsset
         );
         vm.stopPrank();
 

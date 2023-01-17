@@ -17,7 +17,7 @@ contract vip17 is MultisigProposal {
     string public name = "VIP17";
 
     // TODO: put exact numbers here after execution of VIP15
-    uint256 public PCV_USDC = 50_000 * 1e6;
+    uint256 public PCV_USDC = 30_000 * 1e6;
     uint256 public PCV_DAI = 1_500_000 * 1e18;
 
     // Funds to send to each PSM
@@ -110,7 +110,7 @@ contract vip17 is MultisigProposal {
             2 *
             PSM_LIQUID_RESERVE *
             1e18;
-        (, , uint256 totalPcv) = PCVOracle(addresses.mainnet("PCV_ORACLE"))
+        uint256 totalPcv = PCVOracle(addresses.mainnet("PCV_ORACLE"))
             .getTotalPcv();
         // tolerate 1 USD "loss" on migration because morpho accounting is pessimistic
         assertGt(totalPcv, expectedPcvUsd - 1e18);

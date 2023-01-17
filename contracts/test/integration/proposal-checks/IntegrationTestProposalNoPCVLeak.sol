@@ -23,7 +23,7 @@ contract IntegrationTestProposalNoPCVLeak is Test {
         // Read pre-proposal PCV
         uint256 totalPcvPreProposal = 0;
         if (address(pcvOracle) != address(0)) {
-            (, , totalPcvPreProposal) = pcvOracle.getTotalPcv();
+            totalPcvPreProposal = pcvOracle.getTotalPcv();
         }
 
         // Run all pending proposals
@@ -45,7 +45,7 @@ contract IntegrationTestProposalNoPCVLeak is Test {
         pcvOracle = PCVOracle(addresses.mainnet("PCV_ORACLE"));
         uint256 totalPcvPostProposal = 0;
         if (address(pcvOracle) != address(0)) {
-            (, , totalPcvPostProposal) = pcvOracle.getTotalPcv();
+            totalPcvPostProposal = pcvOracle.getTotalPcv();
         }
 
         // Check pcv leak

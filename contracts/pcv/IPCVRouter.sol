@@ -37,9 +37,7 @@ interface IPCVRouter {
         address swapper,
         uint256 amount,
         address sourceAsset,
-        address destinationAsset,
-        bool sourceIsLiquid,
-        bool destinationIsLiquid
+        address destinationAsset
     ) external;
 
     // ----------- PCV_CONTROLLER role api -----------

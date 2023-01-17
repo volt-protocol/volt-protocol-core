@@ -65,35 +65,25 @@ contract IntegrationTestRoles is PostProposalCheck {
             addresses.mainnet("GOVERNOR")
         );
 
-        // LIQUID_PCV_DEPOSIT_ROLE
+        // PCV_DEPOSIT_ROLE
+        assertEq(core.getRoleAdmin(VoltRoles.PCV_DEPOSIT), VoltRoles.GOVERNOR);
+        assertEq(core.getRoleMemberCount(VoltRoles.PCV_DEPOSIT), 4);
         assertEq(
-            core.getRoleAdmin(VoltRoles.LIQUID_PCV_DEPOSIT),
-            VoltRoles.GOVERNOR
-        );
-        assertEq(core.getRoleMemberCount(VoltRoles.LIQUID_PCV_DEPOSIT), 4);
-        assertEq(
-            core.getRoleMember(VoltRoles.LIQUID_PCV_DEPOSIT, 0),
+            core.getRoleMember(VoltRoles.PCV_DEPOSIT, 0),
             addresses.mainnet("PSM_DAI")
         );
         assertEq(
-            core.getRoleMember(VoltRoles.LIQUID_PCV_DEPOSIT, 1),
+            core.getRoleMember(VoltRoles.PCV_DEPOSIT, 1),
             addresses.mainnet("PSM_USDC")
         );
         assertEq(
-            core.getRoleMember(VoltRoles.LIQUID_PCV_DEPOSIT, 2),
+            core.getRoleMember(VoltRoles.PCV_DEPOSIT, 2),
             addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
         );
         assertEq(
-            core.getRoleMember(VoltRoles.LIQUID_PCV_DEPOSIT, 3),
+            core.getRoleMember(VoltRoles.PCV_DEPOSIT, 3),
             addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
         );
-
-        // ILLIQUID_PCV_DEPOSIT_ROLE
-        assertEq(
-            core.getRoleAdmin(VoltRoles.ILLIQUID_PCV_DEPOSIT),
-            VoltRoles.GOVERNOR
-        );
-        assertEq(core.getRoleMemberCount(VoltRoles.ILLIQUID_PCV_DEPOSIT), 0);
 
         // PCV_GUARD
         assertEq(core.getRoleAdmin(VoltRoles.PCV_GUARD), VoltRoles.GOVERNOR);

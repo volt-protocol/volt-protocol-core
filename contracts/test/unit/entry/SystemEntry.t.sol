@@ -71,10 +71,8 @@ contract SystemEntryUnitTest is DSTest {
         venues[0] = address(deposit1);
         address[] memory oracles = new address[](1);
         oracles[0] = address(oracle1);
-        bool[] memory isLiquid = new bool[](1);
-        isLiquid[0] = true;
         vm.prank(addresses.governorAddress);
-        pcvOracle.addVenues(venues, oracles, isLiquid);
+        pcvOracle.addVenues(venues, oracles);
         // setup pcv oracle
         vm.prank(addresses.governorAddress);
         core.setPCVOracle(IPCVOracle(address(pcvOracle)));
