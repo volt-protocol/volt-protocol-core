@@ -15,68 +15,27 @@
     "test:proposals": "forge test --fork-url https://eth-mainnet.alchemyapi.io/v2/$MAINNET_ALCHEMY_API_KEY --match-contract TestProposals -vvv",
     "test:integration": "forge test --fork-url https://eth-mainnet.alchemyapi.io/v2/$MAINNET_ALCHEMY_API_KEY --match-contract IntegrationTest -vvv",
     "coverage": "forge coverage --match-contract UnitTest --report lcov --report summary",
-    "lint": "npm run lint:ts && npm run lint:sol",
-    "lint:ts": "npx eslint --config ./.eslintrc --ignore-path ./.eslintignore --ext .ts,.tsx .",
-    "lint:ts:fix": "npx eslint --fix --config ./.eslintrc --ignore-path ./.eslintignore --ext .ts,.tsx .",
-    "lint:sol": "npx solhint --ignore-path ./.solhintignore \"contracts/**/*.sol\"",
+    "lint": "npx solhint --ignore-path ./.solhintignore \"contracts/**/*.sol\"",
     "deploy": "forge script contracts/test/proposals/DeployProposal.s.sol:DeployProposal -vvvv --rpc-url $ETH_RPC_URL",
     "deploy:broadcast": "forge script contracts/test/proposals/DeployProposal.s.sol:DeployProposal -vvvv --rpc-url $ETH_RPC_URL --broadcast",
-    "prettier": "npm run prettier:sol && npm run prettier:ts",
-    "prettier:ts": "npx prettier --check './**/*.ts'",
-    "prettier:sol": "npx prettier --check 'contracts/**/*.sol'",
-    "prettier:fix": "npm run prettier:sol:fix && npm run prettier:ts:fix",
-    "prettier:ts:fix": "npx prettier --write './**/*.ts'",
-    "prettier:sol:fix": "npx prettier --write 'contracts/**/*.sol'"
+    "prettier": "npx prettier --check 'contracts/**/*.sol'",
+    "prettier:fix": "npx prettier --write 'contracts/**/*.sol'"
   },
   "authors": "elliotfriedman,eswak,kassim,joeysantoro",
   "dependencies": {
     "@ethersproject/providers": "^5.5.3",
-    "@openzeppelin/contracts": "4.6.0",
-    "@primitivefi/hardhat-dodoc": "^0.2.3",
-    "async": "2.6.4",
-    "chai": "^4.3.4",
-    "dotenv": "^14.1.0",
-    "eslint-config-prettier": "8.5.0",
-    "eslint-utils": "3.0.0",
-    "hardhat": "2.11.0",
-    "mimic-fn": "1.2.0",
-    "string-template": "^1.0.0"
+    "@openzeppelin/contracts": "4.6.0"
   },
   "devDependencies": {
-    "@idle-finance/hardhat-proposals-plugin": "^0.2.3",
-    "@nomiclabs/hardhat-ethers": "^2.0.4",
-    "@nomiclabs/hardhat-etherscan": "3.1.0",
-    "@typechain/ethers-v5": "^7.1.2",
-    "@typechain/hardhat": "^2.3.0",
-    "@types/chai": "^4.3.0",
-    "@types/mocha": "^9.0.0",
-    "@types/node": "^17.0.21",
-    "@typescript-eslint/eslint-plugin": "^4.31.2",
-    "@typescript-eslint/parser": "^4.31.2",
-    "chai-bn": "^0.3.0",
-    "eslint": "^7.32.0",
-    "eslint-plugin-prettier": "4.0.0",
     "ethers": "^5.5.3",
     "husky": "7.0.4",
     "lint-staged": "12.2.0",
-    "mocha": "^9.1.4",
-    "mocha-junit-reporter": "^2.0.2",
-    "mocha-multi-reporters": "^1.5.1",
     "prettier": "2.5.1",
     "prettier-plugin-solidity": "1.0.0",
     "solhint": "3.3.7",
-    "solhint-plugin-prettier": "0.0.5",
-    "solidity-coverage": "0.8.0",
-    "ts-node": "10.4.0",
-    "tsconfig-paths": "3.12.0",
-    "typechain": "5.2.0",
-    "typescript": "4.4.4"
+    "solhint-plugin-prettier": "0.0.5"
   },
   "lint-staged": {
-    "*.{ts,tsx}": [
-      "npx eslint --cache --fix --config ./.eslintrc --ignore-path ./.eslintignore --ext .ts,.tsx .",
-      "npx prettier --config .prettierrc './**/*.ts' --write"
-    ],
     "*.{sol}": [
       "npx prettier --config .prettierrc 'contracts/**/*.sol' --write"
     ]
