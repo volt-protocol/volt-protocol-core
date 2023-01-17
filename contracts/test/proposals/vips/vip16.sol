@@ -50,8 +50,9 @@ contract vip16 is Proposal {
 
     /// ---------- ORACLE PARAM ----------
 
-    /// @notice price changes by 16 basis points per month
-    uint112 monthlyChangeRate = 0.0016e18;
+    /// @notice price changes by 14 basis points per month,
+    /// making non compounded annual rate 1.68%
+    uint112 monthlyChangeRate = 0.0014e18;
 
     /// ---------- RATE LIMITED MINTER PARAMS ----------
 
