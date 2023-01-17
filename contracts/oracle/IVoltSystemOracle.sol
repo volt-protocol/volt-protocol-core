@@ -45,7 +45,7 @@ interface IVoltSystemOracle {
 
     /// @notice update the change rate, callable only by the governor
     /// @param newMonthlyChangeRate interest rate to interpolate price
-    function updateChangeRate(uint112 newMonthlyChangeRate) external;
+    function updateMonthlyChangeRate(uint112 newMonthlyChangeRate) external;
 
     // ----------- Event -----------
 

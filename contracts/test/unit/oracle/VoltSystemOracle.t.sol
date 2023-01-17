@@ -373,7 +373,7 @@ contract VoltSystemOracleUnitTest is DSTest {
                 if (periods % 2 == 0) {
                     voltSystemOracle.compoundInterest();
                 } else {
-                    testGovernorUpdateChangeRateSucceeds(
+                    testGovernorupdateMonthlyChangeRateSucceeds(
                         voltSystemOracle.monthlyChangeRate()
                     );
                 }
@@ -395,18 +395,18 @@ contract VoltSystemOracleUnitTest is DSTest {
         }
     }
 
-    function testNonGovernorUpdateChangeRateFails() public {
+    function testNonGovernorupdateMonthlyChangeRateFails() public {
         vm.expectRevert("CoreRef: Caller is not a governor");
-        voltSystemOracle.updateChangeRate(0);
+        voltSystemOracle.updateMonthlyChangeRate(0);
     }
 
-    function testGovernorUpdateChangeRateSucceeds(
+    function testGovernorupdateMonthlyChangeRateSucceeds(
         uint112 newChangeRate
     ) public {
         vm.assume(newChangeRate <= 10_000);
 
         vm.prank(addresses.governorAddress);
-        voltSystemOracle.updateChangeRate(newChangeRate);
+        voltSystemOracle.updateMonthlyChangeRate(newChangeRate);
 
         assertEq(voltSystemOracle.monthlyChangeRate(), newChangeRate);
     }
