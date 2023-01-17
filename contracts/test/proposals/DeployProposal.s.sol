@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import "hardhat/console.sol";
-
+import {console} from "@forge-std/console.sol";
 import {vip16 as vip} from "./vips/vip16.sol";
 import {Script} from "@forge-std/Script.sol";
 import {Addresses} from "./Addresses.sol";

@@ -1,6 +1,6 @@
 pragma solidity =0.8.13;
 
-import "hardhat/console.sol";
+import {console} from "@forge-std/console.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
 import {Proposal} from "./Proposal.sol";

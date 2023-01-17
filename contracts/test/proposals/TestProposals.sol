@@ -1,6 +1,6 @@
 pragma solidity =0.8.13;
 
-import {console} from "hardhat/console.sol";
+import {console} from "@forge-std/console.sol";
 
 import {Test} from "@forge-std/Test.sol";
 import {Addresses} from "./Addresses.sol";

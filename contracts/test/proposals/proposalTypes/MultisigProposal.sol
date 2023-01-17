@@ -1,7 +1,5 @@
 pragma solidity =0.8.13;
 
-import "hardhat/console.sol";
-
 import {Proposal} from "./Proposal.sol";
 
 abstract contract MultisigProposal is Proposal {
