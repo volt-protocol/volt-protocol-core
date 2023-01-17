@@ -4,8 +4,8 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-import {Vm} from "./Vm.sol";
-import {DSTest} from "./DSTest.sol";
+import {Vm} from "@forge-std/Vm.sol";
+import {Test} from "@forge-std/Test.sol";
 import {ICoreV2} from "../../../core/ICoreV2.sol";
 import {PCVDeposit} from "../../../pcv/PCVDeposit.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
@@ -15,7 +15,7 @@ import {ERC20HoldingPCVDeposit} from "../../../mock/ERC20HoldingPCVDeposit.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 import {getCoreV2} from "./Fixtures.sol";
 
-contract UnitTestRateLimitedV2 is DSTest {
+contract UnitTestRateLimitedV2 is Test {
     using SafeCast for *;
 
     /// @notice event emitted when buffer cap is updated
@@ -32,9 +32,6 @@ contract UnitTestRateLimitedV2 is DSTest {
 
     /// @notice event emitted when buffer gets replenished
     event BufferReplenished(uint256 amountReplenished, uint256 bufferRemaining);
-
-    /// @notice foundry vm
-    Vm public constant vm = Vm(HEVM_ADDRESS);
 
     /// @notice rate limited v2 contract
     MockRateLimitedV2 rlm;

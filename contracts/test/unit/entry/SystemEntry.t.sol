@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {Vm} from "./../utils/Vm.sol";
-import {DSTest} from "./../utils/DSTest.sol";
+import {Vm} from "@forge-std/Vm.sol";
+import {Test} from "@forge-std/Test.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
 import {PCVOracle} from "../../../oracle/PCVOracle.sol";
 import {IPCVOracle} from "../../../oracle/IPCVOracle.sol";
@@ -15,10 +15,9 @@ import {getCoreV2} from "./../utils/Fixtures.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../core/GlobalReentrancyLock.sol";
 
-contract SystemEntryUnitTest is DSTest {
+contract SystemEntryUnitTest is Test {
     CoreV2 private core;
     SystemEntry public entry;
-    Vm public constant vm = Vm(HEVM_ADDRESS);
 
     // reference to the volt pcv oracle
     PCVOracle private pcvOracle;

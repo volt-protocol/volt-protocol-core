@@ -4,15 +4,15 @@ pragma solidity 0.8.13;
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-import {Vm} from "./../utils/Vm.sol";
-import {DSTest} from "./../utils/DSTest.sol";
+import {Vm} from "@forge-std/Vm.sol";
+import {Test} from "@forge-std/Test.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
 import {getCoreV2} from "./../utils/Fixtures.sol";
 import {Constants} from "./../../../Constants.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 
-contract VoltSystemOracleUnitTest is DSTest {
+contract VoltSystemOracleUnitTest is Test {
     using SafeCast for *;
 
     CoreV2 private core;
@@ -28,8 +28,6 @@ contract VoltSystemOracleUnitTest is DSTest {
 
     /// @notice actual starting oracle price on mainnet
     uint200 public constant startPrice = 1045095352308302897;
-
-    Vm public constant vm = Vm(HEVM_ADDRESS);
 
     function setUp() public {
         core = getCoreV2();

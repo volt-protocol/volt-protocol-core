@@ -1,2 +1,2 @@
 @openzeppelin/=node_modules/@openzeppelin/
-ds-test/=forge-std/lib/ds-test/src/
+@forge-std/=forge-std/src/

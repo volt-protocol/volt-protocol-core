@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {Vm} from "./../utils/Vm.sol";
-import {DSTest} from "./../utils/DSTest.sol";
+import {Vm} from "@forge-std/Vm.sol";
+import {Test} from "@forge-std/Test.sol";
 import {ICoreV2} from "../../../core/ICoreV2.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
@@ -11,10 +11,9 @@ import {MockCoreRefV2} from "../../../mock/MockCoreRefV2.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 import {getCoreV2} from "./../utils/Fixtures.sol";
 
-contract UnitTestCoreRefV2 is DSTest {
+contract UnitTestCoreRefV2 is Test {
     ICoreV2 private core;
     MockCoreRefV2 private coreRef;
-    Vm public constant vm = Vm(HEVM_ADDRESS);
 
     event CoreUpdate(address indexed oldCore, address indexed newCore);
 

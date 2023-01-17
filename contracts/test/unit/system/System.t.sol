@@ -5,7 +5,7 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {Test} from "../../../../forge-std/src/Test.sol";
+import {Test} from "@forge-std/Test.sol";
 import {ICoreV2} from "../../../core/ICoreV2.sol";
 import {Deviation} from "../../../utils/Deviation.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";

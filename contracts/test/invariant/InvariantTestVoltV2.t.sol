@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.8.13;
 
-import {Vm} from "../unit/utils/Vm.sol";
-import {DSTest} from "../unit/utils/DSTest.sol";
+import {Vm} from "@forge-std/Vm.sol";
+import {Test} from "@forge-std/Test.sol";
 import {VoltV2} from "../../volt/VoltV2.sol";
 import {ICoreV2} from "../../core/ICoreV2.sol";
 import {getCoreV2} from "../unit/utils/Fixtures.sol";
-import {DSInvariantTest} from "../unit/utils/DSInvariantTest.sol";
+import {InvariantTest} from "./InvariantTest.sol";
 import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
 
 /// @dev Modified from Solmate ERC20 Invariant Test (https://github.com/transmissions11/solmate/blob/main/src/test/ERC20.t.sol)
-contract InvariantTestVoltV2 is DSTest, DSInvariantTest {
-    Vm private vm = Vm(HEVM_ADDRESS);
+contract InvariantTestVoltV2 is Test, InvariantTest {
     BalanceSum public balanceSum;
     VoltV2 public volt;
     ICoreV2 public core;
@@ -63,9 +62,9 @@ contract InvariantTestVoltV2 is DSTest, DSInvariantTest {
     }
 }
 
-contract BalanceSum is DSTest {
+contract BalanceSum is Test {
     VoltV2 volt;
-    Vm private vm = Vm(HEVM_ADDRESS);
+
     mapping(address => uint256) public balances;
     mapping(address => bool) public isUser;
     mapping(address => uint256) public votingPower;

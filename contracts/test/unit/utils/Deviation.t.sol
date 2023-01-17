@@ -1,20 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {Vm} from "./../utils/Vm.sol";
-import "./../utils/DSTest.sol";
+import {Vm} from "@forge-std/Vm.sol";
+import {Test} from "@forge-std/Test.sol";
 import {Constants} from "./../../../Constants.sol";
 import {Deviation} from "./../../../utils/Deviation.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-contract UnitTestDeviation is DSTest {
+contract UnitTestDeviation is Test {
     using SafeCast for *;
     using Deviation for *;
 
     uint256 maxDeviationThresholdBasisPoints = 10_000;
-
-    Vm public constant vm = Vm(HEVM_ADDRESS);
 
     function testDeviation() public {
         int256 x = 275000;

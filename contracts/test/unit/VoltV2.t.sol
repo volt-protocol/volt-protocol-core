@@ -2,21 +2,19 @@
 pragma solidity =0.8.13;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {DSTest} from "../unit/utils/DSTest.sol";
-import {Vm} from "../unit/utils/Vm.sol";
+import {Test} from "@forge-std/Test.sol";
+import {Vm} from "@forge-std/Vm.sol";
 import {Core} from "../../core/Core.sol";
 import {VoltV2} from "../../volt/VoltV2.sol";
 import {ICoreV2} from "../../core/ICoreV2.sol";
-import {stdError} from "../unit/utils/StdLib.sol";
+import {stdError} from "@forge-std/StdError.sol";
 import {getCoreV2} from "./utils/Fixtures.sol";
 import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
 
-contract UnitTestVoltV2 is DSTest {
+contract UnitTestVoltV2 is Test {
     using SafeCast for *;
     VoltV2 private volt;
     ICoreV2 private core;
-
-    Vm private vm = Vm(HEVM_ADDRESS);
 
     function setUp() public {
         core = getCoreV2();

@@ -4,8 +4,7 @@ pragma solidity 0.8.13;
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-import {Vm} from "./../../unit/utils/Vm.sol";
-import {DSTest} from "./../../unit/utils/DSTest.sol";
+import {Vm} from "@forge-std/Vm.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
 import {ICoreV2} from "../../../core/ICoreV2.sol";
 import {Constants} from "../../../Constants.sol";
@@ -13,7 +12,7 @@ import {MockERC20} from "../../../mock/MockERC20.sol";
 import {IVolt, Volt} from "../../../volt/Volt.sol";
 import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {SystemEntry} from "../../../entry/SystemEntry.sol";
-import {Test, console2} from "../../../../forge-std/src/Test.sol";
+import {Test} from "@forge-std/Test.sol";
 import {NonCustodialPSM} from "../../../peg/NonCustodialPSM.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";

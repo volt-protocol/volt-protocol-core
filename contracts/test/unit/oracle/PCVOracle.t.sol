@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {Test} from "../../../../forge-std/src/Test.sol";
+import {Test} from "@forge-std/Test.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
 import {IPCVOracle} from "../../../oracle/IPCVOracle.sol";
 import {PCVOracle} from "../../../oracle/PCVOracle.sol";

@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import {ICoreV2} from "../../../core/ICoreV2.sol";
 import {MockOracle} from "../../../mock/MockOracle.sol";
 import {MockOracleRef} from "../../../mock/MockOracleRef.sol";
-import {Test, console2} from "../../../../forge-std/src/Test.sol";
+import {Test} from "@forge-std/Test.sol";
 import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 import {getCoreV2, getVoltSystemOracle} from "./../../unit/utils/Fixtures.sol";

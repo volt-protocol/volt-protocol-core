@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import "hardhat/console.sol";
 
 import {vip16 as vip} from "./vips/vip16.sol";
-import {Script} from "../../../forge-std/src/Script.sol";
+import {Script} from "@forge-std/Script.sol";
 import {Addresses} from "./Addresses.sol";
 
 /*

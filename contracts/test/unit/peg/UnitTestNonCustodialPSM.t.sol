@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {Test} from "../../../../forge-std/src/Test.sol";
+import {Test} from "@forge-std/Test.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
 import {getCoreV2} from "./../utils/Fixtures.sol";
 import {Deviation} from "../../../utils/Deviation.sol";

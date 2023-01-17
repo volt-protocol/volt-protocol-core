@@ -1,6 +1,6 @@
 pragma solidity =0.8.13;
 
-import {Test} from "../../../../forge-std/src/Test.sol";
+import {Test} from "@forge-std/Test.sol";
 import {IProposal} from "./IProposal.sol";
 
 abstract contract Proposal is IProposal, Test {

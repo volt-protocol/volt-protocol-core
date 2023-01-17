@@ -4,10 +4,10 @@ pragma solidity =0.8.13;
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Vm} from "../unit/utils/Vm.sol";
+import {Vm} from "@forge-std/Vm.sol";
 import {IVolt} from "../../volt/IVolt.sol";
 import {CoreV2} from "../../core/CoreV2.sol";
-import {DSTest} from "../unit/utils/DSTest.sol";
+import {Test} from "@forge-std/Test.sol";
 import {IDSSPSM} from "../../pcv/maker/IDSSPSM.sol";
 import {Constants} from "../../Constants.sol";
 import {getCoreV2} from "./../unit/utils/Fixtures.sol";
@@ -19,7 +19,7 @@ import {MorphoCompoundPCVDeposit} from "../../pcv/morpho/MorphoCompoundPCVDeposi
 import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../core/GlobalReentrancyLock.sol";
 
-contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
+contract IntegrationTestMorphoCompoundPCVDeposit is Test {
     using SafeCast for *;
 
     // Constant addresses
@@ -34,8 +34,6 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
         0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67;
     address private constant DAI_USDC_USDT_CURVE_POOL =
         0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7;
-
-    Vm public constant vm = Vm(HEVM_ADDRESS);
 
     CoreV2 private core;
     SystemEntry public entry;

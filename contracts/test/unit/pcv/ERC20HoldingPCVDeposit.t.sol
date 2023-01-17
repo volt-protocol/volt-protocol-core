@@ -1,8 +1,8 @@
 pragma solidity =0.8.13;
 
-import {Vm} from "./../utils/Vm.sol";
+import {Vm} from "@forge-std/Vm.sol";
 import {ICore} from "../../../core/ICore.sol";
-import {DSTest} from "./../utils/DSTest.sol";
+import {Test} from "@forge-std/Test.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {IPCVDeposit} from "../../../pcv/IPCVDeposit.sol";
@@ -11,14 +11,12 @@ import {ERC20HoldingPCVDeposit} from "../../../mock/ERC20HoldingPCVDeposit.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 import {getCore} from "./../utils/Fixtures.sol";
 
-contract UnitTestERC20HoldingsPCVDeposit is DSTest {
+contract UnitTestERC20HoldingsPCVDeposit is Test {
     event Deposit(address indexed _from, uint256 _amount);
 
     ICore private core;
 
     ERC20HoldingPCVDeposit private erc20HoldingDeposit;
-
-    Vm public constant vm = Vm(HEVM_ADDRESS);
 
     /// @notice token to deposit
     MockERC20 private token;

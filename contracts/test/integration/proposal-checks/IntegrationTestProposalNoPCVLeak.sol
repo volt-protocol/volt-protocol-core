@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import "hardhat/console.sol";
 
-import {Test} from "../../../../forge-std/src/Test.sol";
+import {Test} from "@forge-std/Test.sol";
 
 import {Addresses} from "../../proposals/Addresses.sol";
 import {TestProposals} from "../../proposals/TestProposals.sol";

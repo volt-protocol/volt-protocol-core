@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {Vm} from "./../utils/Vm.sol";
-import {DSTest} from "./../utils/DSTest.sol";
+import {Vm} from "@forge-std/Vm.sol";
+import {Test} from "@forge-std/Test.sol";
 import {ICoreV2} from "../../../core/ICoreV2.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
@@ -13,7 +13,7 @@ import {MockPCVDepositV2} from "../../../mock/MockPCVDepositV2.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../core/GlobalReentrancyLock.sol";
 
-contract UnitTestPCVGuardian is DSTest {
+contract UnitTestPCVGuardian is Test {
     event SafeAddressUpdated(
         address indexed oldSafeAddress,
         address indexed newSafeAddress
@@ -26,8 +26,6 @@ contract UnitTestPCVGuardian is DSTest {
     MockERC20 public underlyingToken;
     MockPCVDepositV2 public pcvDeposit;
     IGlobalReentrancyLock private lock;
-
-    Vm public constant vm = Vm(HEVM_ADDRESS);
 
     address[] public whitelistAddresses;
     address public guard = address(0x123456789);

@@ -2,10 +2,10 @@ pragma solidity =0.8.13;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
-import {Vm} from "./../../utils/Vm.sol";
-import {DSTest} from "./../../utils/DSTest.sol";
+import {Vm} from "@forge-std/Vm.sol";
+import {Test} from "@forge-std/Test.sol";
 import {CoreV2} from "../../../../core/CoreV2.sol";
-import {stdError} from "../../../unit/utils/StdLib.sol";
+import {stdError} from "@forge-std/StdError.sol";
 import {MockERC20} from "../../../../mock/MockERC20.sol";
 import {MockCToken} from "../../../../mock/MockCToken.sol";
 import {MockMorpho} from "../../../../mock/MockMorpho.sol";
@@ -19,7 +19,7 @@ import {TestAddresses as addresses} from "../../utils/TestAddresses.sol";
 import {MockMorphoMaliciousReentrancy} from "../../../../mock/MockMorphoMaliciousReentrancy.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../../core/GlobalReentrancyLock.sol";
 
-contract UnitTestMorphoCompoundPCVDeposit is DSTest {
+contract UnitTestMorphoCompoundPCVDeposit is Test {
     using SafeCast for *;
 
     event Deposit(address indexed _from, uint256 _amount);
@@ -38,8 +38,6 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     PCVGuardian private pcvGuardian;
     MorphoCompoundPCVDeposit private morphoDeposit;
     MockMorphoMaliciousReentrancy private maliciousMorpho;
-
-    Vm public constant vm = Vm(HEVM_ADDRESS);
 
     /// @notice token to deposit
     MockERC20 private token;

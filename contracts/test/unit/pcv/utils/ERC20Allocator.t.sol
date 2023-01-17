@@ -2,8 +2,8 @@ pragma solidity =0.8.13;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {Vm} from "./../../utils/Vm.sol";
-import {DSTest} from "./../../utils/DSTest.sol";
+import {Vm} from "@forge-std/Vm.sol";
+import {Test} from "@forge-std/Test.sol";
 import {CoreV2} from "../../../../core/CoreV2.sol";
 import {getCoreV2} from "./../../utils/Fixtures.sol";
 import {MockERC20} from "../../../../mock/MockERC20.sol";
@@ -15,7 +15,7 @@ import {TestAddresses as addresses} from "../../utils/TestAddresses.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../../core/GlobalReentrancyLock.sol";
 import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "../../../../limiter/GlobalSystemExitRateLimiter.sol";
 
-contract UnitTestERC20Allocator is DSTest {
+contract UnitTestERC20Allocator is Test {
     /// @notice emitted when an existing deposit is updated
     event PSMTargetBalanceUpdated(address psm, uint248 targetBalance);
 
@@ -32,7 +32,6 @@ contract UnitTestERC20Allocator is DSTest {
     event DepositDeleted(address psm);
 
     CoreV2 private core;
-    Vm public constant vm = Vm(HEVM_ADDRESS);
 
     /// @notice reference to the PCVDeposit to pull from
     ERC20HoldingPCVDeposit private pcvDeposit;

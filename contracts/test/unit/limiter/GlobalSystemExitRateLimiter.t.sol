@@ -5,7 +5,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-import {Test} from "../../../../forge-std/src/Test.sol";
+import {Test} from "@forge-std/Test.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
 import {TestAddresses} from "./../utils/TestAddresses.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";

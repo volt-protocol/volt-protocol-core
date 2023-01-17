@@ -4,18 +4,18 @@ pragma solidity =0.8.13;
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {DSTest} from "../unit/utils/DSTest.sol";
-import {Vm} from "../unit/utils/Vm.sol";
+import {Test} from "@forge-std/Test.sol";
+import {Vm} from "@forge-std/Vm.sol";
 import {Core} from "../../core/Core.sol";
 import {VoltV2} from "../../volt/VoltV2.sol";
 import {ICoreV2} from "../../core/ICoreV2.sol";
-import {stdError} from "../unit/utils/StdLib.sol";
+import {stdError} from "@forge-std/StdError.sol";
 import {getCoreV2} from "./utils/Fixtures.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
 import {MockDAO, IVotes} from "../../mock/MockDAO.sol";
 import {TestAddresses as addresses} from "./utils/TestAddresses.sol";
 
-contract UnitTestVoltV2GovCompatibility is DSTest {
+contract UnitTestVoltV2GovCompatibility is Test {
     using SafeCast for *;
 
     VoltV2 private voltV2;
@@ -26,8 +26,6 @@ contract UnitTestVoltV2GovCompatibility is DSTest {
 
     address proposerCancellerExecutor = address(0x123);
     address userWithVolt = address(0xFFF);
-
-    Vm private vm = Vm(HEVM_ADDRESS);
 
     uint256 public quorum = 1_000_000e18;
 

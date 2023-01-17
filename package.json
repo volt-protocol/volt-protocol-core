@@ -9,6 +9,7 @@
     "setup": "curl -L https://foundry.paradigm.xyz | bash && foundryup",
     "compile": "forge build",
     "clean": "forge clean && rm -rf artifacts",
+    "test": "npm run test:unit",
     "test:unit": "forge test --match-contract UnitTest -vvv",
     "test:invariant": "forge test --match-contract InvariantTest -vvv",
     "test:proposals": "forge test --fork-url https://eth-mainnet.alchemyapi.io/v2/$MAINNET_ALCHEMY_API_KEY --match-contract TestProposals -vvv",

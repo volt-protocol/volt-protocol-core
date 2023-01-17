@@ -4,9 +4,9 @@ pragma solidity =0.8.13;
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {Vm} from "../unit/utils/Vm.sol";
+import {Vm} from "@forge-std/Vm.sol";
 import {CoreV2} from "../../core/CoreV2.sol";
-import {DSTest} from "../unit/utils/DSTest.sol";
+import {Test} from "@forge-std/Test.sol";
 import {MockERC20} from "../../mock/MockERC20.sol";
 import {getCoreV2} from "../unit/utils/Fixtures.sol";
 import {MockMorpho} from "../../mock/MockMorpho.sol";
@@ -14,7 +14,7 @@ import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
 import {IPCVOracle} from "../../oracle/IPCVOracle.sol";
 import {SystemEntry} from "../../entry/SystemEntry.sol";
 import {MockPCVOracle} from "../../mock/MockPCVOracle.sol";
-import {DSInvariantTest} from "../unit/utils/DSInvariantTest.sol";
+import {InvariantTest} from "./InvariantTest.sol";
 import {MorphoCompoundPCVDeposit} from "../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../core/GlobalReentrancyLock.sol";
@@ -23,7 +23,7 @@ import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../core/GlobalReen
 /// will not run invariant tests
 
 /// @dev Modified from Solmate ERC20 Invariant Test (https://github.com/transmissions11/solmate/blob/main/src/test/ERC20.t.sol)
-contract InvariantTestMorphoCompoundPCVDeposit is DSTest, DSInvariantTest {
+contract InvariantTestMorphoCompoundPCVDeposit is Test, InvariantTest {
     using SafeCast for *;
 
     /// TODO add invariant test for profit tracking
@@ -37,8 +37,6 @@ contract InvariantTestMorphoCompoundPCVDeposit is DSTest, DSInvariantTest {
     IGlobalReentrancyLock private lock;
     MorphoPCVDepositTest public morphoTest;
     MorphoCompoundPCVDeposit public morphoDeposit;
-
-    Vm private vm = Vm(HEVM_ADDRESS);
 
     function setUp() public {
         core = getCoreV2();
@@ -116,9 +114,7 @@ contract InvariantTestMorphoCompoundPCVDeposit is DSTest, DSInvariantTest {
     }
 }
 
-contract MorphoPCVDepositTest is DSTest {
-    Vm private vm = Vm(HEVM_ADDRESS);
-
+contract MorphoPCVDepositTest is Test {
     uint256 public totalDeposited;
 
     MockERC20 public token;

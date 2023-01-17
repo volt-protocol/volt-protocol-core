@@ -5,17 +5,15 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {Vm} from "./../utils/Vm.sol";
-import {DSTest} from "./../utils/DSTest.sol";
+import {Vm} from "@forge-std/Vm.sol";
+import {Test} from "@forge-std/Test.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 import {getCoreV2} from "./../utils/Fixtures.sol";
 
-contract UnitTestPermissionsV2 is DSTest {
+contract UnitTestPermissionsV2 is Test {
     CoreV2 private core;
-
-    Vm public constant vm = Vm(HEVM_ADDRESS);
 
     function setUp() public {
         core = getCoreV2();

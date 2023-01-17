@@ -7,17 +7,15 @@ import {IVolt} from "../../volt/Volt.sol";
 import {Volt} from "../../volt/Volt.sol";
 import {ICore} from "../../core/ICore.sol";
 import {Core} from "../../core/Core.sol";
-import {Vm} from "./utils/Vm.sol";
-import {DSTest} from "./utils/DSTest.sol";
+import {Vm} from "@forge-std/Vm.sol";
+import {Test} from "@forge-std/Test.sol";
 import {getCore} from "./utils/Fixtures.sol";
 import {TestAddresses as addresses} from "./utils/TestAddresses.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 
-contract UnitTestVolt is DSTest {
+contract UnitTestVolt is Test {
     IVolt private volt;
     ICore private core;
-
-    Vm public constant vm = Vm(HEVM_ADDRESS);
 
     function setUp() public {
         core = getCore();
