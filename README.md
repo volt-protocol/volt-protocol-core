@@ -32,28 +32,16 @@ VOLT Protocol [Whitepaper](https://github.com/volt-protocol/whitepaper)
  - curl -L https://foundry.paradigm.xyz | bash && foundryup
 
 ## Usage
- - run `npm run test` to run forge unit tests
- - run `npm run test:integration` to run forge integration tests
- - run `npm run test:hardhat` to run hardhat unit tests
- - run `npm run test:all` to run all tests
- - run `npm run lint` to lint ts files and sol files
- - run `npm lint:all` to lint ts AND js files
- - run `npm run lint:sol` to lint .sol files
- - run `npm run lint:fix` to fix linting errors, if fixable automatically
- - run `npm run prettier:ts` to run prettier and automatically format all ts files
- automatically
- - run `npm run prettier:sol` to run prettier and automatically format all Solidity files
- automatically
- - run `npm run prettier` to run prettier and format all files
- - run `npm run coverage:hardhat` to run smart-contract coverage based off of all tests
- - run `npm run calldata` to generate calldata for a proposal
- - run `npm run check-proposal` to run tests for a specific dao proposal
  - run `npm run compile` to compile smart contracts, if needed
-
-## Deployment
- - Setup your environment variables as found in `.env.example`
- - Copy `.env.example` to `.env`
- - run `npx hardhat node` to to run Hardhat Network locally
- - run `npx hardhat --network <insert network> run scripts/oracleDeploy.ts` to deploy oracle contracts 
- - Fill in `scripts/config.ts` file with newly deployed oracle contracts
- - run `npx hardhat --network <insert network> run scripts/systemDeploy.ts` to deploy the core contracts
+ - run `npm run clean` to clean compiled smart contracts folder, if needed
+ - run `npm run test:unit` to run forge unit tests
+ - run `npm run test:invariant` to run forge invariant tests
+ - run `npm run test:integration` to run forge integration tests
+ - run `npm run test:proposals` to run forge proposals tests
+ - run `npm run lint` to lint ts files and sol files
+ - run `npm run lint:ts` to lint ts files
+ - run `npm run lint:ts:fix` to fix linting errors, if fixable automatically
+ - run `npm run lint:sol` to lint .sol files
+ - run `npm run prettier` to run prettier and detect format errors
+ - run `npm run prettier:fix` to run prettier and format all files
+ - run `npm run coverage` to generate smart-contract coverage report

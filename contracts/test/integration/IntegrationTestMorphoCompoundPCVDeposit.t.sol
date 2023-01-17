@@ -13,7 +13,6 @@ import {Constants} from "../../Constants.sol";
 import {getCoreV2} from "./../unit/utils/Fixtures.sol";
 import {PCVGuardian} from "../../pcv/PCVGuardian.sol";
 import {SystemEntry} from "../../entry/SystemEntry.sol";
-import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
 import {MorphoCompoundPCVDeposit} from "../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
@@ -22,6 +21,19 @@ import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../core/GlobalReen
 
 contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     using SafeCast for *;
+
+    // Constant addresses
+    address private constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address private constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address private constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
+    address private constant CDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
+    address private constant CUSDC = 0x39AA39c021dfbaE8faC545936693aC917d5E7563;
+    address private constant MORPHO =
+        0x8888882f8f843896699869179fB6E4f7e3B58888;
+    address private constant MORPHO_LENS =
+        0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67;
+    address private constant DAI_USDC_USDT_CURVE_POOL =
+        0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
 
@@ -33,12 +45,9 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
 
     PCVGuardian private pcvGuardian;
 
-    PegStabilityModule private daiPSM =
-        PegStabilityModule(MainnetAddresses.VOLT_DAI_PSM);
-
-    IERC20 private dai = IERC20(MainnetAddresses.DAI);
-    IERC20 private usdc = IERC20(MainnetAddresses.USDC);
-    IERC20 private comp = IERC20(MainnetAddresses.COMP);
+    IERC20 private dai = IERC20(DAI);
+    IERC20 private usdc = IERC20(USDC);
+    IERC20 private comp = IERC20(COMP);
 
     uint256 public daiBalance;
     uint256 public usdcBalance;
@@ -53,18 +62,18 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
         lock = new GlobalReentrancyLock(address(core));
         daiDeposit = new MorphoCompoundPCVDeposit(
             address(core),
-            MainnetAddresses.CDAI,
-            MainnetAddresses.DAI,
-            MainnetAddresses.MORPHO,
-            MainnetAddresses.MORPHO_LENS
+            CDAI,
+            DAI,
+            MORPHO,
+            MORPHO_LENS
         );
 
         usdcDeposit = new MorphoCompoundPCVDeposit(
             address(core),
-            MainnetAddresses.CUSDC,
-            MainnetAddresses.USDC,
-            MainnetAddresses.MORPHO,
-            MainnetAddresses.MORPHO_LENS
+            CUSDC,
+            USDC,
+            MORPHO,
+            MORPHO_LENS
         );
 
         entry = new SystemEntry(address(core));
@@ -81,14 +90,14 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
 
         vm.label(address(daiDeposit), "Morpho DAI Compound PCV Deposit");
         vm.label(address(usdcDeposit), "Morpho USDC Compound PCV Deposit");
-        vm.label(address(MainnetAddresses.CDAI), "CDAI");
-        vm.label(address(MainnetAddresses.CUSDC), "CUSDC");
+        vm.label(address(CDAI), "CDAI");
+        vm.label(address(CUSDC), "CUSDC");
         vm.label(address(usdc), "USDC");
         vm.label(address(dai), "DAI");
         vm.label(0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67, "Morpho Lens");
         vm.label(0x8888882f8f843896699869179fB6E4f7e3B58888, "Morpho");
 
-        vm.startPrank(MainnetAddresses.DAI_USDC_USDT_CURVE_POOL);
+        vm.startPrank(DAI_USDC_USDT_CURVE_POOL);
         dai.transfer(address(daiDeposit), targetDaiBalance);
         usdc.transfer(address(usdcDeposit), targetUsdcBalance);
         vm.stopPrank();
@@ -116,22 +125,19 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     function testSetup() public {
         assertEq(address(daiDeposit.core()), address(core));
         assertEq(address(usdcDeposit.core()), address(core));
-        assertEq(daiDeposit.morpho(), MainnetAddresses.MORPHO);
-        assertEq(usdcDeposit.morpho(), MainnetAddresses.MORPHO);
-        assertEq(daiDeposit.lens(), MainnetAddresses.MORPHO_LENS);
-        assertEq(usdcDeposit.lens(), MainnetAddresses.MORPHO_LENS);
+        assertEq(daiDeposit.morpho(), MORPHO);
+        assertEq(usdcDeposit.morpho(), MORPHO);
+        assertEq(daiDeposit.lens(), MORPHO_LENS);
+        assertEq(usdcDeposit.lens(), MORPHO_LENS);
 
         assertEq(daiDeposit.balanceReportedIn(), address(dai));
         assertEq(usdcDeposit.balanceReportedIn(), address(usdc));
 
-        assertEq(address(daiDeposit.cToken()), address(MainnetAddresses.CDAI));
-        assertEq(
-            address(usdcDeposit.cToken()),
-            address(MainnetAddresses.CUSDC)
-        );
+        assertEq(address(daiDeposit.cToken()), address(CDAI));
+        assertEq(address(usdcDeposit.cToken()), address(CUSDC));
 
-        assertEq(address(daiDeposit.token()), address(MainnetAddresses.DAI));
-        assertEq(address(usdcDeposit.token()), address(MainnetAddresses.USDC));
+        assertEq(address(daiDeposit.token()), address(DAI));
+        assertEq(address(usdcDeposit.token()), address(USDC));
 
         assertEq(daiDeposit.lastRecordedBalance(), targetDaiBalance);
         assertEq(usdcDeposit.lastRecordedBalance(), targetUsdcBalance);

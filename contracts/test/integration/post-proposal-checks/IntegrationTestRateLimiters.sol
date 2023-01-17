@@ -71,7 +71,6 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
     */
     function testUserPSMMint() public {
         // read initial buffer left
-        uint256 bufferCap = grlm.bufferCap();
         uint256 initialBuffer = grlm.buffer();
 
         // number of moved funds for tests
@@ -172,9 +171,9 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
 
         // above limit rate reverts
         vm.startPrank(user);
-        dai.approve(address(daipsm), bufferCap * 2);
+        dai.approve(address(daipsm), grlm.bufferCap() * 2);
         vm.expectRevert("RateLimited: rate limit hit");
-        daipsm.mint(user, bufferCap * 2, 0);
+        daipsm.mint(user, grlm.bufferCap() * 2, 0);
         vm.stopPrank();
     }
 

@@ -8,14 +8,13 @@ import {Test} from "../../../forge-std/src/Test.sol";
 import {CoreV2} from "../../core/CoreV2.sol";
 import {getCoreV2} from "./../unit/utils/Fixtures.sol";
 import {MakerPCVSwapper} from "../../pcv/maker/MakerPCVSwapper.sol";
-import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
 
 contract IntegrationTestMakerPCVSwapper is Test {
     CoreV2 private core;
     MakerPCVSwapper private swapper;
-    IERC20 private dai = IERC20(MainnetAddresses.DAI);
-    IERC20 private usdc = IERC20(MainnetAddresses.USDC);
+    IERC20 private dai = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
+    IERC20 private usdc = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
     uint256 private constant BALANCE = 1_000e18;
 
     function setUp() public {

@@ -9,8 +9,6 @@ import {CoreRefV2} from "../refs/CoreRefV2.sol";
 import {VoltRoles} from "../core/VoltRoles.sol";
 import {PCVDeposit} from "./../pcv/PCVDeposit.sol";
 import {IPCVDeposit} from "./../pcv/IPCVDeposit.sol";
-import {MainnetAddresses} from "../test/integration/fixtures/MainnetAddresses.sol";
-import {ArbitrumAddresses} from "../test/integration/fixtures/ArbitrumAddresses.sol";
 import {IERC20HoldingPCVDeposit} from "./IERC20HoldingPCVDeposit.sol";
 
 /// @title ERC20HoldingPCVDeposit
@@ -28,11 +26,6 @@ contract ERC20HoldingPCVDeposit is PCVDeposit, IERC20HoldingPCVDeposit {
     IWETH public immutable weth;
 
     constructor(address _core, IERC20 _token, address _weth) CoreRefV2(_core) {
-        require(
-            address(_token) != MainnetAddresses.VOLT &&
-                address(_token) != ArbitrumAddresses.VOLT,
-            "VOLT not supported"
-        );
         token = _token;
         weth = IWETH(_weth);
     }
