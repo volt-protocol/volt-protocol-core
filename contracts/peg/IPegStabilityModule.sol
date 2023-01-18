@@ -86,6 +86,11 @@ interface IPegStabilityModule {
     /// @notice the underlying token exchanged for Volt
     function underlyingToken() external view returns (IERC20);
 
+    /// @notice returns the maximum amount of Volt that can be redeemed
+    /// Custodial PSM checks with the current PSM balance
+    /// Non Custodial PSM checks with the current PCV Deposit balance and the Global System Exit Rate Limit Buffer
+    function getMaxRedeemAmountIn() external view returns (uint256);
+
     // ----------- Events -----------
 
     event Withdrawal(

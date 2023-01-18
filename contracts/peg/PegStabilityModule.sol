@@ -162,4 +162,26 @@ contract PegStabilityModule is BasePegStabilityModule {
     function getMaxMintAmountOut() external view returns (uint256) {
         return globalRateLimitedMinter().buffer();
     }
+
+    /// @notice returns the maximum amount of Volt that can be redeemed
+    /// with the current PSM balance
+    function getMaxRedeemAmountIn() external view override returns (uint256) {
+        /// usdc decimals normalizer: -12
+        /// readOracle returns volt price / 1e12
+        ///   1.06e18 / 1e12 = 1.06e6
+        /// balance returns underlying token balance of usdc
+        ///   10_000e6 usdc
+        /// 10_000e6 * 1e18 / 1.06e6
+        ///   = 9.433962264E21 Volt
+
+        /// dai decimals normalizer: 0
+        /// readOracle returns volt price
+        ///   1.06e18 = 1.06e18
+        /// balance returns underlying token balance of dai
+        ///   10_000e18 dai
+        /// 10_000e18 * 1e18 / 1.06e18
+        ///   = 9.433962264E21 Volt
+
+        return (balance() * Constants.ETH_GRANULARITY) / readOracle();
+    }
 }
