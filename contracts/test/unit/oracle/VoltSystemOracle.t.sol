@@ -397,6 +397,7 @@ contract VoltSystemOracleUnitTest is DSTest {
 
     function testNonGovernorupdateMonthlyChangeRateFails() public {
         vm.expectRevert("CoreRef: Caller is not a governor");
+
         voltSystemOracle.updateMonthlyChangeRate(0);
     }
 
@@ -406,6 +407,7 @@ contract VoltSystemOracleUnitTest is DSTest {
         vm.assume(newChangeRate <= 10_000);
 
         vm.prank(addresses.governorAddress);
+
         voltSystemOracle.updateMonthlyChangeRate(newChangeRate);
 
         assertEq(voltSystemOracle.monthlyChangeRate(), newChangeRate);
