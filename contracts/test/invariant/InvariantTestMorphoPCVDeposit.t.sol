@@ -15,7 +15,7 @@ import {IPCVOracle} from "../../oracle/IPCVOracle.sol";
 import {SystemEntry} from "../../entry/SystemEntry.sol";
 import {MockPCVOracle} from "../../mock/MockPCVOracle.sol";
 import {DSInvariantTest} from "../unit/utils/DSInvariantTest.sol";
-import {MorphoCompoundPCVDeposit} from "../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
+import {MorphoPCVDeposit} from "../../pcv/morpho/MorphoPCVDeposit.sol";
 import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../core/GlobalReentrancyLock.sol";
 
@@ -34,7 +34,7 @@ contract InvariantTestMorphoCompoundPCVDeposit is DSTest, DSInvariantTest {
     MockPCVOracle public pcvOracle;
     IGlobalReentrancyLock private lock;
     MorphoPCVDepositTest public morphoTest;
-    MorphoCompoundPCVDeposit public morphoDeposit;
+    MorphoPCVDeposit public morphoDeposit;
 
     Vm private vm = Vm(HEVM_ADDRESS);
 
@@ -43,10 +43,11 @@ contract InvariantTestMorphoCompoundPCVDeposit is DSTest, DSInvariantTest {
         token = new MockERC20();
         pcvOracle = new MockPCVOracle();
         morpho = new MockMorpho(IERC20(address(token)));
-        morphoDeposit = new MorphoCompoundPCVDeposit(
+        morphoDeposit = new MorphoPCVDeposit(
             address(core),
             address(morpho),
             address(token),
+            address(0), /// no need for reward token
             address(morpho),
             address(morpho)
         );
@@ -123,10 +124,10 @@ contract MorphoPCVDepositTest is DSTest {
     MockMorpho public morpho;
     SystemEntry public entry;
     PCVGuardian public pcvGuardian;
-    MorphoCompoundPCVDeposit public morphoDeposit;
+    MorphoPCVDeposit public morphoDeposit;
 
     constructor(
-        MorphoCompoundPCVDeposit _morphoDeposit,
+        MorphoPCVDeposit _morphoDeposit,
         MockERC20 _token,
         MockMorpho _morpho,
         SystemEntry _entry,

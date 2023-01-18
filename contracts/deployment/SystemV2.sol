@@ -27,7 +27,7 @@ import {MainnetAddresses} from "../test/integration/fixtures/MainnetAddresses.so
 import {PegStabilityModule} from "../peg/PegStabilityModule.sol";
 import {ConstantPriceOracle} from "../oracle/ConstantPriceOracle.sol";
 import {IPCVDeposit, PCVDeposit} from "../pcv/PCVDeposit.sol";
-import {MorphoCompoundPCVDeposit} from "../pcv/morpho/MorphoCompoundPCVDeposit.sol";
+import {MorphoPCVDeposit} from "../pcv/morpho/MorphoPCVDeposit.sol";
 import {IVoltMigrator, VoltMigrator} from "../volt/VoltMigrator.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../core/GlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../limiter/GlobalRateLimitedMinter.sol";
@@ -57,8 +57,8 @@ contract SystemV2 {
     MigratorRouter public migratorRouter;
 
     /// PCV Deposits
-    MorphoCompoundPCVDeposit public morphoDaiPCVDeposit;
-    MorphoCompoundPCVDeposit public morphoUsdcPCVDeposit;
+    MorphoPCVDeposit public morphoDaiPCVDeposit;
+    MorphoPCVDeposit public morphoUsdcPCVDeposit;
 
     /// Peg Stability
     PegStabilityModule public daipsm;
@@ -167,18 +167,20 @@ contract SystemV2 {
         );
 
         /// PCV Deposits
-        morphoDaiPCVDeposit = new MorphoCompoundPCVDeposit(
+        morphoDaiPCVDeposit = new MorphoPCVDeposit(
             address(core),
             MainnetAddresses.CDAI,
             address(dai),
+            MainnetAddresses.COMP,
             MainnetAddresses.MORPHO,
             MainnetAddresses.MORPHO_LENS
         );
 
-        morphoUsdcPCVDeposit = new MorphoCompoundPCVDeposit(
+        morphoUsdcPCVDeposit = new MorphoPCVDeposit(
             address(core),
             MainnetAddresses.CUSDC,
             address(usdc),
+            MainnetAddresses.COMP,
             MainnetAddresses.MORPHO,
             MainnetAddresses.MORPHO_LENS
         );

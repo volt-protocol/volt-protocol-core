@@ -16,7 +16,7 @@ import {SystemEntry} from "../../entry/SystemEntry.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
 import {ERC20CompoundPCVDeposit} from "../../pcv/compound/ERC20CompoundPCVDeposit.sol";
-import {MorphoCompoundPCVDeposit} from "../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
+import {MorphoPCVDeposit} from "../../pcv/morpho/MorphoPCVDeposit.sol";
 import {TestAddresses as addresses} from "../unit/utils/TestAddresses.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../core/GlobalReentrancyLock.sol";
 
@@ -28,8 +28,8 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     CoreV2 private core;
     SystemEntry public entry;
     GlobalReentrancyLock private lock;
-    MorphoCompoundPCVDeposit private daiDeposit;
-    MorphoCompoundPCVDeposit private usdcDeposit;
+    MorphoPCVDeposit private daiDeposit;
+    MorphoPCVDeposit private usdcDeposit;
 
     PCVGuardian private pcvGuardian;
 
@@ -51,18 +51,20 @@ contract IntegrationTestMorphoCompoundPCVDeposit is DSTest {
     function setUp() public {
         core = getCoreV2();
         lock = new GlobalReentrancyLock(address(core));
-        daiDeposit = new MorphoCompoundPCVDeposit(
+        daiDeposit = new MorphoPCVDeposit(
             address(core),
             MainnetAddresses.CDAI,
             MainnetAddresses.DAI,
+            MainnetAddresses.COMP,
             MainnetAddresses.MORPHO,
             MainnetAddresses.MORPHO_LENS
         );
 
-        usdcDeposit = new MorphoCompoundPCVDeposit(
+        usdcDeposit = new MorphoPCVDeposit(
             address(core),
             MainnetAddresses.CUSDC,
             MainnetAddresses.USDC,
+            MainnetAddresses.COMP,
             MainnetAddresses.MORPHO,
             MainnetAddresses.MORPHO_LENS
         );

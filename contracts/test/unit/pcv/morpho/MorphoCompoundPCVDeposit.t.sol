@@ -14,7 +14,7 @@ import {PCVGuardian} from "../../../../pcv/PCVGuardian.sol";
 import {getCoreV2} from "./../../utils/Fixtures.sol";
 import {SystemEntry} from "../../../../entry/SystemEntry.sol";
 import {MockERC20, IERC20} from "../../../../mock/MockERC20.sol";
-import {MorphoCompoundPCVDeposit} from "../../../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
+import {MorphoPCVDeposit} from "../../../../pcv/morpho/MorphoPCVDeposit.sol";
 import {TestAddresses as addresses} from "../../utils/TestAddresses.sol";
 import {MockMorphoMaliciousReentrancy} from "../../../../mock/MockMorphoMaliciousReentrancy.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../../core/GlobalReentrancyLock.sol";
@@ -36,7 +36,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     SystemEntry public entry;
     MockMorpho private morpho;
     PCVGuardian private pcvGuardian;
-    MorphoCompoundPCVDeposit private morphoDeposit;
+    MorphoPCVDeposit private morphoDeposit;
     MockMorphoMaliciousReentrancy private maliciousMorpho;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
@@ -59,10 +59,11 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
             IERC20(address(token))
         );
 
-        morphoDeposit = new MorphoCompoundPCVDeposit(
+        morphoDeposit = new MorphoPCVDeposit(
             address(core),
             address(morpho),
             address(token),
+            address(0),
             address(morpho),
             address(morpho)
         );
@@ -103,11 +104,12 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     function testUnderlyingMismatchConstructionFails() public {
         MockCToken cToken = new MockCToken(address(1));
 
-        vm.expectRevert("MorphoCompoundPCVDeposit: Underlying mismatch");
-        new MorphoCompoundPCVDeposit(
+        vm.expectRevert("MorphoPCVDeposit: Underlying mismatch");
+        new MorphoPCVDeposit(
             address(core),
             address(cToken),
             address(token),
+            address(0),
             address(morpho),
             address(morpho)
         );
@@ -253,8 +255,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         token.mint(address(morphoDeposit), amount);
         entry.deposit(address(morphoDeposit));
 
-        MorphoCompoundPCVDeposit.Call[]
-            memory calls = new MorphoCompoundPCVDeposit.Call[](1);
+        MorphoPCVDeposit.Call[] memory calls = new MorphoPCVDeposit.Call[](1);
         calls[0].callData = abi.encodeWithSignature(
             "withdraw(address,uint256)",
             address(this),
@@ -273,8 +274,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         vm.assume(amount != 0);
         token.mint(address(morphoDeposit), amount);
 
-        MorphoCompoundPCVDeposit.Call[]
-            memory calls = new MorphoCompoundPCVDeposit.Call[](2);
+        MorphoPCVDeposit.Call[] memory calls = new MorphoPCVDeposit.Call[](2);
         calls[0].callData = abi.encodeWithSignature(
             "approve(address,uint256)",
             address(morphoDeposit.morpho()),
@@ -320,8 +320,7 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     //// access controls
 
     function testEmergencyActionFailsNonGovernor() public {
-        MorphoCompoundPCVDeposit.Call[]
-            memory calls = new MorphoCompoundPCVDeposit.Call[](1);
+        MorphoPCVDeposit.Call[] memory calls = new MorphoPCVDeposit.Call[](1);
         calls[0].callData = abi.encodeWithSignature(
             "withdraw(address,uint256)",
             address(this),
@@ -346,10 +345,11 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
     //// reentrancy
 
     function _reentrantSetup() private {
-        morphoDeposit = new MorphoCompoundPCVDeposit(
+        morphoDeposit = new MorphoPCVDeposit(
             address(core),
             address(maliciousMorpho), /// cToken is not used in mock morpho deposit
             address(token),
+            address(0),
             address(maliciousMorpho),
             address(maliciousMorpho)
         );

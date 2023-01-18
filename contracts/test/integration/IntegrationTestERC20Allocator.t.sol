@@ -17,7 +17,7 @@ import {ERC20Allocator} from "../../pcv/utils/ERC20Allocator.sol";
 import {MainnetAddresses} from "./fixtures/MainnetAddresses.sol";
 import {TimelockSimulation} from "./utils/TimelockSimulation.sol";
 import {PegStabilityModule} from "../../peg/PegStabilityModule.sol";
-import {MorphoCompoundPCVDeposit} from "../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
+import {MorphoPCVDeposit} from "../../pcv/morpho/MorphoPCVDeposit.sol";
 
 contract IntegrationTestERC20Allocator is DSTest {
     using SafeCast for *;
@@ -26,14 +26,10 @@ contract IntegrationTestERC20Allocator is DSTest {
 
     PCVGuardian private immutable mainnetPCVGuardian =
         PCVGuardian(MainnetAddresses.PCV_GUARDIAN);
-    MorphoCompoundPCVDeposit private daiDeposit =
-        MorphoCompoundPCVDeposit(
-            MainnetAddresses.MORPHO_COMPOUND_DAI_PCV_DEPOSIT
-        );
-    MorphoCompoundPCVDeposit private usdcDeposit =
-        MorphoCompoundPCVDeposit(
-            MainnetAddresses.MORPHO_COMPOUND_USDC_PCV_DEPOSIT
-        );
+    MorphoPCVDeposit private daiDeposit =
+        MorphoPCVDeposit(MainnetAddresses.MORPHO_COMPOUND_DAI_PCV_DEPOSIT);
+    MorphoPCVDeposit private usdcDeposit =
+        MorphoPCVDeposit(MainnetAddresses.MORPHO_COMPOUND_USDC_PCV_DEPOSIT);
 
     PCVGuardian private immutable pcvGuardian =
         PCVGuardian(MainnetAddresses.PCV_GUARDIAN);
@@ -116,7 +112,7 @@ contract IntegrationTestERC20Allocator is DSTest {
         daiDeposit.deposit();
 
         (uint256 amountToDrip, uint256 adjustedAmountToDrip) = allocator
-            .getDripDetails(address(daiPSM), daiDeposit);
+            .getDripDetails(address(daiPSM), address(daiDeposit));
 
         assertTrue(allocator.checkDripCondition(address(daiDeposit)));
         assertTrue(!allocator.checkSkimCondition(address(daiDeposit)));
@@ -141,7 +137,7 @@ contract IntegrationTestERC20Allocator is DSTest {
         usdcDeposit.deposit(); /// deposit so it will be counted in balance
 
         (uint256 amountToDrip, uint256 adjustedAmountToDrip) = allocator
-            .getDripDetails(address(usdcPSM), usdcDeposit);
+            .getDripDetails(address(usdcPSM), address(usdcDeposit));
 
         assertTrue(allocator.checkDripCondition(address(usdcDeposit)));
         assertTrue(allocator.checkActionAllowed(address(usdcDeposit)));
@@ -231,7 +227,7 @@ contract IntegrationTestERC20Allocator is DSTest {
         daiDeposit.deposit();
 
         (uint256 amountToDrip, uint256 adjustedAmountToDrip) = allocator
-            .getDripDetails(address(daiPSM), daiDeposit);
+            .getDripDetails(address(daiPSM), address(daiDeposit));
 
         assertTrue(allocator.checkDripCondition(address(daiDeposit)));
         assertTrue(!allocator.checkSkimCondition(address(daiDeposit)));
@@ -258,7 +254,7 @@ contract IntegrationTestERC20Allocator is DSTest {
         usdcDeposit.deposit(); /// deposit so it will be counted in balance
 
         (uint256 amountToDrip, uint256 adjustedAmountToDrip) = allocator
-            .getDripDetails(address(usdcPSM), usdcDeposit);
+            .getDripDetails(address(usdcPSM), address(usdcDeposit));
 
         assertTrue(allocator.checkDripCondition(address(usdcDeposit)));
         assertTrue(allocator.checkActionAllowed(address(usdcDeposit)));

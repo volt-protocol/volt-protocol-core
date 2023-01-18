@@ -15,7 +15,7 @@ import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
 import {ArbitrumAddresses} from "../fixtures/ArbitrumAddresses.sol";
 import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
-import {MorphoCompoundPCVDeposit} from "../../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
+import {MorphoPCVDeposit} from "../../../pcv/morpho/MorphoPCVDeposit.sol";
 
 contract IntegrationTestCompoundPCVRouter is DSTest {
     using SafeCast for *;
@@ -36,14 +36,10 @@ contract IntegrationTestCompoundPCVRouter is DSTest {
     CompoundPCVRouter private compoundRouter =
         CompoundPCVRouter(MainnetAddresses.MORPHO_COMPOUND_PCV_ROUTER);
 
-    MorphoCompoundPCVDeposit private daiDeposit =
-        MorphoCompoundPCVDeposit(
-            MainnetAddresses.MORPHO_COMPOUND_DAI_PCV_DEPOSIT
-        );
-    MorphoCompoundPCVDeposit private usdcDeposit =
-        MorphoCompoundPCVDeposit(
-            MainnetAddresses.MORPHO_COMPOUND_USDC_PCV_DEPOSIT
-        );
+    MorphoPCVDeposit private daiDeposit =
+        MorphoPCVDeposit(MainnetAddresses.MORPHO_COMPOUND_DAI_PCV_DEPOSIT);
+    MorphoPCVDeposit private usdcDeposit =
+        MorphoPCVDeposit(MainnetAddresses.MORPHO_COMPOUND_USDC_PCV_DEPOSIT);
 
     address public immutable pcvGuard = MainnetAddresses.EOA_1;
     PCVGuardian public immutable pcvGuardian =

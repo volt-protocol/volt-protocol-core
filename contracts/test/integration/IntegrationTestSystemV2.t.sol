@@ -35,8 +35,8 @@ contract IntegrationTestSystemV2 is Test {
     PCVOracle pcvOracle;
     TimelockController timelockController;
     PCVGuardian pcvGuardian;
-    MorphoCompoundPCVDeposit morphoDaiPCVDeposit;
-    MorphoCompoundPCVDeposit morphoUsdcPCVDeposit;
+    MorphoPCVDeposit morphoDaiPCVDeposit;
+    MorphoPCVDeposit morphoUsdcPCVDeposit;
     PCVRouter pcvRouter;
     SystemEntry systemEntry;
     VoltMigrator voltMigrator;
@@ -837,10 +837,10 @@ contract IntegrationTestSystemV2 is Test {
     Internal helper function, migrate the PCV from current system to V2 system
     */
     function _migratePcv() internal returns (uint256) {
-        MorphoCompoundPCVDeposit oldMorphoDaiPCVDeposit = MorphoCompoundPCVDeposit(
-                MainnetAddresses.MORPHO_COMPOUND_DAI_PCV_DEPOSIT
-            );
-        /*MorphoCompoundPCVDeposit oldMorphoUsdcPCVDeposit = MorphoCompoundPCVDeposit(
+        MorphoPCVDeposit oldMorphoDaiPCVDeposit = MorphoPCVDeposit(
+            MainnetAddresses.MORPHO_COMPOUND_DAI_PCV_DEPOSIT
+        );
+        /*MorphoPCVDeposit oldMorphoUsdcPCVDeposit = MorphoPCVDeposit(
             MainnetAddresses.MORPHO_COMPOUND_USDC_PCV_DEPOSIT
         );*/
         PCVGuardian oldPCVGuardian = PCVGuardian(MainnetAddresses.PCV_GUARDIAN);

@@ -17,7 +17,7 @@ import {ERC20Allocator} from "../../../pcv/utils/ERC20Allocator.sol";
 import {MainnetAddresses} from "../fixtures/MainnetAddresses.sol";
 import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
 import {ITimelockSimulation} from "../utils/ITimelockSimulation.sol";
-import {MorphoCompoundPCVDeposit} from "../../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
+import {MorphoPCVDeposit} from "../../../pcv/morpho/MorphoPCVDeposit.sol";
 
 /// Deployment Steps
 /// 1. deploy morpho dai deposit
@@ -54,14 +54,10 @@ contract vip14 is DSTest, IVIP {
 
     CompoundPCVRouter public router =
         CompoundPCVRouter(MainnetAddresses.MORPHO_COMPOUND_PCV_ROUTER);
-    MorphoCompoundPCVDeposit public daiDeposit =
-        MorphoCompoundPCVDeposit(
-            MainnetAddresses.MORPHO_COMPOUND_DAI_PCV_DEPOSIT
-        );
-    MorphoCompoundPCVDeposit public usdcDeposit =
-        MorphoCompoundPCVDeposit(
-            MainnetAddresses.MORPHO_COMPOUND_USDC_PCV_DEPOSIT
-        );
+    MorphoPCVDeposit public daiDeposit =
+        MorphoPCVDeposit(MainnetAddresses.MORPHO_COMPOUND_DAI_PCV_DEPOSIT);
+    MorphoPCVDeposit public usdcDeposit =
+        MorphoPCVDeposit(MainnetAddresses.MORPHO_COMPOUND_USDC_PCV_DEPOSIT);
 
     PCVGuardian public immutable pcvGuardian =
         PCVGuardian(MainnetAddresses.PCV_GUARDIAN);
