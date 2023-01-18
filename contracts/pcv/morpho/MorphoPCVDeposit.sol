@@ -67,13 +67,6 @@ contract MorphoPCVDeposit is PCVDepositV2 {
         address _morpho,
         address _lens
     ) PCVDepositV2(_underlying, _rewardToken) CoreRefV2(_core) {
-        if (_underlying != address(Constants.WETH)) {
-            require(
-                ICToken(_cToken).underlying() == _underlying,
-                "MorphoPCVDeposit: Underlying mismatch"
-            );
-        }
-
         cToken = _cToken;
         morpho = _morpho;
         lens = _lens;
@@ -110,8 +103,12 @@ contract MorphoPCVDeposit is PCVDepositV2 {
     }
 
     /// @dev withdraw from the underlying morpho market.
-    function _withdrawUnderlyingVenue(uint256 amount) internal override {
+    function _withdrawAndTransfer(
+        uint256 amount,
+        address to
+    ) internal override {
         IMorpho(morpho).withdraw(cToken, amount);
+        IERC20(token).safeTransfer(to, amount);
     }
 
     /// @dev deposit in the underlying morpho market.

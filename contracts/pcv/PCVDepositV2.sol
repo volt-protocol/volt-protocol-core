@@ -240,7 +240,8 @@ abstract contract PCVDepositV2 is IPCVDepositV2, CoreRefV2 {
         /// ------ Interactions ------
 
         /// remove funds from underlying venue
-        _withdrawUnderlyingVenue(amount);
+        _withdrawAndTransfer(amount, to);
+
         /// transfer funds to recipient
         IERC20(token).safeTransfer(to, amount);
 
@@ -257,7 +258,7 @@ abstract contract PCVDepositV2 is IPCVDepositV2, CoreRefV2 {
     function _accrueUnderlying() internal virtual;
 
     /// @dev withdraw from the underlying market.
-    function _withdrawUnderlyingVenue(uint256 amount) internal virtual;
+    function _withdrawAndTransfer(uint256 amount, address to) internal virtual;
 
     /// @dev deposit in the underlying market.
     function _supply(uint256 amount) internal virtual;
