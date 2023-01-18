@@ -10,7 +10,7 @@ import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 import {getCoreV2, getVoltSystemOracle} from "./../../unit/utils/Fixtures.sol";
 
 contract UnitTestOracleRef is Test {
-    uint128 voltStartingPrice = 1.01e18;
+    uint112 voltStartingPrice = 1.01e18;
 
     ICoreV2 private core;
     MockOracleRef private oracleRef;
@@ -23,7 +23,7 @@ contract UnitTestOracleRef is Test {
         oracle = getVoltSystemOracle(
             address(core),
             0,
-            uint40(block.timestamp),
+            uint32(block.timestamp),
             voltStartingPrice
         );
         oracleRef = new MockOracleRef(

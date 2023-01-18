@@ -24,9 +24,9 @@ import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {IScalingPriceOracle} from "../../../oracle/IScalingPriceOracle.sol";
 import {MorphoCompoundPCVDeposit} from "../../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
-import {getCoreV2, getVoltAddresses, VoltAddresses} from "./../utils/Fixtures.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../core/GlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../../limiter/GlobalRateLimitedMinter.sol";
+import {getCoreV2, getVoltAddresses, VoltAddresses, getVoltSystemOracle} from "./../utils/Fixtures.sol";
 
 /// deployment steps
 /// 1. core v2
@@ -120,9 +120,9 @@ contract SystemUnitTest is Test {
 
     /// ---------- ORACLE PARAMS ----------
 
-    uint200 public constant startPrice = 1.05e18;
-    uint40 public constant startTime = 1_000;
-    uint16 public constant monthlyChangeRateBasisPoints = 100;
+    uint112 public constant startPrice = 1.05e18;
+    uint112 public constant monthlyChangeRate = .01e18; /// 100 basis points
+    uint32 public constant startTime = 1_000;
 
     function setUp() public {
         vm.warp(startTime); /// warp past 0
@@ -136,9 +136,9 @@ contract SystemUnitTest is Test {
         );
         dai = IERC20Mintable(address(new MockERC20()));
         usdc = IERC20Mintable(address(new MockERC20()));
-        oracle = new VoltSystemOracle(
+        oracle = getVoltSystemOracle(
             address(core),
-            monthlyChangeRateBasisPoints,
+            monthlyChangeRate,
             startTime,
             startPrice
         );
@@ -362,10 +362,7 @@ contract SystemUnitTest is Test {
         assertEq(pcvGuardian.safeAddress(), address(timelockController));
         assertEq(address(router.daiPcvDeposit()), address(pcvDepositDai));
         assertEq(address(router.usdcPcvDeposit()), address(pcvDepositUsdc));
-        assertEq(
-            oracle.monthlyChangeRateBasisPoints(),
-            monthlyChangeRateBasisPoints
-        );
+        assertEq(oracle.monthlyChangeRate(), monthlyChangeRate);
 
         {
             (

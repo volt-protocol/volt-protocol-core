@@ -72,95 +72,104 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
     function testUserPSMMint() public {
         // read initial buffer left
         uint256 bufferCap = grlm.bufferCap();
-        uint256 initialBuffer = grlm.buffer();
-
-        // number of moved funds for tests
-        uint256 amount = initialBuffer / 2;
-        (, uint256 daiPSMTargetBalance, ) = allocator.allPSMs(address(daipsm));
-        (, uint256 usdcPSMTargetBalance, ) = allocator.allPSMs(
-            address(usdcpsm)
-        );
-
-        // read initial pcv
-        (uint256 startLiquidPcv, , ) = pcvOracle.getTotalPcv();
-        // read initial psm balances
-        uint256 startPsmDaiBalance = dai.balanceOf(address(daipsm));
-        uint256 startPsmUsdcBalance = usdc.balanceOf(address(usdcpsm));
-
-        // user performs the first mint with DAI
-        vm.startPrank(user);
-        dai.approve(address(daipsm), amount);
-        daipsm.mint(user, amount, 0);
-        vm.stopPrank();
-
-        (, uint256 adjustedSkimAmount) = allocator.getSkimDetails(
-            address(morphoDaiPCVDeposit)
-        );
-        uint256 gserlStartingBuffer = gserl.buffer();
-
-        // buffer has been used
-        uint256 voltReceived1 = volt.balanceOf(user);
-        assertEq(grlm.buffer(), initialBuffer - voltReceived1);
-
-        allocator.skim(morphoDaiPCVDeposit);
-
-        /// assert replenish occurred if not maxed out
-        assertEq(
-            Math.min(
-                gserlStartingBuffer + adjustedSkimAmount,
-                gserlStartingBuffer
-            ),
-            gserl.buffer()
-        );
-
-        // after first mint, pcv increased by amount
-        (uint256 liquidPcv2, , ) = pcvOracle.getTotalPcv();
-        assertApproxEq(
-            liquidPcv2.toInt256(),
-            (startLiquidPcv + startPsmDaiBalance + amount - daiPSMTargetBalance)
-                .toInt256(),
-            0
-        );
-
-        // user performs the second mint wit USDC
-        vm.startPrank(user);
-        usdc.approve(address(usdcpsm), amount / 1e12);
-        usdcpsm.mint(user, amount / 1e12, 0);
-        vm.stopPrank();
-        uint256 voltReceived2 = volt.balanceOf(user) - voltReceived1;
-
-        (, adjustedSkimAmount) = allocator.getSkimDetails(
-            address(morphoUsdcPCVDeposit)
-        );
-        gserlStartingBuffer = gserl.buffer();
-
-        // buffer has been used
-        assertEq(grlm.buffer(), initialBuffer - voltReceived1 - voltReceived2);
-
-        allocator.skim(morphoUsdcPCVDeposit);
         {
-            // after second mint, pcv is = 2 * amount
-            (uint256 liquidPcv3, , ) = pcvOracle.getTotalPcv();
+            uint256 initialBuffer = grlm.buffer();
+
+            // number of moved funds for tests
+            uint256 amount = initialBuffer / 2;
+            (, uint256 daiPSMTargetBalance, ) = allocator.allPSMs(
+                address(daipsm)
+            );
+            (, uint256 usdcPSMTargetBalance, ) = allocator.allPSMs(
+                address(usdcpsm)
+            );
+
+            // read initial pcv
+            (uint256 startLiquidPcv, , ) = pcvOracle.getTotalPcv();
+            // read initial psm balances
+            uint256 startPsmDaiBalance = dai.balanceOf(address(daipsm));
+            uint256 startPsmUsdcBalance = usdc.balanceOf(address(usdcpsm));
+
+            // user performs the first mint with DAI
+            vm.startPrank(user);
+            dai.approve(address(daipsm), amount);
+            daipsm.mint(user, amount, 0);
+            vm.stopPrank();
+
+            (, uint256 adjustedSkimAmount) = allocator.getSkimDetails(
+                address(morphoDaiPCVDeposit)
+            );
+            uint256 gserlStartingBuffer = gserl.buffer();
+
+            // buffer has been used
+            uint256 voltReceived1 = volt.balanceOf(user);
+            assertEq(grlm.buffer(), initialBuffer - voltReceived1);
+
+            allocator.skim(morphoDaiPCVDeposit);
+
+            /// assert replenish occurred if not maxed out
+            assertEq(
+                Math.min(
+                    gserlStartingBuffer + adjustedSkimAmount,
+                    gserlStartingBuffer
+                ),
+                gserl.buffer()
+            );
+
+            // after first mint, pcv increased by amount
+            (uint256 liquidPcv2, , ) = pcvOracle.getTotalPcv();
             assertApproxEq(
-                liquidPcv3.toInt256(),
-                (liquidPcv2 +
-                    startPsmUsdcBalance *
-                    1e12 +
+                liquidPcv2.toInt256(),
+                (startLiquidPcv +
+                    startPsmDaiBalance +
                     amount -
-                    usdcPSMTargetBalance *
-                    1e12).toInt256(),
+                    daiPSMTargetBalance).toInt256(),
                 0
             );
-        }
 
-        /// assert replenish occurred if not maxed out
-        assertEq(
-            Math.min(
-                gserlStartingBuffer + adjustedSkimAmount,
-                gserlStartingBuffer
-            ),
-            gserl.buffer()
-        );
+            // user performs the second mint wit USDC
+            vm.startPrank(user);
+            usdc.approve(address(usdcpsm), amount / 1e12);
+            usdcpsm.mint(user, amount / 1e12, 0);
+            vm.stopPrank();
+            uint256 voltReceived2 = volt.balanceOf(user) - voltReceived1;
+
+            (, adjustedSkimAmount) = allocator.getSkimDetails(
+                address(morphoUsdcPCVDeposit)
+            );
+            gserlStartingBuffer = gserl.buffer();
+
+            // buffer has been used
+            assertEq(
+                grlm.buffer(),
+                initialBuffer - voltReceived1 - voltReceived2
+            );
+
+            allocator.skim(morphoUsdcPCVDeposit);
+            {
+                // after second mint, pcv is = 2 * amount
+                (uint256 liquidPcv3, , ) = pcvOracle.getTotalPcv();
+                assertApproxEq(
+                    liquidPcv3.toInt256(),
+                    (liquidPcv2 +
+                        startPsmUsdcBalance *
+                        1e12 +
+                        amount -
+                        usdcPSMTargetBalance *
+                        1e12).toInt256(),
+                    0
+                );
+            }
+
+            /// assert replenish occurred if not maxed out
+            assertEq(
+                Math.min(
+                    gserlStartingBuffer + adjustedSkimAmount,
+                    gserlStartingBuffer
+                ),
+                gserl.buffer()
+            );
+        }
 
         snapshotAfterMints = vm.snapshot();
 
