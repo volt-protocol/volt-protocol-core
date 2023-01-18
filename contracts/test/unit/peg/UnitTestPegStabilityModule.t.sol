@@ -228,6 +228,20 @@ contract UnitTestPegStabilityModule is Test {
         assertEq(endingpsmBalance - startingpsmBalance, amountStableIn);
     }
 
+    function testGetMaxMintAmountOut() public {
+        uint256 maxVoltAmountOut = psm.getMaxMintAmountOut();
+
+        assertEq(grlm.buffer(), maxVoltAmountOut);
+    }
+
+    function testGetMaxRedeemAmountOut() public {
+        uint256 maxVoltAmountRedeemed = psm.getMaxRedeemAmountIn();
+        uint256 balance = underlyingToken.balanceOf(address(psm));
+        uint256 oraclePrice = psm.readOracle();
+
+        assertEq((balance * 1e18) / oraclePrice, maxVoltAmountRedeemed);
+    }
+
     function testMintFuzzNotEnoughIn(uint32 amountStableIn) public {
         uint256 amountVoltOut = psm.getMintAmountOut(amountStableIn);
         underlyingToken.approve(address(psm), amountStableIn);
