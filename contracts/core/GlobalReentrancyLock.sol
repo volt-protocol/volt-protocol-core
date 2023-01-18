@@ -68,7 +68,7 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, CoreRefV2 {
 
     /// @notice cache the address that locked the system
     /// only this address can unlock it
-    address public sender;
+    address public lastSender;
 
     /// @notice store the last block entered
     /// if last block entered was in the past and status
@@ -83,11 +83,6 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, CoreRefV2 {
     constructor(address core) CoreRefV2(core) {}
 
     /// ---------- View Only APIs ----------
-
-    /// @notice returns the last address that locked this contract
-    function lastSender() external view returns (address) {
-        return sender;
-    }
 
     /// @notice returns true if the contract is not currently entered
     /// at level 1 and 2, returns false otherwise
@@ -127,7 +122,7 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, CoreRefV2 {
 
             uint88 blockEntered = uint88(block.number);
 
-            sender = msg.sender;
+            lastSender = msg.sender;
             lastBlockEntered = blockEntered;
         } else {
             /// - lock to level 2 from level 1
@@ -183,7 +178,7 @@ contract GlobalReentrancyLock is IGlobalReentrancyLock, CoreRefV2 {
         if (toUnlock == _NOT_ENTERED) {
             /// - unlock to level 0 from level 1, verify sender is original locker
             require(
-                msg.sender == sender,
+                msg.sender == lastSender,
                 "GlobalReentrancyLock: caller is not locker"
             );
         }
