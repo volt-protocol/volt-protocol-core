@@ -62,7 +62,10 @@ contract UnitTestPegStabilityModule is Test {
         underlyingToken = IERC20(address(new MockERC20()));
         core = getCoreV2();
         volt = core.volt();
-        (oracle, ) = getLocalOracleSystem(address(core), voltFloorPrice);
+        (oracle, ) = getLocalOracleSystem(
+            address(core),
+            uint112(voltFloorPrice)
+        );
         lock = IGlobalReentrancyLock(
             address(new GlobalReentrancyLock(address(core)))
         );
@@ -263,7 +266,56 @@ contract UnitTestPegStabilityModule is Test {
         uint256 startingUserVoltBalance = volt.balanceOf(address(this));
 
         volt.approve(address(psm), amountVoltIn);
+
+        uint256 g0 = gasleft();
         psm.redeem(address(this), amountVoltIn, amountOut);
+        uint256 g1 = gasleft();
+
+        emit log_named_uint("cost per redeem: 1", (g0 - g1));
+
+        uint256 endingUserUnderlyingBalance1 = underlyingToken.balanceOf(
+            address(this)
+        );
+
+        uint256 endingUserVoltBalance = volt.balanceOf(address(this));
+        uint256 endingPsmUnderlyingBalance = psm.balance();
+        assertEq(
+            startingPsmUnderlyingBalance - endingPsmUnderlyingBalance,
+            amountOut
+        );
+        assertEq(startingUserVoltBalance - endingUserVoltBalance, amountVoltIn);
+        assertEq(
+            endingUserUnderlyingBalance1,
+            startingUserUnderlyingBalance + amountOut
+        );
+        assertApproxEq(
+            underlyingOutOracleAmount.toInt256(),
+            amountOut.toInt256(),
+            0
+        );
+    }
+
+    function testRedeem() public {
+        uint72 amountVoltIn = 1_000e18;
+        uint256 amountOut = psm.getRedeemAmountOut(amountVoltIn);
+
+        uint256 currentPegPrice = oracle.getCurrentOraclePrice();
+        uint256 underlyingOutOracleAmount = (amountVoltIn * currentPegPrice) /
+            1e18;
+
+        uint256 startingUserUnderlyingBalance = underlyingToken.balanceOf(
+            address(this)
+        );
+        uint256 startingPsmUnderlyingBalance = psm.balance();
+        uint256 startingUserVoltBalance = volt.balanceOf(address(this));
+
+        volt.approve(address(psm), amountVoltIn);
+
+        uint256 g0 = gasleft();
+        psm.redeem(address(this), amountVoltIn, amountOut);
+        uint256 g1 = gasleft();
+
+        emit log_named_uint("cost per redeem: 1", (g0 - g1));
 
         uint256 endingUserUnderlyingBalance1 = underlyingToken.balanceOf(
             address(this)
@@ -304,7 +356,13 @@ contract UnitTestPegStabilityModule is Test {
             address(psm)
         );
         underlyingToken.approve(address(psm), amountStableIn);
+
+        uint256 g0 = gasleft();
         psm.mint(address(this), amountStableIn, amountVoltOut);
+        uint256 g1 = gasleft();
+
+        emit log_named_uint("cost per mint: 1", (g0 - g1));
+
         uint256 endingUserVoltBalance = volt.balanceOf(address(this));
         uint256 endingPSMUnderlyingBalance = underlyingToken.balanceOf(
             address(psm)

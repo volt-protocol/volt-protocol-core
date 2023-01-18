@@ -24,7 +24,7 @@ interface IGlobalReentrancyLock {
 
     /// @notice governor only function to pause the entire system
     /// sets the lock to level two lock
-    /// in this state, pcv oracle updateLiquid and updateIlliquid hooks
+    /// in this state, pcv oracle updateBalance hooks
     /// are allowed to be called, but since the PCV deposits cannot be called
     /// this presents no issue.
     function governanceEmergencyPause() external;

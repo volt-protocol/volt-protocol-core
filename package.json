@@ -45,7 +45,7 @@
     "prettier:fix": "npm run prettier:sol:fix && npm run prettier:ts:fix",
     "prepare": "husky install"
   },
-  "authors": "elliotfriedman,kassim,joeysantoro",
+  "authors": "elliotfriedman,erwanbeauvois,joeysantoro",
   "dependencies": {
     "@ethersproject/providers": "^5.5.3",
     "@openzeppelin/contracts": "4.6.0",

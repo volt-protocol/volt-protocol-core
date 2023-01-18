@@ -35,7 +35,18 @@ contract vip17 is MultisigProposal {
 
     function deploy(Addresses addresses) public pure {}
 
-    function afterDeploy(Addresses addresses, address deployer) public pure {}
+    function afterDeploy(Addresses addresses, address /* deployer*/) public {
+        // TODO: before actual onchain execution, check that the multisig
+        // actually has 50k USDC.
+        // If this is not the case, either:
+        // - update the proposal steps below to not fund the USDC PSM and/or Morpho USDC deposit
+        // - use the Maker PSM to convert some protocol DAI to USDC, and keep the proposal as-is
+        deal(
+            addresses.mainnet("USDC"),
+            addresses.mainnet("GOVERNOR"),
+            50_000 * 1e6
+        );
+    }
 
     function run(Addresses addresses, address /* deployer*/) public {
         _pushMultisigAction(
@@ -110,7 +121,7 @@ contract vip17 is MultisigProposal {
             2 *
             PSM_LIQUID_RESERVE *
             1e18;
-        (, , uint256 totalPcv) = PCVOracle(addresses.mainnet("PCV_ORACLE"))
+        uint256 totalPcv = PCVOracle(addresses.mainnet("PCV_ORACLE"))
             .getTotalPcv();
         // tolerate 1 USD "loss" on migration because morpho accounting is pessimistic
         assertGt(totalPcv, expectedPcvUsd - 1e18);
