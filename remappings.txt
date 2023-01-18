@@ -1,2 +1,4 @@
 @openzeppelin/=node_modules/@openzeppelin/
-@forge-std/=forge-std/src/
+@forge-std/=test/forge-std/src/
+@voltprotocol/=src/
+@test/=test/

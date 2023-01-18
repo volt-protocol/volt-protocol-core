@@ -15,11 +15,12 @@
     "test:proposals": "forge test --fork-url https://eth-mainnet.alchemyapi.io/v2/$MAINNET_ALCHEMY_API_KEY --match-contract TestProposals -vvv",
     "test:integration": "forge test --fork-url https://eth-mainnet.alchemyapi.io/v2/$MAINNET_ALCHEMY_API_KEY --match-contract IntegrationTest -vvv",
     "coverage": "forge coverage --match-contract UnitTest --report lcov --report summary",
-    "lint": "npx solhint --ignore-path ./.solhintignore \"contracts/**/*.sol\"",
-    "deploy": "forge script contracts/test/proposals/DeployProposal.s.sol:DeployProposal -vvvv --rpc-url $ETH_RPC_URL",
-    "deploy:broadcast": "forge script contracts/test/proposals/DeployProposal.s.sol:DeployProposal -vvvv --rpc-url $ETH_RPC_URL --broadcast",
-    "prettier": "npx prettier --check 'contracts/**/*.sol'",
-    "prettier:fix": "npx prettier --write 'contracts/**/*.sol'"
+    "coverage:integration": "forge coverage --fork-url https://eth-mainnet.alchemyapi.io/v2/$MAINNET_ALCHEMY_API_KEY --match-contract IntegrationTest --report lcov --report summary",
+    "lint": "npx solhint --ignore-path ./.solhintignore \"src/**/*.sol\"",
+    "deploy": "forge script script/forge/DeployProposal.s.sol:DeployProposal -vvvv --rpc-url $ETH_RPC_URL",
+    "deploy:broadcast": "forge script script/forge/DeployProposal.s.sol:DeployProposal -vvvv --rpc-url $ETH_RPC_URL --broadcast",
+    "prettier": "npx prettier --check 'src/**/*.sol'",
+    "prettier:fix": "npx prettier --write 'src/**/*.sol'"
   },
   "authors": "elliotfriedman,eswak,kassim,joeysantoro",
   "dependencies": {
@@ -37,7 +38,7 @@
   },
   "lint-staged": {
     "*.{sol}": [
-      "npx prettier --config .prettierrc 'contracts/**/*.sol' --write"
+      "npx prettier --config .prettierrc 'src/**/*.sol' --write"
     ]
   }
 }
