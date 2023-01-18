@@ -399,8 +399,6 @@ contract vip16 is Proposal {
         );
 
         core.createRole(VoltRoles.PCV_DEPOSIT, VoltRoles.GOVERNOR);
-        core.grantRole(VoltRoles.PCV_DEPOSIT, addresses.mainnet("PSM_DAI"));
-        core.grantRole(VoltRoles.PCV_DEPOSIT, addresses.mainnet("PSM_USDC"));
         core.grantRole(
             VoltRoles.PCV_DEPOSIT,
             addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")

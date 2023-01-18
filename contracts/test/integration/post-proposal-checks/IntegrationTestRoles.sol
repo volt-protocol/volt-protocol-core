@@ -67,21 +67,13 @@ contract IntegrationTestRoles is PostProposalCheck {
 
         // PCV_DEPOSIT_ROLE
         assertEq(core.getRoleAdmin(VoltRoles.PCV_DEPOSIT), VoltRoles.GOVERNOR);
-        assertEq(core.getRoleMemberCount(VoltRoles.PCV_DEPOSIT), 4);
+        assertEq(core.getRoleMemberCount(VoltRoles.PCV_DEPOSIT), 2);
         assertEq(
             core.getRoleMember(VoltRoles.PCV_DEPOSIT, 0),
-            addresses.mainnet("PSM_DAI")
-        );
-        assertEq(
-            core.getRoleMember(VoltRoles.PCV_DEPOSIT, 1),
-            addresses.mainnet("PSM_USDC")
-        );
-        assertEq(
-            core.getRoleMember(VoltRoles.PCV_DEPOSIT, 2),
             addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
         );
         assertEq(
-            core.getRoleMember(VoltRoles.PCV_DEPOSIT, 3),
+            core.getRoleMember(VoltRoles.PCV_DEPOSIT, 1),
             addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
         );
 
