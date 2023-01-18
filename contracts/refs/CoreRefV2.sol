@@ -30,7 +30,7 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
 
     /// 1. call core and lock the lock
     /// 2. execute the code
-    /// 3. call core and unlock the lock
+    /// 3. call core and unlock the lock back to starting level
     modifier globalLock(uint8 level) {
         IGlobalReentrancyLock lock = globalReentrancyLock();
         lock.lock(level);
@@ -38,18 +38,21 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         lock.unlock(level - 1);
     }
 
-    modifier isGlobalReentrancyLocked() {
+    /// @notice modifier to restrict function acces to a certain lock level
+    modifier isGlobalReentrancyLocked(uint8 level) {
         IGlobalReentrancyLock lock = globalReentrancyLock();
 
-        require(lock.isLocked(), "CoreRef: System not locked");
+        require(lock.lockLevel() == level, "CoreRef: System not at lock level");
         _;
     }
 
+    /// @notice callable only by the Volt Minter
     modifier onlyMinter() {
         require(_core.isMinter(msg.sender), "CoreRef: Caller is not a minter");
         _;
     }
 
+    /// @notice callable only by the PCV Controller
     modifier onlyPCVController() {
         require(
             _core.isPCVController(msg.sender),
@@ -58,6 +61,7 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         _;
     }
 
+    /// @notice callable only by governor
     modifier onlyGovernor() {
         require(
             _core.isGovernor(msg.sender),
@@ -66,6 +70,7 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         _;
     }
 
+    /// @notice callable only by guardian or governor
     modifier onlyGuardianOrGovernor() {
         require(
             _core.isGovernor(msg.sender) || _core.isGuardian(msg.sender),
@@ -74,13 +79,13 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         _;
     }
 
-    /// Named onlyVoltRole to prevent collision with OZ onlyRole modifier
+    /// @notice Named onlyVoltRole to prevent collision with OZ onlyRole modifier
     modifier onlyVoltRole(bytes32 role) {
         require(_core.hasRole(role, msg.sender), "UNAUTHORIZED");
         _;
     }
 
-    // Modifiers to allow any combination of roles
+    /// @notice Modifiers to allow any combination of two roles
     modifier hasAnyOfTwoRoles(bytes32 role1, bytes32 role2) {
         require(
             _core.hasRole(role1, msg.sender) ||
@@ -90,6 +95,7 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         _;
     }
 
+    /// @notice Modifier to allow any combination of three roles
     modifier hasAnyOfThreeRoles(
         bytes32 role1,
         bytes32 role2,
@@ -102,50 +108,6 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
             "UNAUTHORIZED"
         );
         _;
-    }
-
-    modifier hasAnyOfFourRoles(
-        bytes32 role1,
-        bytes32 role2,
-        bytes32 role3,
-        bytes32 role4
-    ) {
-        require(
-            _core.hasRole(role1, msg.sender) ||
-                _core.hasRole(role2, msg.sender) ||
-                _core.hasRole(role3, msg.sender) ||
-                _core.hasRole(role4, msg.sender),
-            "UNAUTHORIZED"
-        );
-        _;
-    }
-
-    modifier hasAnyOfFiveRoles(
-        bytes32 role1,
-        bytes32 role2,
-        bytes32 role3,
-        bytes32 role4,
-        bytes32 role5
-    ) {
-        require(
-            _core.hasRole(role1, msg.sender) ||
-                _core.hasRole(role2, msg.sender) ||
-                _core.hasRole(role3, msg.sender) ||
-                _core.hasRole(role4, msg.sender) ||
-                _core.hasRole(role5, msg.sender),
-            "UNAUTHORIZED"
-        );
-        _;
-    }
-
-    /// @notice set pausable methods to paused
-    function pause() public override onlyGuardianOrGovernor {
-        _pause();
-    }
-
-    /// @notice set pausable methods to unpaused
-    function unpause() public override onlyGuardianOrGovernor {
-        _unpause();
     }
 
     /// @notice address of the Core contract referenced
@@ -182,6 +144,16 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         return _core.globalRateLimitedMinter();
     }
 
+    /// @notice address of the GlobalSystemExitRateLimiter contract referenced by Core
+    /// @return IGlobalSystemExitRateLimiter implementation address
+    function globalSystemExitRateLimiter()
+        internal
+        view
+        returns (IGlobalSystemExitRateLimiter)
+    {
+        return _core.globalSystemExitRateLimiter();
+    }
+
     /// @notice address of the Global Reentrancy Lock contract reference
     /// @return address as type IGlobalReentrancyLock
     function globalReentrancyLock()
@@ -192,14 +164,18 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         return _core.globalReentrancyLock();
     }
 
-    /// @notice address of the GlobalSystemExitRateLimiter contract referenced by Core
-    /// @return IGlobalSystemExitRateLimiter implementation address
-    function globalSystemExitRateLimiter()
-        internal
-        view
-        returns (IGlobalSystemExitRateLimiter)
-    {
-        return _core.globalSystemExitRateLimiter();
+    /// ------------------------------------------------------
+    /// ----------- Governor or Guardian Only API ------------
+    /// ------------------------------------------------------
+
+    /// @notice set pausable methods to paused
+    function pause() public override onlyGuardianOrGovernor {
+        _pause();
+    }
+
+    /// @notice set pausable methods to unpaused
+    function unpause() public override onlyGuardianOrGovernor {
+        _unpause();
     }
 
     /// ------------------------------------------
@@ -240,8 +216,11 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
 
     /// @notice struct to pack calldata and targets for an emergency action
     struct Call {
+        /// @notice target address to call
         address target;
+        /// @notice amount of eth to send with the call
         uint256 value;
+        /// @notice payload to send to target
         bytes callData;
     }
 

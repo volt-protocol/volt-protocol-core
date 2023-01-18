@@ -40,11 +40,11 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
         return (resistantBalance, resistantProtocolOwnedVolt);
     }
 
-    function harvest() external pure {
+    function harvest() external globalLock(2) {
         // noop
     }
 
-    function accrue() external returns (uint256) {
+    function accrue() external globalLock(2) returns (uint256) {
         uint256 _balance = balance();
         resistantBalance = _balance;
         return _balance;

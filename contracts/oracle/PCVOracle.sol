@@ -102,6 +102,11 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         view
         returns (uint256 liquidPcv, uint256 illiquidPcv, uint256 totalPcv)
     {
+        require(
+            globalReentrancyLock().isUnlocked(),
+            "PCVOracle: cannot read while entered"
+        );
+
         uint256 liquidVenueLength = liquidVenues.length();
         uint256 illiquidVenueLength = illiquidVenues.length();
 
@@ -148,7 +153,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     )
         public
         onlyVoltRole(VoltRoles.LIQUID_PCV_DEPOSIT)
-        isGlobalReentrancyLocked
+        isGlobalReentrancyLocked(2)
     {
         _readOracleAndUpdateAccounting(
             msg.sender, // venue
@@ -170,7 +175,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     )
         public
         onlyVoltRole(VoltRoles.ILLIQUID_PCV_DEPOSIT)
-        isGlobalReentrancyLocked
+        isGlobalReentrancyLocked(2)
     {
         _readOracleAndUpdateAccounting(
             msg.sender, // venue
@@ -189,7 +194,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         address venue,
         bool isLiquid,
         address newOracle
-    ) external onlyGovernor {
+    ) external onlyGovernor globalLock(1) {
         if (isLiquid) {
             require(isLiquidVenue(venue), "PCVOracle: invalid liquid venue");
         } else {
@@ -200,13 +205,19 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         }
 
         // Read oracles and check validity
-        address oldOracle = venueToOracle[venue];
-        (uint256 oldOracleValue, bool oldOracleValid) = IOracleV2(oldOracle)
-            .read();
-        (uint256 newOracleValue, bool newOracleValid) = IOracleV2(newOracle)
-            .read();
-        require(oldOracleValid, "PCVOracle: invalid old oracle");
-        require(newOracleValid, "PCVOracle: invalid new oracle");
+        uint256 oldOracleValue;
+        uint256 newOracleValue;
+
+        {
+            address oldOracle = venueToOracle[venue];
+            bool oldOracleValid;
+            bool newOracleValid;
+
+            (oldOracleValue, oldOracleValid) = IOracleV2(oldOracle).read();
+            (newOracleValue, newOracleValid) = IOracleV2(newOracle).read();
+            require(oldOracleValid, "PCVOracle: invalid old oracle");
+            require(newOracleValid, "PCVOracle: invalid new oracle");
+        }
 
         // Update state
         _setVenueOracle(venue, newOracle);

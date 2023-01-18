@@ -58,7 +58,7 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
 
     /// @notice returns all whitelisted pcvDeposit addresses
     function getWhitelistAddresses()
-        public
+        external
         view
         override
         returns (address[] memory)
@@ -129,11 +129,15 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
     // -----------------------------------------------------
     // -------------------  WARNING!!! ---------------------
     // -----------------------------------------------------
-    //     USING THESE FUNCTIONS WILL BREAK ACCOUNTING
-    //   IN THE PCV ORACLE. ONLY USE FUNCTIONS IN AN
+    //   USING THESE FUNCTIONS WILL MAKE THE PCVORACLE THINK
+    //   THAT ASSETS FLOWED OUT OF THE SYSTEM, BECAUSE TOKEN
+    //   BALANCES ON THE SAFE ADDRESS (DAO TIMELOCK) ARE NOT
+    //   COUNTED AS PART OF PCV. ONLY USE FUNCTIONS IN AN
     //   EMERGENCY SITUATION IF WITHDRAWING FROM PCV DEPOSITS.
     // -----------------------------------------------------
-    //   WITHDRAWING FROM A PSM WILL NOT BREAK ACCOUNTING.
+    //   WITHDRAWING FROM A PSM WILL NOT HAVE THE SAME
+    //   EFFECT BECAUSE ASSETS IN PSM ARE ALREADY COUNTED
+    //   OUT OF THE SYSTEM FROM AN ACCOUNTING PERSPECTIVE.
     // -----------------------------------------------------
     // -----------------------------------------------------
 
@@ -221,12 +225,12 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
         );
     }
 
-    // ---------- Internal Functions ----------
+    // ---------- Private Functions ----------
 
     function _withdrawToSafeAddress(
         address pcvDeposit,
         uint256 amount
-    ) internal {
+    ) private {
         if (pcvDeposit._paused()) {
             pcvDeposit._unpause();
             IPCVDeposit(pcvDeposit).withdraw(safeAddress, amount);
@@ -242,12 +246,12 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
         address pcvDeposit,
         address token,
         uint256 amount
-    ) internal {
+    ) private {
         IPCVDeposit(pcvDeposit).withdrawERC20(token, safeAddress, amount);
         emit PCVGuardianERC20Withdrawal(pcvDeposit, token, amount);
     }
 
-    function _addWhitelistAddress(address pcvDeposit) internal {
+    function _addWhitelistAddress(address pcvDeposit) private {
         require(
             whitelistAddresses.add(pcvDeposit),
             "PCVGuardian: Failed to add address to whitelist"
@@ -255,7 +259,7 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
         emit WhitelistAddressAdded(pcvDeposit);
     }
 
-    function _removeWhitelistAddress(address pcvDeposit) internal {
+    function _removeWhitelistAddress(address pcvDeposit) private {
         require(
             whitelistAddresses.remove(pcvDeposit),
             "PCVGuardian: Failed to remove address from whitelist"

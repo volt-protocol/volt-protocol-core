@@ -88,6 +88,83 @@ interface VmSafe {
         string calldata
     ) external view returns (bytes[] memory);
 
+    function envOr(
+        string calldata key,
+        bool defaultValue
+    ) external returns (bool value);
+
+    function envOr(
+        string calldata key,
+        uint256 defaultValue
+    ) external returns (uint256 value);
+
+    function envOr(
+        string calldata key,
+        int256 defaultValue
+    ) external returns (int256 value);
+
+    function envOr(
+        string calldata key,
+        address defaultValue
+    ) external returns (address value);
+
+    function envOr(
+        string calldata key,
+        bytes32 defaultValue
+    ) external returns (bytes32 value);
+
+    function envOr(
+        string calldata key,
+        string calldata defaultValue
+    ) external returns (string memory value);
+
+    function envOr(
+        string calldata key,
+        bytes calldata defaultValue
+    ) external returns (bytes memory value);
+
+    function envOr(
+        string calldata key,
+        string calldata delimiter,
+        bool[] calldata defaultValue
+    ) external returns (bool[] memory value);
+
+    function envOr(
+        string calldata key,
+        string calldata delimiter,
+        uint256[] calldata defaultValue
+    ) external returns (uint256[] memory value);
+
+    function envOr(
+        string calldata key,
+        string calldata delimiter,
+        int256[] calldata defaultValue
+    ) external returns (int256[] memory value);
+
+    function envOr(
+        string calldata key,
+        string calldata delimiter,
+        address[] calldata defaultValue
+    ) external returns (address[] memory value);
+
+    function envOr(
+        string calldata key,
+        string calldata delimiter,
+        bytes32[] calldata defaultValue
+    ) external returns (bytes32[] memory value);
+
+    function envOr(
+        string calldata key,
+        string calldata delimiter,
+        string[] calldata defaultValue
+    ) external returns (string[] memory value);
+
+    function envOr(
+        string calldata key,
+        string calldata delimiter,
+        bytes[] calldata defaultValue
+    ) external returns (bytes[] memory value);
+
     // Records all storage reads and writes
     function record() external;
 

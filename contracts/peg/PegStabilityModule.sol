@@ -84,8 +84,9 @@ contract PegStabilityModule is IPegStabilityModule, OracleRefV2 {
     function withdraw(
         address to,
         uint256 amount
-    ) external virtual onlyPCVController globalLock(2) {
+    ) external onlyPCVController globalLock(2) {
         underlyingToken.safeTransfer(to, amount);
+        emit Withdrawal(msg.sender, to, amount);
     }
 
     /// @notice withdraw ERC20 from the contract
@@ -116,7 +117,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRefV2 {
         address to,
         uint256 amountVoltIn,
         uint256 minAmountOut
-    ) external virtual override globalLock(1) returns (uint256 amountOut) {
+    ) external override globalLock(1) returns (uint256 amountOut) {
         /// ------- Checks -------
         /// 1. current price from oracle is correct
         /// 2. how much underlying token to receive
@@ -128,13 +129,15 @@ contract PegStabilityModule is IPegStabilityModule, OracleRefV2 {
             "PegStabilityModule: Redeem not enough out"
         );
 
-        /// ------- Effects / Interactions -------
+        /// ------- Effects / Interactions with Internal Contracts -------
 
         /// Do effect after interaction because you don't want to give tokens before
         /// taking the corresponding amount of Volt from the account.
         /// Replenishing buffer allows more Volt to be minted.
-        volt().burnFrom(msg.sender, amountVoltIn); /// Check and Interaction -- trusted contract
-        globalRateLimitedMinter().replenishBuffer(amountVoltIn); /// Effect -- trusted contract
+        volt().burnFrom(msg.sender, amountVoltIn); /// Check and Interaction with a trusted contract
+        globalRateLimitedMinter().replenishBuffer(amountVoltIn); /// Effect -- interaction with a trusted contract
+
+        /// ------- Interaction with External Contract -------
 
         underlyingToken.safeTransfer(to, amountOut); /// Interaction -- untrusted contract
 
@@ -156,7 +159,7 @@ contract PegStabilityModule is IPegStabilityModule, OracleRefV2 {
         address to,
         uint256 amountIn,
         uint256 minAmountVoltOut
-    ) external virtual override globalLock(1) returns (uint256 amountVoltOut) {
+    ) external override globalLock(1) returns (uint256 amountVoltOut) {
         /// ------- Checks -------
         /// 1. current price from oracle is correct
         /// 2. how much volt to receive
@@ -168,12 +171,14 @@ contract PegStabilityModule is IPegStabilityModule, OracleRefV2 {
             "PegStabilityModule: Mint not enough out"
         );
 
-        /// ------- Effects / Interactions -------
+        /// ------- Check / Effect / Trusted Interaction -------
 
         /// Checks that there is enough Volt left to mint globally.
         /// This is a check as well, because if there isn't sufficient Volt to mint,
         /// then, the call to mintVolt will fail in the RateLimitedV2 class.
-        globalRateLimitedMinter().mintVolt(to, amountVoltOut); /// Effect, then Interaction -- trusted contract
+        globalRateLimitedMinter().mintVolt(to, amountVoltOut); /// Check, Effect, then Interaction with trusted contract
+
+        /// ------- Interactions with Untrusted Contract -------
 
         underlyingToken.safeTransferFrom(msg.sender, address(this), amountIn); /// Interaction -- untrusted contract
 

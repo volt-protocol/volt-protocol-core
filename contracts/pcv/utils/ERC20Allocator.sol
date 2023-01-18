@@ -33,7 +33,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2 {
     using SafeERC20 for IERC20;
     using SafeCast for *;
 
-    /// @notice container that stores information on all psm's and their respective deposits
+    /// @notice container that stores information on all psm's
     struct PSMInfo {
         /// @notice target token address to send
         address token;
