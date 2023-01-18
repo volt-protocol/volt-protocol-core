@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {IPermissions} from "@voltprotocol/core/IPermissions.sol";
+import {IPermissions} from "@voltprotocol/v1/IPermissions.sol";
 import {IVolt, IERC20} from "@voltprotocol/volt/IVolt.sol";
 
 /// @title Core Interface

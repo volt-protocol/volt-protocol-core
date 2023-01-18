@@ -7,7 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 
-import {IOracleRef} from "@voltprotocol/refs/IOracleRef.sol";
+import {IOracleRef} from "@voltprotocol/v1/IOracleRef.sol";
 import {IOracleRefV2} from "@voltprotocol/refs/IOracleRefV2.sol";
 import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
 

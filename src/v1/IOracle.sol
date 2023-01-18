@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import "@voltprotocol/external/Decimal.sol";
+import "@voltprotocol/v1/Decimal.sol";
 
 /// @title generic oracle interface for Fei Protocol
 /// @author Fei Protocol

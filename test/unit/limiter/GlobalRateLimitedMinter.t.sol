@@ -8,7 +8,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Test} from "@forge-std/Test.sol";
 import {ICoreV2} from "@voltprotocol/core/ICoreV2.sol";
 import {MockMinter} from "@test/mock/MockMinter.sol";
-import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "@voltprotocol/limiter/GlobalRateLimitedMinter.sol";
+import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "@voltprotocol/rate-limits/GlobalRateLimitedMinter.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
 import {getCoreV2, getVoltAddresses, VoltAddresses} from "@test/unit/utils/Fixtures.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";

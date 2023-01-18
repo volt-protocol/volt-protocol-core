@@ -9,7 +9,7 @@ import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
 import {ICoreV2} from "@voltprotocol/core/ICoreV2.sol";
 import {Constants} from "@voltprotocol/Constants.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
-import {IVolt, Volt} from "@voltprotocol/volt/Volt.sol";
+import {IVolt, Volt} from "@voltprotocol/v1/Volt.sol";
 import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
 import {Test} from "@forge-std/Test.sol";
@@ -19,7 +19,7 @@ import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
 import {getCoreV2, getLocalOracleSystem} from "@test/unit/utils/Fixtures.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
-import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "@voltprotocol/limiter/GlobalRateLimitedMinter.sol";
+import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "@voltprotocol/rate-limits/GlobalRateLimitedMinter.sol";
 
 /// PSM Unit Test that tests new PSM to ensure proper behavior
 contract UnitTestPegStabilityModule is Test {
@@ -61,7 +61,7 @@ contract UnitTestPegStabilityModule is Test {
         underlyingToken = IERC20(address(new MockERC20()));
         core = getCoreV2();
         volt = core.volt();
-        (oracle, ) = getLocalOracleSystem(address(core), voltFloorPrice);
+        oracle = getLocalOracleSystem(address(core), voltFloorPrice);
         lock = IGlobalReentrancyLock(
             address(new GlobalReentrancyLock(address(core)))
         );

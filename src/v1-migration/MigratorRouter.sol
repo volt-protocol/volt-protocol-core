@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.8.13;
 
-import {IMigratorRouter} from "@voltprotocol/pcv/IMigratorRouter.sol";
+import {IMigratorRouter} from "@voltprotocol/v1-migration/IMigratorRouter.sol";
 import {IPegStabilityModule} from "@voltprotocol/peg/IPegStabilityModule.sol";
 import {IVolt} from "@voltprotocol/volt/IVolt.sol";
-import {IVoltMigrator} from "@voltprotocol/volt/IVoltMigrator.sol";
+import {IVoltMigrator} from "@voltprotocol/v1-migration/IVoltMigrator.sol";
 
 /// @title Migrator Router
 /// @notice This contract is a router that wraps around the token migrator from

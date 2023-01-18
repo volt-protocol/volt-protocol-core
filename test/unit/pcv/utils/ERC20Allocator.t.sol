@@ -9,11 +9,11 @@ import {getCoreV2} from "@test/unit/utils/Fixtures.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
 import {PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
-import {ERC20Allocator} from "@voltprotocol/pcv/utils/ERC20Allocator.sol";
+import {ERC20Allocator} from "@voltprotocol/pcv/ERC20Allocator.sol";
 import {ERC20HoldingPCVDeposit} from "@test/mock/ERC20HoldingPCVDeposit.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
-import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "@voltprotocol/limiter/GlobalSystemExitRateLimiter.sol";
+import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "@voltprotocol/rate-limits/GlobalSystemExitRateLimiter.sol";
 
 contract UnitTestERC20Allocator is Test {
     /// @notice emitted when an existing deposit is updated

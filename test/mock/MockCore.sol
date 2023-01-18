@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.0;
 
-import "@voltprotocol/core/Permissions.sol";
-import "@voltprotocol/vcon/Vcon.sol";
-import "@voltprotocol/volt/Volt.sol";
+import "@voltprotocol/v1/Permissions.sol";
+import "@voltprotocol/v1/Volt.sol";
 
+import "@test/mock/MockERC20.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 /// @title Mock Source of truth for Fei Protocol
@@ -26,7 +26,7 @@ contract MockCore is Permissions, Initializable {
         require(chainId != 1, "MockCore: cannot deploy to mainnet");
     }
 
-    function init(address recipient) external initializer {
+    function init(address /* recipient*/) external initializer {
         /// emulate the real core as much as possible
         _setupGovernor(msg.sender);
 
@@ -35,7 +35,7 @@ contract MockCore is Permissions, Initializable {
 
         /// give all VCON to the recipient
         /// grant timelock the minter role
-        Vcon _vcon = new Vcon(recipient, msg.sender);
+        MockERC20 _vcon = new MockERC20();
         vcon = IERC20(address(_vcon));
 
         _setupGovernor(msg.sender);

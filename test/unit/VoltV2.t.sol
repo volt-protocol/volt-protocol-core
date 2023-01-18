@@ -4,7 +4,7 @@ pragma solidity =0.8.13;
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Test} from "@forge-std/Test.sol";
 import {Vm} from "@forge-std/Vm.sol";
-import {Core} from "@voltprotocol/core/Core.sol";
+import {Core} from "@voltprotocol/v1/Core.sol";
 import {VoltV2} from "@voltprotocol/volt/VoltV2.sol";
 import {ICoreV2} from "@voltprotocol/core/ICoreV2.sol";
 import {stdError} from "@forge-std/StdError.sol";

@@ -2,7 +2,7 @@
 pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import "@voltprotocol/refs/CoreRef.sol";
+import "@voltprotocol/v1/CoreRef.sol";
 
 /// @title FEI stablecoin
 /// @author Fei Protocol

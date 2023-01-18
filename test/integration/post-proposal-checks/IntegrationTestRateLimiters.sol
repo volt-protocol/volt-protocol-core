@@ -12,10 +12,10 @@ import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
 import {PCVOracle} from "@voltprotocol/oracle/PCVOracle.sol";
 import {PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
-import {ERC20Allocator} from "@voltprotocol/pcv/utils/ERC20Allocator.sol";
+import {ERC20Allocator} from "@voltprotocol/pcv/ERC20Allocator.sol";
 import {NonCustodialPSM} from "@voltprotocol/peg/NonCustodialPSM.sol";
-import {GlobalRateLimitedMinter} from "@voltprotocol/limiter/GlobalRateLimitedMinter.sol";
-import {GlobalSystemExitRateLimiter} from "@voltprotocol/limiter/GlobalSystemExitRateLimiter.sol";
+import {GlobalRateLimitedMinter} from "@voltprotocol/rate-limits/GlobalRateLimitedMinter.sol";
+import {GlobalSystemExitRateLimiter} from "@voltprotocol/rate-limits/GlobalSystemExitRateLimiter.sol";
 import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
 
 contract IntegrationTestRateLimiters is PostProposalCheck {

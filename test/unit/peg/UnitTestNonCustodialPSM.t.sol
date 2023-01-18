@@ -7,7 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Test} from "@forge-std/Test.sol";
 import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
 import {getCoreV2} from "@test/unit/utils/Fixtures.sol";
-import {Deviation} from "@voltprotocol/utils/Deviation.sol";
+import {Deviation} from "@test/unit/utils/Deviation.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
@@ -17,13 +17,11 @@ import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
 import {NonCustodialPSM} from "@voltprotocol/peg/NonCustodialPSM.sol";
 import {MockPCVDepositV3} from "@test/mock/MockPCVDepositV3.sol";
 import {VoltSystemOracle} from "@voltprotocol/oracle/VoltSystemOracle.sol";
-import {CompoundPCVRouter} from "@voltprotocol/pcv/compound/CompoundPCVRouter.sol";
 import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
-import {IScalingPriceOracle} from "@voltprotocol/oracle/IScalingPriceOracle.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
-import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "@voltprotocol/limiter/GlobalRateLimitedMinter.sol";
-import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "@voltprotocol/limiter/GlobalSystemExitRateLimiter.sol";
+import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "@voltprotocol/rate-limits/GlobalRateLimitedMinter.sol";
+import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "@voltprotocol/rate-limits/GlobalSystemExitRateLimiter.sol";
 
 /// deployment steps
 /// 1. core v2

@@ -5,8 +5,8 @@ import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {IVolt, IERC20} from "@voltprotocol/volt/IVolt.sol";
 import {IPermissionsV2} from "@voltprotocol/core/IPermissionsV2.sol";
 import {IGlobalReentrancyLock} from "@voltprotocol/core/IGlobalReentrancyLock.sol";
-import {IGlobalRateLimitedMinter} from "@voltprotocol/limiter/IGlobalRateLimitedMinter.sol";
-import {IGlobalSystemExitRateLimiter} from "@voltprotocol/limiter/IGlobalSystemExitRateLimiter.sol";
+import {IGlobalRateLimitedMinter} from "@voltprotocol/rate-limits/IGlobalRateLimitedMinter.sol";
+import {IGlobalSystemExitRateLimiter} from "@voltprotocol/rate-limits/IGlobalSystemExitRateLimiter.sol";
 
 /// @title Core Interface
 /// @author Volt Protocol

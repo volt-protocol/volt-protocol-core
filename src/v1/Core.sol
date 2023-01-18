@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {Vcon} from "@voltprotocol/vcon/Vcon.sol";
-import {IVolt, Volt, IERC20} from "@voltprotocol/volt/Volt.sol";
-import {ICore} from "@voltprotocol/core/ICore.sol";
-import {Permissions} from "@voltprotocol/core/Permissions.sol";
+import {IVolt, Volt, IERC20} from "@voltprotocol/v1/Volt.sol";
+import {ICore} from "@voltprotocol/v1/ICore.sol";
+import {Permissions} from "@voltprotocol/v1/Permissions.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 /// @title Source of truth for VOLT Protocol

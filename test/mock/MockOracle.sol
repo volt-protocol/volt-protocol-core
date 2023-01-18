@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {Decimal} from "@voltprotocol/external/Decimal.sol";
+import {Decimal} from "@voltprotocol/v1/Decimal.sol";
 
 contract MockOracle {
     using Decimal for Decimal.D256;

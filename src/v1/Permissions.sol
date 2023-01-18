@@ -2,7 +2,7 @@
 pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
-import "@voltprotocol/core/IPermissions.sol";
+import "@voltprotocol/v1/IPermissions.sol";
 
 /// @title Access control module for Core
 /// @author Fei Protocol

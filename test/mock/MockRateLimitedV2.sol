@@ -1,7 +1,7 @@
 pragma solidity =0.8.13;
 
 import "@voltprotocol/utils/RateLimitedV2.sol";
-import "@voltprotocol/refs/CoreRef.sol";
+import "@voltprotocol/v1/CoreRef.sol";
 
 contract MockRateLimitedV2 is RateLimitedV2 {
     constructor(

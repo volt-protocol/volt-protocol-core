@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import {Vm} from "@forge-std/Vm.sol";
 import {Test} from "@forge-std/Test.sol";
 import {Constants} from "@voltprotocol/Constants.sol";
-import {Deviation} from "@voltprotocol/utils/Deviation.sol";
+import {Deviation} from "@test/unit/utils/Deviation.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 

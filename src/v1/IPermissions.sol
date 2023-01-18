@@ -2,7 +2,7 @@
 pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@voltprotocol/core/IPermissionsRead.sol";
+import "@voltprotocol/v1/IPermissionsRead.sol";
 
 /// @title Permissions interface
 /// @author Fei Protocol

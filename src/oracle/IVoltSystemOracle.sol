@@ -9,7 +9,7 @@ interface IVoltSystemOracle {
     function getCurrentOraclePrice() external view returns (uint256);
 
     /// @notice start time at which point interest will start accruing, and the
-    /// current ScalingPriceOracle price will be snapshotted and saved
+    /// current system oracle price will be snapshotted and saved
     function periodStartTime() external view returns (uint256);
 
     /// @notice oracle price. starts off at 1e18 and compounds monthly

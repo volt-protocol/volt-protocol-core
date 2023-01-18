@@ -1,7 +1,7 @@
 /// // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {OracleRef} from "@voltprotocol/refs/OracleRef.sol";
+import {OracleRef} from "@voltprotocol/v1/OracleRef.sol";
 
 contract MockOracleRef is OracleRef {
     constructor(

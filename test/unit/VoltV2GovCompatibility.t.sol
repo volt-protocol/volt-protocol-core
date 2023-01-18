@@ -6,7 +6,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Test} from "@forge-std/Test.sol";
 import {Vm} from "@forge-std/Vm.sol";
-import {Core} from "@voltprotocol/core/Core.sol";
+import {Core} from "@voltprotocol/v1/Core.sol";
 import {VoltV2} from "@voltprotocol/volt/VoltV2.sol";
 import {ICoreV2} from "@voltprotocol/core/ICoreV2.sol";
 import {stdError} from "@forge-std/StdError.sol";

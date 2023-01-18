@@ -1,6 +1,6 @@
 pragma solidity =0.8.13;
 
-import {IGlobalSystemExitRateLimiter} from "@voltprotocol/limiter/IGlobalSystemExitRateLimiter.sol";
+import {IGlobalSystemExitRateLimiter} from "@voltprotocol/rate-limits/IGlobalSystemExitRateLimiter.sol";
 import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
 import {RateLimitedV2} from "@voltprotocol/utils/RateLimitedV2.sol";

@@ -8,12 +8,10 @@ import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
 import {IPCVDeposit} from "@voltprotocol/pcv/IPCVDeposit.sol";
 import {IPCVGuardian} from "@voltprotocol/pcv/IPCVGuardian.sol";
-import {CoreRefPausableLib} from "@voltprotocol/refs/CoreRefPausableLib.sol";
 
 /// @notice PCV Guardian is a contract to safeguard protocol funds
 /// by being able to withdraw whitelisted PCV deposits to a safe address
 contract PCVGuardian is IPCVGuardian, CoreRefV2 {
-    using CoreRefPausableLib for address;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     ///@notice set of whitelisted pcvDeposit addresses for withdrawal
@@ -231,10 +229,10 @@ contract PCVGuardian is IPCVGuardian, CoreRefV2 {
         address pcvDeposit,
         uint256 amount
     ) private {
-        if (pcvDeposit._paused()) {
-            pcvDeposit._unpause();
+        if (CoreRefV2(pcvDeposit).paused()) {
+            CoreRefV2(pcvDeposit).unpause();
             IPCVDeposit(pcvDeposit).withdraw(safeAddress, amount);
-            pcvDeposit._pause();
+            CoreRefV2(pcvDeposit).pause();
         } else {
             IPCVDeposit(pcvDeposit).withdraw(safeAddress, amount);
         }

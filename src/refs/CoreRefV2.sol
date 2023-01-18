@@ -12,8 +12,8 @@ import {ICoreRefV2} from "@voltprotocol/refs/ICoreRefV2.sol";
 import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {IVolt, IVoltBurn} from "@voltprotocol/volt/IVolt.sol";
 import {IGlobalReentrancyLock} from "@voltprotocol/core/IGlobalReentrancyLock.sol";
-import {IGlobalRateLimitedMinter} from "@voltprotocol/limiter/IGlobalRateLimitedMinter.sol";
-import {IGlobalSystemExitRateLimiter} from "@voltprotocol/limiter/IGlobalSystemExitRateLimiter.sol";
+import {IGlobalRateLimitedMinter} from "@voltprotocol/rate-limits/IGlobalRateLimitedMinter.sol";
+import {IGlobalSystemExitRateLimiter} from "@voltprotocol/rate-limits/IGlobalSystemExitRateLimiter.sol";
 
 /// @title A Reference to Core
 /// @author Volt Protocol

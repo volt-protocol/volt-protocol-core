@@ -3,10 +3,10 @@ pragma solidity 0.8.13;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {IVolt} from "@voltprotocol/volt/Volt.sol";
-import {Volt} from "@voltprotocol/volt/Volt.sol";
-import {ICore} from "@voltprotocol/core/ICore.sol";
-import {Core} from "@voltprotocol/core/Core.sol";
+import {IVolt} from "@voltprotocol/v1/Volt.sol";
+import {Volt} from "@voltprotocol/v1/Volt.sol";
+import {ICore} from "@voltprotocol/v1/ICore.sol";
+import {Core} from "@voltprotocol/v1/Core.sol";
 import {Vm} from "@forge-std/Vm.sol";
 import {Test} from "@forge-std/Test.sol";
 import {getCore} from "@test/unit/utils/Fixtures.sol";

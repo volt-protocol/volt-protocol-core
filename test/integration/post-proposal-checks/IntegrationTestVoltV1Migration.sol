@@ -11,10 +11,10 @@ import {IVolt} from "@voltprotocol/volt/IVolt.sol";
 import {VoltV2} from "@voltprotocol/volt/VoltV2.sol";
 import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
 import {stdError} from "@forge-std/StdError.sol";
-import {MigratorRouter} from "@voltprotocol/pcv/MigratorRouter.sol";
+import {MigratorRouter} from "@voltprotocol/v1-migration/MigratorRouter.sol";
 import {VoltSystemOracle} from "@voltprotocol/oracle/VoltSystemOracle.sol";
 import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
-import {IVoltMigrator, VoltMigrator} from "@voltprotocol/volt/VoltMigrator.sol";
+import {IVoltMigrator, VoltMigrator} from "@voltprotocol/v1-migration/VoltMigrator.sol";
 
 contract IntegrationTestVoltV1Migration is PostProposalCheck {
     using SafeCast for *;

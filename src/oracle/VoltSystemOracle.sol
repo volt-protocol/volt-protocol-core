@@ -27,7 +27,7 @@ contract VoltSystemOracle is IVoltSystemOracle, CoreRefV2, IOracleV2 {
     uint200 private _oraclePrice;
 
     /// @notice start time at which point interest will start accruing, and the
-    /// current ScalingPriceOracle price will be snapshotted and saved
+    /// current system oracle price will be snapshotted and saved
     uint40 private _periodStartTime;
 
     /// @notice current amount that oracle price is inflating by monthly in basis points
@@ -90,7 +90,7 @@ contract VoltSystemOracle is IVoltSystemOracle, CoreRefV2, IOracleV2 {
     }
 
     /// @notice start time at which point interest will start accruing, and the
-    /// current ScalingPriceOracle price will be snapshotted and saved
+    /// current system oracle price will be snapshotted and saved
     function periodStartTime() external view override returns (uint256) {
         return _periodStartTime;
     }

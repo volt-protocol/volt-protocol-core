@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import {IComptroller} from "@voltprotocol/pcv/morpho/ICompound.sol";
+import {IComptroller} from "@voltprotocol/external/compound/ICompound.sol";
 
 // prettier-ignore
 interface IMorpho {

@@ -7,8 +7,8 @@ import {IVolt} from "@voltprotocol/volt/IVolt.sol";
 import {ICoreV2} from "@voltprotocol/core/ICoreV2.sol";
 import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {PermissionsV2} from "@voltprotocol/core/PermissionsV2.sol";
-import {IGlobalRateLimitedMinter} from "@voltprotocol/limiter/IGlobalRateLimitedMinter.sol";
-import {IGlobalSystemExitRateLimiter} from "@voltprotocol/limiter/IGlobalSystemExitRateLimiter.sol";
+import {IGlobalRateLimitedMinter} from "@voltprotocol/rate-limits/IGlobalRateLimitedMinter.sol";
+import {IGlobalSystemExitRateLimiter} from "@voltprotocol/rate-limits/IGlobalSystemExitRateLimiter.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
 
 /// @title Source of truth for VOLT Protocol

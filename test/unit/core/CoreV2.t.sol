@@ -6,17 +6,16 @@ import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {Vm} from "@forge-std/Vm.sol";
-import {Volt} from "@voltprotocol/volt/Volt.sol";
-import {Vcon} from "@voltprotocol/vcon/Vcon.sol";
-import {IVolt} from "@voltprotocol/volt/Volt.sol";
-import {ICore} from "@voltprotocol/core/ICore.sol";
+import {Volt} from "@voltprotocol/v1/Volt.sol";
+import {IVolt} from "@voltprotocol/v1/Volt.sol";
+import {ICore} from "@voltprotocol/v1/ICore.sol";
 import {Test} from "@forge-std/Test.sol";
 import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
 import {getCoreV2} from "@test/unit/utils/Fixtures.sol";
 import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
-import {IGlobalRateLimitedMinter} from "@voltprotocol/limiter/IGlobalRateLimitedMinter.sol";
+import {IGlobalRateLimitedMinter} from "@voltprotocol/rate-limits/IGlobalRateLimitedMinter.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
-import {IGlobalSystemExitRateLimiter} from "@voltprotocol/limiter/IGlobalSystemExitRateLimiter.sol";
+import {IGlobalSystemExitRateLimiter} from "@voltprotocol/rate-limits/IGlobalSystemExitRateLimiter.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
 
 contract UnitTestCoreV2 is Test {

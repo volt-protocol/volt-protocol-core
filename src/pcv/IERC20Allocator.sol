@@ -1,10 +1,5 @@
 pragma solidity =0.8.13;
 
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-import {Timed} from "@voltprotocol/utils/Timed.sol";
-import {CoreRef} from "@voltprotocol/refs/CoreRef.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 /// @notice Contract to remove all excess funds past a certain threshold from a smart contract
 /// used to allocate funds from a PSM to a yield venue so that liquid reserves are minimized
 /// This contract should never hold PCV, however it has a sweep function, so if tokens get sent to it,

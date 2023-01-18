@@ -17,8 +17,8 @@ import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
 import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
 import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
-import {MigratorRouter} from "@voltprotocol/pcv/MigratorRouter.sol";
-import {ERC20Allocator} from "@voltprotocol/pcv/utils/ERC20Allocator.sol";
+import {MigratorRouter} from "@voltprotocol/v1-migration/MigratorRouter.sol";
+import {ERC20Allocator} from "@voltprotocol/pcv/ERC20Allocator.sol";
 import {NonCustodialPSM} from "@voltprotocol/peg/NonCustodialPSM.sol";
 import {MakerPCVSwapper} from "@voltprotocol/pcv/maker/MakerPCVSwapper.sol";
 import {VoltSystemOracle} from "@voltprotocol/oracle/VoltSystemOracle.sol";
@@ -27,10 +27,10 @@ import {IPegStabilityModule} from "@voltprotocol/peg/IPegStabilityModule.sol";
 import {ConstantPriceOracle} from "@voltprotocol/oracle/ConstantPriceOracle.sol";
 import {IPCVDeposit, PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
 import {MorphoCompoundPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoCompoundPCVDeposit.sol";
-import {IVoltMigrator, VoltMigrator} from "@voltprotocol/volt/VoltMigrator.sol";
+import {IVoltMigrator, VoltMigrator} from "@voltprotocol/v1-migration/VoltMigrator.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
-import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "@voltprotocol/limiter/GlobalRateLimitedMinter.sol";
-import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "@voltprotocol/limiter/GlobalSystemExitRateLimiter.sol";
+import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "@voltprotocol/rate-limits/GlobalRateLimitedMinter.sol";
+import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "@voltprotocol/rate-limits/GlobalSystemExitRateLimiter.sol";
 
 /*
 VIP16 Executes after VIP15 (SystemV1 deprecation), and deploys the new SystemV2.

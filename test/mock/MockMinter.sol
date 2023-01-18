@@ -1,6 +1,6 @@
 pragma solidity 0.8.13;
 
-import {IGlobalRateLimitedMinter} from "@voltprotocol/limiter/IGlobalRateLimitedMinter.sol";
+import {IGlobalRateLimitedMinter} from "@voltprotocol/rate-limits/IGlobalRateLimitedMinter.sol";
 import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
 
 contract MockMinter is CoreRefV2 {

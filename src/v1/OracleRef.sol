@@ -3,10 +3,10 @@ pragma solidity 0.8.13;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
-import {IOracle} from "@voltprotocol/oracle/IOracle.sol";
-import {Decimal} from "@voltprotocol/external/Decimal.sol";
+import {IOracle} from "@voltprotocol/v1/IOracle.sol";
+import {Decimal} from "@voltprotocol/v1/Decimal.sol";
 import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
-import {IOracleRef} from "@voltprotocol/refs/IOracleRef.sol";
+import {IOracleRef} from "@voltprotocol/v1/IOracleRef.sol";
 
 /// @title Reference to an Oracle
 /// @author Volt & Fei Protocol

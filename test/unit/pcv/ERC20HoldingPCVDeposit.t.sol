@@ -1,7 +1,7 @@
 pragma solidity =0.8.13;
 
 import {Vm} from "@forge-std/Vm.sol";
-import {ICore} from "@voltprotocol/core/ICore.sol";
+import {ICore} from "@voltprotocol/v1/ICore.sol";
 import {Test} from "@forge-std/Test.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";

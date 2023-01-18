@@ -5,9 +5,9 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
-import {Volt} from "@voltprotocol/volt/Volt.sol";
+import {Volt} from "@voltprotocol/v1/Volt.sol";
 import {IVolt} from "@voltprotocol/volt/IVolt.sol";
-import {IVoltMigrator} from "@voltprotocol/volt/IVoltMigrator.sol";
+import {IVoltMigrator} from "@voltprotocol/v1-migration/IVoltMigrator.sol";
 
 /// @title Volt Migrator
 /// @notice This contract is used to allow user to migrate from the old VOLT token

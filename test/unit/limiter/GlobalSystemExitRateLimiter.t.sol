@@ -9,7 +9,7 @@ import {Test} from "@forge-std/Test.sol";
 import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
 import {TestAddresses} from "@test/unit/utils/TestAddresses.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
-import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "@voltprotocol/limiter/GlobalSystemExitRateLimiter.sol";
+import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "@voltprotocol/rate-limits/GlobalSystemExitRateLimiter.sol";
 import {getCoreV2, getVoltAddresses, VoltAddresses} from "@test/unit/utils/Fixtures.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
 

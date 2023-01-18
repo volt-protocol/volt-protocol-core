@@ -9,7 +9,7 @@ import {Test} from "@forge-std/Test.sol";
 import {ICoreV2} from "@voltprotocol/core/ICoreV2.sol";
 import {PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
-import {ERC20Allocator} from "@voltprotocol/pcv/utils/ERC20Allocator.sol";
+import {ERC20Allocator} from "@voltprotocol/pcv/ERC20Allocator.sol";
 import {MockRateLimitedV2} from "@test/mock/MockRateLimitedV2.sol";
 import {ERC20HoldingPCVDeposit} from "@test/mock/ERC20HoldingPCVDeposit.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";

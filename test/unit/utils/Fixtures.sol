@@ -5,10 +5,8 @@ import {Vm} from "@forge-std/Vm.sol";
 import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {VoltSystemOracle} from "@voltprotocol/oracle/VoltSystemOracle.sol";
-import {IOraclePassThrough} from "@voltprotocol/oracle/IOraclePassThrough.sol";
-import {IScalingPriceOracle} from "@voltprotocol/oracle/IScalingPriceOracle.sol";
 import {TestAddresses} from "@test/unit/utils/TestAddresses.sol";
-import {Core, Vcon, Volt, IERC20, IVolt} from "@voltprotocol/core/Core.sol";
+import {Core, Volt, IERC20, IVolt} from "@voltprotocol/v1/Core.sol";
 
 struct VoltTestAddresses {
     address userAddress;
@@ -76,10 +74,7 @@ function getCore() returns (Core) {
     vm.startPrank(TestAddresses.governorAddress);
     Core core = new Core();
     core.init();
-    Vcon vcon = new Vcon(
-        TestAddresses.governorAddress,
-        TestAddresses.governorAddress
-    );
+    MockERC20 vcon = new MockERC20();
 
     core.setVcon(IERC20(address(vcon)));
     core.grantMinter(TestAddresses.minterAddress);
@@ -102,10 +97,7 @@ function getCoreV2() returns (CoreV2) {
     // Deploy Core from Governor address
     vm.startPrank(TestAddresses.governorAddress);
     CoreV2 core = new CoreV2(address(volt));
-    Vcon vcon = new Vcon(
-        TestAddresses.governorAddress,
-        TestAddresses.governorAddress
-    );
+    MockERC20 vcon = new MockERC20();
 
     core.setVcon(IERC20(address(vcon)));
     core.grantMinter(TestAddresses.minterAddress);
@@ -132,29 +124,18 @@ function getVoltSystemOracle(
     return oracle;
 }
 
-function getOraclePassThrough(
-    VoltSystemOracle oracle,
-    address
-) pure returns (IOraclePassThrough) {
-    return IOraclePassThrough(address(oracle));
-}
-
-function getLocalOracleSystem(
-    address core
-) returns (VoltSystemOracle oracle, IOraclePassThrough opt) {
+function getLocalOracleSystem(address core) returns (VoltSystemOracle oracle) {
     oracle = getVoltSystemOracle(core, 100, uint40(block.timestamp), 1e18);
-    opt = getOraclePassThrough(oracle, TestAddresses.governorAddress);
 }
 
 function getLocalOracleSystem(
     address core,
     uint200 startPrice
-) returns (VoltSystemOracle oracle, IOraclePassThrough opt) {
+) returns (VoltSystemOracle oracle) {
     oracle = getVoltSystemOracle(
         core,
         100,
         uint40(block.timestamp),
         startPrice
     );
-    opt = getOraclePassThrough(oracle, TestAddresses.governorAddress);
 }

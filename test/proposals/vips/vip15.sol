@@ -6,11 +6,11 @@ import {TimelockProposal} from "@test/proposals/proposalTypes/TimelockProposal.s
 
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
-import {Core} from "@voltprotocol/core/Core.sol";
+import {Core} from "@voltprotocol/v1/Core.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
-import {ERC20Allocator} from "@voltprotocol/pcv/utils/ERC20Allocator.sol";
+import {PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
+import {ERC20Allocator} from "@voltprotocol/pcv/ERC20Allocator.sol";
 import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
-import {ERC20CompoundPCVDeposit} from "@voltprotocol/pcv/compound/ERC20CompoundPCVDeposit.sol";
 
 /*
 VIP15 deprecates the old system and sends all protocol funds to the
@@ -363,10 +363,10 @@ contract vip15 is TimelockProposal {
         ERC20Allocator allocator = ERC20Allocator(
             addresses.mainnet("ERC20ALLOCATOR")
         );
-        ERC20CompoundPCVDeposit daiDeposit = ERC20CompoundPCVDeposit(
+        PCVDeposit daiDeposit = PCVDeposit(
             addresses.mainnet("COMPOUND_DAI_PCV_DEPOSIT")
         );
-        ERC20CompoundPCVDeposit usdcDeposit = ERC20CompoundPCVDeposit(
+        PCVDeposit usdcDeposit = PCVDeposit(
             addresses.mainnet("COMPOUND_USDC_PCV_DEPOSIT")
         );
         TimelockController tc = TimelockController(

@@ -7,7 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {Test} from "@forge-std/Test.sol";
 import {ICoreV2} from "@voltprotocol/core/ICoreV2.sol";
-import {Deviation} from "@voltprotocol/utils/Deviation.sol";
+import {Deviation} from "@test/unit/utils/Deviation.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
@@ -15,18 +15,16 @@ import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
 import {IPCVDepositBalances} from "@voltprotocol/pcv/IPCVDepositBalances.sol";
 import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
 import {MockCoreRefV2} from "@test/mock/MockCoreRefV2.sol";
-import {ERC20Allocator} from "@voltprotocol/pcv/utils/ERC20Allocator.sol";
+import {ERC20Allocator} from "@voltprotocol/pcv/ERC20Allocator.sol";
 import {GenericCallMock} from "@test/mock/GenericCallMock.sol";
 import {MockPCVDepositV2} from "@test/mock/MockPCVDepositV2.sol";
 import {VoltSystemOracle} from "@voltprotocol/oracle/VoltSystemOracle.sol";
-import {CompoundPCVRouter} from "@voltprotocol/pcv/compound/CompoundPCVRouter.sol";
 import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
-import {IScalingPriceOracle} from "@voltprotocol/oracle/IScalingPriceOracle.sol";
 import {MorphoCompoundPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
 import {getCoreV2, getVoltAddresses, VoltAddresses} from "@test/unit/utils/Fixtures.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
-import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "@voltprotocol/limiter/GlobalRateLimitedMinter.sol";
+import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "@voltprotocol/rate-limits/GlobalRateLimitedMinter.sol";
 
 /// deployment steps
 /// 1. core v2
@@ -38,18 +36,16 @@ import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "@voltprotocol/l
 /// 7. pcv deposit usdc
 /// 8. pcv guardian
 /// 9. erc20 allocator
-/// 10. compound pcv router
 
 /// setup steps
 /// 1. grant pcv guardian pcv controller role
 /// 2. grant erc20 allocator pcv controller role
-/// 3. grant compound pcv router pcv controller role
-/// 4. grant pcv guardian guardian role
-/// 5. grant pcv guard role to EOA's
-/// 6. configure timelock as owner of oracle pass through
-/// 7. revoke timelock admin rights from deployer
-/// 8. grant timelock governor
-/// 9. connect pcv deposits to psm in allocator
+/// 3. grant pcv guardian guardian role
+/// 4. grant pcv guard role to EOA's
+/// 5. configure timelock as owner of oracle pass through
+/// 6. revoke timelock admin rights from deployer
+/// 7. grant timelock governor
+/// 8. connect pcv deposits to psm in allocator
 
 /// PSM target balance is 10k cash for both deposits
 
@@ -75,7 +71,6 @@ contract SystemUnitTest is Test {
     MockPCVDepositV2 private pcvDepositUsdc;
     PCVGuardian private pcvGuardian;
     ERC20Allocator private allocator;
-    CompoundPCVRouter private router;
     VoltSystemOracle private oracle;
     TimelockController private timelockController;
     GlobalRateLimitedMinter private grlm;
@@ -206,11 +201,6 @@ contract SystemUnitTest is Test {
             toWhitelist
         );
         allocator = new ERC20Allocator(coreAddress);
-        router = new CompoundPCVRouter(
-            coreAddress,
-            PCVDeposit(address(pcvDepositDai)),
-            PCVDeposit(address(pcvDepositUsdc))
-        );
 
         timelockController.renounceRole(
             timelockController.TIMELOCK_ADMIN_ROLE(),
@@ -220,7 +210,6 @@ contract SystemUnitTest is Test {
         vm.startPrank(addresses.governorAddress);
 
         core.grantPCVController(address(pcvGuardian));
-        core.grantPCVController(address(router));
         core.grantPCVController(address(allocator));
 
         core.grantPCVGuard(addresses.userAddress);
@@ -360,8 +349,6 @@ contract SystemUnitTest is Test {
         assertTrue(pcvGuardian.isWhitelistAddress(address(daipsm)));
 
         assertEq(pcvGuardian.safeAddress(), address(timelockController));
-        assertEq(address(router.daiPcvDeposit()), address(pcvDepositDai));
-        assertEq(address(router.usdcPcvDeposit()), address(pcvDepositUsdc));
         assertEq(
             oracle.monthlyChangeRateBasisPoints(),
             monthlyChangeRateBasisPoints
@@ -398,7 +385,6 @@ contract SystemUnitTest is Test {
 
         assertTrue(core.isPCVController(address(pcvGuardian)));
         assertTrue(core.isPCVController(address(allocator)));
-        assertTrue(core.isPCVController(address(router)));
 
         assertTrue(core.isGovernor(address(timelockController)));
         assertTrue(core.isGovernor(address(core)));

@@ -6,10 +6,9 @@ import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import {Timed} from "@voltprotocol/utils/Timed.sol";
 import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
 import {PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
-import {IERC20Allocator} from "@voltprotocol/pcv/utils/IERC20Allocator.sol";
+import {IERC20Allocator} from "@voltprotocol/pcv/IERC20Allocator.sol";
 
 /// @notice Contract to remove all excess funds past a target balance from a smart contract
 /// and to add funds to that same smart contract when it is under the target balance.

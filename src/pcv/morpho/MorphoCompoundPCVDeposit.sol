@@ -5,9 +5,9 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {ILens} from "@voltprotocol/pcv/morpho/ILens.sol";
-import {ICToken} from "@voltprotocol/pcv/morpho/ICompound.sol";
-import {IMorpho} from "@voltprotocol/pcv/morpho/IMorpho.sol";
+import {ILens} from "@voltprotocol/external/morpho/ILens.sol";
+import {ICToken} from "@voltprotocol/external/compound/ICompound.sol";
+import {IMorpho} from "@voltprotocol/external/morpho/IMorpho.sol";
 import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
 import {Constants} from "@voltprotocol/Constants.sol";
 import {PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";

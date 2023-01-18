@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.8.13;
 
-import {IGlobalRateLimitedMinter} from "@voltprotocol/limiter/IGlobalRateLimitedMinter.sol";
+import {IGlobalRateLimitedMinter} from "@voltprotocol/rate-limits/IGlobalRateLimitedMinter.sol";
 import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
 import {RateLimitedV2} from "@voltprotocol/utils/RateLimitedV2.sol";
