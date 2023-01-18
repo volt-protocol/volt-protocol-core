@@ -3,9 +3,11 @@ pragma solidity 0.8.13;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {Test} from "../../../../forge-std/src/Test.sol";
 import {CoreV2} from "../../../core/CoreV2.sol";
+import {Constants} from "../../../Constants.sol";
 import {Deviation} from "../../../utils/Deviation.sol";
 import {VoltRoles} from "../../../core/VoltRoles.sol";
 import {MockERC20} from "../../../mock/MockERC20.sol";
@@ -226,6 +228,29 @@ contract NonCustodialPSMUnitTest is Test {
         assertEq(psm.decimalsNormalizer(), custodialPsm.decimalsNormalizer());
         assertEq(psm.ceiling(), custodialPsm.ceiling());
         assertEq(psm.floor(), custodialPsm.floor());
+    }
+
+    function testGetMaxRedeemAmountIn() public {
+        uint256 buffer = gserl.buffer();
+        uint256 oraclePrice = psm.readOracle();
+
+        uint256 pcvDepositBalance = pcvDeposit.balance();
+
+        assertEq(
+            psm.getMaxRedeemAmountIn(),
+            (Math.min(buffer, pcvDepositBalance) * Constants.ETH_GRANULARITY) /
+                oraclePrice
+        );
+    }
+
+    function testMintFails() public {
+        vm.expectRevert("NonCustodialPSM: cannot mint");
+        psm.mint(address(0), 0, 0);
+    }
+
+    function testGetMintAmountOutFails() public {
+        vm.expectRevert("NonCustodialPSM: cannot mint");
+        psm.getMintAmountOut(0);
     }
 
     function testExitValueInversionPositive(uint96 amount) public {
