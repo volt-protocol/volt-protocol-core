@@ -180,7 +180,9 @@ contract CompoundBadDebtSentinel is ICompoundBadDebtSentinel, CoreRefV2 {
                         }
                     }
 
-                    PCVDeposit(pcvDeposits[i]).pause();
+                    if (!PCVDeposit(pcvDeposits[i]).paused()) {
+                        PCVDeposit(pcvDeposits[i]).pause();
+                    }
                 }
             }
 
