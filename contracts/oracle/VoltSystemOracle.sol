@@ -85,12 +85,12 @@ contract VoltSystemOracle is
     // prettier-ignore
     function getCurrentOraclePrice() public view override returns (uint256) {
         /// save a single warm SLOAD by reading from storage once
-        uint256 cachedStartTime = periodStartTime;
         uint256 cachedOraclePrice = oraclePrice;
         uint256 cachedMonthlyChangeRate = monthlyChangeRate;
+        uint256 cachedStartTime = periodStartTime;
 
         if (cachedStartTime >= block.timestamp) { /// only accrue interest after start time
-            return oraclePrice;
+            return cachedOraclePrice;
         }
 
         uint256 timeDelta = Math.min(block.timestamp - cachedStartTime, TIMEFRAME);
@@ -124,15 +124,15 @@ contract VoltSystemOracle is
 
     /// @notice update the change rate, callable only by the governor
     /// when called, interest accrued is compounded and then new rate is set
-    function updateChangeRate(
+    function updateMonthlyChangeRate(
         uint112 newMonthlyChangeRate
     ) external override onlyGovernor {
         _compoundInterest(); /// compound interest before updating change rate
 
-        uint256 oldChangeRateBasisPoints = monthlyChangeRate;
+        uint256 oldMonthlyChangeRate = monthlyChangeRate;
         monthlyChangeRate = newMonthlyChangeRate;
 
-        emit ChangeRateUpdated(oldChangeRateBasisPoints, newMonthlyChangeRate);
+        emit ChangeRateUpdated(oldMonthlyChangeRate, newMonthlyChangeRate);
     }
 
     /// ------------- Internal Helper -------------

@@ -169,7 +169,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
         );
     }
 
-    /// @notice pcv deposit receives underlying token on mint
+    /// @notice psm receives underlying token on mint
     function testSwapUnderlyingForVoltAfterPriceIncrease() public {
         uint256 amountStableIn = 101_000;
         uint256 amountVoltOut = psm.getMintAmountOut(amountStableIn);
@@ -179,7 +179,12 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
         );
 
         underlyingToken.approve(address(psm), amountStableIn);
+
+        uint256 g0 = gasleft();
         psm.mint(address(this), amountStableIn, amountVoltOut);
+        uint256 g1 = gasleft();
+
+        emit log_named_uint("cost per mint: 1", (g0 - g1));
 
         uint256 endingUserVoltBalance = volt.balanceOf(address(this));
         uint256 endingPSMUnderlyingBalance = underlyingToken.balanceOf(
@@ -196,7 +201,7 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
         );
     }
 
-    /// @notice pcv deposit gets depleted on redeem
+    /// @notice psm gets depleted on redeem
     function testSwapVoltForUSDC() public {
         uint256 startingUserUnderlyingBalance = underlyingToken.balanceOf(
             address(this)
@@ -208,11 +213,16 @@ contract IntegrationTestPriceBoundPSMUSDCTest is DSTest {
         uint256 startingUserVOLTBalance = volt.balanceOf(address(this));
 
         volt.approve(address(psm), mintAmount);
+
+        uint256 g0 = gasleft();
         uint256 amountOut = psm.redeem(
             address(this),
             mintAmount,
             redeemAmountOut
         );
+        uint256 g1 = gasleft();
+
+        emit log_named_uint("cost per redeem: 1", (g0 - g1));
 
         uint256 endingUserVOLTBalance = volt.balanceOf(address(this));
         uint256 endingUserUnderlyingBalance = underlyingToken.balanceOf(

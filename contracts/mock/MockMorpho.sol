@@ -14,6 +14,10 @@ contract MockMorpho {
         return address(token);
     }
 
+    function balance() external view returns (uint256) {
+        return token.balanceOf(address(this));
+    }
+
     function withdraw(address, uint256 amount) external {
         balances[msg.sender] -= amount;
         token.transfer(msg.sender, amount);
