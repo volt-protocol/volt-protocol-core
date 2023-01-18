@@ -22,7 +22,7 @@ import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {CompoundPCVRouter} from "../../../pcv/compound/CompoundPCVRouter.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {IScalingPriceOracle} from "../../../oracle/IScalingPriceOracle.sol";
-import {MorphoCompoundPCVDeposit} from "../../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
+import {MorphoPCVDeposit} from "../../../pcv/morpho/MorphoPCVDeposit.sol";
 import {TestAddresses as addresses} from "../utils/TestAddresses.sol";
 import {getCoreV2, getVoltAddresses, VoltAddresses} from "./../utils/Fixtures.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../core/GlobalReentrancyLock.sol";
@@ -628,10 +628,11 @@ contract SystemUnitTest is Test {
             bytes4(keccak256("supply(address,address,uint256)"))
         );
 
-        MorphoCompoundPCVDeposit deposit = new MorphoCompoundPCVDeposit(
+        MorphoPCVDeposit deposit = new MorphoPCVDeposit(
             address(core),
             address(mock),
             address(usdc),
+            address(0),
             address(mock),
             address(mock)
         );

@@ -217,7 +217,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2 {
 
         (uint256 amountToDrip, uint256 adjustedAmountToDrip) = getDripDetails(
             psm,
-            pcvDeposit
+            address(pcvDeposit)
         );
 
         /// Effects

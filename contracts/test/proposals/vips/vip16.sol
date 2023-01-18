@@ -28,7 +28,7 @@ import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {IPegStabilityModule} from "../../../peg/IPegStabilityModule.sol";
 import {ConstantPriceOracle} from "../../../oracle/ConstantPriceOracle.sol";
 import {IPCVDeposit, PCVDeposit} from "../../../pcv/PCVDeposit.sol";
-import {MorphoCompoundPCVDeposit} from "../../../pcv/morpho/MorphoCompoundPCVDeposit.sol";
+import {MorphoPCVDeposit} from "../../../pcv/morpho/MorphoPCVDeposit.sol";
 import {IVoltMigrator, VoltMigrator} from "../../../volt/VoltMigrator.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "../../../core/GlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "../../../limiter/GlobalRateLimitedMinter.sol";
@@ -161,21 +161,23 @@ contract vip16 is Proposal {
 
         /// PCV Deposits
         {
-            MorphoCompoundPCVDeposit morphoDaiPCVDeposit = new MorphoCompoundPCVDeposit(
-                    addresses.mainnet("CORE"),
-                    addresses.mainnet("CDAI"),
-                    addresses.mainnet("DAI"),
-                    addresses.mainnet("MORPHO"),
-                    addresses.mainnet("MORPHO_LENS")
-                );
+            MorphoPCVDeposit morphoDaiPCVDeposit = new MorphoPCVDeposit(
+                addresses.mainnet("CORE"),
+                addresses.mainnet("CDAI"),
+                addresses.mainnet("DAI"),
+                addresses.mainnet("COMP"),
+                addresses.mainnet("MORPHO"),
+                addresses.mainnet("MORPHO_LENS")
+            );
 
-            MorphoCompoundPCVDeposit morphoUsdcPCVDeposit = new MorphoCompoundPCVDeposit(
-                    addresses.mainnet("CORE"),
-                    addresses.mainnet("CUSDC"),
-                    addresses.mainnet("USDC"),
-                    addresses.mainnet("MORPHO"),
-                    addresses.mainnet("MORPHO_LENS")
-                );
+            MorphoPCVDeposit morphoUsdcPCVDeposit = new MorphoPCVDeposit(
+                addresses.mainnet("CORE"),
+                addresses.mainnet("CUSDC"),
+                addresses.mainnet("USDC"),
+                addresses.mainnet("COMP"),
+                addresses.mainnet("MORPHO"),
+                addresses.mainnet("MORPHO_LENS")
+            );
 
             addresses.addMainnet(
                 "PCV_DEPOSIT_MORPHO_DAI",

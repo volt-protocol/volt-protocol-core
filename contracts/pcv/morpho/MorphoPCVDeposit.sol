@@ -73,8 +73,8 @@ contract MorphoPCVDeposit is PCVDepositV2 {
                 "MorphoPCVDeposit: Underlying mismatch"
             );
         }
+
         cToken = _cToken;
-        token = _underlying;
         morpho = _morpho;
         lens = _lens;
     }

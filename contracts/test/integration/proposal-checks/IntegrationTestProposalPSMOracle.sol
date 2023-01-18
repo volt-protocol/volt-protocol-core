@@ -84,7 +84,6 @@ contract IntegrationTestProposalPSMOracle is Test {
         IERC20 volt = IERC20(addresses.mainnet("VOLT"));
         IERC20 token = IERC20(addresses.mainnet("USDC"));
         uint256 amountTokens = 100e6;
-        uint256 time = block.timestamp;
 
         // Read pre-proposal VOLT minted for a known amount of USDC
         deal(address(token), address(this), amountTokens);
