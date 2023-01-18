@@ -62,7 +62,10 @@ contract UnitTestPegStabilityModule is Test {
         underlyingToken = IERC20(address(new MockERC20()));
         core = getCoreV2();
         volt = core.volt();
-        (oracle, ) = getLocalOracleSystem(address(core), voltFloorPrice);
+        (oracle, ) = getLocalOracleSystem(
+            address(core),
+            uint112(voltFloorPrice)
+        );
         lock = IGlobalReentrancyLock(
             address(new GlobalReentrancyLock(address(core)))
         );

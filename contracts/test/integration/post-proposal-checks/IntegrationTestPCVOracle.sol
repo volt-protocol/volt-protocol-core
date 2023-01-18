@@ -37,10 +37,7 @@ contract IntegrationTestPCVOracle is PostProposalCheck {
 
     // check that we can read the pcv and it does not revert
     function testReadPcv() public {
-        (uint256 liquidPcv, uint256 illiquidPcv, uint256 totalPcv) = pcvOracle
-            .getTotalPcv();
-        assertTrue(liquidPcv > 0, "Zero liquid PCV");
-        assertTrue(illiquidPcv == 0, "Illiquid PCV");
+        uint256 totalPcv = pcvOracle.getTotalPcv();
         assertTrue(totalPcv > 0, "Zero PCV");
     }
 

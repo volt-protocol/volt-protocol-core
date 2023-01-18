@@ -27,11 +27,8 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     /// know the USD value of PCV deployed in a given venue.
     mapping(address => address) public venueToOracle;
 
-    ///@notice set of whitelisted pcvDeposit addresses for withdrawal
-    EnumerableSet.AddressSet private liquidVenues;
-
-    ///@notice set of whitelisted pcvDeposit addresses for withdrawal
-    EnumerableSet.AddressSet private illiquidVenues;
+    ///@notice set of pcv deposit addresses
+    EnumerableSet.AddressSet private venues;
 
     /// @param _core reference to the core smart contract
     constructor(address _core) CoreRefV2(_core) {}
@@ -39,149 +36,58 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     // ----------- Getters -----------
 
     /// @notice return all addresses listed as liquid venues
-    function getLiquidVenues() external view returns (address[] memory) {
-        return liquidVenues.values();
+    function getVenues() external view returns (address[] memory) {
+        return venues.values();
     }
 
-    /// @notice return all addresses listed as illiquid venues
-    function getIlliquidVenues() external view returns (address[] memory) {
-        return illiquidVenues.values();
-    }
-
-    /// @notice return all addresses that are liquid or illiquid venues
-    function getAllVenues() external view returns (address[] memory) {
-        uint256 liquidVenueLength = liquidVenues.length();
-        uint256 illiquidVenueLength = illiquidVenues.length();
-        address[] memory allVenues = new address[](
-            liquidVenueLength + illiquidVenueLength
-        );
-        uint256 j = 0;
-
-        /// there will never be more than 100 total venues
-        /// so keep the math unchecked to save on gas
-        unchecked {
-            for (uint256 i = 0; i < liquidVenueLength; i++) {
-                allVenues[j] = liquidVenues.at(i);
-                j++;
-            }
-
-            for (uint256 i = 0; i < illiquidVenueLength; i++) {
-                allVenues[j] = illiquidVenues.at(i);
-                j++;
-            }
-        }
-
-        return allVenues;
-    }
-
-    /// @notice check if a venue is in the list of illiquid venues
-    /// @param illiquidVenue address to check
-    /// @return boolean whether or not the illiquidVenue is in the illiquid venue list
-    function isIlliquidVenue(address illiquidVenue) public view returns (bool) {
-        return illiquidVenues.contains(illiquidVenue);
-    }
-
-    /// @notice check if a venue is in the list of illiquid venues
-    /// @param liquidVenue address to check
-    /// @return boolean whether or not the liquidVenue is in the illiquid venue list
-    function isLiquidVenue(address liquidVenue) public view returns (bool) {
-        return liquidVenues.contains(liquidVenue);
-    }
-
-    /// @notice check if a venue is in the list of liquid or illiquid venues
+    /// @notice check if a venue is in the list of venues
     /// @param venue address to check
-    /// @return boolean whether or not the venue is part of the liquid or illiquid venue list
-    function isVenue(address venue) external view returns (bool) {
-        return liquidVenues.contains(venue) || illiquidVenues.contains(venue);
+    /// @return boolean whether or not the venue is in the venue list
+    function isVenue(address venue) public view returns (bool) {
+        return venues.contains(venue);
     }
 
-    /// @notice get the total PCV balance by looping through the liquid and illiquid pcv deposits
+    /// @notice get the total PCV balance by looping through the pcv deposits
     /// @dev this function is meant to be used offchain, as it is pretty gas expensive.
-    function getTotalPcv()
-        external
-        view
-        returns (uint256 liquidPcv, uint256 illiquidPcv, uint256 totalPcv)
-    {
+    function getTotalPcv() external view returns (uint256 totalPcv) {
         require(
             globalReentrancyLock().isUnlocked(),
             "PCVOracle: cannot read while entered"
         );
 
-        uint256 liquidVenueLength = liquidVenues.length();
-        uint256 illiquidVenueLength = illiquidVenues.length();
+        uint256 venueLength = venues.length();
 
         /// there will never be more than 100 total venues
         /// so keep the math unchecked to save on gas
         unchecked {
-            for (uint256 i = 0; i < liquidVenueLength; i++) {
-                address depositAddress = liquidVenues.at(i);
+            for (uint256 i = 0; i < venueLength; i++) {
+                address depositAddress = venues.at(i);
                 (uint256 oracleValue, bool oracleValid) = IOracleV2(
                     venueToOracle[depositAddress]
                 ).read();
                 require(oracleValid, "PCVOracle: invalid oracle value");
 
                 uint256 balance = IPCVDepositV2(depositAddress).balance();
-                liquidPcv += (oracleValue * balance) / 1e18;
+                totalPcv += (oracleValue * balance) / 1e18;
             }
-
-            for (uint256 i = 0; i < illiquidVenueLength; i++) {
-                address depositAddress = illiquidVenues.at(i);
-                (uint256 oracleValue, bool oracleValid) = IOracleV2(
-                    venueToOracle[depositAddress]
-                ).read();
-                require(oracleValid, "PCVOracle: invalid oracle value");
-
-                uint256 balance = IPCVDepositV2(depositAddress).balance();
-                illiquidPcv += (oracleValue * balance) / 1e18;
-            }
-
-            totalPcv = liquidPcv + illiquidPcv;
         }
     }
 
     /// ------------- PCV Deposit Only API -------------
 
-    /// @notice update the cumulative and last updated times
-    /// only callable by a liquid pcv deposit that has previously been listed
+    /// @notice only callable by a pcv deposit that has previously been listed
     /// in the PCV Oracle, because an oracle has to be set for the msg.sender.
     /// this allows for lazy evaluation of the TWAPCV
     /// @param deltaBalance the amount of PCV change in the venue
     /// @param deltaProfit the amount of profit in the venue
-    function updateLiquidBalance(
+    function updateBalance(
         int256 deltaBalance,
         int256 deltaProfit
-    )
-        public
-        onlyVoltRole(VoltRoles.LIQUID_PCV_DEPOSIT)
-        isGlobalReentrancyLocked(2)
-    {
+    ) public onlyVoltRole(VoltRoles.PCV_DEPOSIT) isGlobalReentrancyLocked(2) {
         _readOracleAndUpdateAccounting(
             msg.sender, // venue
             deltaBalance, // deltaBalance
-            deltaProfit, // deltaProfit
-            true // isLiquid
-        );
-    }
-
-    /// @notice update the cumulative and last updated times
-    /// only callable by an illiquid pcv deposit that has previously been listed
-    /// in the PCV Oracle, because an oracle has to be set for the msg.sender.
-    /// this allows for lazy evaluation of the TWAPCV
-    /// @param deltaProfit the amount of profit in the venue
-    /// @param deltaBalance the amount of PCV change in the venue
-    function updateIlliquidBalance(
-        int256 deltaBalance,
-        int256 deltaProfit
-    )
-        public
-        onlyVoltRole(VoltRoles.ILLIQUID_PCV_DEPOSIT)
-        isGlobalReentrancyLocked(2)
-    {
-        _readOracleAndUpdateAccounting(
-            msg.sender, // venue
-            deltaBalance, // deltaBalance
-            deltaProfit, // deltaProfit
-            false // isLiquid
+            deltaProfit // deltaProfit
         );
     }
 
@@ -192,17 +98,9 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     /// and losses that are not properly reported by the PCVDeposit
     function setVenueOracle(
         address venue,
-        bool isLiquid,
         address newOracle
     ) external onlyGovernor globalLock(1) {
-        if (isLiquid) {
-            require(isLiquidVenue(venue), "PCVOracle: invalid liquid venue");
-        } else {
-            require(
-                isIlliquidVenue(venue),
-                "PCVOracle: invalid illiquid venue"
-            );
-        }
+        require(isVenue(venue), "PCVOracle: invalid venue");
 
         // Read oracles and check validity
         uint256 oldOracleValue;
@@ -232,12 +130,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
                 int256(oldBalanceUSD);
 
             // Update accounting (diff is reported as a profit/loss)
-            _updateAccounting(
-                venue,
-                deltaBalanceUSD,
-                deltaBalanceUSD,
-                isLiquid
-            );
+            _updateAccounting(venue, deltaBalanceUSD, deltaBalanceUSD);
         }
     }
 
@@ -246,32 +139,27 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     /// This locks system at level 1, because it needs to accrue
     /// on the added PCV Deposits (that locks at level 2).
     function addVenues(
-        address[] calldata venues,
-        address[] calldata oracles,
-        bool[] calldata isLiquid
+        address[] calldata venuesToAdd,
+        address[] calldata oracles
     ) external onlyGovernor globalLock(1) {
-        uint256 length = venues.length;
+        uint256 length = venuesToAdd.length;
         require(oracles.length == length, "PCVOracle: invalid oracles length");
-        require(
-            isLiquid.length == length,
-            "PCVOracle: invalid isLiquid length"
-        );
+
         for (uint256 i = 0; i < length; ) {
-            require(venues[i] != address(0), "PCVOracle: invalid venue");
+            require(venuesToAdd[i] != address(0), "PCVOracle: invalid venue");
             require(oracles[i] != address(0), "PCVOracle: invalid oracle");
 
             // add venue in state
-            _setVenueOracle(venues[i], oracles[i]);
-            _addVenue(venues[i], isLiquid[i]);
+            _setVenueOracle(venuesToAdd[i], oracles[i]);
+            _addVenue(venuesToAdd[i]);
 
-            uint256 balance = IPCVDepositV2(venues[i]).accrue();
+            uint256 balance = IPCVDepositV2(venuesToAdd[i]).accrue();
             if (balance != 0) {
                 // no need for safe cast here because balance is always > 0
                 _readOracleAndUpdateAccounting(
-                    venues[i],
+                    venuesToAdd[i],
                     int256(balance),
-                    0,
-                    isLiquid[i]
+                    0
                 );
             }
 
@@ -286,31 +174,28 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     /// This locks system at level 1, because it needs to accrue
     /// on the added PCV Deposits (that locks at level 2).
     function removeVenues(
-        address[] calldata venues,
-        bool[] calldata isLiquid
+        address[] calldata venuesToRemove
     ) external onlyGovernor globalLock(1) {
-        uint256 length = venues.length;
-        require(
-            isLiquid.length == length,
-            "PCVOracle: invalid isLiquid length"
-        );
+        uint256 length = venuesToRemove.length;
         for (uint256 i = 0; i < length; ) {
-            require(venues[i] != address(0), "PCVOracle: invalid venue");
+            require(
+                venuesToRemove[i] != address(0),
+                "PCVOracle: invalid venue"
+            );
 
-            uint256 balance = IPCVDepositV2(venues[i]).accrue();
+            uint256 balance = IPCVDepositV2(venuesToRemove[i]).accrue();
             if (balance != 0) {
                 // no need for safe cast here because balance is always > 0
                 _readOracleAndUpdateAccounting(
-                    venues[i],
+                    venuesToRemove[i],
                     -1 * int256(balance),
-                    0,
-                    isLiquid[i]
+                    0
                 );
             }
 
             // remove venue from state
-            _setVenueOracle(venues[i], address(0));
-            _removeVenue(venues[i], isLiquid[i]);
+            _setVenueOracle(venuesToRemove[i], address(0));
+            _removeVenue(venuesToRemove[i]);
 
             unchecked {
                 ++i;
@@ -332,8 +217,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     function _readOracleAndUpdateAccounting(
         address venue,
         int256 deltaBalance,
-        int256 deltaProfit,
-        bool isLiquid
+        int256 deltaProfit
     ) private {
         // Read oracle to get USD values of delta
         address oracle = venueToOracle[venue];
@@ -344,19 +228,17 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         int256 deltaBalanceUSD = (int256(oracleValue) * deltaBalance) / 1e18;
         int256 deltaProfitUSD = (int256(oracleValue) * deltaProfit) / 1e18;
 
-        _updateAccounting(venue, deltaBalanceUSD, deltaProfitUSD, isLiquid);
+        _updateAccounting(venue, deltaBalanceUSD, deltaProfitUSD);
     }
 
     function _updateAccounting(
         address venue,
         int256 deltaBalanceUSD,
-        int256 deltaProfitUSD,
-        bool isLiquid
+        int256 deltaProfitUSD
     ) private {
         // Emit event
         emit PCVUpdated(
             venue,
-            isLiquid,
             block.timestamp,
             deltaBalanceUSD,
             deltaProfitUSD
@@ -364,31 +246,19 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
 
         // @dev:
         // Later, we could store accumulative balances and profits
-        // for each venues here, in stroage if needed by market governance.
+        // for each venues here, in storage if needed by market governance.
         // For now to save on gas, we only emit events.
         // The PCVOracle can easily be swapped to a new implementation
         // by calling setPCVOracle() on Core.
     }
 
-    function _addVenue(address venue, bool isLiquid) private {
-        if (isLiquid) {
-            liquidVenues.add(venue);
-        } else {
-            illiquidVenues.add(venue);
-        }
-
-        emit VenueAdded(venue, isLiquid, block.timestamp);
+    function _addVenue(address venue) private {
+        require(venues.add(venue), "PCVOracle: venue already listed");
+        emit VenueAdded(venue, block.timestamp);
     }
 
-    function _removeVenue(address venue, bool isLiquid) private {
-        bool removed;
-        if (isLiquid) {
-            removed = liquidVenues.remove(venue);
-        } else {
-            removed = illiquidVenues.remove(venue);
-        }
-        require(removed, "PCVOracle: venue not found");
-
-        emit VenueRemoved(venue, isLiquid, block.timestamp);
+    function _removeVenue(address venue) private {
+        require(venues.remove(venue), "PCVOracle: venue not found");
+        emit VenueRemoved(venue, block.timestamp);
     }
 }

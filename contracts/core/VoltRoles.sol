@@ -59,10 +59,6 @@ library VoltRoles {
                                  Minor Roles
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice granted to liquid PCV Deposits
-    bytes32 internal constant LIQUID_PCV_DEPOSIT =
-        keccak256("LIQUID_PCV_DEPOSIT_ROLE");
-    /// @notice granted to illiquid PCV Deposits
-    bytes32 internal constant ILLIQUID_PCV_DEPOSIT =
-        keccak256("ILLIQUID_PCV_DEPOSIT_ROLE");
+    /// @notice granted to PCV Deposits
+    bytes32 internal constant PCV_DEPOSIT = keccak256("PCV_DEPOSIT_ROLE");
 }

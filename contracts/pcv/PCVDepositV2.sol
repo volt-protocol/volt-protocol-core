@@ -80,10 +80,7 @@ abstract contract PCVDepositV2 is IPCVDepositV2, CoreRefV2 {
 
         int256 endingRecordedBalance = balance().toInt256();
 
-        _liquidPcvOracleHook(
-            endingRecordedBalance - startingRecordedBalance,
-            profit
-        );
+        _pcvOracleHook(endingRecordedBalance - startingRecordedBalance, profit);
 
         emit Deposit(msg.sender, amount);
     }
@@ -106,7 +103,7 @@ abstract contract PCVDepositV2 is IPCVDepositV2, CoreRefV2 {
         int256 profit = _recordPNL(); /// update deposit amount and fire harvest event
 
         /// if any amount of PCV is withdrawn and no gains, delta is negative
-        _liquidPcvOracleHook(profit, profit);
+        _pcvOracleHook(profit, profit);
 
         return lastRecordedBalance; /// return updated pcv amount
     }
@@ -126,7 +123,7 @@ abstract contract PCVDepositV2 is IPCVDepositV2, CoreRefV2 {
         int256 profit = _withdraw(to, amount, true);
 
         /// if any amount of PCV is withdrawn and no gains, delta is negative
-        _liquidPcvOracleHook(-(amount.toInt256()) + profit, profit);
+        _pcvOracleHook(-(amount.toInt256()) + profit, profit);
     }
 
     /// @notice withdraw all tokens from Morpho
@@ -142,7 +139,7 @@ abstract contract PCVDepositV2 is IPCVDepositV2, CoreRefV2 {
         _withdraw(to, lastRecordedBalance, false);
 
         /// all PCV withdrawn, send call in with amount withdrawn negative if any amount is withdrawn
-        _liquidPcvOracleHook(-recordedBalance, profit);
+        _pcvOracleHook(-recordedBalance, profit);
     }
 
     /// @notice withdraw ERC20 from the contract

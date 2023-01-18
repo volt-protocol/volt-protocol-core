@@ -27,6 +27,7 @@ import {VoltSystemOracle} from "../../../oracle/VoltSystemOracle.sol";
 import {PegStabilityModule} from "../../../peg/PegStabilityModule.sol";
 import {IPegStabilityModule} from "../../../peg/IPegStabilityModule.sol";
 import {ConstantPriceOracle} from "../../../oracle/ConstantPriceOracle.sol";
+import {CompoundBadDebtSentinel} from "../../../pcv/compound/CompoundBadDebtSentinel.sol";
 import {IPCVDeposit, PCVDeposit} from "../../../pcv/PCVDeposit.sol";
 import {MorphoPCVDeposit} from "../../../pcv/morpho/MorphoPCVDeposit.sol";
 import {IVoltMigrator, VoltMigrator} from "../../../volt/VoltMigrator.sol";
@@ -41,10 +42,23 @@ and tying them together properly.
 */
 
 contract vip16 is Proposal {
+    using SafeCast for *;
+
     string public name = "VIP16";
 
     /// Parameters
     uint256 public constant TIMELOCK_DELAY = 86400;
+
+    /// ---------- ORACLE PARAM ----------
+
+    /// @notice price changes by 14 basis points per month,
+    /// making non compounded annual rate 1.68%
+    uint112 monthlyChangeRate = 0.0014e18;
+
+    /// ---------- COMPOUND BAD DEBT SENTINEL PARAM ----------
+
+    /// @notice bad debt threshold is $1m
+    uint256 badDebtThreshold = 1_000_000e18;
 
     /// ---------- RATE LIMITED MINTER PARAMS ----------
 
@@ -65,7 +79,7 @@ contract vip16 is Proposal {
     /// replenish 500k VOLT per day ($5.787 dollars per second)
     uint128 public constant RATE_LIMIT_PER_SECOND_EXIT = 5787037037037037000;
 
-    /// buffer cap of 1.5m VOLT
+    /// buffer cap of 0.5m VOLT
     uint128 public constant BUFFER_CAP_EXITING = 500_000e18;
 
     /// ---------- ALLOCATOR PARAMS ----------
@@ -134,31 +148,6 @@ contract vip16 is Proposal {
             );
         }
 
-        /// VOLT rate
-        {
-            // read current on-chain oracle, and copy its values
-            // to deploy the new oracle
-            // todo: fill in actual hardcoded values, or deploy VIP16
-            // at the start / in the middle of a compounding period.
-            VoltSystemOracle oldVso = VoltSystemOracle(
-                0xB8Ac4931A618B06498966cba3a560B867D8f567F
-            );
-            uint16 monthlyChangeRateBasisPoints = uint16(
-                oldVso.monthlyChangeRateBasisPoints()
-            );
-            uint40 periodStartTime = uint40(oldVso.periodStartTime());
-            uint200 oraclePrice = uint200(oldVso.oraclePrice());
-
-            VoltSystemOracle vso = new VoltSystemOracle(
-                addresses.mainnet("CORE"),
-                monthlyChangeRateBasisPoints,
-                periodStartTime,
-                oraclePrice
-            );
-
-            addresses.addMainnet("VOLT_SYSTEM_ORACLE", address(vso));
-        }
-
         /// PCV Deposits
         {
             MorphoPCVDeposit morphoDaiPCVDeposit = new MorphoPCVDeposit(
@@ -187,6 +176,15 @@ contract vip16 is Proposal {
                 "PCV_DEPOSIT_MORPHO_USDC",
                 address(morphoUsdcPCVDeposit)
             );
+        }
+
+        /// VOLT rate
+        {
+            VoltSystemOracle vso = new VoltSystemOracle(
+                addresses.mainnet("CORE")
+            );
+
+            addresses.addMainnet("VOLT_SYSTEM_ORACLE", address(vso));
         }
 
         /// Peg Stability
@@ -302,10 +300,21 @@ contract vip16 is Proposal {
 
             PCVRouter pcvRouter = new PCVRouter(addresses.mainnet("CORE"));
 
+            CompoundBadDebtSentinel badDebtSentinel = new CompoundBadDebtSentinel(
+                    addresses.mainnet("CORE"),
+                    addresses.mainnet("COMPTROLLER_V2"),
+                    address(pcvGuardian),
+                    badDebtThreshold
+                );
+
             addresses.addMainnet("SYSTEM_ENTRY", address(systemEntry));
             addresses.addMainnet("PCV_SWAPPER_MAKER", address(pcvSwapperMaker));
             addresses.addMainnet("PCV_GUARDIAN", address(pcvGuardian));
             addresses.addMainnet("PCV_ROUTER", address(pcvRouter));
+            addresses.addMainnet(
+                "COMPOUND_BAD_DEBT_SENTINEL",
+                address(badDebtSentinel)
+            );
         }
 
         /// Accounting
@@ -342,6 +351,9 @@ contract vip16 is Proposal {
         );
         PCVOracle pcvOracle = PCVOracle(addresses.mainnet("PCV_ORACLE"));
         PCVRouter pcvRouter = PCVRouter(addresses.mainnet("PCV_ROUTER"));
+        VoltSystemOracle oracle = VoltSystemOracle(
+            addresses.mainnet("VOLT_SYSTEM_ORACLE")
+        );
 
         /// Set references in Core
         core.setVolt(IVolt(addresses.mainnet("VOLT")));
@@ -400,22 +412,13 @@ contract vip16 is Proposal {
             addresses.mainnet("PSM_ALLOCATOR")
         );
 
-        core.createRole(VoltRoles.LIQUID_PCV_DEPOSIT, VoltRoles.GOVERNOR);
-        core.createRole(VoltRoles.ILLIQUID_PCV_DEPOSIT, VoltRoles.GOVERNOR);
+        core.createRole(VoltRoles.PCV_DEPOSIT, VoltRoles.GOVERNOR);
         core.grantRole(
-            VoltRoles.LIQUID_PCV_DEPOSIT,
-            addresses.mainnet("PSM_DAI")
-        );
-        core.grantRole(
-            VoltRoles.LIQUID_PCV_DEPOSIT,
-            addresses.mainnet("PSM_USDC")
-        );
-        core.grantRole(
-            VoltRoles.LIQUID_PCV_DEPOSIT,
+            VoltRoles.PCV_DEPOSIT,
             addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
         );
         core.grantRole(
-            VoltRoles.LIQUID_PCV_DEPOSIT,
+            VoltRoles.PCV_DEPOSIT,
             addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
         );
 
@@ -425,6 +428,7 @@ contract vip16 is Proposal {
 
         core.grantGuardian(addresses.mainnet("PCV_GUARDIAN"));
         core.grantGuardian(addresses.mainnet("GOVERNOR")); /// team multisig
+        core.grantGuardian(addresses.mainnet("COMPOUND_BAD_DEBT_SENTINEL"));
 
         core.grantRateLimitedMinter(addresses.mainnet("PSM_DAI"));
         core.grantRateLimitedMinter(addresses.mainnet("PSM_USDC"));
@@ -494,16 +498,25 @@ contract vip16 is Proposal {
         oracles[0] = addresses.mainnet("ORACLE_CONSTANT_DAI");
         oracles[1] = addresses.mainnet("ORACLE_CONSTANT_USDC");
 
-        bool[] memory isLiquid = new bool[](2);
-        isLiquid[0] = true;
-        isLiquid[1] = true;
-
-        pcvOracle.addVenues(venues, oracles, isLiquid);
+        pcvOracle.addVenues(venues, oracles);
 
         /// Configure PCV Router
         address[] memory swappers = new address[](1);
         swappers[0] = addresses.mainnet("PCV_SWAPPER_MAKER");
         pcvRouter.addPCVSwappers(swappers);
+
+        CompoundBadDebtSentinel badDebtSentinel = CompoundBadDebtSentinel(
+            addresses.mainnet("COMPOUND_BAD_DEBT_SENTINEL")
+        );
+
+        /// add morpho PCV deposits to the compound bad debt sentinel
+        badDebtSentinel.addPCVDeposits(venues);
+
+        /// Enable new oracle
+        oracle.initialize(
+            addresses.mainnet("VOLT_SYSTEM_ORACLE_144_BIPS"),
+            monthlyChangeRate
+        );
 
         /// Allow all addresses to execute proposals once completed
         timelockController.grantRole(
@@ -532,12 +545,28 @@ contract vip16 is Proposal {
         MigratorRouter migratorRouter = MigratorRouter(
             addresses.mainnet("V1_MIGRATION_ROUTER")
         );
+        VoltSystemOracle oracle = VoltSystemOracle(
+            addresses.mainnet("VOLT_SYSTEM_ORACLE")
+        );
+        VoltSystemOracle oldOracle = VoltSystemOracle(
+            addresses.mainnet("VOLT_SYSTEM_ORACLE_144_BIPS")
+        );
+        CompoundBadDebtSentinel badDebtSentinel = CompoundBadDebtSentinel(
+            addresses.mainnet("COMPOUND_BAD_DEBT_SENTINEL")
+        );
 
         /*--------------------------------------------------------------------
         Validate that everything reference Core properly
         --------------------------------------------------------------------*/
         assertEq(
             address(CoreRefV2(addresses.mainnet("VOLT")).core()),
+            address(core)
+        );
+        assertEq(
+            address(
+                CoreRefV2(addresses.mainnet("COMPOUND_BAD_DEBT_SENTINEL"))
+                    .core()
+            ),
             address(core)
         );
         assertEq(
@@ -637,6 +666,12 @@ contract vip16 is Proposal {
             address(core)
         );
 
+        assertApproxEq(
+            oracle.getCurrentOraclePrice().toInt256(),
+            oldOracle.getCurrentOraclePrice().toInt256(),
+            0
+        );
+
         /*--------------------------------------------------------------------
         Validate that the smart contracts are correctly linked to each other.
         --------------------------------------------------------------------*/
@@ -676,13 +711,13 @@ contract vip16 is Proposal {
         assertEq(psmToken2, addresses.mainnet("USDC"));
 
         // pcv oracle
-        assertEq(pcvOracle.getAllVenues().length, 2);
+        assertEq(pcvOracle.getVenues().length, 2);
         assertEq(
-            pcvOracle.getAllVenues()[0],
+            pcvOracle.getVenues()[0],
             addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
         );
         assertEq(
-            pcvOracle.getAllVenues()[1],
+            pcvOracle.getVenues()[1],
             addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
         );
 
@@ -707,5 +742,26 @@ contract vip16 is Proposal {
             address(migratorRouter.OLD_VOLT()),
             addresses.mainnet("V1_VOLT")
         );
+
+        /// compound bad debt sentinel
+        assertTrue(
+            badDebtSentinel.isCompoundPcvDeposit(
+                addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
+            )
+        );
+        assertTrue(
+            badDebtSentinel.isCompoundPcvDeposit(
+                addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
+            )
+        );
+        assertEq(
+            badDebtSentinel.pcvGuardian(),
+            addresses.mainnet("PCV_GUARDIAN")
+        );
+        assertEq(
+            badDebtSentinel.comptroller(),
+            addresses.mainnet("COMPTROLLER_V2")
+        );
+        assertEq(badDebtSentinel.badDebtThreshold(), badDebtThreshold);
     }
 }
