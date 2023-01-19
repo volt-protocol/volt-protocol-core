@@ -178,10 +178,11 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
         vm.warp(block.timestamp + 3 days);
 
         // above limit rate reverts
+        uint256 largeAmount = grlm.bufferCap() * 2;
         vm.startPrank(user);
-        dai.approve(address(daipsm), grlm.bufferCap() * 2);
+        dai.approve(address(daipsm), largeAmount);
         vm.expectRevert("RateLimited: rate limit hit");
-        daipsm.mint(user, grlm.bufferCap() * 2, 0);
+        daipsm.mint(user, largeAmount, 0);
         vm.stopPrank();
     }
 
