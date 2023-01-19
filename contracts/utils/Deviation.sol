@@ -49,6 +49,17 @@ library Deviation {
         return (basisPoints < 0 ? basisPoints * -1 : basisPoints).toUint256();
     }
 
+    /// @notice return the percent deviation between a and b in basis points terms
+    function calculateDeviationBasisPoints(
+        int256 a,
+        int256 b
+    ) internal pure returns (int256) {
+        int256 delta = a - b;
+        int256 basisPoints = (delta * Constants.BP_INT) / a;
+
+        return basisPoints;
+    }
+
     /// @notice function to return whether or not the new price is within
     /// the acceptable deviation threshold
     function isWithinDeviationThreshold(

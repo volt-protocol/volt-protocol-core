@@ -116,6 +116,11 @@ contract PCVRouter is IPCVRouter, CoreRefV2 {
             IPCVDeposit(destination).balanceReportedIn() == destinationAsset,
             "PCVRouter: invalid destination asset"
         );
+
+        if (sourceAsset != destinationAsset) {
+            require(swapper != address(0), "MarketGovernance: invalid swapper");
+        }
+
         // Check swapper, if applicable
         if (swapper != address(0)) {
             require(isPCVSwapper(swapper), "PCVRouter: invalid swapper");
