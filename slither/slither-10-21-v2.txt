@@ -5,9 +5,9 @@ Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#functio
 Response: This is expected behavior because the governor needs to be able to 
 send ether as part of an emergency action.
 
-OracleRef.readOracle() (contracts/refs/OracleRef.sol#81-104) performs a multiplication on the result of a division:
-	- _peg = _peg.div(scalingFactor) (contracts/refs/OracleRef.sol#97)
-	- _peg = _peg.mul(scalingFactor) (contracts/refs/OracleRef.sol#100)
+OracleRef.readOracle() (contracts/v1/OracleRef.sol#81-104) performs a multiplication on the result of a division:
+	- _peg = _peg.div(scalingFactor) (contracts/v1/OracleRef.sol#97)
+	- _peg = _peg.mul(scalingFactor) (contracts/v1/OracleRef.sol#100)
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#divide-before-multiply
 Response: This is a false positive because those operations are inside different parts
 of an if else statement meaning you can only execute one or the other, but not both.
@@ -21,15 +21,15 @@ Response: This equality is not dangerous because it is ensuring the block number
 entered is the current block number.
 
 PegStabilityModule.constructor(address,address,address,int256,bool,IERC20,uint128,uint128).backupOracle (contracts/peg/PegStabilityModule.sol#46) shadows:
-	- OracleRef.backupOracle (contracts/refs/OracleRef.sol#22) (state variable)
-	- IOracleRef.backupOracle() (contracts/refs/IOracleRef.sol#39) (function)
+	- OracleRef.backupOracle (contracts/v1/OracleRef.sol#22) (state variable)
+	- IOracleRef.backupOracle() (contracts/v1/IOracleRef.sol#39) (function)
 PegStabilityModule.constructor(address,address,address,int256,bool,IERC20,uint128,uint128).decimalsNormalizer (contracts/peg/PegStabilityModule.sol#47) shadows:
-	- OracleRef.decimalsNormalizer (contracts/refs/OracleRef.sol#25) (state variable)
-	- IOracleRef.decimalsNormalizer() (contracts/refs/IOracleRef.sol#43) (function)
+	- OracleRef.decimalsNormalizer (contracts/v1/OracleRef.sol#25) (state variable)
+	- IOracleRef.decimalsNormalizer() (contracts/v1/IOracleRef.sol#43) (function)
 PegStabilityModule.constructor(address,address,address,int256,bool,IERC20,uint128,uint128).doInvert (contracts/peg/PegStabilityModule.sol#48) shadows:
-	- OracleRef.doInvert (contracts/refs/OracleRef.sol#28) (state variable)
-	- IOracleRef.doInvert() (contracts/refs/IOracleRef.sol#41) (function)
-OracleRef.constructor(address,address,address,int256,bool)._core (contracts/refs/OracleRef.sol#37) shadows:
+	- OracleRef.doInvert (contracts/v1/OracleRef.sol#28) (state variable)
+	- IOracleRef.doInvert() (contracts/v1/IOracleRef.sol#41) (function)
+OracleRef.constructor(address,address,address,int256,bool)._core (contracts/v1/OracleRef.sol#37) shadows:
 	- CoreRefV2._core (contracts/refs/CoreRefV2.sol#22) (state variable)
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#local-variable-shadowing
 Response: Acknowledged, will not fix.
@@ -110,10 +110,10 @@ Pragma version0.8.13 (contracts/core/IGlobalReentrancyLock.sol#1) allows old ver
 Pragma version0.8.13 (contracts/core/IPermissionsV2.sol#2) allows old versions
 Pragma version0.8.13 (contracts/core/PermissionsV2.sol#2) allows old versions
 Pragma version0.8.13 (contracts/core/VoltRoles.sol#2) allows old versions
-Pragma version0.8.13 (contracts/external/Decimal.sol#15) allows old versions
+Pragma version0.8.13 (contracts/v1/Decimal.sol#15) allows old versions
 Pragma version0.8.13 (contracts/external/IWETH.sol#1) allows old versions
 Pragma version=0.8.13 (contracts/minter/IGRLM.sol#2) allows old versions
-Pragma version0.8.13 (contracts/oracle/IOracle.sol#2) allows old versions
+Pragma version0.8.13 (contracts/v1/IOracle.sol#2) allows old versions
 Pragma version0.8.13 (contracts/pcv/IPCVDeposit.sol#2) allows old versions
 Pragma version0.8.13 (contracts/pcv/IPCVDepositBalances.sol#2) allows old versions
 Pragma version0.8.13 (contracts/pcv/PCVDeposit.sol#2) allows old versions
@@ -121,8 +121,8 @@ Pragma version0.8.13 (contracts/peg/INonCustodialPSM.sol#2) allows old versions
 Pragma version0.8.13 (contracts/peg/NonCustodialPSM.sol#2) allows old versions
 Pragma version0.8.13 (contracts/refs/CoreRefV2.sol#2) allows old versions
 Pragma version0.8.13 (contracts/refs/ICoreRefV2.sol#2) allows old versions
-Pragma version0.8.13 (contracts/refs/IOracleRef.sol#2) allows old versions
-Pragma version0.8.13 (contracts/refs/OracleRef.sol#2) allows old versions
+Pragma version0.8.13 (contracts/v1/IOracleRef.sol#2) allows old versions
+Pragma version0.8.13 (contracts/v1/OracleRef.sol#2) allows old versions
 Pragma version=0.8.13 (contracts/utils/IRateLimitedV2.sol#2) allows old versions
 Pragma version0.8.13 (contracts/volt/IVolt.sol#2) allows old versions
 solc-0.8.13 is not recommended for deployment

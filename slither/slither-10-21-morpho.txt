@@ -38,7 +38,7 @@ DAI returns true and has no validation checks, which means the only way the appr
 is if it is out of gas.
 
 MorphoCompoundPCVDeposit.constructor(address,address,address,address,address)._core (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#72) shadows:
-	- CoreRef._core (contracts/refs/CoreRef.sol#11) (state variable)
+	- CoreRef._core (contracts/v1/CoreRef.sol#11) (state variable)
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#local-variable-shadowing
 Response: Author acknowledges the issue, will not fix.
 
@@ -67,12 +67,12 @@ Reentrancy in MorphoCompoundPCVDeposit._recordPNL() (contracts/pcv/morpho/Morpho
 	- morpho.updateP2PIndexes(cToken) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#210)
 	Event emitted after the call(s):
 	- Harvest(token,profit,block.timestamp) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#232)
-Reentrancy in ERC20Allocator._skim(address,address) (contracts/pcv/utils/ERC20Allocator.sol#194-223):
+Reentrancy in ERC20Allocator._skim(address,address) (contracts/pcv/ERC20Allocator.sol#194-223):
 	External calls:
-	- PCVDeposit(psm).withdraw(pcvDeposit,amountToSkim) (contracts/pcv/utils/ERC20Allocator.sol#217)
-	- PCVDeposit(pcvDeposit).deposit() (contracts/pcv/utils/ERC20Allocator.sol#220)
+	- PCVDeposit(psm).withdraw(pcvDeposit,amountToSkim) (contracts/pcv/ERC20Allocator.sol#217)
+	- PCVDeposit(pcvDeposit).deposit() (contracts/pcv/ERC20Allocator.sol#220)
 	Event emitted after the call(s):
-	- Skimmed(amountToSkim,pcvDeposit) (contracts/pcv/utils/ERC20Allocator.sol#222)
+	- Skimmed(amountToSkim,pcvDeposit) (contracts/pcv/ERC20Allocator.sol#222)
 Reentrancy in MorphoCompoundPCVDeposit._withdraw(address,uint256,bool) (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#175-203):
 	External calls:
 	- _recordPNL() (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#191)
