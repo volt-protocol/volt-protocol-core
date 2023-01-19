@@ -239,9 +239,6 @@ abstract contract PCVDepositV2 is IPCVDepositV2, CoreRefV2 {
         /// remove funds from underlying venue
         _withdrawAndTransfer(amount, to);
 
-        /// transfer funds to recipient
-        IERC20(token).safeTransfer(to, amount);
-
         emit Withdrawal(msg.sender, to, amount);
     }
 

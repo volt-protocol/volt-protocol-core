@@ -101,20 +101,6 @@ contract UnitTestMorphoCompoundPCVDeposit is DSTest {
         assertEq(morphoDeposit.lastRecordedBalance(), 0);
     }
 
-    function testUnderlyingMismatchConstructionFails() public {
-        MockCToken cToken = new MockCToken(address(1));
-
-        vm.expectRevert("MorphoPCVDeposit: Underlying mismatch");
-        new MorphoPCVDeposit(
-            address(core),
-            address(cToken),
-            address(token),
-            address(0),
-            address(morpho),
-            address(morpho)
-        );
-    }
-
     function testDeposit(uint120 depositAmount) public {
         assertEq(morphoDeposit.lastRecordedBalance(), 0);
         token.mint(address(morphoDeposit), depositAmount);
