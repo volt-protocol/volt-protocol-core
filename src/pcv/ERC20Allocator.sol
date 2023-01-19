@@ -139,7 +139,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2 {
         emit DepositConnected(psm, pcvDeposit);
     }
 
-    /// @notice delete an existing deposit
+    /// @notice delete an existing deposit, callable only by governor
     /// @param pcvDeposit PCV Deposit to remove connection to PSM
     function deleteDeposit(address pcvDeposit) external override onlyGovernor {
         delete pcvDepositToPSM[pcvDeposit];

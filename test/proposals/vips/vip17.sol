@@ -17,7 +17,7 @@ contract vip17 is MultisigProposal {
     string public name = "VIP17";
 
     // TODO: put exact numbers here after execution of VIP15
-    uint256 public PCV_USDC = 30_000 * 1e6;
+    uint256 public PCV_USDC = 50_000 * 1e6;
     uint256 public PCV_DAI = 1_500_000 * 1e18;
 
     // Funds to send to each PSM
@@ -35,7 +35,18 @@ contract vip17 is MultisigProposal {
 
     function deploy(Addresses addresses) public pure {}
 
-    function afterDeploy(Addresses addresses, address deployer) public pure {}
+    function afterDeploy(Addresses addresses, address /* deployer*/) public {
+        // TODO: before actual onchain execution, check that the multisig
+        // actually has 50k USDC.
+        // If this is not the case, either:
+        // - update the proposal steps below to not fund the USDC PSM and/or Morpho USDC deposit
+        // - use the Maker PSM to convert some protocol DAI to USDC, and keep the proposal as-is
+        deal(
+            addresses.mainnet("USDC"),
+            addresses.mainnet("GOVERNOR"),
+            50_000 * 1e6
+        );
+    }
 
     function run(Addresses addresses, address /* deployer*/) public {
         _pushMultisigAction(

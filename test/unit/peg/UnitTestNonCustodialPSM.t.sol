@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {Test} from "@forge-std/Test.sol";
 import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
-import {getCoreV2} from "@test/unit/utils/Fixtures.sol";
+import {Constants} from "@voltprotocol/Constants.sol";
 import {Deviation} from "@test/unit/utils/Deviation.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
@@ -19,6 +20,7 @@ import {MockPCVDepositV3} from "@test/mock/MockPCVDepositV3.sol";
 import {VoltSystemOracle} from "@voltprotocol/oracle/VoltSystemOracle.sol";
 import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
+import {getCoreV2, getVoltSystemOracle} from "@test/unit/utils/Fixtures.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "@voltprotocol/rate-limits/GlobalRateLimitedMinter.sol";
 import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "@voltprotocol/rate-limits/GlobalSystemExitRateLimiter.sol";
@@ -104,9 +106,9 @@ contract NonCustodialPSMUnitTest is Test {
 
     /// ---------- ORACLE PARAMS ----------
 
-    uint200 public constant startPrice = 1.05e18;
-    uint40 public constant startTime = 1_000;
-    uint16 public constant monthlyChangeRateBasisPoints = 100;
+    uint112 public constant monthlyChangeRate = 0.01e18; /// 100 basis points
+    uint112 public constant startPrice = 1.05e18;
+    uint32 public constant startTime = 1_000;
 
     function setUp() public {
         vm.warp(startTime); /// warp past 0
@@ -119,9 +121,9 @@ contract NonCustodialPSMUnitTest is Test {
         );
         entry = new SystemEntry(address(core));
         dai = IERC20Mintable(address(new MockERC20()));
-        oracle = new VoltSystemOracle(
+        oracle = getVoltSystemOracle(
             coreAddress,
-            monthlyChangeRateBasisPoints,
+            monthlyChangeRate,
             startTime,
             startPrice
         );
@@ -209,10 +211,7 @@ contract NonCustodialPSMUnitTest is Test {
         assertTrue(core.isPCVController(address(psm)));
 
         assertEq(address(core.globalRateLimitedMinter()), address(grlm));
-        assertEq(
-            oracle.monthlyChangeRateBasisPoints(),
-            monthlyChangeRateBasisPoints
-        );
+        assertEq(oracle.monthlyChangeRate(), monthlyChangeRate);
 
         assertEq(psm.floor(), voltFloorPrice);
         assertEq(psm.ceiling(), voltCeilingPrice);
@@ -227,6 +226,29 @@ contract NonCustodialPSMUnitTest is Test {
         assertEq(psm.decimalsNormalizer(), custodialPsm.decimalsNormalizer());
         assertEq(psm.ceiling(), custodialPsm.ceiling());
         assertEq(psm.floor(), custodialPsm.floor());
+    }
+
+    function testGetMaxRedeemAmountIn() public {
+        uint256 buffer = gserl.buffer();
+        uint256 oraclePrice = psm.readOracle();
+
+        uint256 pcvDepositBalance = pcvDeposit.balance();
+
+        assertEq(
+            psm.getMaxRedeemAmountIn(),
+            (Math.min(buffer, pcvDepositBalance) * Constants.ETH_GRANULARITY) /
+                oraclePrice
+        );
+    }
+
+    function testMintFails() public {
+        vm.expectRevert("NonCustodialPSM: cannot mint");
+        psm.mint(address(0), 0, 0);
+    }
+
+    function testGetMintAmountOutFails() public {
+        vm.expectRevert("NonCustodialPSM: cannot mint");
+        psm.getMintAmountOut(0);
     }
 
     function testExitValueInversionPositive(uint96 amount) public {

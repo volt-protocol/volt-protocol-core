@@ -12,7 +12,6 @@ import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
-import {IPCVDepositBalances} from "@voltprotocol/pcv/IPCVDepositBalances.sol";
 import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
 import {MockCoreRefV2} from "@test/mock/MockCoreRefV2.sol";
 import {ERC20Allocator} from "@voltprotocol/pcv/ERC20Allocator.sol";
@@ -20,11 +19,12 @@ import {GenericCallMock} from "@test/mock/GenericCallMock.sol";
 import {MockPCVDepositV2} from "@test/mock/MockPCVDepositV2.sol";
 import {VoltSystemOracle} from "@voltprotocol/oracle/VoltSystemOracle.sol";
 import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
+import {IPCVDepositBalances} from "@voltprotocol/pcv/IPCVDepositBalances.sol";
 import {MorphoCompoundPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
-import {getCoreV2, getVoltAddresses, VoltAddresses} from "@test/unit/utils/Fixtures.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "@voltprotocol/rate-limits/GlobalRateLimitedMinter.sol";
+import {getCoreV2, getVoltAddresses, VoltAddresses, getVoltSystemOracle} from "@test/unit/utils/Fixtures.sol";
 
 /// deployment steps
 /// 1. core v2
@@ -115,9 +115,9 @@ contract SystemUnitTest is Test {
 
     /// ---------- ORACLE PARAMS ----------
 
-    uint200 public constant startPrice = 1.05e18;
-    uint40 public constant startTime = 1_000;
-    uint16 public constant monthlyChangeRateBasisPoints = 100;
+    uint112 public constant startPrice = 1.05e18;
+    uint112 public constant monthlyChangeRate = .01e18; /// 100 basis points
+    uint32 public constant startTime = 1_000;
 
     function setUp() public {
         vm.warp(startTime); /// warp past 0
@@ -131,9 +131,9 @@ contract SystemUnitTest is Test {
         );
         dai = IERC20Mintable(address(new MockERC20()));
         usdc = IERC20Mintable(address(new MockERC20()));
-        oracle = new VoltSystemOracle(
+        oracle = getVoltSystemOracle(
             address(core),
-            monthlyChangeRateBasisPoints,
+            monthlyChangeRate,
             startTime,
             startPrice
         );
@@ -349,10 +349,7 @@ contract SystemUnitTest is Test {
         assertTrue(pcvGuardian.isWhitelistAddress(address(daipsm)));
 
         assertEq(pcvGuardian.safeAddress(), address(timelockController));
-        assertEq(
-            oracle.monthlyChangeRateBasisPoints(),
-            monthlyChangeRateBasisPoints
-        );
+        assertEq(oracle.monthlyChangeRate(), monthlyChangeRate);
 
         {
             (

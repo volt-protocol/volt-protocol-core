@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {Test} from "@forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+import {Test} from "@forge-std/Test.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
-import {TestProposals} from "@test/proposals/TestProposals.sol";
-
 import {IOracleRef} from "@voltprotocol/v1/IOracleRef.sol";
 import {IOracleRefV2} from "@voltprotocol/refs/IOracleRefV2.sol";
+import {TestProposals} from "@test/proposals/TestProposals.sol";
 import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
 
 contract IntegrationTestProposalPSMOracle is Test {
