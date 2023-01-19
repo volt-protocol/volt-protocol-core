@@ -1,15 +1,19 @@
 [profile.default]
+# compilation
 optimizer = true
 optimizer_runs = 200
-contracts = "contracts"
+
+# paths
+src = 'src'
+test = 'test'
+script = 'script'
+
+# contracts in libs are excluded from code coverage reports
+libs = ['node_modules', 'test', 'script', 'src/external', 'src/v1']
 
 [fuzz]
 runs = 5000
 max_test_rejects = 100000
-
-# 'contracts/test', 'contracts/mock', 'forge-std/lib/ds-test/src', 'forge-std/src' are added here
-# to not appear in the code coverage result when using forge coverage
-libs = ['node_modules', 'lib', 'contracts/test', 'contracts/mock', 'forge-std/lib/ds-test/src', 'forge-std/src']
 
 [invariant]
 runs = 1000

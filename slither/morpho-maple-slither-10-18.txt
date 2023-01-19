@@ -17,9 +17,9 @@ DAI returns true and has no validation checks, which means the only way the appr
 is if it is out of gas.
 
 MaplePCVDeposit.constructor(address,address,address)._core (contracts/pcv/maple/MaplePCVDeposit.sol#61) shadows:
-	- CoreRef._core (contracts/refs/CoreRef.sol#11) (state variable)
+	- CoreRef._core (contracts/v1/CoreRef.sol#11) (state variable)
 MorphoCompoundPCVDeposit.constructor(address,address)._core (contracts/pcv/morpho/MorphoCompoundPCVDeposit.sol#39) shadows:
-	- CoreRef._core (contracts/refs/CoreRef.sol#11) (state variable)
+	- CoreRef._core (contracts/v1/CoreRef.sol#11) (state variable)
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#local-variable-shadowing
 Response: Author acknowledges the issue, will not fix.
 
