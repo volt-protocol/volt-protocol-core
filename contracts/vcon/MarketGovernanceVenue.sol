@@ -192,24 +192,20 @@ contract MarketGovernanceVenue is CoreRefV2 {
         /// source and dest venue balance measures the distance from being perfectly balanced
         /// validate source venue balance became more balanced
         require(
-            sourceVenueBalance < 0
-                ? /// if balance is under weight relative to vcon staked, ensure it doesn't go over balance
-                sourceVenueBalanceAfter > sourceVenueBalance &&
-                    sourceVenueBalanceAfter <= 0
-                : /// if balance is over weight relative to vcon staked, ensure it doesn't go under balance
-                sourceVenueBalanceAfter < sourceVenueBalance &&
+            sourceVenueBalance < 0 /// if balance is under weight relative to vcon staked, ensure it doesn't go over balance
+                ? sourceVenueBalanceAfter > sourceVenueBalance &&
+                    sourceVenueBalanceAfter <= 0 /// if balance is over weight relative to vcon staked, ensure it doesn't go under balance
+                : sourceVenueBalanceAfter < sourceVenueBalance &&
                     sourceVenueBalanceAfter >= 0,
             "MarketGovernance: src more imbalanced"
         );
 
         /// validate destination venue balance became more balanced
         require(
-            destinationVenueBalance < 0
-                ? /// if balance is under weight relative to vcon staked, ensure it doesn't go over balance
-                destinationVenueBalanceAfter > destinationVenueBalance &&
-                    destinationVenueBalanceAfter <= 0
-                : /// if balance is over weight relative to vcon staked, ensure it doesn't go under balance
-                destinationVenueBalanceAfter > destinationVenueBalance &&
+            destinationVenueBalance < 0 /// if balance is under weight relative to vcon staked, ensure it doesn't go over balance
+                ? destinationVenueBalanceAfter > destinationVenueBalance &&
+                    destinationVenueBalanceAfter <= 0 /// if balance is over weight relative to vcon staked, ensure it doesn't go under balance
+                : destinationVenueBalanceAfter > destinationVenueBalance &&
                     destinationVenueBalanceAfter >= 0,
             "MarketGovernance: src more imbalanced"
         );
@@ -266,7 +262,7 @@ contract MarketGovernanceVenue is CoreRefV2 {
     ) public view returns (int256) {
         uint256 venueDepositedVcon = totalVenueDepositedVcon[venue];
 
-        uint256 venueBalance = IPCVDepositV2(venue).balance();
+        uint256 venueBalance = pcvOracle().getVenueBalance(venue);
 
         if (venueDepositedVcon == 0 && venueBalance == 0) {
             return 0; /// perfectly balanced at 0 PCV
@@ -301,4 +297,9 @@ contract MarketGovernanceVenue is CoreRefV2 {
                 venueRatio.toInt256()
             );
     }
+
+    /// TODO add governance API's to change the pcv router
+    /// profitToVconRatio
+    /// approved routes
+    /// TODO add events
 }

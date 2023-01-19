@@ -43,6 +43,9 @@ interface IPCVOracle {
     /// @dev this function is meant to be used offchain, as it is pretty gas expensive.
     function getTotalPcv() external view returns (uint256 totalPcv);
 
+    /// @notice returns decimal normalized version of a given venues USD balance
+    function getVenueBalance(address venue) external view returns (uint256);
+
     // ----------- PCVDeposit-only State changing API --------------
 
     /// @notice hook on PCV deposit, callable when pcv oracle is set

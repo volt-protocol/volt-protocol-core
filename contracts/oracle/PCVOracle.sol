@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
+import {Constants} from "../Constants.sol";
 import {IOracleV2} from "./IOracleV2.sol";
 import {IPCVOracle} from "./IPCVOracle.sol";
 import {VoltRoles} from "../core/VoltRoles.sol";
@@ -68,9 +69,26 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
                 require(oracleValid, "PCVOracle: invalid oracle value");
 
                 uint256 balance = IPCVDepositV2(depositAddress).balance();
-                totalPcv += (oracleValue * balance) / 1e18;
+                totalPcv += (oracleValue * balance) / Constants.ETH_GRANULARITY;
             }
         }
+    }
+
+    /// @notice returns decimal normalized version of a given venues USD balance
+    function getVenueBalance(
+        address venue
+    ) external view override returns (uint256) {
+        // Read oracle to get USD values of delta
+        address oracle = venueToOracle[venue];
+
+        require(oracle != address(0), "PCVOracle: invalid caller deposit");
+        (uint256 oracleValue, bool oracleValid) = IOracleV2(oracle).read();
+
+        require(oracleValid, "PCVOracle: invalid oracle value");
+        uint256 venueBalance = IPCVDepositV2(venue).balance();
+
+        // Compute USD values of deposit
+        return (oracleValue * venueBalance) / Constants.ETH_GRANULARITY;
     }
 
     /// ------------- PCV Deposit Only API -------------
@@ -124,8 +142,10 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         uint256 venueBalance = IPCVDepositV2(venue).accrue();
         if (venueBalance != 0) {
             // Compute balance diff
-            uint256 oldBalanceUSD = (venueBalance * oldOracleValue) / 1e18;
-            uint256 newBalanceUSD = (venueBalance * newOracleValue) / 1e18;
+            uint256 oldBalanceUSD = (venueBalance * oldOracleValue) /
+                Constants.ETH_GRANULARITY;
+            uint256 newBalanceUSD = (venueBalance * newOracleValue) /
+                Constants.ETH_GRANULARITY;
             int256 deltaBalanceUSD = int256(newBalanceUSD) -
                 int256(oldBalanceUSD);
 
@@ -225,8 +245,10 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         (uint256 oracleValue, bool oracleValid) = IOracleV2(oracle).read();
         require(oracleValid, "PCVOracle: invalid oracle value");
         // Compute USD values of delta
-        int256 deltaBalanceUSD = (int256(oracleValue) * deltaBalance) / 1e18;
-        int256 deltaProfitUSD = (int256(oracleValue) * deltaProfit) / 1e18;
+        int256 deltaBalanceUSD = (int256(oracleValue) * deltaBalance) /
+            Constants.ETH_GRANULARITY_INT;
+        int256 deltaProfitUSD = (int256(oracleValue) * deltaProfit) /
+            Constants.ETH_GRANULARITY_INT;
 
         _updateAccounting(venue, deltaBalanceUSD, deltaProfitUSD);
     }
