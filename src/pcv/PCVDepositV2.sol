@@ -46,6 +46,15 @@ abstract contract PCVDepositV2 is IPCVDepositV2, CoreRefV2 {
     }
 
     /// ------------------------------------------
+    /// -------------- View Only API -------------
+    /// ------------------------------------------
+
+    /// @notice return the underlying token denomination for this deposit
+    function balanceReportedIn() external view returns (address) {
+        return address(token);
+    }
+
+    /// ------------------------------------------
     /// ----------- Permissionless API -----------
     /// ------------------------------------------
 
