@@ -83,7 +83,7 @@ contract UnitTestMorphoPCVDeposit is Test {
         core.setGlobalReentrancyLock(lock);
         vm.stopPrank();
 
-        vm.label(address(morpho), "Morpho");
+        vm.label(address(morpho), "MORPHO_COMPOUND");
         vm.label(address(token), "Token");
         vm.label(address(morphoDeposit), "MorphoDeposit");
 
