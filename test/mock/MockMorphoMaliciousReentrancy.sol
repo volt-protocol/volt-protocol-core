@@ -2,12 +2,12 @@ pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-import {MorphoPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoPCVDeposit.sol";
+import {MorphoCompoundPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoCompoundPCVDeposit.sol";
 
 contract MockMorphoMaliciousReentrancy {
     IERC20 public immutable token;
     mapping(address => uint256) public balances;
-    MorphoPCVDeposit public morphoCompoundPCVDeposit;
+    MorphoCompoundPCVDeposit public morphoCompoundPCVDeposit;
 
     constructor(IERC20 _token) {
         token = _token;
@@ -17,8 +17,8 @@ contract MockMorphoMaliciousReentrancy {
         return address(token);
     }
 
-    function setMorphoPCVDeposit(address deposit) external {
-        morphoCompoundPCVDeposit = MorphoPCVDeposit(deposit);
+    function setMorphoCompoundPCVDeposit(address deposit) external {
+        morphoCompoundPCVDeposit = MorphoCompoundPCVDeposit(deposit);
     }
 
     function withdraw(address, uint256) external {

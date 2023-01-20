@@ -20,7 +20,7 @@ import {MockPCVDepositV2} from "@test/mock/MockPCVDepositV2.sol";
 import {VoltSystemOracle} from "@voltprotocol/oracle/VoltSystemOracle.sol";
 import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
 import {IPCVDepositBalances} from "@voltprotocol/pcv/IPCVDepositBalances.sol";
-import {MorphoPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoPCVDeposit.sol";
+import {MorphoCompoundPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "@voltprotocol/rate-limits/GlobalRateLimitedMinter.sol";
@@ -611,7 +611,7 @@ contract SystemUnitTest is Test {
             bytes4(keccak256("supply(address,address,uint256)"))
         );
 
-        MorphoPCVDeposit deposit = new MorphoPCVDeposit(
+        MorphoCompoundPCVDeposit deposit = new MorphoCompoundPCVDeposit(
             address(core),
             address(mock),
             address(usdc),

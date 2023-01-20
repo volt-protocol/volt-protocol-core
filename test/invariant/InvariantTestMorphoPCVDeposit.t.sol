@@ -14,7 +14,7 @@ import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
 import {MockPCVOracle} from "@test/mock/MockPCVOracle.sol";
 import {InvariantTest} from "@test/invariant/InvariantTest.sol";
-import {MorphoPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoPCVDeposit.sol";
+import {MorphoCompoundPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
 
@@ -22,7 +22,7 @@ import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/Gl
 /// will not run invariant tests
 
 /// @dev Modified from Solmate ERC20 Invariant Test (https://github.com/transmissions11/solmate/blob/main/src/test/ERC20.t.sol)
-contract InvariantTestMorphoPCVDeposit is Test, InvariantTest {
+contract InvariantTestMorphoCompoundPCVDeposit is Test, InvariantTest {
     using SafeCast for *;
 
     /// TODO add invariant test for profit tracking
@@ -34,15 +34,15 @@ contract InvariantTestMorphoPCVDeposit is Test, InvariantTest {
     PCVGuardian public pcvGuardian;
     MockPCVOracle public pcvOracle;
     IGlobalReentrancyLock private lock;
-    MorphoPCVDepositTest public morphoTest;
-    MorphoPCVDeposit public morphoDeposit;
+    MorphoCompoundPCVDepositTest public morphoTest;
+    MorphoCompoundPCVDeposit public morphoDeposit;
 
     function setUp() public {
         core = getCoreV2();
         token = new MockERC20();
         pcvOracle = new MockPCVOracle();
         morpho = new MockMorpho(IERC20(address(token)));
-        morphoDeposit = new MorphoPCVDeposit(
+        morphoDeposit = new MorphoCompoundPCVDeposit(
             address(core),
             address(morpho),
             address(token),
@@ -64,7 +64,7 @@ contract InvariantTestMorphoPCVDeposit is Test, InvariantTest {
         );
 
         entry = new SystemEntry(address(core));
-        morphoTest = new MorphoPCVDepositTest(
+        morphoTest = new MorphoCompoundPCVDepositTest(
             morphoDeposit,
             token,
             morpho,
@@ -114,17 +114,17 @@ contract InvariantTestMorphoPCVDeposit is Test, InvariantTest {
     }
 }
 
-contract MorphoPCVDepositTest is Test {
+contract MorphoCompoundPCVDepositTest is Test {
     uint256 public totalDeposited;
 
     MockERC20 public token;
     MockMorpho public morpho;
     SystemEntry public entry;
     PCVGuardian public pcvGuardian;
-    MorphoPCVDeposit public morphoDeposit;
+    MorphoCompoundPCVDeposit public morphoDeposit;
 
     constructor(
-        MorphoPCVDeposit _morphoDeposit,
+        MorphoCompoundPCVDeposit _morphoDeposit,
         MockERC20 _token,
         MockMorpho _morpho,
         SystemEntry _entry,

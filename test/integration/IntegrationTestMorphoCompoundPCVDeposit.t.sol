@@ -9,12 +9,12 @@ import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
 import {getCoreV2} from "@test/unit/utils/Fixtures.sol";
 import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
-import {MorphoPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoPCVDeposit.sol";
+import {MorphoCompoundPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
 
-contract IntegrationTestMorphoPCVDeposit is Test {
+contract IntegrationTestMorphoCompoundPCVDeposit is Test {
     using SafeCast for *;
 
     // Constant addresses
@@ -33,8 +33,8 @@ contract IntegrationTestMorphoPCVDeposit is Test {
     CoreV2 private core;
     SystemEntry public entry;
     GlobalReentrancyLock private lock;
-    MorphoPCVDeposit private daiDeposit;
-    MorphoPCVDeposit private usdcDeposit;
+    MorphoCompoundPCVDeposit private daiDeposit;
+    MorphoCompoundPCVDeposit private usdcDeposit;
 
     PCVGuardian private pcvGuardian;
 
@@ -53,7 +53,7 @@ contract IntegrationTestMorphoPCVDeposit is Test {
     function setUp() public {
         core = getCoreV2();
         lock = new GlobalReentrancyLock(address(core));
-        daiDeposit = new MorphoPCVDeposit(
+        daiDeposit = new MorphoCompoundPCVDeposit(
             address(core),
             CDAI,
             DAI,
@@ -62,7 +62,7 @@ contract IntegrationTestMorphoPCVDeposit is Test {
             MORPHO_LENS
         );
 
-        usdcDeposit = new MorphoPCVDeposit(
+        usdcDeposit = new MorphoCompoundPCVDeposit(
             address(core),
             CUSDC,
             USDC,

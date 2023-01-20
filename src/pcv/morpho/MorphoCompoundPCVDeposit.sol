@@ -32,7 +32,7 @@ import {PCVDepositV2} from "@voltprotocol/pcv/PCVDepositV2.sol";
 /// and protocol engineers are forced to choose who to round in favor of.
 /// Engineers must round in favor of the protocol to avoid deposits of 0 giving
 /// the user a balance.
-contract MorphoPCVDeposit is PCVDepositV2 {
+contract MorphoCompoundPCVDeposit is PCVDepositV2 {
     using SafeERC20 for IERC20;
 
     /// ------------------------------------------

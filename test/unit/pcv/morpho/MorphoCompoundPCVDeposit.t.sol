@@ -13,12 +13,12 @@ import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
 import {getCoreV2} from "@test/unit/utils/Fixtures.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
 import {MockERC20, IERC20} from "@test/mock/MockERC20.sol";
-import {MorphoPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoPCVDeposit.sol";
+import {MorphoCompoundPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
 import {MockMorphoMaliciousReentrancy} from "@test/mock/MockMorphoMaliciousReentrancy.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
 
-contract UnitTestMorphoPCVDeposit is Test {
+contract UnitTestMorphoCompoundPCVDeposit is Test {
     using SafeCast for *;
 
     event Deposit(address indexed _from, uint256 _amount);
@@ -35,7 +35,7 @@ contract UnitTestMorphoPCVDeposit is Test {
     SystemEntry public entry;
     MockMorpho private morpho;
     PCVGuardian private pcvGuardian;
-    MorphoPCVDeposit private morphoDeposit;
+    MorphoCompoundPCVDeposit private morphoDeposit;
     MockMorphoMaliciousReentrancy private maliciousMorpho;
 
     /// @notice token to deposit
@@ -56,7 +56,7 @@ contract UnitTestMorphoPCVDeposit is Test {
             IERC20(address(token))
         );
 
-        morphoDeposit = new MorphoPCVDeposit(
+        morphoDeposit = new MorphoCompoundPCVDeposit(
             address(core),
             address(morpho),
             address(token),
@@ -87,7 +87,7 @@ contract UnitTestMorphoPCVDeposit is Test {
         vm.label(address(token), "Token");
         vm.label(address(morphoDeposit), "MorphoDeposit");
 
-        maliciousMorpho.setMorphoPCVDeposit(address(morphoDeposit));
+        maliciousMorpho.setMorphoCompoundPCVDeposit(address(morphoDeposit));
     }
 
     function testSetup() public {
@@ -238,7 +238,8 @@ contract UnitTestMorphoPCVDeposit is Test {
         token.mint(address(morphoDeposit), amount);
         entry.deposit(address(morphoDeposit));
 
-        MorphoPCVDeposit.Call[] memory calls = new MorphoPCVDeposit.Call[](1);
+        MorphoCompoundPCVDeposit.Call[]
+            memory calls = new MorphoCompoundPCVDeposit.Call[](1);
         calls[0].callData = abi.encodeWithSignature(
             "withdraw(address,uint256)",
             address(this),
@@ -257,7 +258,8 @@ contract UnitTestMorphoPCVDeposit is Test {
         vm.assume(amount != 0);
         token.mint(address(morphoDeposit), amount);
 
-        MorphoPCVDeposit.Call[] memory calls = new MorphoPCVDeposit.Call[](2);
+        MorphoCompoundPCVDeposit.Call[]
+            memory calls = new MorphoCompoundPCVDeposit.Call[](2);
         calls[0].callData = abi.encodeWithSignature(
             "approve(address,uint256)",
             address(morphoDeposit.morpho()),
@@ -303,7 +305,8 @@ contract UnitTestMorphoPCVDeposit is Test {
     //// access controls
 
     function testEmergencyActionFailsNonGovernor() public {
-        MorphoPCVDeposit.Call[] memory calls = new MorphoPCVDeposit.Call[](1);
+        MorphoCompoundPCVDeposit.Call[]
+            memory calls = new MorphoCompoundPCVDeposit.Call[](1);
         calls[0].callData = abi.encodeWithSignature(
             "withdraw(address,uint256)",
             address(this),
@@ -328,7 +331,7 @@ contract UnitTestMorphoPCVDeposit is Test {
     //// reentrancy
 
     function _reentrantSetup() private {
-        morphoDeposit = new MorphoPCVDeposit(
+        morphoDeposit = new MorphoCompoundPCVDeposit(
             address(core),
             address(maliciousMorpho), /// cToken is not used in mock morpho deposit
             address(token),
@@ -340,7 +343,7 @@ contract UnitTestMorphoPCVDeposit is Test {
         vm.prank(addresses.governorAddress);
         core.grantLocker(address(morphoDeposit));
 
-        maliciousMorpho.setMorphoPCVDeposit(address(morphoDeposit));
+        maliciousMorpho.setMorphoCompoundPCVDeposit(address(morphoDeposit));
     }
 
     function testReentrantAccrueFails() public {

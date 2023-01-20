@@ -16,7 +16,7 @@ import {GenericCallMock} from "@test/mock/GenericCallMock.sol";
 import {MockPCVDepositV3} from "@test/mock/MockPCVDepositV3.sol";
 import {MockERC20, IERC20} from "@test/mock/MockERC20.sol";
 import {CompoundBadDebtSentinel} from "@voltprotocol/pcv/compound/CompoundBadDebtSentinel.sol";
-import {MorphoPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoPCVDeposit.sol";
+import {MorphoCompoundPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
 import {MockMorphoMaliciousReentrancy} from "@test/mock/MockMorphoMaliciousReentrancy.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
@@ -40,7 +40,7 @@ contract UnitTestCompoundBadDebtSentinel is Test {
     PCVGuardian private pcvGuardian;
     GenericCallMock private comptroller;
     MockPCVDepositV3 private safeAddress;
-    MorphoPCVDeposit private morphoDeposit;
+    MorphoCompoundPCVDeposit private morphoDeposit;
     CompoundBadDebtSentinel private badDebtSentinel;
 
     uint256 public badDebtThreshold = 1_000_000e18;
@@ -66,7 +66,7 @@ contract UnitTestCompoundBadDebtSentinel is Test {
         comptroller = new GenericCallMock();
         safeAddress = new MockPCVDepositV3(address(core), address(token));
 
-        morphoDeposit = new MorphoPCVDeposit(
+        morphoDeposit = new MorphoCompoundPCVDeposit(
             address(core),
             address(morpho),
             address(token),

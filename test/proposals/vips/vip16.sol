@@ -24,7 +24,7 @@ import {NonCustodialPSM} from "@voltprotocol/peg/NonCustodialPSM.sol";
 import {MakerPCVSwapper} from "@voltprotocol/pcv/maker/MakerPCVSwapper.sol";
 import {VoltSystemOracle} from "@voltprotocol/oracle/VoltSystemOracle.sol";
 import {EulerPCVDeposit} from "@voltprotocol/pcv/euler/EulerPCVDeposit.sol";
-import {MorphoPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoPCVDeposit.sol";
+import {MorphoCompoundPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {MorphoAavePCVDeposit} from "@voltprotocol/pcv/morpho/MorphoAavePCVDeposit.sol";
 import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
 import {IPegStabilityModule} from "@voltprotocol/peg/IPegStabilityModule.sol";
@@ -152,16 +152,16 @@ contract vip16 is Proposal {
         /// PCV Deposits
         {
             /// Morpho Compound Deposits
-            MorphoPCVDeposit morphoCompoundDaiPCVDeposit = new MorphoPCVDeposit(
-                addresses.mainnet("CORE"),
-                addresses.mainnet("CDAI"),
-                addresses.mainnet("DAI"),
-                addresses.mainnet("COMP"),
-                addresses.mainnet("MORPHO_COMPOUND"),
-                addresses.mainnet("MORPHO_LENS_COMPOUND")
-            );
+            MorphoCompoundPCVDeposit morphoCompoundDaiPCVDeposit = new MorphoCompoundPCVDeposit(
+                    addresses.mainnet("CORE"),
+                    addresses.mainnet("CDAI"),
+                    addresses.mainnet("DAI"),
+                    addresses.mainnet("COMP"),
+                    addresses.mainnet("MORPHO_COMPOUND"),
+                    addresses.mainnet("MORPHO_LENS_COMPOUND")
+                );
 
-            MorphoPCVDeposit morphoCompoundUsdcPCVDeposit = new MorphoPCVDeposit(
+            MorphoCompoundPCVDeposit morphoCompoundUsdcPCVDeposit = new MorphoCompoundPCVDeposit(
                     addresses.mainnet("CORE"),
                     addresses.mainnet("CUSDC"),
                     addresses.mainnet("USDC"),
