@@ -14,14 +14,21 @@ contract IntegrationTestPCVGuardian is PostProposalCheck {
         );
 
         vm.startPrank(addresses.mainnet("GOVERNOR"));
-        address[4] memory addressesToClean = [
+        address[8] memory addressesToClean = [
             addresses.mainnet("PSM_DAI"),
             addresses.mainnet("PSM_USDC"),
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI"),
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI"),
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC"),
+            addresses.mainnet("PCV_DEPOSIT_EULER_DAI"),
+            addresses.mainnet("PCV_DEPOSIT_EULER_USDC"),
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_DAI"),
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_DAI")
         ];
         for (uint256 i = 0; i < addressesToClean.length; i++) {
-            pcvGuardian.withdrawAllToSafeAddress(addressesToClean[i]);
+            if (IPCVDepositV2(addressesToClean[i]).balance() != 0) {
+                pcvGuardian.withdrawAllToSafeAddress(addressesToClean[i]);
+            }
+
             // Check only dust left after withdrawals
             assertLt(IPCVDepositV2(addressesToClean[i]).balance(), 1e6);
         }

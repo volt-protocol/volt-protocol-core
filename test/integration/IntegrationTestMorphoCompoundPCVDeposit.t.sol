@@ -90,7 +90,7 @@ contract IntegrationTestMorphoPCVDeposit is Test {
         vm.label(address(usdc), "USDC");
         vm.label(address(dai), "DAI");
         vm.label(0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67, "Morpho Lens");
-        vm.label(0x8888882f8f843896699869179fB6E4f7e3B58888, "Morpho");
+        vm.label(0x8888882f8f843896699869179fB6E4f7e3B58888, "MORPHO_COMPOUND");
 
         vm.startPrank(DAI_USDC_USDT_CURVE_POOL);
         dai.transfer(address(daiDeposit), targetDaiBalance);

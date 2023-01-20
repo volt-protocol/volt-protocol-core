@@ -15,10 +15,10 @@ contract IntegrationTestPCVRouter is PostProposalCheck {
     function testPcvRouterWithSwap() public {
         PCVRouter pcvRouter = PCVRouter(addresses.mainnet("PCV_ROUTER"));
         IPCVDepositV2 daiDeposit = IPCVDepositV2(
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI")
         );
         IPCVDepositV2 usdcDeposit = IPCVDepositV2(
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC")
         );
         address pcvMover = addresses.mainnet("GOVERNOR"); // an address with PCV_MOVER role
 

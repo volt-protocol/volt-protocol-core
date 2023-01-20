@@ -60,8 +60,12 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
             addresses.mainnet("GLOBAL_SYSTEM_EXIT_RATE_LIMITER")
         );
         pcvOracle = PCVOracle(addresses.mainnet("PCV_ORACLE"));
-        morphoUsdcPCVDeposit = addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC");
-        morphoDaiPCVDeposit = addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI");
+        morphoUsdcPCVDeposit = addresses.mainnet(
+            "PCV_DEPOSIT_MORPHO_COMPOUND_USDC"
+        );
+        morphoDaiPCVDeposit = addresses.mainnet(
+            "PCV_DEPOSIT_MORPHO_COMPOUND_DAI"
+        );
     }
 
     /*
