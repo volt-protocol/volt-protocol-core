@@ -21,5 +21,9 @@ interface IMorpho {
     function liquidate(address _poolTokenBorrowedAddress, address _poolTokenCollateralAddress, address _borrower, uint256 _amount) external;
     function claimRewards(address[] calldata _cTokenAddresses, bool _tradeForMorphoToken) external returns (uint256 claimedAmount);
 
+    /// @notice compound accrue interest function
     function updateP2PIndexes(address _poolTokenAddress) external;
+
+    /// @notice aave accrue interest function
+    function updateIndexes(address _poolTokenAddress) external;
 }
