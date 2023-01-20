@@ -2,14 +2,11 @@
 pragma solidity =0.8.13;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {ILens} from "@voltprotocol/pcv/morpho/ILens.sol";
-import {ICToken} from "@voltprotocol/pcv/morpho/ICompound.sol";
 import {IMorpho} from "@voltprotocol/pcv/morpho/IMorpho.sol";
 import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
-import {Constants} from "@voltprotocol/Constants.sol";
 import {PCVDepositV2} from "@voltprotocol/pcv/PCVDepositV2.sol";
 
 /// @notice PCV Deposit for Morpho-Compound V2.
@@ -37,7 +34,6 @@ import {PCVDepositV2} from "@voltprotocol/pcv/PCVDepositV2.sol";
 /// the user a balance.
 contract MorphoPCVDeposit is PCVDepositV2 {
     using SafeERC20 for IERC20;
-    using SafeCast for *;
 
     /// ------------------------------------------
     /// ---------- Immutables/Constant -----------
@@ -85,11 +81,6 @@ contract MorphoPCVDeposit is PCVDepositV2 {
         );
 
         return totalSupplied;
-    }
-
-    /// @notice returns the underlying token of this deposit
-    function balanceReportedIn() external view returns (address) {
-        return token;
     }
 
     /// ------------------------------------------
