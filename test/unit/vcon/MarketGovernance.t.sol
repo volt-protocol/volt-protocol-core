@@ -94,25 +94,11 @@ contract UnitTestMarketGovernance is SystemUnitTest {
     }
 
     function testSystemTwoUsers() public {
-        _initializeVenues();
-
         uint256 totalPCV = pcvOracle.getTotalPcv();
-
-        // console.log("dai deposit balance: ");
-        // console.logInt(mgov.getVenueBalance(address(pcvDepositDai), totalPCV));
-
-        // console.log("usdc deposit balance: ");
-        // console.logInt(mgov.getVenueBalance(address(pcvDepositUsdc), totalPCV));
 
         testSystemOneUser();
 
         totalPCV = pcvOracle.getTotalPcv();
-
-        // console.log("dai deposit balance: ");
-        // console.logInt(mgov.getVenueBalance(address(pcvDepositDai), totalPCV));
-
-        // console.log("usdc deposit balance: ");
-        // console.logInt(mgov.getVenueBalance(address(pcvDepositUsdc), totalPCV));
 
         address user = address(1000);
 
@@ -142,8 +128,6 @@ contract UnitTestMarketGovernance is SystemUnitTest {
     }
 
     function testSystemThreeUsersLastNoDeposit(uint120 vconAmount) public {
-        _initializeVenues();
-
         vm.assume(vconAmount > 1e9);
         testSystemTwoUsers();
 
@@ -163,14 +147,6 @@ contract UnitTestMarketGovernance is SystemUnitTest {
 
         uint256 endingTotalSupply = mgov.totalSupply();
         uint256 totalPCV = pcvOracle.getTotalPcv();
-
-        // console.log("\nvenue balance usdc");
-        // console.logInt(mgov.getVenueBalance(address(pcvDepositUsdc), totalPCV));
-        // console.log("------------------\n");
-
-        // console.log("\nvenue balance dai");
-        // console.logInt(mgov.getVenueBalance(address(pcvDepositDai), totalPCV));
-        // console.log("------------------\n");
 
         assertEq(endingTotalSupply, startingTotalSupply + vconAmount);
         assertTrue(mgov.getVenueBalance(address(pcvDepositUsdc), totalPCV) < 0); /// underweight USDC balance
@@ -178,64 +154,45 @@ contract UnitTestMarketGovernance is SystemUnitTest {
     }
 
     function testSystemThreeUsersLastNoDepositIndividual() public {
-        _initializeVenues();
-
-        uint120 vconAmount = 1e9;
-
         testSystemTwoUsers();
 
+        uint120 vconAmount = 1e9;
         address user = address(1001);
-
         uint256 startingTotalSupply = mgov.totalSupply();
 
         vm.startPrank(user);
-
         vcon.mint(user, vconAmount);
         vcon.approve(address(mgov), vconAmount);
         mgov.depositNoMove(address(pcvDepositUsdc), vconAmount);
-
         vm.stopPrank();
-
-        assertEq(vcon.balanceOf(user), 0);
 
         uint256 endingTotalSupply = mgov.totalSupply();
         uint256 totalPCV = pcvOracle.getTotalPcv();
 
-        // console.log("\nvenue balance usdc");
-        // console.logInt(mgov.getVenueBalance(address(pcvDepositUsdc), totalPCV));
-        // console.log("------------------\n");
-
-        // console.log("\nvenue balance dai");
-        // console.logInt(mgov.getVenueBalance(address(pcvDepositDai), totalPCV));
-        // console.log("------------------\n");
-
+        assertEq(vcon.balanceOf(user), 0);
         assertEq(endingTotalSupply, startingTotalSupply + vconAmount);
         assertTrue(mgov.getVenueBalance(address(pcvDepositUsdc), totalPCV) < 0); /// underweight USDC balance
         assertTrue(mgov.getVenueBalance(address(pcvDepositDai), totalPCV) > 0); /// overweight DAI balance
     }
 
     function testUserDepositsNoMove(uint120 vconAmount) public {
-        _initializeVenues();
-
         vm.assume(vconAmount > 1e9);
 
-        address user = address(1001);
+        _initializeVenues();
 
+        address user = address(1001);
         uint256 startingTotalSupply = mgov.totalSupply();
 
         vm.startPrank(user);
-
         vcon.mint(user, vconAmount);
         vcon.approve(address(mgov), vconAmount);
         mgov.depositNoMove(address(pcvDepositUsdc), vconAmount);
-
         vm.stopPrank();
-
-        assertEq(vcon.balanceOf(user), 0);
 
         uint256 endingTotalSupply = mgov.totalSupply();
         uint256 totalPCV = pcvOracle.getTotalPcv();
 
+        assertEq(vcon.balanceOf(user), 0);
         assertEq(endingTotalSupply, startingTotalSupply + vconAmount);
         assertTrue(mgov.getVenueBalance(address(pcvDepositUsdc), totalPCV) < 0); /// underweight USDC
         assertTrue(mgov.getVenueBalance(address(pcvDepositDai), totalPCV) > 0); /// overweight DAI
@@ -264,6 +221,13 @@ contract UnitTestMarketGovernance is SystemUnitTest {
 
         vm.expectRevert("MarketGovernance: venue not initialized");
         mgov.depositNoMove(address(pcvDepositDai), vconAmount);
+    }
+
+    function testReinitializingVenueFails() public {
+        _initializeVenues();
+
+        vm.expectRevert("MarketGovernance: venue already has share price");
+        mgov.initializeVenue(address(pcvDepositUsdc));
     }
 
     /// todo test withdrawing
