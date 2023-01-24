@@ -28,7 +28,7 @@ contract IntegrationTestPCVRouter is PostProposalCheck {
 
         // Swap DAI to USDC
         vm.startPrank(pcvMover);
-        pcvRouter.movePCV(
+        pcvRouter.movePCVUnchecked(
             address(daiDeposit), // source
             address(usdcDeposit), // destination
             addresses.mainnet("PCV_SWAPPER_MAKER"), // swapper
@@ -53,7 +53,7 @@ contract IntegrationTestPCVRouter is PostProposalCheck {
 
         // Swap USDC to DAI (half of previous amount)
         vm.startPrank(pcvMover); // has PCV_MOVER role
-        pcvRouter.movePCV(
+        pcvRouter.movePCVUnchecked(
             address(usdcDeposit), // source
             address(daiDeposit), // destination
             addresses.mainnet("PCV_SWAPPER_MAKER"), // swapper

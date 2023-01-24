@@ -4,7 +4,6 @@ pragma solidity 0.8.13;
 import {Vm} from "@forge-std/Vm.sol";
 import {Test} from "@forge-std/Test.sol";
 import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
-import {PCVRouter} from "@voltprotocol/pcv/PCVRouter.sol";
 import {PCVOracle} from "@voltprotocol/oracle/PCVOracle.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
@@ -12,6 +11,7 @@ import {getCoreV2} from "@test/unit/utils/Fixtures.sol";
 import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {MockOracle} from "@test/mock/MockOracle.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
+import {MockPCVRouter} from "@test/mock/MockPCVRouter.sol";
 import {MockPCVSwapper} from "@test/mock/MockPCVSwapper.sol";
 import {MockPCVDepositV3} from "@test/mock/MockPCVDepositV3.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
@@ -25,7 +25,7 @@ contract PCVRouterUnitTest is Test {
     PCVOracle private pcvOracle;
 
     // reference to the volt pcv router
-    PCVRouter private pcvRouter;
+    MockPCVRouter private pcvRouter;
 
     // global reentrancy lock
     IGlobalReentrancyLock private lock;
@@ -72,7 +72,7 @@ contract PCVRouterUnitTest is Test {
         // volt system
         core = CoreV2(address(getCoreV2()));
         pcvOracle = new PCVOracle(address(core));
-        pcvRouter = new PCVRouter(address(core));
+        pcvRouter = new MockPCVRouter(address(core));
         entry = new SystemEntry(address(core));
         lock = IGlobalReentrancyLock(
             address(new GlobalReentrancyLock(address(core)))

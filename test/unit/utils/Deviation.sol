@@ -60,6 +60,17 @@ library Deviation {
         return basisPoints;
     }
 
+    /// @notice return the percent deviation between a and b in wei. 1 eth = 100%
+    function calculateDeviationEthGranularity(
+        int256 a,
+        int256 b
+    ) internal pure returns (int256) {
+        int256 delta = a - b;
+        int256 basisPoints = (delta * Constants.ETH_GRANULARITY_INT) / a;
+
+        return basisPoints;
+    }
+
     /// @notice function to return whether or not the new price is within
     /// the acceptable deviation threshold
     function isWithinDeviationThreshold(

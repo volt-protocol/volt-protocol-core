@@ -13,6 +13,8 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
     uint256 private resistantBalance;
     uint256 private resistantProtocolOwnedVolt;
 
+    uint256 public lastRecordedProfit;
+
     constructor(address _core, address _token) CoreRefV2(_core) {
         balanceReportedIn = _token;
     }
@@ -25,6 +27,10 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
     ) public {
         resistantBalance = _resistantBalance;
         resistantProtocolOwnedVolt = _resistantProtocolOwnedVolt;
+    }
+
+    function setLastRecordedProfit(uint256 _lastRecordedProfit) public {
+        lastRecordedProfit = _lastRecordedProfit;
     }
 
     function setCheckPCVController(bool value) public {

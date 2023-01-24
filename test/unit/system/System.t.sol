@@ -5,21 +5,26 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+import {console} from "@forge-std/console.sol";
+
 import {Test} from "@forge-std/Test.sol";
 import {ICoreV2} from "@voltprotocol/core/ICoreV2.sol";
 import {Deviation} from "@test/unit/utils/Deviation.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
+import {PCVRouter} from "@voltprotocol/pcv/PCVRouter.sol";
+import {PCVOracle} from "@voltprotocol/oracle/PCVOracle.sol";
 import {PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
 import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
 import {MockCoreRefV2} from "@test/mock/MockCoreRefV2.sol";
 import {ERC20Allocator} from "@voltprotocol/pcv/ERC20Allocator.sol";
 import {GenericCallMock} from "@test/mock/GenericCallMock.sol";
-import {MockPCVDepositV2} from "@test/mock/MockPCVDepositV2.sol";
+import {MockPCVDepositV3} from "@test/mock/MockPCVDepositV3.sol";
 import {VoltSystemOracle} from "@voltprotocol/oracle/VoltSystemOracle.sol";
 import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
 import {IPCVDepositBalances} from "@voltprotocol/pcv/IPCVDepositBalances.sol";
+import {ConstantPriceOracle} from "@voltprotocol/oracle/ConstantPriceOracle.sol";
 import {MorphoCompoundPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
@@ -63,24 +68,29 @@ contract SystemUnitTest is Test {
     using SafeCast for *;
     VoltAddresses public guardianAddresses = getVoltAddresses();
 
-    ICoreV2 private core;
-    SystemEntry private entry;
-    PegStabilityModule private daipsm;
-    PegStabilityModule private usdcpsm;
-    MockPCVDepositV2 private pcvDepositDai;
-    MockPCVDepositV2 private pcvDepositUsdc;
-    PCVGuardian private pcvGuardian;
-    ERC20Allocator private allocator;
-    VoltSystemOracle private oracle;
-    TimelockController private timelockController;
-    GlobalRateLimitedMinter private grlm;
-    IGlobalReentrancyLock private lock;
+    ICoreV2 public core;
+    SystemEntry public entry;
+    PegStabilityModule public daipsm;
+    PegStabilityModule public usdcpsm;
+    MockPCVDepositV3 public pcvDepositDai;
+    MockPCVDepositV3 public pcvDepositUsdc;
+    PCVGuardian public pcvGuardian;
+    ERC20Allocator public allocator;
+    VoltSystemOracle public oracle;
+    TimelockController public timelockController;
+    GlobalRateLimitedMinter public grlm;
+    IGlobalReentrancyLock public lock;
+    PCVRouter public pcvRouter;
+    PCVOracle public pcvOracle;
+    ConstantPriceOracle public daiConstantOracle;
+    ConstantPriceOracle public usdcConstantOracle;
 
-    address private voltAddress;
-    address private coreAddress;
-    IERC20Mintable private usdc;
-    IERC20Mintable private dai;
-    IERC20Mintable private volt;
+    address public voltAddress;
+    address public coreAddress;
+    IERC20Mintable public usdc;
+    IERC20Mintable public dai;
+    IERC20Mintable public volt;
+    IERC20Mintable public vcon;
 
     uint256 public constant timelockDelay = 600;
     uint248 public constant usdcTargetBalance = 100_000e6;
@@ -119,11 +129,12 @@ contract SystemUnitTest is Test {
     uint112 public constant monthlyChangeRate = .01e18; /// 100 basis points
     uint32 public constant startTime = 1_000;
 
-    function setUp() public {
+    function setUp() public virtual {
         vm.warp(startTime); /// warp past 0
         core = getCoreV2();
         entry = new SystemEntry(address(core));
         volt = IERC20Mintable(address(core.volt()));
+        vcon = IERC20Mintable(address(core.vcon()));
         voltAddress = address(volt);
         coreAddress = address(core);
         lock = IGlobalReentrancyLock(
@@ -166,13 +177,14 @@ contract SystemUnitTest is Test {
             voltCeilingPriceDai
         );
 
-        pcvDepositDai = new MockPCVDepositV2(coreAddress, address(dai), 100, 0);
-        pcvDepositUsdc = new MockPCVDepositV2(
-            coreAddress,
-            address(usdc),
-            100,
-            0
-        );
+        pcvDepositDai = new MockPCVDepositV3(coreAddress, address(dai));
+        pcvDepositUsdc = new MockPCVDepositV3(coreAddress, address(usdc));
+
+        pcvRouter = new PCVRouter(coreAddress);
+
+        pcvOracle = new PCVOracle(coreAddress);
+        daiConstantOracle = new ConstantPriceOracle(coreAddress, 1e18);
+        usdcConstantOracle = new ConstantPriceOracle(coreAddress, 1e30);
 
         address[] memory proposerCancellerAddresses = new address[](3);
         proposerCancellerAddresses[0] = guardianAddresses.pcvGuardAddress1;
@@ -210,6 +222,7 @@ contract SystemUnitTest is Test {
         vm.startPrank(addresses.governorAddress);
 
         core.grantPCVController(address(pcvGuardian));
+        core.grantPCVController(address(pcvRouter));
         core.grantPCVController(address(allocator));
 
         core.grantPCVGuard(addresses.userAddress);
@@ -225,8 +238,11 @@ contract SystemUnitTest is Test {
         core.grantRateLimitedRedeemer(address(daipsm));
         core.grantRateLimitedRedeemer(address(usdcpsm));
 
+        core.grantLocker(address(pcvDepositUsdc));
+        core.grantLocker(address(pcvDepositDai));
         core.grantLocker(address(pcvGuardian));
         core.grantLocker(address(allocator));
+        core.grantLocker(address(pcvOracle));
         core.grantLocker(address(usdcpsm));
         core.grantLocker(address(daipsm));
         core.grantLocker(address(entry));
@@ -250,6 +266,20 @@ contract SystemUnitTest is Test {
 
         allocator.connectDeposit(address(usdcpsm), address(pcvDepositUsdc));
         allocator.connectDeposit(address(daipsm), address(pcvDepositDai));
+
+        /// Configure PCV Oracle
+        address[] memory venues = new address[](2);
+        venues[0] = address(pcvDepositDai);
+        venues[1] = address(pcvDepositUsdc);
+
+        address[] memory oracles = new address[](2);
+        oracles[0] = address(daiConstantOracle);
+        oracles[1] = address(usdcConstantOracle);
+
+        pcvOracle.addVenues(venues, oracles);
+
+        core.setPCVOracle(pcvOracle);
+
         vm.stopPrank();
 
         /// top up contracts with tokens for testing
@@ -265,6 +295,9 @@ contract SystemUnitTest is Test {
         vm.label(address(pcvDepositDai), "pcvDepositDai");
         vm.label(address(pcvDepositUsdc), "pcvDepositUsdc");
         vm.label(address(this), "address this");
+        vm.label(address(dai), "DAI");
+        vm.label(address(usdc), "USDC");
+        // console.log("finished setting up system");
     }
 
     function testSetup() public {
@@ -390,6 +423,9 @@ contract SystemUnitTest is Test {
         assertTrue(core.isPCVGuard(addresses.secondUserAddress));
 
         assertTrue(core.isGuardian(address(pcvGuardian)));
+
+        assertTrue(pcvOracle.isVenue(address(pcvDepositDai)));
+        assertTrue(pcvOracle.isVenue(address(pcvDepositUsdc)));
     }
 
     function testPCVGuardWithdrawAllToSafeAddress() public {
@@ -618,9 +654,45 @@ contract SystemUnitTest is Test {
             address(mock),
             address(mock)
         );
+        vm.label(address(deposit), "Malicious Morpho Compound PCV Deposit");
 
-        vm.prank(addresses.governorAddress);
+        /// Configure PCV Oracle
+        address[] memory venues = new address[](1);
+        venues[0] = address(deposit);
+
+        address[] memory oracles = new address[](1);
+        oracles[0] = address(usdcConstantOracle);
+
+        /// call to morpo update indexes does nothing at first
+        mock.setResponseToCall(
+            address(0),
+            "",
+            "",
+            bytes4(keccak256("updateP2PIndexes(address)"))
+        );
+
+        /// call to accrue returns 0
+        mock.setResponseToCall(
+            address(0),
+            "",
+            abi.encode(0),
+            bytes4(keccak256("accrue(address)"))
+        );
+
+        /// call to getCurrentSupplyBalanceInOf returns 0
+        mock.setResponseToCall(
+            address(0),
+            "",
+            abi.encode(0, 0, 0),
+            bytes4(keccak256("getCurrentSupplyBalanceInOf(address,address)"))
+        );
+
+        vm.startPrank(addresses.governorAddress);
         core.grantLocker(address(deposit));
+        core.createRole(VoltRoles.PCV_DEPOSIT, VoltRoles.GOVERNOR);
+        core.grantRole(VoltRoles.PCV_DEPOSIT, address(deposit));
+        pcvOracle.addVenues(venues, oracles);
+        vm.stopPrank();
 
         /// call to morpo update indexes attempts reentry
         mock.setResponseToCall(

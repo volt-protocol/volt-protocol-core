@@ -41,6 +41,11 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         return venues.values();
     }
 
+    /// @notice return all addresses listed as liquid venues
+    function getNumVenues() external view returns (uint256) {
+        return venues.length();
+    }
+
     /// @notice check if a venue is in the list of venues
     /// @param venue address to check
     /// @return boolean whether or not the venue is in the venue list
@@ -56,6 +61,18 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
             "PCVOracle: cannot read while entered"
         );
 
+        totalPcv = _getTotalPcv();
+    }
+
+    /// @notice get the total PCV balance by looping through the pcv deposits
+    /// @dev this function is meant to be used offchain, as it is pretty gas expensive.
+    /// this is an unsafe operation as it does not enforce the system is in an unlocked state
+    function getTotalPcvUnsafe() external view returns (uint256 totalPcv) {
+        totalPcv = _getTotalPcv();
+    }
+
+    /// @notice get the total PCV balance by looping through the pcv deposits
+    function _getTotalPcv() private view returns (uint256 totalPcv) {
         uint256 venueLength = venues.length();
 
         /// there will never be more than 100 total venues
