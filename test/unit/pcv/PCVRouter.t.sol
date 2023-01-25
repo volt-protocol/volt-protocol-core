@@ -420,6 +420,8 @@ contract PCVRouterUnitTest is Test {
     }
 
     function testMovePCVUnsupportedSwap() public {
+        swapper = new MockPCVSwapper(token1, MockERC20(address(0)));
+
         vm.prank(addresses.governorAddress);
         address[] memory whitelistedSwapperAddresses = new address[](1);
         whitelistedSwapperAddresses[0] = address(swapper);
