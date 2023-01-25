@@ -30,6 +30,7 @@ contract VoltSystemOracleUnitTest is Test {
     uint32 public immutable startTime = 100_000;
 
     function setUp() public {
+        vm.warp(0);
         core = getCoreV2();
 
         voltSystemOracle = getVoltSystemOracle(
