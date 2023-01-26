@@ -3,15 +3,18 @@ pragma solidity 0.8.13;
 import {console} from "@forge-std/console.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
+import {PCVRouter} from "@voltprotocol/pcv/PCVRouter.sol";
 import {MockPCVSwapper} from "@test/mock/MockPCVSwapper.sol";
 import {SystemUnitTest} from "@test/unit/system/System.t.sol";
 import {MockPCVDepositV3} from "@test/mock/MockPCVDepositV3.sol";
 import {MarketGovernance} from "@voltprotocol/vcon/MarketGovernance.sol";
+import {IMarketGovernance} from "@voltprotocol/vcon/IMarketGovernance.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
 
 contract UnitTestMarketGovernance is SystemUnitTest {
     MarketGovernance public mgov;
     MockPCVSwapper public pcvSwapper;
+
     address public venue = address(10); /// a in hex
     uint256 public profitToVconRatio = 5; /// for each 1 wei in profit, 5 wei of vcon is received
     uint256 public daiDepositAmount = 1_000_000e18;
@@ -31,7 +34,9 @@ contract UnitTestMarketGovernance is SystemUnitTest {
         );
         pcvSwapper.mockSetExchangeRate(1e6); /// set dai->usdc exchange rate
 
-        mgov = new MarketGovernance(coreAddress);
+        pcvRouter = new PCVRouter(coreAddress);
+
+        mgov = new MarketGovernance(coreAddress, address(pcvRouter));
 
         vm.startPrank(addresses.governorAddress);
 
@@ -42,15 +47,16 @@ contract UnitTestMarketGovernance is SystemUnitTest {
 
         address[] memory swapper = new address[](1);
         swapper[0] = address(pcvSwapper);
-        mgov.addPCVSwappers(swapper);
+
+        pcvRouter.addPCVSwappers(swapper);
+
+        core.createRole(VoltRoles.PCV_MOVER, VoltRoles.GOVERNOR);
+        core.grantRole(VoltRoles.PCV_MOVER, address(mgov));
 
         vm.stopPrank();
     }
 
     function _initializeVenues() private {
-        mgov.initializeVenue(address(pcvDepositDai));
-        mgov.initializeVenue(address(pcvDepositUsdc));
-
         pcvDepositUsdc.setLastRecordedProfit(10_000e18);
         pcvDepositDai.setLastRecordedProfit(10_000e18);
     }
@@ -81,13 +87,17 @@ contract UnitTestMarketGovernance is SystemUnitTest {
         vcon.mint(address(this), vconDepositAmount);
 
         vcon.approve(address(mgov), vconDepositAmount);
-        mgov.stake(
-            vconDepositAmount,
-            pcvDepositDai.balance(),
-            address(pcvDepositDai),
-            address(pcvDepositUsdc),
-            address(pcvSwapper)
-        );
+        mgov.stake(vconDepositAmount, address(pcvDepositUsdc));
+
+        IMarketGovernance.Rebalance[]
+            memory balance = new IMarketGovernance.Rebalance[](1);
+        balance[0] = IMarketGovernance.Rebalance({
+            source: address(pcvDepositDai),
+            destination: address(pcvDepositUsdc),
+            swapper: address(pcvSwapper),
+            amountPcv: pcvDepositDai.balance()
+        });
+        mgov.rebalance(balance);
 
         assertEq(
             pcvOracle.getTotalPcv(),
@@ -113,13 +123,16 @@ contract UnitTestMarketGovernance is SystemUnitTest {
 
         vcon.mint(userOne, vconDepositAmount);
         vcon.approve(address(mgov), vconDepositAmount);
-        mgov.stake(
-            vconDepositAmount,
-            pcvDepositUsdc.balance() / 2,
-            address(pcvDepositUsdc),
-            address(pcvDepositDai),
-            address(pcvSwapper)
-        );
+        mgov.stake(vconDepositAmount, address(pcvDepositDai));
+        IMarketGovernance.Rebalance[]
+            memory balance = new IMarketGovernance.Rebalance[](1);
+        balance[0] = IMarketGovernance.Rebalance({
+            source: address(pcvDepositUsdc),
+            destination: address(pcvDepositDai),
+            swapper: address(pcvSwapper),
+            amountPcv: pcvDepositUsdc.balance() / 2
+        });
+        mgov.rebalance(balance);
 
         vm.stopPrank();
 
@@ -139,30 +152,38 @@ contract UnitTestMarketGovernance is SystemUnitTest {
         testSystemTwoUsers();
 
         uint256 startingTotalSupply = mgov.vconStaked();
+        uint256 startingVconStaked = mgov.venueVconDeposited(
+            address(pcvDepositUsdc)
+        );
 
         vm.startPrank(userTwo);
 
         vcon.mint(userTwo, vconAmount);
         vcon.approve(address(mgov), vconAmount);
-        mgov.stake(
-            vconAmount,
-            0, /// deposit no pcv, meaning things will be imbalanced
-            address(pcvDepositDai),
-            address(pcvDepositUsdc),
-            address(pcvSwapper)
-        );
+        mgov.stake(vconAmount, address(pcvDepositUsdc));
 
         vm.stopPrank();
 
         assertEq(vcon.balanceOf(userTwo), 0);
-        assertEq(mgov.venueVconDeposited(userTwo), vconAmount);
+        assertEq(
+            mgov.venueVconDeposited(address(pcvDepositUsdc)),
+            vconAmount + startingVconStaked
+        );
+        assertEq(
+            mgov.venueUserDepositedVcon(address(pcvDepositUsdc), userTwo),
+            vconAmount
+        );
 
         uint256 endingTotalSupply = mgov.vconStaked();
         uint256 totalPCV = pcvOracle.getTotalPcv();
 
         assertEq(endingTotalSupply, startingTotalSupply + vconAmount);
-        assertTrue(mgov.getVenueBalance(address(pcvDepositUsdc), totalPCV) < 0); /// underweight USDC balance
-        assertTrue(mgov.getVenueBalance(address(pcvDepositDai), totalPCV) > 0); /// overweight DAI balance
+        assertTrue(
+            mgov.getVenueDeviation(address(pcvDepositUsdc), totalPCV) < 0
+        ); /// underweight USDC balance
+        assertTrue(
+            mgov.getVenueDeviation(address(pcvDepositDai), totalPCV) > 0
+        ); /// overweight DAI balance
     }
 
     function testSystemThreeUsersLastNoDepositIndividual() public {
@@ -173,15 +194,11 @@ contract UnitTestMarketGovernance is SystemUnitTest {
         uint256 startingTotalSupply = mgov.vconStaked();
 
         vm.startPrank(user);
+
         vcon.mint(user, vconAmount);
         vcon.approve(address(mgov), vconAmount);
-        mgov.stake(
-            vconAmount,
-            0, /// deposit no pcv, meaning things will be imbalanced
-            address(pcvDepositDai),
-            address(pcvDepositUsdc),
-            address(pcvSwapper)
-        );
+        mgov.stake(vconAmount, address(pcvDepositUsdc));
+
         vm.stopPrank();
 
         uint256 endingTotalSupply = mgov.vconStaked();
@@ -189,8 +206,12 @@ contract UnitTestMarketGovernance is SystemUnitTest {
 
         assertEq(vcon.balanceOf(user), 0);
         assertEq(endingTotalSupply, startingTotalSupply + vconAmount);
-        assertTrue(mgov.getVenueBalance(address(pcvDepositUsdc), totalPCV) < 0); /// underweight USDC balance
-        assertTrue(mgov.getVenueBalance(address(pcvDepositDai), totalPCV) > 0); /// overweight DAI balance
+        assertTrue(
+            mgov.getVenueDeviation(address(pcvDepositUsdc), totalPCV) < 0
+        ); /// underweight USDC balance
+        assertTrue(
+            mgov.getVenueDeviation(address(pcvDepositDai), totalPCV) > 0
+        ); /// overweight DAI balance
     }
 
     function testUserDepositsNoMove(uint120 vconAmount) public {
@@ -204,13 +225,7 @@ contract UnitTestMarketGovernance is SystemUnitTest {
         vm.startPrank(user);
         vcon.mint(user, vconAmount);
         vcon.approve(address(mgov), vconAmount);
-        mgov.stake(
-            vconAmount,
-            0, /// deposit no pcv, meaning things will be imbalanced
-            address(pcvDepositDai),
-            address(pcvDepositUsdc),
-            address(pcvSwapper)
-        );
+        mgov.stake(vconAmount, address(pcvDepositUsdc));
         vm.stopPrank();
 
         uint256 endingTotalSupply = mgov.vconStaked();
@@ -218,53 +233,48 @@ contract UnitTestMarketGovernance is SystemUnitTest {
 
         assertEq(vcon.balanceOf(user), 0);
         assertEq(endingTotalSupply, startingTotalSupply + vconAmount);
-        assertTrue(mgov.getVenueBalance(address(pcvDepositUsdc), totalPCV) < 0); /// underweight USDC
-        assertTrue(mgov.getVenueBalance(address(pcvDepositDai), totalPCV) > 0); /// overweight DAI
+        assertTrue(
+            mgov.getVenueDeviation(address(pcvDepositUsdc), totalPCV) < 0
+        ); /// underweight USDC
+        assertTrue(
+            mgov.getVenueDeviation(address(pcvDepositDai), totalPCV) > 0
+        ); /// overweight DAI
     }
 
-    function testUserDepositsFailsNotInitialized() public {
-        mgov.initializeVenue(address(pcvDepositUsdc));
+    // function testUserDepositsFailsNotInitialized() public {
+    //     address user = address(1001);
+    //     uint120 vconAmount = 1e18;
 
-        address user = address(1001);
-        uint120 vconAmount = 1e18;
+    //     vm.startPrank(user);
+    //     vcon.mint(user, vconAmount);
+    //     vcon.approve(address(mgov), vconAmount);
+    //     mgov.stake(
+    //         vconAmount,
+    //         0,
+    //         address(pcvDepositDai),
+    //         address(pcvDepositUsdc),
+    //         address(pcvSwapper)
+    //     );
+    //     vm.stopPrank();
 
-        vm.startPrank(user);
-        vcon.mint(user, vconAmount);
-        vcon.approve(address(mgov), vconAmount);
-        mgov.stake(
-            vconAmount,
-            0,
-            address(pcvDepositDai),
-            address(pcvDepositUsdc),
-            address(pcvSwapper)
-        );
-        vm.stopPrank();
+    //     vm.expectRevert("MarketGovernance: venue not initialized");
+    //     mgov.stake(
+    //         vconAmount,
+    //         1e18,
+    //         address(pcvDepositUsdc),
+    //         address(pcvDepositDai),
+    //         address(pcvSwapper)
+    //     );
 
-        vm.expectRevert("MarketGovernance: venue not initialized");
-        mgov.stake(
-            vconAmount,
-            1e18,
-            address(pcvDepositUsdc),
-            address(pcvDepositDai),
-            address(pcvSwapper)
-        );
-
-        vm.expectRevert("MarketGovernance: venue not initialized");
-        mgov.stake(
-            vconAmount,
-            0, /// deposit no pcv, meaning things will be imbalanced
-            address(pcvDepositUsdc),
-            address(pcvDepositDai),
-            address(pcvSwapper)
-        );
-    }
-
-    function testReinitializingVenueFails() public {
-        _initializeVenues();
-
-        vm.expectRevert("MarketGovernance: venue already has share price");
-        mgov.initializeVenue(address(pcvDepositUsdc));
-    }
+    //     vm.expectRevert("MarketGovernance: venue not initialized");
+    //     mgov.stake(
+    //         vconAmount,
+    //         0, /// deposit no pcv, meaning things will be imbalanced
+    //         address(pcvDepositUsdc),
+    //         address(pcvDepositDai),
+    //         address(pcvSwapper)
+    //     );
+    // }
 
     function testUnstakingOneUser() public {
         testSystemOneUser();
@@ -321,15 +331,12 @@ contract UnitTestMarketGovernance is SystemUnitTest {
             pcvOracle.getTotalPcv(),
             pcvOracle.getVenueBalance(address(pcvDepositDai))
         );
-        assertEq(
-            vconAmount - startingVconStakedAmount,
-            mgov.venueVconDeposited(address(pcvDepositDai))
-        );
+        assertEq(startingVconStakedAmount - vconAmount, mgov.vconStaked());
 
         assertEq(0, pcvOracle.getVenueBalance(address(pcvDepositUsdc)));
         assertEq(0, mgov.venueVconDeposited(address(pcvDepositUsdc)));
 
-        assertEq(vconAmount - startingVconStakedAmount, mgov.vconStaked());
+        // assertEq(vconAmount - startingVconStakedAmount, mgov.vconStaked());
     }
 
     /// test withdrawing when src and dest are equal
@@ -343,20 +350,6 @@ contract UnitTestMarketGovernance is SystemUnitTest {
             address(pcvDepositUsdc),
             address(0),
             address(this)
-        );
-    }
-
-    /// test depositing when src and dest are equal
-    function testDepositFailsSrcDestEqual() public {
-        uint256 vconAmount = mgov.vconStaked();
-
-        vm.expectRevert("MarketGovernance: src and dest equal");
-        mgov.stake(
-            vconAmount,
-            0,
-            address(pcvDepositUsdc),
-            address(pcvDepositUsdc),
-            address(0)
         );
     }
 
