@@ -120,7 +120,7 @@ contract UnitTestVoltV2GovCompatibility is Test {
         vm.startPrank(proposerCancellerExecutor);
         mockDAO.queue(targets, values, calldatas, descriptionHash);
 
-        vm.warp(block.number + timelock.getMinDelay());
+        vm.warp(block.timestamp + timelock.getMinDelay());
 
         mockDAO.execute(targets, values, calldatas, descriptionHash);
         vm.stopPrank();
