@@ -4,8 +4,8 @@ pragma solidity =0.8.13;
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
-import {PCVMover} from "@voltprotocol/pcv/PCVMover.sol";
 import {Constants} from "@voltprotocol/Constants.sol";
+import {PCVRouter} from "@voltprotocol/pcv/PCVRouter.sol";
 import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
 import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {IPCVDeposit} from "@voltprotocol/pcv/IPCVDeposit.sol";
@@ -15,7 +15,7 @@ import {DeviationWeiGranularity} from "@voltprotocol/utils/DeviationWeiGranulari
 
 import {console} from "@forge-std/console.sol";
 
-/// @notice this contract requires the PCV Controller and Locker role
+/// @notice this contract requires the PCV Mover and Locker role
 ///
 /// Core formula for market governance rewards:
 ///     Profit Per VCON = Profit Per VCON + ∆Cumulative Profits (Dollars) * VCON:Dollar  / VCON Staked
@@ -27,16 +27,15 @@ import {console} from "@forge-std/console.sol";
 /// The VCON:Dollar ratio is the same for both profits and losses. If a venue has a VCON:Dollar ratio of 5:1
 /// and the venue gains $5 in profits, then 25 VCON will be distributed across all VCON stakers in that venue.
 /// If that same venue losses $5, then a loss of 25 VCON will be distributed across all VCON stakers in that venue.
-contract MarketGovernance is CoreRefV2, PCVMover, IMarketGovernance {
+contract MarketGovernance is CoreRefV2, IMarketGovernance {
     using DeviationWeiGranularity for *;
     using SafeERC20 for *;
     using SafeCast for *;
 
-    /// @notice emitted when a route is added
-    event RouteAdded(
-        address indexed src,
-        address indexed dst,
-        address indexed swapper
+    /// @notice emitted when the router is updated
+    event PCVRouterUpdated(
+        address indexed oldPcvRouter,
+        address indexed newPcvRouter
     );
 
     /// @notice emitted when profit to vcon ratio is updated
@@ -45,6 +44,9 @@ contract MarketGovernance is CoreRefV2, PCVMover, IMarketGovernance {
         uint256 oldRatio,
         uint256 newRatio
     );
+
+    /// @notice reference to the PCV Router
+    address public pcvRouter;
 
     /// @notice total amount of VCON deposited across all venues
     uint256 public vconStaked;
@@ -56,17 +58,12 @@ contract MarketGovernance is CoreRefV2, PCVMover, IMarketGovernance {
     /// which will not be included in the V1
     mapping(address => uint256) public profitToVconRatio;
 
-    /// TODO simplify this contract down to only track venue profit,
     /// and do the conversion to VCON at the end when accruing rewards
-    /// alternatively, pack venueLastRecordedSharePrice,
-    /// venueLastRecordedProfit and venueVconDeposited into a single slot for gas optimization
+    /// pack venueLastRecordedProfit, venueVconDeposited and profitToVconRatio
+    /// into a single slot for gas optimization
 
     /// @notice last recorded profit index per venue
     mapping(address => uint128) public venueLastRecordedProfit;
-
-    /// @notice last recorded share price of a venue in VCON
-    /// starts off at 1e18
-    mapping(address => uint128) public venueLastRecordedSharePrice;
 
     /// @notice total vcon deposited per venue
     mapping(address => uint256) public venueVconDeposited;
@@ -77,39 +74,16 @@ contract MarketGovernance is CoreRefV2, PCVMover, IMarketGovernance {
 
     /// @notice record of VCON index when user joined a given venue
     mapping(address => mapping(address => uint256))
-        public venueUserStartingVconProfit;
+        public venueUserStartingProfit;
 
     /// @notice record how much VCON a user deposited in a given venue
     mapping(address => mapping(address => uint256))
         public venueUserDepositedVcon;
 
     /// @param _core reference to core
-    constructor(address _core) CoreRefV2(_core) {}
-
-    /// @notice permissionlessly initialize a venue
-    /// required to be able to utilize a given PCV Deposit in market governance
-    function initializeVenue(address venue) external globalLock(1) {
-        require(pcvOracle().isVenue(venue), "MarketGovernance: invalid venue");
-
-        uint256 startingLastRecordedProfit = venueLastRecordedProfit[venue];
-        require(
-            startingLastRecordedProfit == 0,
-            "MarketGovernance: profit already recorded"
-        );
-        require(
-            venueLastRecordedSharePrice[venue] == 0,
-            "MarketGovernance: venue already has share price"
-        );
-
-        IPCVDepositV2(venue).accrue();
-
-        uint256 endingLastRecordedProfit = IPCVDepositV2(venue)
-            .lastRecordedProfit();
-
-        venueLastRecordedProfit[venue] = endingLastRecordedProfit.toUint128();
-        venueLastRecordedSharePrice[venue] = Constants
-            .ETH_GRANULARITY
-            .toUint128();
+    /// @param _pcvRouter reference to pcvRouter
+    constructor(address _core, address _pcvRouter) CoreRefV2(_core) {
+        pcvRouter = _pcvRouter;
     }
 
     /// TODO update pcv oracle to cache total pcv so getAllPCV isn't needed to figure
@@ -117,32 +91,20 @@ contract MarketGovernance is CoreRefV2, PCVMover, IMarketGovernance {
 
     /// ---------- Permissionless User PCV Allocation Methods ----------
 
-    /// any losses or gains are applied to venueLastRecordedSharePrice
-    ///
-    ///
-    /// user deposits
-
     /// @notice a user can get slashed up to their full VCON stake for entering
     /// a venue that takes a loss.
+    /// any losses or gains are applied to venueUserStartingProfit via `_accrue` method
     /// @param amountVcon to stake on destination
-    /// @param amountPcv to move from source to destination
-    /// @param source address to pull funds from
     /// @param destination address to accrue rewards to, and send funds to
-    /// @param swapper address that swaps asset types between src and dest if needed
     function stake(
         uint256 amountVcon,
-        uint256 amountPcv,
-        address source,
-        address destination,
-        address swapper
+        address destination
     ) external globalLock(1) {
         IPCVOracle oracle = pcvOracle();
-        require(oracle.isVenue(source), "MarketGovernance: invalid source");
         require(
             oracle.isVenue(destination),
             "MarketGovernance: invalid destination"
         );
-        require(source != destination, "MarketGovernance: src and dest equal");
 
         _accrue(destination); /// update profitPerVCON in the destination so the user gets in at the current share price
         int256 vconRewards = _harvestRewards(msg.sender, destination); /// auto-compound rewards
@@ -150,9 +112,6 @@ contract MarketGovernance is CoreRefV2, PCVMover, IMarketGovernance {
             vconRewards >= 0,
             "MarketGovernance: must realize loss before staking"
         );
-
-        /// check and an interaction with a trusted contract
-        vcon().safeTransferFrom(msg.sender, address(this), amountVcon); /// transfer VCON in
 
         uint256 totalVconDeposited = amountVcon + vconRewards.toUint256(); /// auto-compound rewards
 
@@ -165,18 +124,8 @@ contract MarketGovernance is CoreRefV2, PCVMover, IMarketGovernance {
         /// venue updates
         venueVconDeposited[destination] += totalVconDeposited;
 
-        /// ignore balance checks if only one user is allocating in the system
-        bool ignoreBalanceChecks = vconStaked == totalVconDeposited;
-
-        if (amountPcv != 0) {
-            _movePCVWithChecks(
-                source,
-                destination,
-                swapper,
-                amountPcv,
-                ignoreBalanceChecks
-            );
-        }
+        /// check and an interaction with a trusted contract
+        vcon().safeTransferFrom(msg.sender, address(this), amountVcon); /// transfer VCON in
     }
 
     /// @notice unstake VCON and transfer corresponding VCON to another venue
@@ -219,8 +168,7 @@ contract MarketGovernance is CoreRefV2, PCVMover, IMarketGovernance {
         );
 
         require(
-            venueUserDepositedVcon[source][msg.sender] + vconReward >=
-                amountVcon,
+            venueUserDepositedVcon[source][msg.sender] >= amountVcon,
             "MarketGovernance: invalid vcon amount"
         );
 
@@ -228,20 +176,14 @@ contract MarketGovernance is CoreRefV2, PCVMover, IMarketGovernance {
         vconStaked -= amountVcon;
 
         /// user updates
-        /// balance = 80
-        /// amount = 100
-        /// rewards = 30
-        /// amount deducted = 70
-        /// _____________
-        /// balance = 10
-        venueUserDepositedVcon[source][msg.sender] -= amountVcon - vconReward;
+        venueUserDepositedVcon[source][msg.sender] -= amountVcon;
 
         /// venue updates
         venueVconDeposited[source] -= amountVcon;
 
         /// ---------- Interactions ----------
 
-        vcon().safeTransfer(vconRecipient, amountVcon); /// transfer VCON to recipient
+        vcon().safeTransfer(vconRecipient, amountVcon + vconReward); /// transfer VCON amount + rewards to recipient
 
         /// ignore balance checks if only one user is in the system and is allocating to a single venue
         bool ignoreBalanceChecks = vconStaked ==
@@ -302,7 +244,7 @@ contract MarketGovernance is CoreRefV2, PCVMover, IMarketGovernance {
     ///
     /// @param venue to query
     /// @param totalPcv to measure venue against
-    function getVenueBalance(
+    function getVenueDeviation(
         address venue,
         uint256 totalPcv
     ) public view returns (int256) {
@@ -332,11 +274,7 @@ contract MarketGovernance is CoreRefV2, PCVMover, IMarketGovernance {
         if (venueDepositedVconRatio == 0) {
             /// add this 0 check because deviation divides by a and would cause a revert
             /// replicate step 3 if no VCON is deposited by comparing pcv to venue balance
-            return
-                DeviationWeiGranularity.calculateDeviation(
-                    totalPcv.toInt256(),
-                    venueBalance.toInt256()
-                );
+            return Constants.ETH_GRANULARITY_INT;
         }
 
         /// Step 2.
@@ -377,17 +315,15 @@ contract MarketGovernance is CoreRefV2, PCVMover, IMarketGovernance {
         return proRataPcv;
     }
 
-    struct PCVDepositInfo {
-        address deposit;
-        uint256 amount;
-    }
-
-    /// apply the amount of rewards a user has accrued, sending directly to their account
-    /// each venue will have the accrue function called in order to get the most up to
-    /// date pnl from them
-    function applyRewards(
-        address[] calldata venues,
-        address user
+    /// @notice realize gains and losses for msg.sender
+    /// @param venues to realize losses in
+    /// only the caller can realize losses on their own behalf
+    /// duplicating addresses does not allow theft as all venues have their indexes
+    /// updated before we find the profit and loss, so a duplicate venue will have 0 delta a second time
+    /// @dev we can't follow CEI here because we have to make external calls to update
+    /// the external venues. However, this is not an issue as the global reentrancy lock is enabled
+    function realizeGainsAndLosses(
+        address[] calldata venues
     ) external globalLock(1) {
         uint256 venueLength = venues.length;
         int256 totalVcon = 0;
@@ -400,63 +336,52 @@ contract MarketGovernance is CoreRefV2, PCVMover, IMarketGovernance {
                     "MarketGovernance: invalid venue"
                 );
 
+                /// updates the venueLastRecordedProfit
                 _accrue(venue);
-                int256 rewards = _harvestRewards(user, venue);
-                require(
-                    rewards >= 0,
-                    "MarketGovernance: cannot claim rewards on venue with losses"
-                );
-                totalVcon += rewards;
+
+                /// updates the venueUserStartingProfit mapping
+                int256 pnl = _harvestRewards(msg.sender, venue);
+                if (pnl < 0) {
+                    /// loss scenarios
+                    if (
+                        (-pnl).toUint256() >
+                        venueUserDepositedVcon[venue][msg.sender]
+                    ) {
+                        uint256 userDepositedAmount = venueUserDepositedVcon[
+                            venue
+                        ][msg.sender];
+                        /// zero the user's balance
+                        venueUserDepositedVcon[venue][msg.sender] = 0;
+
+                        /// take losses off the total amount staked
+                        vconStaked -= userDepositedAmount;
+
+                        /// TODO final write to storage, decrement venue deposited VCON
+                        venueVconDeposited[venue] -= userDepositedAmount;
+                    } else {
+                        /// losses should never exceed staked amount at this point
+                        venueUserDepositedVcon[venue][
+                            msg.sender
+                        ] = (venueUserDepositedVcon[venue][msg.sender]
+                            .toInt256() + pnl).toUint256();
+
+                        /// take losses off the total amount staked
+                        vconStaked = (vconStaked.toInt256() + pnl).toUint256();
+
+                        /// TODO final write to storage, decrement venue deposited VCON
+                        venueVconDeposited[venue] -= (-pnl).toUint256();
+                    }
+                } else {
+                    /// gain or even scenario
+                    totalVcon += pnl;
+                }
+
+                /// TODO emit an event
             }
         }
 
-        /// rewards was never less than 0, so totalVcon must be >= 0
-        vcon().safeTransfer(user, totalVcon.toUint256());
-    }
-
-    /// @param venues to realize losses in
-    /// only the caller can realize losses on their own behalf
-    function realizeLosses(address[] calldata venues) external globalLock(1) {
-        uint256 venueLength = venues.length;
-
-        unchecked {
-            for (uint256 i = 0; i < venueLength; i++) {
-                address venue = venues[i];
-                require(
-                    pcvOracle().isVenue(venue),
-                    "MarketGovernance: invalid venue"
-                );
-
-                /// updates the venueLastRecordedProfit and venueLastRecordedSharePrice mapping
-                _accrue(venue);
-
-                /// updates the venueUserStartingVconProfit mapping
-                int256 losses = _harvestRewards(msg.sender, venue);
-                require(losses < 0, "MarketGovernance: no losses to realize");
-
-                if (
-                    (-losses).toUint256() >
-                    venueUserDepositedVcon[venue][msg.sender]
-                ) {
-                    uint256 userDepositedAmount = venueUserDepositedVcon[venue][
-                        msg.sender
-                    ];
-                    /// zero the user's balance
-                    venueUserDepositedVcon[venue][msg.sender] = 0;
-
-                    /// take losses off the total amount staked
-                    vconStaked -= userDepositedAmount;
-                } else {
-                    /// losses should never exceed staked amount at this point
-                    venueUserDepositedVcon[venue][
-                        msg.sender
-                    ] = (venueUserDepositedVcon[venue][msg.sender].toInt256() +
-                        losses).toUint256();
-
-                    /// take losses off the total amount staked
-                    vconStaked = (vconStaked.toInt256() + losses).toUint256();
-                }
-            }
+        if (totalVcon != 0) {
+            vcon().safeTransfer(msg.sender, totalVcon.toUint256());
         }
     }
 
@@ -479,6 +404,11 @@ contract MarketGovernance is CoreRefV2, PCVMover, IMarketGovernance {
                 totalVcon += getPendingRewards(user, venue);
             }
         }
+    }
+
+    struct PCVDepositInfo {
+        address deposit;
+        uint256 amount;
     }
 
     /// @notice return what the perfectly balanced system would look like
@@ -538,22 +468,13 @@ contract MarketGovernance is CoreRefV2, PCVMover, IMarketGovernance {
 
         if (!ignoreBalanceChecks) {
             /// record how balanced the system is before the PCV movement
-            sourceVenueBalance = getVenueBalance(source, totalPcv); /// 50%
-            destinationVenueBalance = getVenueBalance(destination, totalPcv); /// -30%
+            sourceVenueBalance = getVenueDeviation(source, totalPcv); /// 50%
+            destinationVenueBalance = getVenueDeviation(destination, totalPcv); /// -30%
         }
 
         /// validate pcv movement
         /// check underlying assets match up and if not that swapper is provided and valid
-        _checkPCVMove(
-            source,
-            destination,
-            swapper,
-            sourceAsset,
-            destinationAsset
-        );
-
-        /// optimistically transfer funds to the specified pcv deposit
-        _movePCV(
+        PCVRouter(pcvRouter).movePCV(
             source,
             destination,
             swapper,
@@ -565,8 +486,11 @@ contract MarketGovernance is CoreRefV2, PCVMover, IMarketGovernance {
         if (!ignoreBalanceChecks) {
             /// TODO simplify this by passing delta of starting balance instead of calling balance again on each pcv deposit
             /// record how balanced the system is before the PCV movement
-            int256 sourceVenueBalanceAfter = getVenueBalance(source, totalPcv);
-            int256 destinationVenueBalanceAfter = getVenueBalance(
+            int256 sourceVenueBalanceAfter = getVenueDeviation(
+                source,
+                totalPcv
+            );
+            int256 destinationVenueBalanceAfter = getVenueDeviation(
                 destination,
                 totalPcv
             );
@@ -606,48 +530,60 @@ contract MarketGovernance is CoreRefV2, PCVMover, IMarketGovernance {
     /// @notice VCON rewards could be negative if a user is at a loss
     /// @param user to check rewards from
     /// @param venue to check rewards in
+    /// return the amount of pending rewards or losses for a given user
+    /// algorithm:
+    ///  1. Determine venue profits or losses that have occured since
+    ///   the last time the user staked or unstaked in a given venue.
+    ///      venue pnl = current profit index - user starting index
+    ///  2. Convert PnL to their pro-rata VCON amount
+    ///      vcon rewards = venue PnL * user vcon deposited in venue / total vcon deposited in venue
     function getPendingRewards(
         address user,
         address venue
     ) public view returns (int256) {
-        int256 vconStartIndex = venueUserStartingVconProfit[venue][user]
-            .toInt256();
-        int256 vconCurrentIndex = venueLastRecordedSharePrice[venue].toInt256();
+        /// TODO this is 5 SLOAD's and we can do better
+        /// Pack venue info down into a single struct to get us down to 3 SLOAD's
 
-        if (vconStartIndex == 0) {
+        int256 startingProfitIndex = venueUserStartingProfit[venue][user]
+            .toInt256();
+        int256 currentProfitIndex = venueLastRecordedProfit[venue].toInt256();
+        int256 profitToVcon = profitToVconRatio[venue].toInt256();
+        int256 venueVconAmount = venueVconDeposited[venue].toInt256();
+
+        if (startingProfitIndex == 0 || venueVconAmount == 0) {
             return 0; /// no interest if user has not entered the market
         }
 
-        int256 vconRewards = (vconCurrentIndex - vconStartIndex) *
-            venueUserDepositedVcon[venue][user].toInt256();
+        int256 currentProfits = currentProfitIndex - startingProfitIndex;
+        int256 vconRewards = (currentProfits *
+            venueUserDepositedVcon[venue][user].toInt256() *
+            profitToVcon) / venueVconAmount;
 
         return vconRewards;
     }
 
-    /// @notice returns profit in VCON a user has accrued
+    /// @notice returns profit or losses a VCON staker has accrued
+    /// updates their venue starting profit index
     /// does not update how much VCON a user has staked to save on gas
     /// that updating happens in the calling function
     function _harvestRewards(
         address user,
         address venue
     ) private returns (int256) {
-        uint256 vconCurrentIndex = venueLastRecordedSharePrice[venue];
+        uint256 currentProfitIndex = venueLastRecordedProfit[venue];
 
-        console.log("getting pending rewards");
         /// get pending rewards
         int256 pendingRewardBalance = getPendingRewards(user, venue);
         console.log("got pending rewards", pendingRewardBalance.toUint256());
 
         /// then set the vcon current index for this user
-        venueUserStartingVconProfit[venue][user] = vconCurrentIndex;
+        venueUserStartingProfit[venue][user] = currentProfitIndex;
 
         return pendingRewardBalance;
     }
 
     /// update the venue last recorded share price
     function _accrue(address venue) private {
-        uint256 startingLastRecordedProfit = venueLastRecordedProfit[venue];
-
         IPCVDepositV2(venue).accrue();
 
         uint256 endingLastRecordedProfit = IPCVDepositV2(venue)
@@ -656,30 +592,9 @@ contract MarketGovernance is CoreRefV2, PCVMover, IMarketGovernance {
         /// update venue last recorded profit regardless
         /// of participation in market governance
         venueLastRecordedProfit[venue] = endingLastRecordedProfit.toUint128();
-
-        /// amount of VCON that each VCON deposit receives for being in this venue
-        /// if there is no supply, there is no delta to apply
-        if (vconStaked != 0) {
-            int256 deltaProfit = endingLastRecordedProfit.toInt256() -
-                startingLastRecordedProfit.toInt256(); /// also could be a loss
-
-            int256 venueProfitToVconRatio = profitToVconRatio[venue].toInt256();
-
-            int256 profitPerVconDelta = (deltaProfit * venueProfitToVconRatio) /
-                vconStaked.toInt256();
-
-            uint256 lastVconSharePrice = venueLastRecordedSharePrice[venue];
-            require(
-                lastVconSharePrice >= Constants.ETH_GRANULARITY,
-                "MarketGovernance: venue not initialized"
-            );
-
-            venueLastRecordedSharePrice[venue] = (lastVconSharePrice
-                .toInt256() + profitPerVconDelta).toUint256().toUint128();
-        }
     }
 
-    /// TODO add events
+    /// TODO add events to all functions
 
     /// ---------- Governor-Only Permissioned API ----------
 
@@ -695,5 +610,12 @@ contract MarketGovernance is CoreRefV2, PCVMover, IMarketGovernance {
             oldProfitToVconRatio,
             newProfitToVconRatio
         );
+    }
+
+    function setPCVRouter(address newPcvRouter) external onlyGovernor {
+        address oldPcvRouter = pcvRouter;
+        pcvRouter = newPcvRouter;
+
+        emit PCVRouterUpdated(oldPcvRouter, newPcvRouter);
     }
 }

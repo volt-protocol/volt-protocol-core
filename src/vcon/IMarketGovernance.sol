@@ -32,19 +32,10 @@ interface IMarketGovernance {
 
     /// ---------- Permissionless User PCV Allocation Methods ----------
 
-    /// this function can be called with amount of PCV set to 0
+    /// stake VCON on a venue
     /// @param amountVcon to stake
-    /// @param amountPcv to move from src to dest
     /// @param source pcv deposit to pull funds from
-    /// @param destination pcv deposit to send funds
-    /// @param swapper address to swap tokens
-    function stake(
-        uint256 amountVcon,
-        uint256 amountPcv,
-        address source,
-        address destination,
-        address swapper
-    ) external;
+    function stake(uint256 amountVcon, address source) external;
 
     /// @notice this function automatically calculates
     /// the amount of PCV to remove from the source
@@ -69,10 +60,14 @@ interface IMarketGovernance {
     /// @param movements of PCV between venues
     function rebalance(Rebalance[] calldata movements) external;
 
-    /// apply the amount of rewards a user has accrued, sending directly to their account
-    /// each venue will have the accrue function called in order to get the most up to
-    /// date pnl from them
-    function applyRewards(address[] calldata venues, address user) external;
+    /// @notice realize gains and losses for msg.sender
+    /// @param venues to realize losses in
+    /// only the caller can realize losses on their own behalf
+    /// duplicating addresses does not allow theft as all venues have their indexes
+    /// updated before we find the profit and loss, so a duplicate venue will have 0 delta a second time
+    /// @dev we can't follow CEI here because we have to make external calls to update
+    /// the external venues. However, this is not an issue as the global reentrancy lock is enabled
+    function realizeGainsAndLosses(address[] calldata venues) external;
 
     /// return the total amount of rewards a user is entitled to
     /// this value will usually be stale as .accrue() must be called in the same block/tx as this function
@@ -81,10 +76,4 @@ interface IMarketGovernance {
         address[] calldata venues,
         address user
     ) external view returns (int256);
-
-    /// ---------- Initialize Method ----------
-
-    /// @notice permissionlessly initialize a venue
-    /// required to be able to utilize a given PCV Deposit in market governance
-    function initializeVenue(address venue) external;
 }
