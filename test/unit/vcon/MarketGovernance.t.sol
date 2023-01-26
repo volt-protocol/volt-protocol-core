@@ -357,4 +357,14 @@ contract UnitTestMarketGovernance is SystemUnitTest {
     /// todo test depositing fails when venue not initialized
     /// todo test withdrawing when there are profits
     /// todo test withdrawing when there are losses
+
+    function testSetProfitToVconRatioFailsNonGovernor() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        mgov.setProfitToVconRatio(address(0), 0);
+    }
+
+    function testSetPCVRouterFailsNonGovernor() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        mgov.setPCVRouter(address(0));
+    }
 }

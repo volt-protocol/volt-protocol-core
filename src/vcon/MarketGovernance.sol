@@ -45,6 +45,35 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         uint256 newRatio
     );
 
+    /// @notice emitted when a loss is realized
+    event LossRealized(
+        address indexed venue,
+        address indexed user,
+        int256 amount
+    );
+
+    /// @notice emitted when a gain is realized
+    event GainRealized(
+        address indexed venue,
+        address indexed user,
+        uint256 amount
+    );
+
+    /// @notice emitted whenever a user stakes
+    event Staked(
+        address indexed venue,
+        address indexed user,
+        uint256 vconAmount
+    );
+
+    /// @notice emitted whenever a user unstakes
+    event Unstaked(
+        address indexed venue,
+        address indexed user,
+        uint256 vconAmount,
+        uint256 pcvAmount
+    );
+
     /// @notice reference to the PCV Router
     address public pcvRouter;
 
@@ -326,62 +355,72 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         address[] calldata venues
     ) external globalLock(1) {
         uint256 venueLength = venues.length;
-        int256 totalVcon = 0;
+        uint256 totalVcon = 0;
 
-        unchecked {
-            for (uint256 i = 0; i < venueLength; i++) {
-                address venue = venues[i];
-                require(
-                    pcvOracle().isVenue(venue),
-                    "MarketGovernance: invalid venue"
-                );
+        for (uint256 i = 0; i < venueLength; ) {
+            address venue = venues[i];
+            require(
+                pcvOracle().isVenue(venue),
+                "MarketGovernance: invalid venue"
+            );
 
-                /// updates the venueLastRecordedProfit
-                _accrue(venue);
+            /// updates the venueLastRecordedProfit
+            _accrue(venue);
 
-                /// updates the venueUserStartingProfit mapping
-                int256 pnl = _harvestRewards(msg.sender, venue);
-                if (pnl < 0) {
-                    /// loss scenarios
-                    if (
-                        (-pnl).toUint256() >
-                        venueUserDepositedVcon[venue][msg.sender]
-                    ) {
-                        uint256 userDepositedAmount = venueUserDepositedVcon[
-                            venue
-                        ][msg.sender];
-                        /// zero the user's balance
-                        venueUserDepositedVcon[venue][msg.sender] = 0;
+            /// updates the venueUserStartingProfit mapping
+            int256 pnl = _harvestRewards(msg.sender, venue);
+            if (pnl < 0) {
+                int256 lossAmount;
+                /// loss scenarios
+                if (
+                    (-pnl).toUint256() >
+                    venueUserDepositedVcon[venue][msg.sender]
+                ) {
+                    uint256 userDepositedAmount = venueUserDepositedVcon[venue][
+                        msg.sender
+                    ];
+                    /// zero the user's balance
+                    venueUserDepositedVcon[venue][msg.sender] = 0;
 
-                        /// take losses off the total amount staked
-                        vconStaked -= userDepositedAmount;
+                    /// take losses off the total amount staked
+                    vconStaked -= userDepositedAmount;
 
-                        /// TODO final write to storage, decrement venue deposited VCON
-                        venueVconDeposited[venue] -= userDepositedAmount;
-                    } else {
-                        /// losses should never exceed staked amount at this point
-                        venueUserDepositedVcon[venue][
-                            msg.sender
-                        ] = (venueUserDepositedVcon[venue][msg.sender]
-                            .toInt256() + pnl).toUint256();
+                    /// TODO final write to storage, decrement venue deposited VCON
+                    venueVconDeposited[venue] -= userDepositedAmount;
 
-                        /// take losses off the total amount staked
-                        vconStaked = (vconStaked.toInt256() + pnl).toUint256();
-
-                        /// TODO final write to storage, decrement venue deposited VCON
-                        venueVconDeposited[venue] -= (-pnl).toUint256();
-                    }
+                    lossAmount = -(userDepositedAmount).toInt256();
                 } else {
-                    /// gain or even scenario
-                    totalVcon += pnl;
+                    /// losses should never exceed staked amount at this point
+                    venueUserDepositedVcon[venue][
+                        msg.sender
+                    ] = (venueUserDepositedVcon[venue][msg.sender].toInt256() +
+                        pnl).toUint256();
+
+                    /// take losses off the total amount staked
+                    vconStaked = (vconStaked.toInt256() + pnl).toUint256();
+
+                    /// decrement venue deposited VCON
+                    venueVconDeposited[venue] -= (-pnl).toUint256();
+
+                    lossAmount = pnl;
                 }
 
-                /// TODO emit an event
+                emit LossRealized(venue, msg.sender, lossAmount);
+            } else {
+                /// gain or even scenario
+                totalVcon += pnl.toUint256();
+                if (pnl != 0) {
+                    emit GainRealized(venue, msg.sender, pnl.toUint256());
+                }
+            }
+
+            unchecked {
+                i++;
             }
         }
 
         if (totalVcon != 0) {
-            vcon().safeTransfer(msg.sender, totalVcon.toUint256());
+            vcon().safeTransfer(msg.sender, totalVcon);
         }
     }
 
