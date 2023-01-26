@@ -8,10 +8,10 @@ import {PCVOracle} from "@voltprotocol/oracle/PCVOracle.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
 import {getCoreV2} from "@test/unit/utils/Fixtures.sol";
+import {PCVRouter} from "@voltprotocol/pcv/PCVRouter.sol";
 import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {MockOracle} from "@test/mock/MockOracle.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
-import {MockPCVRouter} from "@test/mock/MockPCVRouter.sol";
 import {MockPCVSwapper} from "@test/mock/MockPCVSwapper.sol";
 import {MockPCVDepositV3} from "@test/mock/MockPCVDepositV3.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
@@ -25,7 +25,7 @@ contract PCVRouterUnitTest is Test {
     PCVOracle private pcvOracle;
 
     // reference to the volt pcv router
-    MockPCVRouter private pcvRouter;
+    PCVRouter private pcvRouter;
 
     // global reentrancy lock
     IGlobalReentrancyLock private lock;
@@ -72,7 +72,7 @@ contract PCVRouterUnitTest is Test {
         // volt system
         core = CoreV2(address(getCoreV2()));
         pcvOracle = new PCVOracle(address(core));
-        pcvRouter = new MockPCVRouter(address(core));
+        pcvRouter = new PCVRouter(address(core));
         entry = new SystemEntry(address(core));
         lock = IGlobalReentrancyLock(
             address(new GlobalReentrancyLock(address(core)))
@@ -100,6 +100,7 @@ contract PCVRouterUnitTest is Test {
         core.grantLocker(address(depositToken2A));
         core.grantLocker(address(depositToken2B));
         core.grantLocker(address(pcvRouter));
+        core.grantLocker(address(this));
         core.grantPCVController(address(pcvRouter));
         core.createRole(VoltRoles.PCV_MOVER, VoltRoles.GOVERNOR);
         core.grantRole(VoltRoles.PCV_MOVER, address(this));
@@ -216,6 +217,8 @@ contract PCVRouterUnitTest is Test {
     // -------------------------------------------------
 
     function testMovePCVEvents() public {
+        lock.lock(1);
+
         // PCVMovement
         vm.expectEmit(true, true, false, true, address(pcvRouter));
         emit PCVMovement(
@@ -238,6 +241,8 @@ contract PCVRouterUnitTest is Test {
     function testMovePCVBalances() public {
         assertEq(depositToken1A.balance(), 100e18);
         assertEq(depositToken1B.balance(), 100e18);
+
+        lock.lock(1);
 
         vm.expectCall(
             address(depositToken1A),
@@ -267,6 +272,8 @@ contract PCVRouterUnitTest is Test {
     function testMovePCVUsingSwapper() public {
         assertEq(depositToken1A.balance(), 100e18);
         assertEq(depositToken2A.balance(), 100e18);
+
+        lock.lock(1);
 
         vm.prank(addresses.governorAddress);
         address[] memory whitelistedSwapperAddresses = new address[](1);
@@ -362,6 +369,7 @@ contract PCVRouterUnitTest is Test {
     // -------------------------------------------------
 
     function testMovePCVInvalidSource() public {
+        lock.lock(1);
         vm.expectRevert("PCVRouter: invalid source");
         pcvRouter.movePCV(
             address(this), // source, not a PCVDeposit
@@ -374,6 +382,7 @@ contract PCVRouterUnitTest is Test {
     }
 
     function testMovePCVInvalidDestination() public {
+        lock.lock(1);
         vm.expectRevert("PCVRouter: invalid destination");
         pcvRouter.movePCV(
             address(depositToken1A), // source
@@ -386,6 +395,8 @@ contract PCVRouterUnitTest is Test {
     }
 
     function testMovePCVWrongToken() public {
+        lock.lock(1);
+
         vm.expectRevert("PCVRouter: invalid source asset");
         pcvRouter.movePCV(
             address(depositToken1A), // source
@@ -408,6 +419,8 @@ contract PCVRouterUnitTest is Test {
     }
 
     function testMovePCVInvalidSwapper() public {
+        lock.lock(1);
+
         vm.expectRevert("PCVRouter: invalid swapper");
         pcvRouter.movePCV(
             address(depositToken1A), // source
@@ -426,6 +439,8 @@ contract PCVRouterUnitTest is Test {
         address[] memory whitelistedSwapperAddresses = new address[](1);
         whitelistedSwapperAddresses[0] = address(swapper);
         pcvRouter.addPCVSwappers(whitelistedSwapperAddresses);
+
+        lock.lock(1);
 
         vm.expectRevert("PCVRouter: unsupported swap");
         pcvRouter.movePCV(
@@ -531,8 +546,8 @@ contract PCVRouterUnitTest is Test {
     function testMovePCVRevertIfNotPCVController() public {
         vm.prank(addresses.governorAddress);
         core.revokePCVController(address(pcvRouter));
-
         depositToken1A.setCheckPCVController(true);
+        lock.lock(1);
 
         vm.expectRevert("CoreRef: Caller is not a PCV controller");
         pcvRouter.movePCV(
@@ -545,11 +560,11 @@ contract PCVRouterUnitTest is Test {
         );
     }
 
-    function testMovePCVRevertIfNotLocker() public {
+    function testMovePCVRevertIfNotLocked() public {
         vm.prank(addresses.governorAddress);
         core.revokeLocker(address(pcvRouter));
 
-        vm.expectRevert("UNAUTHORIZED");
+        vm.expectRevert("CoreRef: System not at lock level");
         pcvRouter.movePCV(
             address(depositToken1A), // source
             address(depositToken1B), // destination
