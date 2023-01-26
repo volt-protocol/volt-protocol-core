@@ -575,6 +575,9 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         /// then set the vcon current index for this user
         venueUserStartingProfit[venue][user] = currentProfitIndex;
 
+        /// if there are losses, revert on SafeCast
+        emit Harvest(venue, user, pendingRewardBalance.toUint256());
+
         return pendingRewardBalance;
     }
 
