@@ -13,8 +13,6 @@ import {IPCVDepositV2} from "@voltprotocol/pcv/IPCVDepositV2.sol";
 import {IMarketGovernance} from "@voltprotocol/vcon/IMarketGovernance.sol";
 import {DeviationWeiGranularity} from "@voltprotocol/utils/DeviationWeiGranularity.sol";
 
-import {console} from "@forge-std/console.sol";
-
 /// @notice this contract requires the PCV Mover and Locker role
 ///
 /// Core formula for market governance rewards:
@@ -27,6 +25,9 @@ import {console} from "@forge-std/console.sol";
 /// The VCON:Dollar ratio is the same for both profits and losses. If a venue has a VCON:Dollar ratio of 5:1
 /// and the venue gains $5 in profits, then 25 VCON will be distributed across all VCON stakers in that venue.
 /// If that same venue losses $5, then a loss of 25 VCON will be distributed across all VCON stakers in that venue.
+///
+/// @dev this contract assumes it is already topped up with the VCON necessary to pay rewards.
+/// A dripper will keep this contract funded at a steady pace.
 contract MarketGovernance is CoreRefV2, IMarketGovernance {
     using DeviationWeiGranularity for *;
     using SafeERC20 for *;
@@ -94,7 +95,7 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         );
 
         _accrue(destination); /// update profitPerVCON in the destination so the user gets in at the current share price
-        int256 vconRewards = _harvestRewards(msg.sender, destination); /// auto-compound rewards
+        int256 vconRewards = _updateUserProfitIndex(msg.sender, destination); /// auto-compound rewards
         require(
             vconRewards >= 0,
             "MarketGovernance: must realize loss before staking"
@@ -148,7 +149,7 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         /// amount of PCV to withdraw is the amount vcon * venue balance / total vcon staked on venue
         uint256 amountPcv = getProRataPCVAmounts(source, amountVcon);
 
-        int256 vconRewards = _harvestRewards(msg.sender, source); /// pay msg.sender their rewards
+        int256 vconRewards = _updateUserProfitIndex(msg.sender, source); /// pay msg.sender their rewards
         uint256 vconReward = vconRewards.toUint256(); /// pay msg.sender their rewards
 
         require(
@@ -237,7 +238,7 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
             _accrue(venue);
 
             /// updates the venueUserStartingProfit mapping
-            int256 pnl = _harvestRewards(msg.sender, venue);
+            int256 pnl = _updateUserProfitIndex(msg.sender, venue);
             if (pnl < 0) {
                 uint256 lossAmount;
                 /// loss scenarios
@@ -308,7 +309,8 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
     /// 2. get expected amount of pcv in the venue based on the vcon staked in that venue and the total pcv
     /// b = a * total pcv
     ///
-    /// 3. find the delta in basis points between the expected amount of pcv in the venue vs the actual amount in the venue
+    /// 3. find the delta in percentage terms, scaled by 1 ether between the expected amount of pcv in the
+    ///  venue vs the actual amount in the venue
     /// d = (a - b)  / a
     ///
     /// @param venue to query
@@ -372,13 +374,20 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         uint256 venuePcv = IPCVDeposit(venue).balance();
         uint256 cachedVconStaked = venueVconDeposited[venue];
 
-        console.log("cachedVconStaked: ", cachedVconStaked);
-
         /// 0 checks as any 0 denominator will cause a revert
         if (cachedVconStaked == 0) {
             return 0; /// perfectly balanced at 0 PCV or 0 VCON staked
         }
 
+        /// @audit we do not add 1 to the pro rata PCV here. This means a withdrawal of 1 Wei of VCON
+        /// will allow removing a user's VCON without having to withdraw from a venue.
+        /// This is a known issue, however it is not harmful as it would require a quintillion withdrawals
+        /// to withdraw 1 VCON, which would cost at minimum 21,000e18 gas per withdraw, meaning it would cost at least 1 million ether
+        /// (likely more) to retrieve a single VCON without moving PCV.
+        /// the only reason this would ever get expoited is if a loss was taken and a user was trying to avoid realizing their portion
+        /// of the losses. However, in a loss scenario, the unstake function does not allow execution if the user has an unrealized
+        /// loss in that venue. This condition stops the aforementioned exploit.
+        /// fix would require rounding up in the protocol's favor, so that a withdrawal of 1 Wei of VCON has an actual withdraw amount
         uint256 proRataPcv = (amountVcon * venuePcv) / cachedVconStaked;
 
         return proRataPcv;
@@ -566,7 +575,7 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
     /// updates their venue starting profit index
     /// does not update how much VCON a user has staked to save on gas
     /// that updating happens in the calling function
-    function _harvestRewards(
+    function _updateUserProfitIndex(
         address user,
         address venue
     ) private returns (int256) {
@@ -574,7 +583,6 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
 
         /// get pending rewards
         int256 pendingRewardBalance = getPendingRewards(user, venue);
-        console.log("got pending rewards", pendingRewardBalance.toUint256());
 
         /// then set the vcon current index for this user
         venueUserStartingProfit[venue][user] = currentProfitIndex;
