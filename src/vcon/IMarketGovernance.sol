@@ -30,6 +30,55 @@ interface IMarketGovernance {
         uint256 vconAmount
     );
 
+    /// @notice emitted when the router is updated
+    event PCVRouterUpdated(
+        address indexed oldPcvRouter,
+        address indexed newPcvRouter
+    );
+
+    /// @notice emitted when profit to vcon ratio is updated
+    event ProfitToVconRatioUpdated(
+        address indexed venue,
+        uint256 oldRatio,
+        uint256 newRatio
+    );
+
+    /// @notice emitted when a loss is realized
+    event LossRealized(
+        address indexed venue,
+        address indexed user,
+        uint256 vconLossAmount
+    );
+
+    /// @notice emitted whenever a user stakes
+    event Staked(
+        address indexed venue,
+        address indexed user,
+        uint256 vconAmount
+    );
+
+    /// @notice emitted whenever a user unstakes
+    event Unstaked(
+        address indexed venue,
+        address indexed user,
+        uint256 vconAmount,
+        uint256 pcvAmount
+    );
+
+    /// @notice emitted whenever a user harvests
+    event Harvest(
+        address indexed venue,
+        address indexed user,
+        uint256 vconAmount
+    );
+
+    /// @notice emitted when a venue's index is updated via accrue
+    event VenueIndexUpdated(
+        address indexed venue,
+        uint256 indexed timestamp,
+        uint256 profitIndex
+    );
+
     /// ---------- Permissionless User PCV Allocation Methods ----------
 
     /// stake VCON on a venue

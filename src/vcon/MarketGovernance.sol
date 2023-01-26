@@ -32,48 +32,6 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
     using SafeERC20 for *;
     using SafeCast for *;
 
-    /// @notice emitted when the router is updated
-    event PCVRouterUpdated(
-        address indexed oldPcvRouter,
-        address indexed newPcvRouter
-    );
-
-    /// @notice emitted when profit to vcon ratio is updated
-    event ProfitToVconRatioUpdated(
-        address indexed venue,
-        uint256 oldRatio,
-        uint256 newRatio
-    );
-
-    /// @notice emitted when a loss is realized
-    event LossRealized(
-        address indexed venue,
-        address indexed user,
-        int256 amount
-    );
-
-    /// @notice emitted when a gain is realized
-    event GainRealized(
-        address indexed venue,
-        address indexed user,
-        uint256 amount
-    );
-
-    /// @notice emitted whenever a user stakes
-    event Staked(
-        address indexed venue,
-        address indexed user,
-        uint256 vconAmount
-    );
-
-    /// @notice emitted whenever a user unstakes
-    event Unstaked(
-        address indexed venue,
-        address indexed user,
-        uint256 vconAmount,
-        uint256 pcvAmount
-    );
-
     /// @notice reference to the PCV Router
     address public pcvRouter;
 
@@ -251,8 +209,6 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         }
     }
 
-    /// TODO add slashing logic to burn VCON from participants that are in a venue that took a loss
-
     /// ------------- View Only Methods -------------
 
     /// @notice returns positive value if over allocated
@@ -370,7 +326,7 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
             /// updates the venueUserStartingProfit mapping
             int256 pnl = _harvestRewards(msg.sender, venue);
             if (pnl < 0) {
-                int256 lossAmount;
+                uint256 lossAmount;
                 /// loss scenarios
                 if (
                     (-pnl).toUint256() >
@@ -385,10 +341,10 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
                     /// take losses off the total amount staked
                     vconStaked -= userDepositedAmount;
 
-                    /// TODO final write to storage, decrement venue deposited VCON
+                    /// final write to storage, decrement venue deposited VCON
                     venueVconDeposited[venue] -= userDepositedAmount;
 
-                    lossAmount = -(userDepositedAmount).toInt256();
+                    lossAmount = userDepositedAmount;
                 } else {
                     /// losses should never exceed staked amount at this point
                     venueUserDepositedVcon[venue][
@@ -402,7 +358,7 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
                     /// decrement venue deposited VCON
                     venueVconDeposited[venue] -= (-pnl).toUint256();
 
-                    lossAmount = pnl;
+                    lossAmount = (-pnl).toUint256();
                 }
 
                 emit LossRealized(venue, msg.sender, lossAmount);
@@ -410,7 +366,7 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
                 /// gain or even scenario
                 totalVcon += pnl.toUint256();
                 if (pnl != 0) {
-                    emit GainRealized(venue, msg.sender, pnl.toUint256());
+                    emit Harvest(venue, msg.sender, pnl.toUint256());
                 }
             }
 
@@ -481,6 +437,41 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         }
     }
 
+    /// @notice VCON rewards could be negative if a user is at a loss
+    /// @param user to check rewards from
+    /// @param venue to check rewards in
+    /// return the amount of pending rewards or losses for a given user
+    /// algorithm:
+    ///  1. Determine venue profits or losses that have occured since
+    ///   the last time the user staked or unstaked in a given venue.
+    ///      venue pnl = current profit index - user starting index
+    ///  2. Convert PnL to their pro-rata VCON amount
+    ///      vcon rewards = venue PnL * user vcon deposited in venue / total vcon deposited in venue
+    function getPendingRewards(
+        address user,
+        address venue
+    ) public view returns (int256) {
+        /// TODO this is 5 SLOAD's and we can do better
+        /// Pack venue info down into a single struct to get us down to 3 SLOAD's
+
+        int256 startingProfitIndex = venueUserStartingProfit[venue][user]
+            .toInt256();
+        int256 currentProfitIndex = venueLastRecordedProfit[venue].toInt256();
+        int256 profitToVcon = profitToVconRatio[venue].toInt256();
+        int256 venueVconAmount = venueVconDeposited[venue].toInt256();
+
+        if (startingProfitIndex == 0 || venueVconAmount == 0) {
+            return 0; /// no interest if user has not entered the market
+        }
+
+        int256 currentProfits = currentProfitIndex - startingProfitIndex;
+        int256 vconRewards = (currentProfits *
+            venueUserDepositedVcon[venue][user].toInt256() *
+            profitToVcon) / venueVconAmount;
+
+        return vconRewards;
+    }
+
     /// ------------- Helper Methods -------------
 
     /// @param source address to pull funds from
@@ -523,7 +514,8 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         );
 
         if (!ignoreBalanceChecks) {
-            /// TODO simplify this by passing delta of starting balance instead of calling balance again on each pcv deposit
+            /// TODO simplify this by passing delta of starting balance
+            /// instead of calling balance again on each pcv deposit
             /// record how balanced the system is before the PCV movement
             int256 sourceVenueBalanceAfter = getVenueDeviation(
                 source,
@@ -566,41 +558,6 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         );
     }
 
-    /// @notice VCON rewards could be negative if a user is at a loss
-    /// @param user to check rewards from
-    /// @param venue to check rewards in
-    /// return the amount of pending rewards or losses for a given user
-    /// algorithm:
-    ///  1. Determine venue profits or losses that have occured since
-    ///   the last time the user staked or unstaked in a given venue.
-    ///      venue pnl = current profit index - user starting index
-    ///  2. Convert PnL to their pro-rata VCON amount
-    ///      vcon rewards = venue PnL * user vcon deposited in venue / total vcon deposited in venue
-    function getPendingRewards(
-        address user,
-        address venue
-    ) public view returns (int256) {
-        /// TODO this is 5 SLOAD's and we can do better
-        /// Pack venue info down into a single struct to get us down to 3 SLOAD's
-
-        int256 startingProfitIndex = venueUserStartingProfit[venue][user]
-            .toInt256();
-        int256 currentProfitIndex = venueLastRecordedProfit[venue].toInt256();
-        int256 profitToVcon = profitToVconRatio[venue].toInt256();
-        int256 venueVconAmount = venueVconDeposited[venue].toInt256();
-
-        if (startingProfitIndex == 0 || venueVconAmount == 0) {
-            return 0; /// no interest if user has not entered the market
-        }
-
-        int256 currentProfits = currentProfitIndex - startingProfitIndex;
-        int256 vconRewards = (currentProfits *
-            venueUserDepositedVcon[venue][user].toInt256() *
-            profitToVcon) / venueVconAmount;
-
-        return vconRewards;
-    }
-
     /// @notice returns profit or losses a VCON staker has accrued
     /// updates their venue starting profit index
     /// does not update how much VCON a user has staked to save on gas
@@ -631,6 +588,12 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         /// update venue last recorded profit regardless
         /// of participation in market governance
         venueLastRecordedProfit[venue] = endingLastRecordedProfit.toUint128();
+
+        emit VenueIndexUpdated(
+            venue,
+            block.timestamp,
+            endingLastRecordedProfit
+        );
     }
 
     /// TODO add events to all functions
