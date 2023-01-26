@@ -15,14 +15,27 @@ contract UnitTestMarketGovernance is SystemUnitTest {
     MarketGovernance public mgov;
     MockPCVSwapper public pcvSwapper;
 
-    address public venue = address(10); /// a in hex
-    uint256 public profitToVconRatio = 5; /// for each 1 wei in profit, 5 wei of vcon is received
+    uint256 public profitToVconRatioUsdc = 5e12; /// for each 1 wei in profit, 5e12 wei of vcon is received
+    uint256 public profitToVconRatioDai = 5; /// for each 1 wei in profit, 5 wei of vcon is received
     uint256 public daiDepositAmount = 1_000_000e18;
     uint256 public usdcDepositAmount = 1_000_000e6;
 
     uint256 public vconDepositAmount = 1_000_000e18;
     address userOne = address(1000);
     address userTwo = address(1001);
+
+    /// @notice emitted when profit to vcon ratio is updated
+    event ProfitToVconRatioUpdated(
+        address indexed venue,
+        uint256 oldRatio,
+        uint256 newRatio
+    );
+
+    /// @notice emitted when the router is updated
+    event PCVRouterUpdated(
+        address indexed oldPcvRouter,
+        address indexed newPcvRouter
+    );
 
     function setUp() public override {
         super.setUp();
@@ -40,7 +53,11 @@ contract UnitTestMarketGovernance is SystemUnitTest {
 
         vm.startPrank(addresses.governorAddress);
 
-        mgov.setProfitToVconRatio(venue, profitToVconRatio);
+        mgov.setProfitToVconRatio(address(pcvDepositDai), profitToVconRatioDai);
+        mgov.setProfitToVconRatio(
+            address(pcvDepositUsdc),
+            profitToVconRatioUsdc
+        );
 
         core.grantPCVController(address(mgov));
         core.grantLocker(address(mgov));
@@ -57,7 +74,7 @@ contract UnitTestMarketGovernance is SystemUnitTest {
     }
 
     function _initializeVenues() private {
-        pcvDepositUsdc.setLastRecordedProfit(10_000e18);
+        pcvDepositUsdc.setLastRecordedProfit(10_000e6);
         pcvDepositDai.setLastRecordedProfit(10_000e18);
     }
 
@@ -65,7 +82,14 @@ contract UnitTestMarketGovernance is SystemUnitTest {
         assertEq(address(mgov.core()), coreAddress);
 
         assertEq(mgov.profitToVconRatio(address(0)), 0);
-        assertEq(mgov.profitToVconRatio(venue), profitToVconRatio);
+        assertEq(
+            mgov.profitToVconRatio(address(pcvDepositDai)),
+            profitToVconRatioDai
+        );
+        assertEq(
+            mgov.profitToVconRatio(address(pcvDepositUsdc)),
+            profitToVconRatioUsdc
+        );
 
         assertTrue(core.isLocker(address(mgov)));
         assertTrue(core.isPCVController(address(mgov)));
@@ -241,40 +265,31 @@ contract UnitTestMarketGovernance is SystemUnitTest {
         ); /// overweight DAI
     }
 
-    // function testUserDepositsFailsNotInitialized() public {
-    //     address user = address(1001);
-    //     uint120 vconAmount = 1e18;
+    function testUnstakingOneUserOneWei() public {
+        testSystemOneUser();
 
-    //     vm.startPrank(user);
-    //     vcon.mint(user, vconAmount);
-    //     vcon.approve(address(mgov), vconAmount);
-    //     mgov.stake(
-    //         vconAmount,
-    //         0,
-    //         address(pcvDepositDai),
-    //         address(pcvDepositUsdc),
-    //         address(pcvSwapper)
-    //     );
-    //     vm.stopPrank();
+        assertEq(vcon.balanceOf(address(this)), 0);
+        /// subtract 1 to counter the addition the protocol does
+        uint256 startingVconAmount = mgov.venueUserDepositedVcon(
+            address(pcvDepositUsdc),
+            address(this)
+        );
 
-    //     vm.expectRevert("MarketGovernance: venue not initialized");
-    //     mgov.stake(
-    //         vconAmount,
-    //         1e18,
-    //         address(pcvDepositUsdc),
-    //         address(pcvDepositDai),
-    //         address(pcvSwapper)
-    //     );
+        mgov.unstake(
+            startingVconAmount,
+            address(pcvDepositUsdc),
+            address(pcvDepositDai),
+            address(pcvSwapper),
+            address(this)
+        );
 
-    //     vm.expectRevert("MarketGovernance: venue not initialized");
-    //     mgov.stake(
-    //         vconAmount,
-    //         0, /// deposit no pcv, meaning things will be imbalanced
-    //         address(pcvDepositUsdc),
-    //         address(pcvDepositDai),
-    //         address(pcvSwapper)
-    //     );
-    // }
+        assertEq(vcon.balanceOf(address(this)), startingVconAmount);
+
+        assertEq(
+            0,
+            mgov.venueUserDepositedVcon(address(pcvDepositUsdc), address(this))
+        );
+    }
 
     function testUnstakingOneUser() public {
         testSystemOneUser();
@@ -335,8 +350,6 @@ contract UnitTestMarketGovernance is SystemUnitTest {
 
         assertEq(0, pcvOracle.getVenueBalance(address(pcvDepositUsdc)));
         assertEq(0, mgov.venueVconDeposited(address(pcvDepositUsdc)));
-
-        // assertEq(vconAmount - startingVconStakedAmount, mgov.vconStaked());
     }
 
     /// test withdrawing when src and dest are equal
@@ -353,8 +366,46 @@ contract UnitTestMarketGovernance is SystemUnitTest {
         );
     }
 
+    function testWithdrawWithProfits() public {
+        uint120 vconAmount = 1000e18;
+        testSystemThreeUsersLastNoDeposit(vconAmount);
+
+        pcvDepositUsdc.setLastRecordedProfit(20_000e6);
+        pcvDepositDai.setLastRecordedProfit(20_000e18);
+
+        /// how much VCON is owed?
+        uint256 vconOwedUsdcRewards = 10_000e6 * profitToVconRatioUsdc;
+        uint256 vconOwedDaiRewards = 10_000e18 * profitToVconRatioDai;
+
+        uint256 totalVconRewardsOwed = vconOwedUsdcRewards + vconOwedDaiRewards;
+        vcon.mint(address(mgov), totalVconRewardsOwed);
+    }
+
+    function testSetProfitToVconRatio(address venue, uint256 ratio) public {
+        uint256 oldProfitToVconRatio = mgov.profitToVconRatio(venue);
+
+        vm.expectEmit(true, true, false, true, address(mgov));
+        emit ProfitToVconRatioUpdated(venue, oldProfitToVconRatio, ratio);
+
+        vm.prank(addresses.governorAddress);
+        mgov.setProfitToVconRatio(venue, ratio);
+
+        assertEq(mgov.profitToVconRatio(venue), ratio);
+    }
+
+    function testSetPCVRouter(address newRouter) public {
+        address oldPCVRouter = mgov.pcvRouter();
+
+        vm.expectEmit(true, true, false, true, address(mgov));
+        emit PCVRouterUpdated(oldPCVRouter, newRouter);
+
+        vm.prank(addresses.governorAddress);
+        mgov.setPCVRouter(newRouter);
+
+        assertEq(mgov.pcvRouter(), newRouter);
+    }
+
     /// todo test withdrawing
-    /// todo test depositing fails when venue not initialized
     /// todo test withdrawing when there are profits
     /// todo test withdrawing when there are losses
 
