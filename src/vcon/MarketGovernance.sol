@@ -113,6 +113,8 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
 
         /// check and an interaction with a trusted contract
         vcon().safeTransferFrom(msg.sender, address(this), amountVcon); /// transfer VCON in
+
+        emit Staked(destination, msg.sender, amountVcon);
     }
 
     /// @notice unstake VCON and transfer corresponding VCON to another venue
@@ -183,6 +185,8 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
             amountPcv,
             ignoreBalanceChecks
         );
+
+        emit Unstaked(source, msg.sender, amountVcon, amountPcv);
     }
 
     /// @notice rebalance PCV without staking or unstaking VCON
@@ -206,6 +210,86 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
                     false
                 );
             }
+        }
+    }
+
+    /// @notice realize gains and losses for msg.sender
+    /// @param venues to realize losses in
+    /// only the caller can realize losses on their own behalf
+    /// duplicating addresses does not allow theft as all venues have their indexes
+    /// updated before we find the profit and loss, so a duplicate venue will have 0 delta a second time
+    /// @dev we can't follow CEI here because we have to make external calls to update
+    /// the external venues. However, this is not an issue as the global reentrancy lock is enabled
+    function realizeGainsAndLosses(
+        address[] calldata venues
+    ) external globalLock(1) {
+        uint256 venueLength = venues.length;
+        uint256 totalVcon = 0;
+
+        for (uint256 i = 0; i < venueLength; ) {
+            address venue = venues[i];
+            require(
+                pcvOracle().isVenue(venue),
+                "MarketGovernance: invalid venue"
+            );
+
+            /// updates the venueLastRecordedProfit
+            _accrue(venue);
+
+            /// updates the venueUserStartingProfit mapping
+            int256 pnl = _harvestRewards(msg.sender, venue);
+            if (pnl < 0) {
+                uint256 lossAmount;
+                /// loss scenarios
+                if (
+                    (-pnl).toUint256() >
+                    venueUserDepositedVcon[venue][msg.sender]
+                ) {
+                    uint256 userDepositedAmount = venueUserDepositedVcon[venue][
+                        msg.sender
+                    ];
+                    /// zero the user's balance
+                    venueUserDepositedVcon[venue][msg.sender] = 0;
+
+                    /// take losses off the total amount staked
+                    vconStaked -= userDepositedAmount;
+
+                    /// final write to storage, decrement venue deposited VCON
+                    venueVconDeposited[venue] -= userDepositedAmount;
+
+                    lossAmount = userDepositedAmount;
+                } else {
+                    /// losses should never exceed staked amount at this point
+                    venueUserDepositedVcon[venue][
+                        msg.sender
+                    ] = (venueUserDepositedVcon[venue][msg.sender].toInt256() +
+                        pnl).toUint256();
+
+                    /// take losses off the total amount staked
+                    vconStaked = (vconStaked.toInt256() + pnl).toUint256();
+
+                    /// decrement venue deposited VCON
+                    venueVconDeposited[venue] -= (-pnl).toUint256();
+
+                    lossAmount = (-pnl).toUint256();
+                }
+
+                emit LossRealized(venue, msg.sender, lossAmount);
+            } else {
+                /// gain or even scenario
+                totalVcon += pnl.toUint256();
+                if (pnl != 0) {
+                    emit Harvest(venue, msg.sender, pnl.toUint256());
+                }
+            }
+
+            unchecked {
+                i++;
+            }
+        }
+
+        if (totalVcon != 0) {
+            vcon().safeTransfer(msg.sender, totalVcon);
         }
     }
 
@@ -298,86 +382,6 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         uint256 proRataPcv = (amountVcon * venuePcv) / cachedVconStaked;
 
         return proRataPcv;
-    }
-
-    /// @notice realize gains and losses for msg.sender
-    /// @param venues to realize losses in
-    /// only the caller can realize losses on their own behalf
-    /// duplicating addresses does not allow theft as all venues have their indexes
-    /// updated before we find the profit and loss, so a duplicate venue will have 0 delta a second time
-    /// @dev we can't follow CEI here because we have to make external calls to update
-    /// the external venues. However, this is not an issue as the global reentrancy lock is enabled
-    function realizeGainsAndLosses(
-        address[] calldata venues
-    ) external globalLock(1) {
-        uint256 venueLength = venues.length;
-        uint256 totalVcon = 0;
-
-        for (uint256 i = 0; i < venueLength; ) {
-            address venue = venues[i];
-            require(
-                pcvOracle().isVenue(venue),
-                "MarketGovernance: invalid venue"
-            );
-
-            /// updates the venueLastRecordedProfit
-            _accrue(venue);
-
-            /// updates the venueUserStartingProfit mapping
-            int256 pnl = _harvestRewards(msg.sender, venue);
-            if (pnl < 0) {
-                uint256 lossAmount;
-                /// loss scenarios
-                if (
-                    (-pnl).toUint256() >
-                    venueUserDepositedVcon[venue][msg.sender]
-                ) {
-                    uint256 userDepositedAmount = venueUserDepositedVcon[venue][
-                        msg.sender
-                    ];
-                    /// zero the user's balance
-                    venueUserDepositedVcon[venue][msg.sender] = 0;
-
-                    /// take losses off the total amount staked
-                    vconStaked -= userDepositedAmount;
-
-                    /// final write to storage, decrement venue deposited VCON
-                    venueVconDeposited[venue] -= userDepositedAmount;
-
-                    lossAmount = userDepositedAmount;
-                } else {
-                    /// losses should never exceed staked amount at this point
-                    venueUserDepositedVcon[venue][
-                        msg.sender
-                    ] = (venueUserDepositedVcon[venue][msg.sender].toInt256() +
-                        pnl).toUint256();
-
-                    /// take losses off the total amount staked
-                    vconStaked = (vconStaked.toInt256() + pnl).toUint256();
-
-                    /// decrement venue deposited VCON
-                    venueVconDeposited[venue] -= (-pnl).toUint256();
-
-                    lossAmount = (-pnl).toUint256();
-                }
-
-                emit LossRealized(venue, msg.sender, lossAmount);
-            } else {
-                /// gain or even scenario
-                totalVcon += pnl.toUint256();
-                if (pnl != 0) {
-                    emit Harvest(venue, msg.sender, pnl.toUint256());
-                }
-            }
-
-            unchecked {
-                i++;
-            }
-        }
-
-        if (totalVcon != 0) {
-            vcon().safeTransfer(msg.sender, totalVcon);
-        }
     }
 
     /// @notice return the amount of rewards accrued so far
