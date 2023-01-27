@@ -13,9 +13,11 @@ import {IPCVDepositV2} from "@voltprotocol/pcv/IPCVDepositV2.sol";
 import {IMarketGovernance} from "@voltprotocol/vcon/IMarketGovernance.sol";
 import {DeviationWeiGranularity} from "@voltprotocol/utils/DeviationWeiGranularity.sol";
 
+import {console} from "@forge-std/console.sol";
+
 /// @notice this contract requires the PCV Mover and Locker role
 ///
-/// Core formula for market governance rewards:
+/// Formula for market governance rewards share price:
 ///     Profit Per VCON = Profit Per VCON + ∆Cumulative Profits (Dollars) * VCON:Dollar  / VCON Staked
 ///
 /// If an account has an unrealized loss on a venue, they cannot do any other action on that venue
@@ -28,6 +30,16 @@ import {DeviationWeiGranularity} from "@voltprotocol/utils/DeviationWeiGranulari
 ///
 /// @dev this contract assumes it is already topped up with the VCON necessary to pay rewards.
 /// A dripper will keep this contract funded at a steady pace.
+///
+/// Issues I'm seeing so far
+/// 1. if a loss occurs in a venue, then everyone's VCON balance gets marked down.
+/// However, mark downs only occur when a loss is realized. This means unstaking after you have first realized
+/// a loss and someone else hasn't, your pro-rata portion will be less, because the amount of VCON you have staked
+/// has gone down.
+/// 2. if a gain occurs, everyone's VCON balance marks up.
+/// However, mark ups only occur when a gain is realized. This means unstaking after you have realized a gain and
+/// someone else hasn't, your pro-rata portion of the PCV will be more than it would be if everyone had realized
+/// their gains.
 contract MarketGovernance is CoreRefV2, IMarketGovernance {
     using DeviationWeiGranularity for *;
     using SafeERC20 for *;
@@ -53,6 +65,9 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
     /// @notice last recorded profit index per venue
     mapping(address => uint128) public venueLastRecordedProfit;
 
+    /// @notice last recorded VCON share price index per venue
+    mapping(address => uint128) public venueLastRecordedVconSharePrice;
+
     /// @notice total vcon deposited per venue
     mapping(address => uint256) public venueVconDeposited;
 
@@ -62,7 +77,7 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
 
     /// @notice record of VCON index when user joined a given venue
     mapping(address => mapping(address => uint256))
-        public venueUserStartingProfit;
+        public venueUserVconStartingSharePrice;
 
     /// @notice record how much VCON a user deposited in a given venue
     mapping(address => mapping(address => uint256))
@@ -77,11 +92,21 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
     /// TODO update pcv oracle to cache total pcv so getAllPCV isn't needed to figure
     /// out if weights are correct
 
+    /// @notice update the VCON share price and the last recorded profit for a given venue
+    /// @param venue address to accrue
+    function accrueVcon(address venue) external globalLock(1) {
+        IPCVOracle oracle = pcvOracle();
+
+        require(oracle.isVenue(venue), "MarketGovernance: invalid destination");
+
+        _accrue(venue);
+    }
+
     /// ---------- Permissionless User PCV Allocation Methods ----------
 
     /// @notice a user can get slashed up to their full VCON stake for entering
     /// a venue that takes a loss.
-    /// any losses or gains are applied to venueUserStartingProfit via `_accrue` method
+    /// any losses or gains are applied to venueUserVconStartingSharePrice via `_accrue` method
     /// @param amountVcon to stake on destination
     /// @param destination address to accrue rewards to, and send funds to
     function stake(
@@ -237,7 +262,7 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
             /// updates the venueLastRecordedProfit
             _accrue(venue);
 
-            /// updates the venueUserStartingProfit mapping
+            /// updates the venueUserVconStartingSharePrice mapping
             int256 pnl = _updateUserProfitIndex(msg.sender, venue);
             if (pnl < 0) {
                 uint256 lossAmount;
@@ -280,7 +305,7 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
                 /// gain or even scenario
                 totalVcon += pnl.toUint256();
                 if (pnl != 0) {
-                    emit Harvest(venue, msg.sender, pnl.toUint256());
+                    emit Harvest(venue, msg.sender, pnl);
                 }
             }
 
@@ -380,11 +405,11 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         }
 
         /// @audit we do not add 1 to the pro rata PCV here. This means a withdrawal of 1 Wei of VCON
-        /// will allow removing a user's VCON without having to withdraw from a venue.
+        /// will allow removing a user's VCON without having to withdraw PCV from a venue.
         /// This is a known issue, however it is not harmful as it would require a quintillion withdrawals
-        /// to withdraw 1 VCON, which would cost at minimum 21,000e18 gas per withdraw, meaning it would cost at least 1 million ether
+        /// to withdraw 1 VCON, which would cost at minimum 5,000e18 gas per withdraw, meaning it would cost at least 1 million ether
         /// (likely more) to retrieve a single VCON without moving PCV.
-        /// the only reason this would ever get expoited is if a loss was taken and a user was trying to avoid realizing their portion
+        /// The only reason this would ever get expoited is if a loss was taken and a user was trying to avoid realizing their portion
         /// of the losses. However, in a loss scenario, the unstake function does not allow execution if the user has an unrealized
         /// loss in that venue. This condition stops the aforementioned exploit.
         /// fix would require rounding up in the protocol's favor, so that a withdrawal of 1 Wei of VCON has an actual withdraw amount
@@ -464,23 +489,28 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         address user,
         address venue
     ) public view returns (int256) {
-        /// TODO this is 5 SLOAD's and we can do better
-        /// Pack venue info down into a single struct to get us down to 3 SLOAD's
+        /// get user starting share price
+        int256 startingVconSharePrice = venueUserVconStartingSharePrice[venue][
+            user
+        ].toInt256();
 
-        int256 startingProfitIndex = venueUserStartingProfit[venue][user]
+        /// get venue current share price
+        int256 currentVconSharePrice = venueLastRecordedVconSharePrice[venue]
             .toInt256();
-        int256 currentProfitIndex = venueLastRecordedProfit[venue].toInt256();
-        int256 profitToVcon = profitToVconRatio[venue].toInt256();
+
+        /// get venue vcon amount staked
         int256 venueVconAmount = venueVconDeposited[venue].toInt256();
 
-        if (startingProfitIndex == 0 || venueVconAmount == 0) {
+        if (startingVconSharePrice == 0 || venueVconAmount == 0) {
             return 0; /// no interest if user has not entered the market
         }
 
-        int256 currentProfits = currentProfitIndex - startingProfitIndex;
-        int256 vconRewards = (currentProfits *
-            venueUserDepositedVcon[venue][user].toInt256() *
-            profitToVcon) / venueVconAmount;
+        int256 userCurrentProfitPerVcon = currentVconSharePrice -
+            startingVconSharePrice;
+
+        int256 vconRewards = (userCurrentProfitPerVcon *
+            venueUserDepositedVcon[venue][user].toInt256()) /
+            Constants.ETH_GRANULARITY_INT;
 
         return vconRewards;
     }
@@ -579,29 +609,66 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         address user,
         address venue
     ) private returns (int256) {
-        uint256 currentProfitIndex = venueLastRecordedProfit[venue];
+        uint256 currentVenueSharePrice = venueLastRecordedVconSharePrice[venue];
 
         /// get pending rewards
         int256 pendingRewardBalance = getPendingRewards(user, venue);
 
-        /// then set the vcon current index for this user
-        venueUserStartingProfit[venue][user] = currentProfitIndex;
+        /// then set the vcon share price for this user
+        venueUserVconStartingSharePrice[venue][user] = currentVenueSharePrice;
 
-        /// if there are losses, revert on SafeCast
-        emit Harvest(venue, user, pendingRewardBalance.toUint256());
+        /// emit harvest if there are gains or losses
+        emit Harvest(venue, user, pendingRewardBalance);
 
         return pendingRewardBalance;
     }
 
-    /// update the venue last recorded share price
+    /// update the venue last recorded profit
+    /// and the venue last recorded vcon share price
     function _accrue(address venue) private {
         IPCVDepositV2(venue).accrue();
 
+        uint256 startingLastRecordedProfit = venueLastRecordedProfit[venue];
         uint256 endingLastRecordedProfit = IPCVDepositV2(venue)
             .lastRecordedProfit();
+        uint256 endingLastRecordedSharePrice = venueLastRecordedVconSharePrice[
+            venue
+        ];
 
         /// update venue last recorded profit regardless
         /// of participation in market governance
+        if (endingLastRecordedSharePrice != 0) {
+            uint256 venueStakedVcon = venueVconDeposited[venue];
+            uint256 venueProfitRatio = profitToVconRatio[venue];
+
+            /// if venue has 0 staked vcon, do not update share price, just update profit index
+            if (venueStakedVcon != 0) {
+                int256 venueProfit = (endingLastRecordedProfit.toInt256() -
+                    startingLastRecordedProfit.toInt256());
+                int256 vconEarnedPerShare = (Constants.ETH_GRANULARITY_INT *
+                    venueProfit *
+                    venueProfitRatio.toInt256()) / venueStakedVcon.toInt256();
+
+                if (vconEarnedPerShare >= 0) {
+                    /// gain scenario
+                    venueLastRecordedVconSharePrice[venue] += (
+                        vconEarnedPerShare.toUint256()
+                    ).toUint128();
+                } else {
+                    /// loss scenario
+                    /// turn losses positive and subtract them
+                    venueLastRecordedVconSharePrice[venue] -= (
+                        -vconEarnedPerShare
+                    ).toUint256().toUint128();
+                }
+            }
+        } else {
+            /// share price is 0, meaning it is not initialized, so initialize
+            venueLastRecordedVconSharePrice[venue] = Constants
+                .ETH_GRANULARITY
+                .toUint128();
+        }
+
         venueLastRecordedProfit[venue] = endingLastRecordedProfit.toUint128();
 
         emit VenueIndexUpdated(
@@ -610,8 +677,6 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
             endingLastRecordedProfit
         );
     }
-
-    /// TODO add events to all functions
 
     /// ---------- Governor-Only Permissioned API ----------
 
