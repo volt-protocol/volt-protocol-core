@@ -66,10 +66,11 @@ interface IMarketGovernance {
     );
 
     /// @notice emitted whenever a user harvests
+    /// vcon will be negative if a loss is realized
     event Harvest(
         address indexed venue,
         address indexed user,
-        uint256 vconAmount
+        int256 vconAmount
     );
 
     /// @notice emitted when a venue's index is updated via accrue
