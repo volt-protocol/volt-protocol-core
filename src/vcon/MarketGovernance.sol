@@ -17,9 +17,6 @@ import {console} from "@forge-std/console.sol";
 
 /// @notice this contract requires the PCV Mover and Locker role
 ///
-/// Formula for market governance rewards share price:
-///     Profit Per VCON = Profit Per VCON + ∆Cumulative Profits (Dollars) * VCON:Dollar  / VCON Staked
-///
 /// If an account has an unrealized loss on a venue, they cannot do any other action on that venue
 /// until they have called the function realizeLosses and marked down the amount of VCON they have staked
 /// on that venue. Once the loss has been marked down, they can proceed with other actions.
@@ -30,6 +27,23 @@ import {console} from "@forge-std/console.sol";
 ///
 /// @dev this contract assumes it is already topped up with the VCON necessary to pay rewards.
 /// A dripper will keep this contract funded at a steady pace.
+///
+/// three main data points are tracked in each venue.
+/// 1. the last recorded profit in a given venue. this tracks the last recorded profit amount in the underlying venue.
+/// 2. the vcon share price in a given venue. this applies the last recorded profit across all VCON stakers in the
+/// venue evenly and ensures that each user receives their pro-rata share of rewards.
+/// 3. profit to vcon ratio in each venue. this tracks the profit to vcon ratio for each venue and is used to calculate
+/// the vcon share price by finding the new last recorded profit, and finding the profit delta
+/// vcon share price formula
+///
+/// Formula for market governance rewards share price:
+///     ∆Cumulative Profits (Dollars) = currentProfits - lastRecordedProfits
+///     Profit Per VCON = Profit Per VCON + ∆Cumulative Profits (Dollars) * VCON:Dollar Ratio / Venue VCON Staked
+///
+/// Formula for calculating user VCON rewards:
+///     User VCON rewards = (Profit Per VCON - User Starting Profit Per VCON) * VCON Staked
+///
+/// Anytime the rewards share price changes, so does the unclaimed user VCON rewards.
 ///
 /// Issues I'm seeing so far
 /// 1. if a loss occurs in a venue, then everyone's VCON balance gets marked down.
