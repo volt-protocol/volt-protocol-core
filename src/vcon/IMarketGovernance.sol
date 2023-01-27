@@ -14,6 +14,11 @@ interface IMarketGovernance {
         uint256 amountPcv;
     }
 
+    struct PCVDepositInfo {
+        address deposit;
+        uint256 amount;
+    }
+
     /// ---------- Events ----------
 
     /// @notice event emitted when a user stakes their VCON
@@ -109,21 +114,4 @@ interface IMarketGovernance {
     /// causing the entire transaction to fail.
     /// @param movements of PCV between venues
     function rebalance(Rebalance[] calldata movements) external;
-
-    /// @notice realize gains and losses for msg.sender
-    /// @param venues to realize losses in
-    /// only the caller can realize losses on their own behalf
-    /// duplicating addresses does not allow theft as all venues have their indexes
-    /// updated before we find the profit and loss, so a duplicate venue will have 0 delta a second time
-    /// @dev we can't follow CEI here because we have to make external calls to update
-    /// the external venues. However, this is not an issue as the global reentrancy lock is enabled
-    function realizeGainsAndLosses(address[] calldata venues) external;
-
-    /// return the total amount of rewards a user is entitled to
-    /// this value will usually be stale as .accrue() must be called in the same block/tx as this function
-    /// for it to return the proper amount of profit
-    function getAccruedRewards(
-        address[] calldata venues,
-        address user
-    ) external view returns (int256);
 }
