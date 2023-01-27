@@ -1,5 +1,7 @@
 pragma solidity 0.8.13;
 
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+
 import {console} from "@forge-std/console.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
@@ -12,6 +14,8 @@ import {IMarketGovernance} from "@voltprotocol/vcon/IMarketGovernance.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
 
 contract UnitTestMarketGovernance is SystemUnitTest {
+    using SafeCast for *;
+
     MarketGovernance public mgov;
     MockPCVSwapper public pcvSwapper;
 
@@ -366,7 +370,7 @@ contract UnitTestMarketGovernance is SystemUnitTest {
         );
     }
 
-    function testWithdrawWithProfits() public {
+    function testWithdrawWithGains() public {
         uint120 vconAmount = 1000e18;
         testSystemThreeUsersLastNoDeposit(vconAmount);
 
@@ -379,6 +383,68 @@ contract UnitTestMarketGovernance is SystemUnitTest {
 
         uint256 totalVconRewardsOwed = vconOwedUsdcRewards + vconOwedDaiRewards;
         vcon.mint(address(mgov), totalVconRewardsOwed);
+
+        mgov.accrueVcon(address(pcvDepositUsdc));
+
+        uint256 startingVconBalance = vcon.balanceOf(address(this));
+        int256 pendingRewards = mgov.getPendingRewards(
+            address(this),
+            address(pcvDepositUsdc)
+        );
+
+        address[] memory venues = new address[](1);
+        venues[0] = address(pcvDepositUsdc);
+        mgov.realizeGainsAndLosses(venues);
+
+        uint256 endingVconBalance = vcon.balanceOf(address(this));
+
+        assertEq(
+            pendingRewards,
+            endingVconBalance.toInt256() - startingVconBalance.toInt256()
+        );
+        assertEq(
+            mgov.getPendingRewards(address(this), address(pcvDepositUsdc)),
+            0
+        );
+    }
+
+    function testWithdrawWithLosses() public {
+        uint120 vconAmount = 1000e18;
+        testSystemThreeUsersLastNoDeposit(vconAmount);
+
+        pcvDepositUsdc.setLastRecordedProfit(0); /// all profits are lost usdc venue
+        pcvDepositDai.setLastRecordedProfit(0); /// all profits are lost dai venue
+
+        mgov.accrueVcon(address(pcvDepositUsdc));
+
+        uint256 startingVconBalance = mgov.venueUserDepositedVcon(
+            address(pcvDepositUsdc),
+            address(this)
+        );
+        int256 pendingRewards = mgov.getPendingRewards(
+            address(this),
+            address(pcvDepositUsdc)
+        );
+
+        address[] memory venues = new address[](1);
+        venues[0] = address(pcvDepositUsdc);
+        mgov.realizeGainsAndLosses(venues);
+
+        uint256 endingVconBalance = mgov.venueUserDepositedVcon(
+            address(pcvDepositUsdc),
+            address(this)
+        );
+
+        assertEq(
+            pendingRewards,
+            endingVconBalance.toInt256() - startingVconBalance.toInt256()
+        );
+        assertEq(
+            mgov
+                .getPendingRewards(address(this), address(pcvDepositUsdc))
+                .toUint256(),
+            0
+        );
     }
 
     function testSetProfitToVconRatio(address venue, uint256 ratio) public {
@@ -408,6 +474,45 @@ contract UnitTestMarketGovernance is SystemUnitTest {
     /// todo test withdrawing
     /// todo test withdrawing when there are profits
     /// todo test withdrawing when there are losses
+
+    /// todo test stake, unstake, rebalance, accrueVcon, realize gains
+    /// and losses with invalid venues to ensure reverts
+    function testStakeInvalidVenueFails() public {
+        vm.expectRevert("MarketGovernance: invalid destination");
+        mgov.stake(0, address(0));
+    }
+
+    function testAccrueInvalidVenueFails() public {
+        vm.expectRevert("MarketGovernance: invalid destination");
+        mgov.accrueVcon(address(0));
+    }
+
+    function testUnstakeInvalidSourceVenueFails() public {
+        vm.expectRevert("MarketGovernance: invalid source");
+        mgov.unstake(0, address(0), address(0), address(0), address(0));
+    }
+
+    function testUnstakeInvalidDestinationVenueFails() public {
+        vm.expectRevert("MarketGovernance: invalid destination");
+        mgov.unstake(
+            0,
+            address(pcvDepositDai),
+            address(0),
+            address(0),
+            address(0)
+        );
+    }
+
+    function testUnstakeSrcAndDestVenueEqualFails() public {
+        vm.expectRevert("MarketGovernance: src and dest equal");
+        mgov.unstake(
+            0,
+            address(pcvDepositDai),
+            address(pcvDepositDai),
+            address(0),
+            address(0)
+        );
+    }
 
     function testSetProfitToVconRatioFailsNonGovernor() public {
         vm.expectRevert("CoreRef: Caller is not a governor");
