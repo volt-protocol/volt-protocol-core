@@ -1,6 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
-
-import {console} from "@forge-std/console.sol";
 
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {IPCVSwapper} from "@voltprotocol/pcv/IPCVSwapper.sol";
@@ -41,9 +40,6 @@ contract MockPCVSwapper is IPCVSwapper {
         uint256 amountOut = address(tokenIn) == assetIn
             ? (amountIn * exchangeRate) / 1e18
             : ((amountIn * 1e18) / exchangeRate);
-
-        console.log("amountIn: ", amountIn);
-        console.log("amountOut: ", amountOut);
 
         MockERC20(assetIn).mockBurn(address(this), amountIn);
         MockERC20(assetOut).mint(destination, amountOut);
