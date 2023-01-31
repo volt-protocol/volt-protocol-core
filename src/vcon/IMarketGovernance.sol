@@ -85,6 +85,12 @@ interface IMarketGovernance {
         uint256 profitIndex
     );
 
+    /// @notice
+    event UnderlyingTokenDepositUpdated(
+        address indexed token,
+        address indexed venue
+    );
+
     /// ---------- Permissionless User PCV Allocation Methods ----------
 
     /// stake VCON on a venue
@@ -97,14 +103,10 @@ interface IMarketGovernance {
     /// based on the user's total amount of staked VCON
     /// @param amountVcon to stake
     /// @param source pcv deposit to pull funds from
-    /// @param destination pcv deposit to send funds
-    /// @param swapper address to swap tokens
     /// @param vconRecipient address to receive VCON tokens
     function unstake(
         uint256 amountVcon,
         address source,
-        address destination,
-        address swapper,
         address vconRecipient
     ) external;
 
