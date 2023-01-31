@@ -22,6 +22,8 @@ contract ERC20HoldingPCVDeposit is PCVDeposit, IERC20HoldingPCVDeposit {
     /// @notice Token which the balance is reported in
     IERC20 public immutable override token;
 
+    uint128 public lastRecordedProfit;
+
     /// @notice WETH contract
     IWETH public immutable weth;
 
@@ -38,6 +40,11 @@ contract ERC20HoldingPCVDeposit is PCVDeposit, IERC20HoldingPCVDeposit {
     /// @notice returns total balance of PCV in the deposit
     function balance() public view override returns (uint256) {
         return token.balanceOf(address(this));
+    }
+
+    /// @notice no-op on the holding deposit
+    function accrue() public globalLock(2) returns (uint256) {
+        return balance();
     }
 
     /// @notice display the related token of the balance reported
