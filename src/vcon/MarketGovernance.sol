@@ -113,57 +113,54 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
     /// @notice a user can get slashed up to their full VCON stake for entering
     /// a venue that takes a loss.
     /// @param amountVcon to stake on destination
-    /// @param destination address to accrue rewards to, and send funds to
+    /// @param venue address to accrue rewards to, and send funds to
     function stake(
         uint256 amountVcon,
-        address destination
+        address venue
     ) external globalLock(1) whenNotPaused {
         IPCVOracle oracle = pcvOracle();
-        require(
-            oracle.isVenue(destination),
-            "MarketGovernance: invalid destination"
-        );
+        require(oracle.isVenue(venue), "MarketGovernance: invalid destination");
 
-        _accrue(destination); /// update share price in the destination so the user gets in at the current share price
+        _accrue(venue); /// update share price in the destination so the user gets in at the current share price
 
         /// vconToShares will always return correctly as accrue will set venueLastRecordedVconSharePrice
         /// to the correct share price from 0 if uninitialized
-        uint256 userShareAmount = vconToShares(destination, amountVcon);
+        uint256 userShareAmount = vconToShares(venue, amountVcon);
 
         /// user updates
-        venueUserShares[destination][msg.sender] += userShareAmount;
+        venueUserShares[venue][msg.sender] += userShareAmount;
 
         /// venue updates
-        venueTotalShares[destination] += userShareAmount;
+        venueTotalShares[venue] += userShareAmount;
 
         /// check and an interaction with a trusted contract
         vcon().safeTransferFrom(msg.sender, address(this), amountVcon); /// transfer VCON in
 
-        emit Staked(destination, msg.sender, amountVcon);
+        emit Staked(venue, msg.sender, amountVcon);
     }
 
     /// @notice unstake VCON and transfer corresponding VCON to another venue
     /// @param shareAmount the amount of shares to unstake
-    /// @param source address to accrue rewards to, and pull funds from
+    /// @param venue address to accrue rewards to, and pull funds from
     /// @param vconRecipient address to receive the VCON
-    /// @dev both source and destination are checked twice,
+    /// @dev both venue and destination are checked twice,
     /// the first time in the market governance contract,
     /// the second time in the PCV Router contract.
     function unstake(
         uint256 shareAmount,
-        address source,
+        address venue,
         address vconRecipient
     ) external globalLock(1) whenNotPaused {
         /// ---------- Checks ----------
         IPCVOracle oracle = pcvOracle();
 
-        require(oracle.isVenue(source), "MarketGovernance: invalid source");
+        require(oracle.isVenue(venue), "MarketGovernance: invalid venue");
         require(
-            venueUserShares[source][msg.sender] >= shareAmount,
+            venueUserShares[venue][msg.sender] >= shareAmount,
             "MarketGovernance: invalid share amount"
         );
 
-        address denomination = IPCVDepositV2(source).balanceReportedIn();
+        address denomination = IPCVDepositV2(venue).balanceReportedIn();
         address destination = underlyingTokenToHoldingDeposit[denomination];
         require(
             destination != address(0),
@@ -172,24 +169,24 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
 
         /// ---------- Effects ----------
 
-        _accrue(source); /// update profitPerVCON in the source so the user gets paid out at the current share price
+        _accrue(venue); /// update profitPerVCON in the venue so the user gets paid out at the current share price
 
         /// figure out how balanced the system is before withdraw
 
         /// amount of PCV to withdraw is the amount vcon * venue balance / total vcon staked on venue
-        uint256 amountPcv = getProRataPCVAmounts(source, shareAmount);
+        uint256 amountPcv = getProRataPCVAmounts(venue, shareAmount);
 
         /// user updates
-        venueUserShares[source][msg.sender] -= shareAmount;
+        venueUserShares[venue][msg.sender] -= shareAmount;
 
         /// venue updates
-        venueTotalShares[source] -= shareAmount;
+        venueTotalShares[venue] -= shareAmount;
 
         /// ---------- Interactions ----------
 
         {
             PCVRouter(pcvRouter).movePCV(
-                source,
+                venue,
                 destination,
                 address(0),
                 amountPcv,
@@ -199,9 +196,9 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         }
 
         {
-            uint256 amountVcon = sharesToVcon(source, shareAmount);
+            uint256 amountVcon = sharesToVcon(venue, shareAmount);
             vcon().safeTransfer(vconRecipient, amountVcon); /// transfer VCON amount to recipient
-            emit Unstaked(source, msg.sender, amountVcon, amountPcv);
+            emit Unstaked(venue, msg.sender, amountVcon, amountPcv);
         }
     }
 

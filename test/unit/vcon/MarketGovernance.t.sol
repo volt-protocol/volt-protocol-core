@@ -609,6 +609,8 @@ contract UnitTestMarketGovernance is SystemUnitTest {
         assertTrue(pcvDepositUsdc.balance() < 2);
     }
 
+    /// TODO add rebalancing tests
+
     function testStakeAndApplyLosses(
         DepositInfo[15] memory users,
         uint8 shareDenominator

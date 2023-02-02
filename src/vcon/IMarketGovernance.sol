@@ -102,18 +102,18 @@ interface IMarketGovernance {
 
     /// stake VCON on a venue
     /// @param amountVcon to stake
-    /// @param source pcv deposit to pull funds from
-    function stake(uint256 amountVcon, address source) external;
+    /// @param venue pcv deposit to pull funds from
+    function stake(uint256 amountVcon, address venue) external;
 
     /// @notice this function automatically calculates
-    /// the amount of PCV to remove from the source
+    /// the amount of PCV to remove from the venue
     /// based on the user's total amount of staked VCON
     /// @param amountVcon to stake
-    /// @param source pcv deposit to pull funds from
+    /// @param venue pcv deposit to pull funds from
     /// @param vconRecipient address to receive VCON tokens
     function unstake(
         uint256 amountVcon,
-        address source,
+        address venue,
         address vconRecipient
     ) external;
 
