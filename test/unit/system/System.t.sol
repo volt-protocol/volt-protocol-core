@@ -297,7 +297,6 @@ contract SystemUnitTest is Test {
         vm.label(address(this), "address this");
         vm.label(address(dai), "DAI");
         vm.label(address(usdc), "USDC");
-        // console.log("finished setting up system");
     }
 
     function testSetup() public {

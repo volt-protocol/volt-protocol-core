@@ -6,6 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {console} from "@forge-std/console.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
+import {Constants} from "@voltprotocol/Constants.sol";
 import {PCVRouter} from "@voltprotocol/pcv/PCVRouter.sol";
 import {MockPCVSwapper} from "@test/mock/MockPCVSwapper.sol";
 import {SystemUnitTest} from "@test/unit/system/System.t.sol";
@@ -101,11 +102,11 @@ contract UnitTestMarketGovernance is SystemUnitTest {
             profitToVconRatioUsdc
         );
 
-        mgov.setUnderlyingTokenHolderDeposit(
+        mgov.setUnderlyingTokenHoldingDeposit(
             address(dai),
             address(daiHoldingDeposit)
         );
-        mgov.setUnderlyingTokenHolderDeposit(
+        mgov.setUnderlyingTokenHoldingDeposit(
             address(usdc),
             address(usdcHoldingDeposit)
         );
@@ -429,13 +430,53 @@ contract UnitTestMarketGovernance is SystemUnitTest {
         assertEq(0, mgov.venueTotalShares(address(pcvDepositUsdc)));
     }
 
+    function _rebalance() private {
+        uint256 totalPcv = pcvOracle.getTotalPcv();
+        uint256 totalVconStaked = mgov.getTotalVconStaked();
+
+        int256 daiAmount = mgov.getVenueDeviation(
+            address(pcvDepositDai),
+            totalPcv,
+            totalVconStaked
+        );
+
+        if (daiAmount == 0 || totalVconStaked == 0) {
+            return;
+        }
+
+        IMarketGovernance.Rebalance[]
+            memory balance = new IMarketGovernance.Rebalance[](1);
+
+        if (daiAmount > 0) {
+            /// over allocated DAI deposit
+            balance[0] = IMarketGovernance.Rebalance({
+                source: address(pcvDepositDai),
+                destination: address(pcvDepositUsdc),
+                swapper: address(pcvSwapper),
+                amountPcv: (daiAmount).toUint256() - 1
+            });
+            mgov.rebalance(balance);
+        } else if (
+            (-daiAmount).toUint256() / 1e12 <= pcvDepositUsdc.balance()
+        ) {
+            /// under allocated DAI deposit
+            balance[0] = IMarketGovernance.Rebalance({
+                source: address(pcvDepositUsdc),
+                destination: address(pcvDepositDai),
+                swapper: address(pcvSwapper),
+                amountPcv: (-daiAmount).toUint256() / 1e12
+            });
+            mgov.rebalance(balance);
+        }
+    }
+
     struct DepositInfo {
         address user;
         uint120 vconAmount;
         uint8 venue;
     }
 
-    function testMultipleUsersStake(DepositInfo[] memory users) public {
+    function testMultipleUsersStake(DepositInfo[15] memory users) public {
         unchecked {
             for (uint256 i = 0; i < users.length; i++) {
                 address user = users[i].user;
@@ -444,6 +485,10 @@ contract UnitTestMarketGovernance is SystemUnitTest {
                     users[i].user = address(
                         uint160(block.timestamp + block.number + i)
                     );
+                }
+                if (users[i].vconAmount <= 1e18) {
+                    /// no users will be depositing less than 1 VCON in the system
+                    users[i].vconAmount += 1e18;
                 }
             }
         }
@@ -471,44 +516,207 @@ contract UnitTestMarketGovernance is SystemUnitTest {
                     usdcVconStaked += amount;
                     mgov.stake(amount, address(pcvDepositUsdc));
                 }
+
+                vm.stopPrank();
             }
         }
 
-        int256 daiAmount = mgov.getVenueDeviation(
-            address(pcvDepositDai),
-            totalPcv,
-            totalVconStaked
-        );
+        _rebalance();
 
-        IMarketGovernance.Rebalance[]
-            memory balance = new IMarketGovernance.Rebalance[](1);
+        IMarketGovernance.PCVDepositInfo[] memory expectedOutput = mgov
+            .getExpectedPCVAmounts();
 
-        if (daiAmount > 0) {
-            /// over allocated DAI
-            balance[0] = IMarketGovernance.Rebalance({
-                source: address(pcvDepositDai),
-                destination: address(pcvDepositUsdc),
-                swapper: address(pcvSwapper),
-                amountPcv: daiAmount.toUint256()
-            });
-        } else {
-            /// under allocated DAI
-            balance[0] = IMarketGovernance.Rebalance({
-                source: address(pcvDepositUsdc),
-                destination: address(pcvDepositDai),
-                swapper: address(pcvSwapper),
-                amountPcv: daiAmount.toUint256() / 1e12
-            });
+        unchecked {
+            for (uint256 i = 0; i < expectedOutput.length; i++) {
+                if (expectedOutput[i].amount >= 1e18) {
+                    assertApproxEq(
+                        pcvOracle
+                            .getVenueBalance(expectedOutput[i].deposit)
+                            .toInt256(),
+                        expectedOutput[i].amount.toInt256(),
+                        0
+                    );
+                }
+            }
         }
 
-        mgov.rebalance(balance);
+        assertEq(mgov.getTotalVconStaked(), totalVconStaked);
+        assertTrue(
+            mgov.getVenueDeviation(
+                address(pcvDepositDai),
+                totalPcv,
+                totalVconStaked
+            ) < 1e18
+        );
+        assertTrue(
+            mgov.getVenueDeviation(
+                address(pcvDepositUsdc),
+                totalPcv,
+                totalVconStaked
+            ) < 1e18
+        );
+    }
 
-        // assertEq(mgov.getVenueDeviation(address(pcvDepositDai), totalPcv, totalVconStaked), 0);
-        // assertEq(mgov.getVenueDeviation(address(pcvDepositUsdc), totalPcv, totalVconStaked), 0);
+    function testMultipleUsersUnstake(DepositInfo[15] memory users) public {
+        testMultipleUsersStake(users);
+        uint256 totalVconStaked = 0;
+        uint256 totalPcv = pcvOracle.getTotalPcv();
+
+        unchecked {
+            for (uint256 i = 0; i < users.length; i++) {
+                address user = users[i].user;
+                uint256 vconAmount = users[i].vconAmount;
+                address venue = users[i].venue % 2 == 0
+                    ? address(pcvDepositDai)
+                    : address(pcvDepositUsdc);
+                totalVconStaked += vconAmount;
+
+                uint256 startingUserVconBalance = vcon.balanceOf(user);
+                uint256 shareAmount = mgov.vconToShares(venue, vconAmount);
+
+                vm.prank(user);
+                mgov.unstake(shareAmount, venue, user);
+
+                uint256 endingUserVconBalance = vcon.balanceOf(user);
+
+                assertEq(
+                    endingUserVconBalance - startingUserVconBalance,
+                    vconAmount
+                );
+            }
+        }
+
+        assertEq(mgov.getTotalVconStaked(), 0);
+
+        /// by this point, all VCON should be unstaked so the amount of PCV in the venue should be minimal
+        assertTrue(
+            mgov.getVenueDeviation(
+                address(pcvDepositDai),
+                totalPcv,
+                totalVconStaked
+            ) < 1e18
+        );
+        assertTrue(
+            mgov.getVenueDeviation(
+                address(pcvDepositUsdc),
+                totalPcv,
+                totalVconStaked
+            ) < 1e6
+        );
+
+        /// assert 99.99999999999999999% of PCV withdrawn
+        assertTrue(pcvDepositDai.balance() < 2);
+        assertTrue(pcvDepositUsdc.balance() < 2);
+    }
+
+    function testStakeAndApplyLosses(
+        DepositInfo[15] memory users,
+        uint8 shareDenominator
+    ) public {
+        vm.assume(shareDenominator > 1); /// not 0 or 1
+        testMultipleUsersStake(users);
+
+        uint256 totalVconStaked = mgov.getTotalVconStaked();
+        uint128 sharePrice = mgov.venueLastRecordedVconSharePrice(
+            address(pcvDepositDai)
+        ) / shareDenominator;
+
+        /// mark things down
+        vm.startPrank(addresses.governorAddress);
+        mgov.applyVenueLosses(address(pcvDepositDai), sharePrice);
+        mgov.applyVenueLosses(address(pcvDepositUsdc), sharePrice);
+        vm.stopPrank();
+
+        assertApproxEq(
+            (totalVconStaked / shareDenominator).toInt256(),
+            mgov.getTotalVconStaked().toInt256(),
+            0
+        );
+    }
+
+    function testSharePriceStaysConstantNoSharesWithProfit() public {
+        uint128 startingSharePrice = mgov.venueLastRecordedVconSharePrice(
+            address(pcvDepositDai)
+        );
+        uint128 startingLastRecordedProfit = mgov.venueLastRecordedProfit(
+            address(pcvDepositDai)
+        );
+
+        pcvDepositDai.setLastRecordedProfit(20_000e18);
+        mgov.accrueVcon(address(pcvDepositDai));
+
+        uint128 endingLastRecordedProfit = mgov.venueLastRecordedProfit(
+            address(pcvDepositDai)
+        );
+        uint128 endingSharePrice = mgov.venueLastRecordedVconSharePrice(
+            address(pcvDepositDai)
+        );
+
+        assertEq(startingSharePrice, endingSharePrice);
+        assertTrue(endingLastRecordedProfit > startingLastRecordedProfit);
+    }
+
+    /// apply gain x across period y with z amount of users
+    function testSharePriceStepWise(
+        uint96 periodGain,
+        uint8 periods,
+        address[15] memory users
+    ) public {
+        vm.assume(periodGain > 1e18);
+        uint256 vconAmount = 1e18;
+        for (uint256 i = 0; i < periods; ) {
+            address user = users[i % 15] == address(0)
+                ? address(uint160(i + 1))
+                : users[i % 15];
+            vcon.mint(user, vconAmount);
+
+            vm.startPrank(user);
+            vcon.approve(address(mgov), vconAmount);
+            mgov.stake(vconAmount, address(pcvDepositDai));
+            vm.stopPrank();
+
+            uint256 totalVconStaked = mgov.getVenueVconStaked(
+                address(pcvDepositDai)
+            );
+            uint256 totalShares = mgov.venueTotalShares(address(pcvDepositDai));
+            uint256 venueStartingPrice = mgov.venueLastRecordedVconSharePrice(
+                address(pcvDepositDai)
+            );
+            uint256 vconRatio = mgov.profitToVconRatio(address(pcvDepositDai));
+
+            uint256 vconInflation = periodGain * vconRatio;
+            uint256 expectedVenueSharePrice = venueStartingPrice +
+                (Constants.ETH_GRANULARITY * vconInflation) /
+                totalShares;
+
+            pcvDepositDai.setLastRecordedProfit(
+                pcvDepositDai.lastRecordedProfit() + periodGain
+            );
+
+            mgov.accrueVcon(address(pcvDepositDai));
+
+            assertApproxEq(
+                (expectedVenueSharePrice).toInt256(),
+                mgov
+                    .venueLastRecordedVconSharePrice(address(pcvDepositDai))
+                    .toInt256(),
+                0
+            );
+            assertApproxEq(
+                (vconInflation + totalVconStaked).toInt256(),
+                mgov.getVenueVconStaked(address(pcvDepositDai)).toInt256(),
+                0
+            );
+
+            unchecked {
+                i++;
+            }
+            /// apply gain
+            /// ensure getTotalVconStaked returns correct number
+        }
     }
 
     /// Gain and loss scenarios
-
     function testWithdrawWithGains() public {
         uint120 vconAmount = 1000e18;
         testSystemThreeUsersLastNoDeposit(vconAmount);
@@ -533,7 +741,7 @@ contract UnitTestMarketGovernance is SystemUnitTest {
 
         uint256 endingVconBalance = vcon.balanceOf(address(this));
 
-        assertTrue(endingVconBalance > startingVconBalance);
+        assertTrue(endingVconBalance > startingVconBalance); /// beef up these assertions to ensure share price is correct
     }
 
     function testWithdrawWithLossesFailsDai() public {
@@ -631,7 +839,7 @@ contract UnitTestMarketGovernance is SystemUnitTest {
     function testSetUnderlyingDepositFailsUnderlyingMismatch() public {
         vm.expectRevert("MarketGovernance: underlying mismatch");
         vm.prank(addresses.governorAddress);
-        mgov.setUnderlyingTokenHolderDeposit(
+        mgov.setUnderlyingTokenHoldingDeposit(
             address(usdc),
             address(daiHoldingDeposit)
         );
@@ -640,7 +848,29 @@ contract UnitTestMarketGovernance is SystemUnitTest {
     function testSetUnderlyingDepositFailsInvalidVenue() public {
         vm.expectRevert("MarketGovernance: invalid venue");
         vm.prank(addresses.governorAddress);
-        mgov.setUnderlyingTokenHolderDeposit(address(usdc), address(0));
+        mgov.setUnderlyingTokenHoldingDeposit(address(usdc), address(0));
+    }
+
+    function testApplyLossesFailsInvalidVenue() public {
+        vm.expectRevert("MarketGovernance: invalid venue");
+        vm.prank(addresses.governorAddress);
+        mgov.applyVenueLosses(address(0), 1);
+    }
+
+    function testApplyLossesFailsZeroSharePrice() public {
+        vm.expectRevert("MarketGovernance: cannot set share price to 0");
+        vm.prank(addresses.governorAddress);
+        mgov.applyVenueLosses(address(pcvDepositDai), 0);
+    }
+
+    function testApplyLossesFailsSharePriceMarkup() public {
+        mgov.accrueVcon(address(pcvDepositDai));
+        uint128 sharePrice = mgov.venueLastRecordedVconSharePrice(
+            address(pcvDepositDai)
+        );
+        vm.expectRevert("MarketGovernance: share price not less");
+        vm.prank(addresses.governorAddress);
+        mgov.applyVenueLosses(address(pcvDepositDai), sharePrice + 10);
     }
 
     /// ACL tests
@@ -656,10 +886,15 @@ contract UnitTestMarketGovernance is SystemUnitTest {
 
     function testSetUnderlyingDepositFailsNonGovernor() public {
         vm.expectRevert("CoreRef: Caller is not a governor");
-        mgov.setUnderlyingTokenHolderDeposit(
+        mgov.setUnderlyingTokenHoldingDeposit(
             address(dai),
             address(daiHoldingDeposit)
         );
+    }
+
+    function testApplyLossesFailsNonGovernor() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        mgov.applyVenueLosses(address(dai), 1);
     }
 
     //// Pause tests
