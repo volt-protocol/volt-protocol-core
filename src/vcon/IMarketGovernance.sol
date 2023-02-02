@@ -85,10 +85,17 @@ interface IMarketGovernance {
         uint256 profitIndex
     );
 
-    /// @notice
+    /// @notice emitted when the safe address for a given token denomination is updated
     event UnderlyingTokenDepositUpdated(
         address indexed token,
         address indexed venue
+    );
+
+    /// @notice emitted when share price is marked down through governance
+    event LossesApplied(
+        address indexed venue,
+        uint256 oldSharePrice,
+        uint256 newSharePrice
     );
 
     /// ---------- Permissionless User PCV Allocation Methods ----------

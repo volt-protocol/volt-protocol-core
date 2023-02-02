@@ -15,6 +15,9 @@ import {DeviationWeiGranularity} from "@voltprotocol/utils/DeviationWeiGranulari
 
 import {console} from "@forge-std/console.sol";
 
+/// TODO cache pcv oracle total pcv so getAllPCV isn't needed to figure
+/// out total pcv
+
 /// @notice this contract requires the PCV Mover and Locker role
 ///
 /// If an account has an unrealized loss on a venue, they cannot do any other action on that venue
@@ -41,7 +44,8 @@ import {console} from "@forge-std/console.sol";
 ///     Profit Per VCON = Profit Per VCON + ∆Cumulative Profits (Dollars) * VCON:Dollar Ratio / Venue VCON Staked
 ///
 /// Formula for calculating user VCON rewards:
-///     User VCON rewards = (Profit Per VCON - User Starting Profit Per VCON) * VCON Staked
+///     ∆Share Price = (Ending Share Price - Starting Share Price)
+///     User VCON rewards = ∆Share Price * User Shares
 ///
 /// Anytime the rewards share price changes, so does the unclaimed user VCON rewards.
 ///
@@ -93,9 +97,6 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
     constructor(address _core, address _pcvRouter) CoreRefV2(_core) {
         pcvRouter = _pcvRouter;
     }
-
-    /// TODO update pcv oracle to cache total pcv so getAllPCV isn't needed to figure
-    /// out if weights are correct
 
     /// @notice update the VCON share price and the last recorded profit for a given venue
     /// @param venue address to accrue
@@ -162,12 +163,13 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
             "MarketGovernance: invalid share amount"
         );
 
-        address denomination = IPCVDeposit(source).balanceReportedIn();
+        address denomination = IPCVDepositV2(source).balanceReportedIn();
         address destination = underlyingTokenToHoldingDeposit[denomination];
         require(
             destination != address(0),
             "MarketGovernance: invalid destination"
         );
+
         /// ---------- Effects ----------
 
         _accrue(source); /// update profitPerVCON in the source so the user gets paid out at the current share price
@@ -212,15 +214,35 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         Rebalance[] calldata movements
     ) external globalLock(1) whenNotPaused {
         /// read unsafe because we are at lock level 1
-        uint256 totalPcv = pcvOracle().getTotalPcvUnsafe();
+        IPCVOracle oracle = pcvOracle();
+        uint256 totalPcv = oracle.getTotalPcvUnsafe();
         uint256 totalVconStaked = getTotalVconStaked();
-
         unchecked {
             for (uint256 i = 0; i < movements.length; i++) {
                 address source = movements[i].source;
                 address destination = movements[i].destination;
                 address swapper = movements[i].swapper;
                 uint256 amountPcv = movements[i].amountPcv;
+
+                /// validate source, dest and swapper
+                require(
+                    oracle.isVenue(source),
+                    "MarketGovernance: invalid source"
+                );
+                require(
+                    oracle.isVenue(destination),
+                    "MarketGovernance: invalid destination"
+                );
+                /// if swapper is used, validate in PCV Router whiteliste
+                if (swapper != address(0)) {
+                    require(
+                        PCVRouter(pcvRouter).isPCVSwapper(swapper),
+                        "MarketGovernance: invalid swapper"
+                    );
+                }
+
+                /// call accrue on destination to ensure no unrealized losses have occured
+                _accrue(destination);
 
                 /// record how balanced the system is before the PCV movement
                 int256 sourceVenueBalance = getVenueDeviation(
@@ -283,6 +305,9 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
     }
 
     /// get the total amount of VCON staked based on the last cached share prices of each venue
+    /// during a loss scenario, this function will return an incorrect total amount of VCON staked
+    /// because the share price in the venues have not been marked down, leading to an incorrect sum.
+    /// all functions that call this function during a loss scenario will also be incorrect
     function getTotalVconStaked()
         public
         view
@@ -314,7 +339,7 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         uint256 totalPcv,
         uint256 totalVconStaked
     ) public view returns (int256) {
-        uint256 venueBalance = pcvOracle().getVenueBalance(venue);
+        uint256 venueBalance = pcvOracle().getVenueBalance(venue); /// decimal normalized balance
         uint256 expectedVenueBalance = getExpectedVenuePCVAmount(
             venue,
             totalPcv,
@@ -332,12 +357,12 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         address venue,
         uint256 shareAmount
     ) public view returns (uint256) {
-        uint256 venuePcv = IPCVDeposit(venue).balance();
+        uint256 venuePcv = IPCVDepositV2(venue).balance();
         uint256 cachedTotalShares = venueTotalShares[venue]; /// save a single warm SLOAD
 
         /// 0 checks as any 0 denominator will cause a revert
         if (cachedTotalShares == 0) {
-            return 0; /// perfectly balanced at 0 PCV or 0 VCON staked
+            return 0;
         }
 
         /// @audit we do not add 1 to the pro rata PCV here. This means a withdrawal of 1 Wei of shares
@@ -354,9 +379,21 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         return proRataPcv;
     }
 
+    /// @dev algorithm to find all rebalance actions necessary to get system to fully balanced
+    /// get expected PCV amounts in each venue
+    /// build out 2 ordered arrays
+    /// 1 of deposits underweight with most underweight placed first
+    /// 2 of deposits overweight with most overweight placed first
+    /// create an array of actions
+    /// iterate through list 2, starting at item 0, then iterate over list 1, making an action
+    /// pulling funds from this venue either till exhausted, or until item in list one is filled
+    /// if list 1 item filled, iterate to next item in list 1
+    /// if list 1 item unfilled and list 2 item perfectly balanced, go to next item in list 2
+    /// iterate over array of actions and correct decimals if swapping between USDC and DAI
+
     /// @notice return what the perfectly balanced system would look like with all balances normalized to 1e18
     function getExpectedPCVAmounts()
-        public
+        external
         view
         returns (PCVDepositInfo[] memory deposits)
     {
@@ -428,11 +465,8 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
             destinationAsset
         );
 
+        /// if nothing is staked on source, ignore balance check
         if (sharesToVcon(source, venueTotalShares[source]) > 0) {
-            /// TODO simplify this by passing delta of starting balance
-            /// instead of calling balance again on each pcv deposit
-            /// record how balanced the system is before the PCV movement
-
             int256 sourceVenueBalanceAfter = getVenueDeviation(
                 source,
                 totalPcv,
@@ -455,7 +489,7 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
             totalVconStaked
         );
 
-        /// validate destination venue balance became more balanced if VCON is staked on it
+        /// validate destination venue balance became more balanced
         _checkBalance(
             destinationVenueBalance,
             destinationVenueBalanceAfter,
@@ -492,12 +526,11 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
 
         IPCVDepositV2(venue).accrue();
 
-        uint256 endingLastRecordedProfit = IPCVDepositV2(venue)
-            .lastRecordedProfit(); /// think through calling the pcv oracle here
+        uint256 lastRecordedProfit = IPCVDepositV2(venue).lastRecordedProfit();
         uint256 endingLastRecordedSharePrice = venueLastRecordedVconSharePrice[
             venue
         ];
-        int256 venueProfit = (endingLastRecordedProfit.toInt256() -
+        int256 venueProfit = (lastRecordedProfit.toInt256() -
             startingLastRecordedProfit.toInt256());
 
         require(venueProfit >= 0, "MarketGovernance: loss scenario");
@@ -527,13 +560,9 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         }
 
         /// update the venue's profit index
-        venueLastRecordedProfit[venue] = endingLastRecordedProfit.toUint128();
+        venueLastRecordedProfit[venue] = lastRecordedProfit.toUint128();
 
-        emit VenueIndexUpdated(
-            venue,
-            block.timestamp,
-            endingLastRecordedProfit
-        );
+        emit VenueIndexUpdated(venue, block.timestamp, lastRecordedProfit);
     }
 
     /// ---------- Governor-Only Permissioned API ----------
@@ -572,18 +601,53 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
     /// @param venue where funds of denomination `token` will be withdrawn to
     /// @dev venue must be a whitelisted PCV Deposit,
     /// and the venue's underlying token must match the token passed
-    function setUnderlyingTokenHolderDeposit(
+    function setUnderlyingTokenHoldingDeposit(
         address token,
         address venue
     ) external onlyGovernor {
         require(pcvOracle().isVenue(venue), "MarketGovernance: invalid venue");
         require(
-            IPCVDeposit(venue).balanceReportedIn() == token,
+            IPCVDepositV2(venue).balanceReportedIn() == token,
             "MarketGovernance: underlying mismatch"
         );
 
         underlyingTokenToHoldingDeposit[token] = venue;
 
         emit UnderlyingTokenDepositUpdated(token, venue);
+    }
+
+    /// Governor applies losses to a venue
+    /// @param venue address of venue to apply losses to
+    /// @param newSharePrice new share price
+    function applyVenueLosses(
+        address venue,
+        uint128 newSharePrice
+    ) external onlyGovernor globalLock(1) {
+        require(pcvOracle().isVenue(venue), "MarketGovernance: invalid venue");
+
+        uint256 oldSharePrice = venueLastRecordedVconSharePrice[venue];
+
+        /// setting to 0 would cause re-initialization in accrue function, nullifying these changes
+        require(
+            newSharePrice != 0,
+            "MarketGovernance: cannot set share price to 0"
+        );
+
+        /// cannot apply a gain to the share price, only losses
+        require(
+            newSharePrice < oldSharePrice,
+            "MarketGovernance: share price not less"
+        );
+
+        IPCVDepositV2(venue).accrue();
+
+        uint256 lastRecordedProfit = IPCVDepositV2(venue).lastRecordedProfit();
+
+        /// update the venue's profit index
+        venueLastRecordedProfit[venue] = lastRecordedProfit.toUint128();
+        /// update the venue's share price
+        venueLastRecordedVconSharePrice[venue] = newSharePrice;
+
+        emit LossesApplied(venue, oldSharePrice, newSharePrice);
     }
 }
