@@ -280,6 +280,10 @@ contract SystemUnitTest is Test {
 
         core.setPCVOracle(pcvOracle);
 
+        core.createRole(VoltRoles.PCV_DEPOSIT, VoltRoles.GOVERNOR);
+        core.grantRole(VoltRoles.PCV_DEPOSIT, address(pcvDepositDai));
+        core.grantRole(VoltRoles.PCV_DEPOSIT, address(pcvDepositUsdc));
+
         vm.stopPrank();
 
         /// top up contracts with tokens for testing

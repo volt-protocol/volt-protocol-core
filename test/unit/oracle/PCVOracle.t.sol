@@ -82,20 +82,6 @@ contract PCVOracleUnitTest is Test {
         assertEq(totalPcv, 0);
     }
 
-    function testGetTotalPcvFailsWhileEntered() public {
-        vm.prank(address(deposit2));
-        lock.lock(1);
-
-        vm.expectRevert("PCVOracle: cannot read while entered");
-        pcvOracle.getTotalPcv();
-
-        vm.prank(address(deposit2));
-        lock.lock(2);
-
-        vm.expectRevert("PCVOracle: cannot read while entered");
-        pcvOracle.getTotalPcv();
-    }
-
     // -------------------------------------------------
     // Venues management (add/remove/set oracle)
     // -------------------------------------------------

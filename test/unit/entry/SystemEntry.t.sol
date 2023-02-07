@@ -54,6 +54,9 @@ contract SystemEntryUnitTest is Test {
         token1 = new MockERC20();
         deposit1 = new MockPCVDepositV3(address(core), address(token1));
 
+        /// setup oracle
+        oracle1.setValues(1e18, true);
+
         /// grant roles, set global reentrancy lock
         vm.startPrank(addresses.governorAddress);
 
@@ -63,18 +66,20 @@ contract SystemEntryUnitTest is Test {
 
         core.setGlobalReentrancyLock(lock);
 
-        vm.stopPrank();
+        core.createRole(VoltRoles.PCV_DEPOSIT, VoltRoles.GOVERNOR);
+        core.grantRole(VoltRoles.PCV_DEPOSIT, address(deposit1));
 
         // setup pcv oracle
         address[] memory venues = new address[](1);
         venues[0] = address(deposit1);
         address[] memory oracles = new address[](1);
         oracles[0] = address(oracle1);
-        vm.prank(addresses.governorAddress);
         pcvOracle.addVenues(venues, oracles);
+
         // setup pcv oracle
-        vm.prank(addresses.governorAddress);
         core.setPCVOracle(IPCVOracle(address(pcvOracle)));
+
+        vm.stopPrank();
     }
 
     function testSetup() public {

@@ -108,12 +108,8 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
 
         for (uint256 i = 0; i < venueLength; ) {
             address depositAddress = venues.at(i);
-            (uint256 oracleValue, bool oracleValid) = IOracleV2(
-                venueToOracle[depositAddress]
-            ).read();
-            require(oracleValid, "PCVOracle: invalid oracle value");
-
             totalPcv += getVenueStaleBalance(depositAddress);
+
             /// there will never be more than 100 total venues
             /// keep iteration math unchecked to save on gas
             unchecked {
@@ -260,7 +256,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
 
             uint256 balance = IPCVDepositV2(venuesToAdd[i]).accrue();
             if (balance != 0) {
-                // no need for safe cast here because balance is always > 0
+                // no need for safe cast here because balance is always > 0 and < int256 max
                 _readOracleAndUpdateAccounting(
                     venuesToAdd[i],
                     int256(balance),
@@ -353,6 +349,17 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         /// single SSTORE
         ptr.lastRecordedBalance = newLastRecordedBalance;
         ptr.lastRecordedProfit = newLastRecordedProfit;
+
+        /// update totalRecordedPcv
+        if (deltaBalanceUSD < 0) {
+            /// turn negative value positive, then subtract from uint256
+            totalRecordedPcv =
+                totalRecordedPcv -
+                (-deltaBalanceUSD).toUint256();
+        } else {
+            /// if >= 0, safecast will never revert
+            totalRecordedPcv += deltaBalanceUSD.toUint256();
+        }
 
         // Emit event
         emit PCVUpdated(

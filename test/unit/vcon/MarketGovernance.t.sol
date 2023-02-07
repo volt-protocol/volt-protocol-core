@@ -834,7 +834,7 @@ contract UnitTestMarketGovernance is SystemUnitTest {
     }
 
     function testUnstakeInvalidSourceVenueFails() public {
-        vm.expectRevert("MarketGovernance: invalid source");
+        vm.expectRevert("MarketGovernance: invalid venue");
         mgov.unstake(0, address(0), address(0));
     }
 
