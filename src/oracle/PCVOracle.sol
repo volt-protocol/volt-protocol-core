@@ -28,6 +28,20 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     /// know the USD value of PCV deployed in a given venue.
     mapping(address => address) public venueToOracle;
 
+    /// @notice track the venue's profit and losses
+    struct VenueData {
+        /// @notice  last recorded balance of PCV Deposit
+        int128 lastRecordedBalance;
+        /// @notice last recorded profit of PCV Deposit
+        int128 lastRecordedProfit;
+    }
+
+    /// @notice venue information, balance and profit
+    mapping(address => VenueData) public venueRecord;
+
+    /// @notice cached total PCV amount
+    uint256 public totalRecordedPcv;
+
     ///@notice set of pcv deposit addresses
     EnumerableSet.AddressSet private venues;
 
@@ -53,40 +67,57 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         return venues.contains(venue);
     }
 
-    /// @notice get the total PCV balance by looping through the pcv deposits
-    /// @dev this function is meant to be used offchain, as it is pretty gas expensive.
-    function getTotalPcv() external view returns (uint256 totalPcv) {
-        require(
-            globalReentrancyLock().isUnlocked(),
-            "PCVOracle: cannot read while entered"
-        );
+    /// @notice return last recorded balance for venue
+    function lastRecordedBalance(address venue) public view returns (int128) {
+        return venueRecord[venue].lastRecordedBalance;
+    }
 
-        totalPcv = _getTotalPcv();
+    /// @notice return last recorded profit for venue
+    function lastRecordedProfit(address venue) public view returns (int128) {
+        return venueRecord[venue].lastRecordedProfit;
     }
 
     /// @notice get the total PCV balance by looping through the pcv deposits
     /// @dev this function is meant to be used offchain, as it is pretty gas expensive.
     /// this is an unsafe operation as it does not enforce the system is in an unlocked state
-    function getTotalPcvUnsafe() external view returns (uint256 totalPcv) {
-        totalPcv = _getTotalPcv();
+    function getTotalPcv() external view returns (uint256 totalPcv) {
+        uint256 venueLength = venues.length();
+
+        for (uint256 i = 0; i < venueLength; ) {
+            address depositAddress = venues.at(i);
+            (uint256 oracleValue, bool oracleValid) = IOracleV2(
+                venueToOracle[depositAddress]
+            ).read();
+            require(oracleValid, "PCVOracle: invalid oracle value");
+
+            uint256 balance = IPCVDepositV2(depositAddress).balance();
+            totalPcv += (oracleValue * balance) / Constants.ETH_GRANULARITY;
+            /// there will never be more than 100 total venues
+            /// keep iteration math unchecked to save on gas
+            unchecked {
+                i++;
+            }
+        }
     }
 
     /// @notice get the total PCV balance by looping through the pcv deposits
-    function _getTotalPcv() private view returns (uint256 totalPcv) {
+    /// @dev this function is meant to be used offchain, as it is pretty gas expensive.
+    /// this is an unsafe operation as it does not enforce the system is in an unlocked state
+    function getTotalCachedPcv() external view returns (uint256 totalPcv) {
         uint256 venueLength = venues.length();
 
-        /// there will never be more than 100 total venues
-        /// so keep the math unchecked to save on gas
-        unchecked {
-            for (uint256 i = 0; i < venueLength; i++) {
-                address depositAddress = venues.at(i);
-                (uint256 oracleValue, bool oracleValid) = IOracleV2(
-                    venueToOracle[depositAddress]
-                ).read();
-                require(oracleValid, "PCVOracle: invalid oracle value");
+        for (uint256 i = 0; i < venueLength; ) {
+            address depositAddress = venues.at(i);
+            (uint256 oracleValue, bool oracleValid) = IOracleV2(
+                venueToOracle[depositAddress]
+            ).read();
+            require(oracleValid, "PCVOracle: invalid oracle value");
 
-                uint256 balance = IPCVDepositV2(depositAddress).balance();
-                totalPcv += (oracleValue * balance) / Constants.ETH_GRANULARITY;
+            totalPcv += getVenueStaleBalance(depositAddress);
+            /// there will never be more than 100 total venues
+            /// keep iteration math unchecked to save on gas
+            unchecked {
+                i++;
             }
         }
     }
@@ -106,6 +137,43 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
 
         // Compute USD values of deposit
         return (oracleValue * venueBalance) / Constants.ETH_GRANULARITY;
+    }
+
+    /// @notice returns decimal normalized version of a given venues stale USD balance
+    /// does not account for unearned yield
+    function getVenueStaleBalance(address venue) public view returns (uint256) {
+        // Read oracle to get USD values of delta
+        address oracle = venueToOracle[venue];
+
+        require(oracle != address(0), "PCVOracle: invalid caller deposit");
+        (uint256 oracleValue, bool oracleValid) = IOracleV2(oracle).read();
+
+        require(oracleValid, "PCVOracle: invalid oracle value");
+
+        uint256 venueBalance = venueRecord[venue]
+            .lastRecordedBalance
+            .toUint256();
+
+        // Compute USD values of deposit
+        return (oracleValue * venueBalance) / Constants.ETH_GRANULARITY;
+    }
+
+    /// @notice returns decimal normalized version of a given venues USD pnl
+    function getVenueStaleProfit(
+        address venue
+    ) external view returns (uint256) {
+        // Read oracle to get USD values of delta
+        address oracle = venueToOracle[venue];
+
+        require(oracle != address(0), "PCVOracle: invalid caller deposit");
+        (uint256 oracleValue, bool oracleValid) = IOracleV2(oracle).read();
+
+        require(oracleValid, "PCVOracle: invalid oracle value");
+
+        uint256 venueProfit = venueRecord[venue].lastRecordedProfit.toUint256();
+
+        // Compute USD values of profit
+        return (oracleValue * venueProfit) / Constants.ETH_GRANULARITY;
     }
 
     /// ------------- PCV Deposit Only API -------------
@@ -275,6 +343,17 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         int256 deltaBalanceUSD,
         int256 deltaProfitUSD
     ) private {
+        VenueData storage ptr = venueRecord[venue];
+
+        int128 newLastRecordedBalance = ptr.lastRecordedBalance +
+            deltaBalanceUSD.toInt128();
+        int128 newLastRecordedProfit = ptr.lastRecordedProfit +
+            deltaProfitUSD.toInt128();
+
+        /// single SSTORE
+        ptr.lastRecordedBalance = newLastRecordedBalance;
+        ptr.lastRecordedProfit = newLastRecordedProfit;
+
         // Emit event
         emit PCVUpdated(
             venue,
@@ -282,13 +361,6 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
             deltaBalanceUSD,
             deltaProfitUSD
         );
-
-        // @dev:
-        // Later, we could store accumulative balances and profits
-        // for each venues here, in storage if needed by market governance.
-        // For now to save on gas, we only emit events.
-        // The PCVOracle can easily be swapped to a new implementation
-        // by calling setPCVOracle() on Core.
     }
 
     function _addVenue(address venue) private {

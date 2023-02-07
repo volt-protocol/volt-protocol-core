@@ -25,9 +25,11 @@ contract PCVOracleUnitTest is Test {
     // test Tokens
     MockERC20 private token1;
     MockERC20 private token2;
+
     // test PCV Deposits
     MockPCVDepositV3 private deposit1;
     MockPCVDepositV3 private deposit2;
+
     // test Oracles
     MockOracleV2 private oracle1;
     MockOracleV2 private oracle2;

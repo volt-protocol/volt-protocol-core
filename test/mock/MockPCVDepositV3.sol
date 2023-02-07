@@ -2,11 +2,14 @@
 pragma solidity 0.8.13;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
 import {IPCVDeposit} from "@voltprotocol/pcv/IPCVDeposit.sol";
 
 contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
+    using SafeCast for *;
+
     address public override balanceReportedIn;
     bool public checkPCVController = false;
 
@@ -53,12 +56,16 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
     function accrue() external globalLock(2) returns (uint256) {
         uint256 _balance = balance();
         resistantBalance = _balance;
+
+        _pcvOracleHook(0, 0);
+
         return _balance;
     }
 
     // IPCVDeposit V1
     function deposit() external override globalLock(2) {
         resistantBalance = IERC20(balanceReportedIn).balanceOf(address(this));
+        _pcvOracleHook(resistantBalance.toInt256().toInt128(), 0);
     }
 
     function withdraw(
@@ -74,6 +81,7 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
         }
         IERC20(balanceReportedIn).transfer(to, amount);
         resistantBalance = IERC20(balanceReportedIn).balanceOf(address(this));
+        _pcvOracleHook(amount.toInt256().toInt128(), 0); /// update delta balance
     }
 
     function withdrawERC20(

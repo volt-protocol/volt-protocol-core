@@ -44,12 +44,8 @@ interface IPCVOracle {
 
     /// @notice get the total PCV balance by looping through the pcv deposits
     /// @dev this function is meant to be used offchain, as it is pretty gas expensive.
-    function getTotalPcv() external view returns (uint256 totalPcv);
-
-    /// @notice get the total PCV balance by looping through the pcv deposits
-    /// @dev this function is meant to be used offchain, as it is pretty gas expensive.
     /// this is an unsafe operation as it does not enforce the system is in an unlocked state
-    function getTotalPcvUnsafe() external view returns (uint256 totalPcv);
+    function getTotalPcv() external view returns (uint256 totalPcv);
 
     /// @notice returns decimal normalized version of a given venues USD balance
     function getVenueBalance(address venue) external view returns (uint256);
