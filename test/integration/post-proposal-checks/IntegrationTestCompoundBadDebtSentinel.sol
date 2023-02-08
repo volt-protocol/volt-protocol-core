@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {PCVOracle} from "@voltprotocol/oracle/PCVOracle.sol";
@@ -10,6 +11,8 @@ import {PostProposalCheck} from "@test/integration/post-proposal-checks/PostProp
 import {CompoundBadDebtSentinel} from "@voltprotocol/pcv/compound/CompoundBadDebtSentinel.sol";
 
 contract IntegrationTestCompoundBadDebtSentinel is PostProposalCheck {
+    using SafeCast for *;
+
     function testBadDebtOverThresholdAllowsSentinelWithdraw() public {
         CompoundBadDebtSentinel badDebtSentinel = CompoundBadDebtSentinel(
             addresses.mainnet("COMPOUND_BAD_DEBT_SENTINEL")
@@ -36,12 +39,12 @@ contract IntegrationTestCompoundBadDebtSentinel is PostProposalCheck {
 
         assertApproxEq(
             int256(daiDeposit.balance()),
-            pcvOracle.lastRecordedBalance(address(daiDeposit)),
+            pcvOracle.lastRecordedPCV(address(daiDeposit)).toInt256(),
             0
         );
         assertApproxEq(
             int256(usdcDeposit.balance()) * 1e12,
-            pcvOracle.lastRecordedBalance(address(usdcDeposit)),
+            pcvOracle.lastRecordedPCV(address(usdcDeposit)).toInt256(),
             0
         );
 

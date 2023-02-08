@@ -31,7 +31,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     /// @notice track the venue's profit and losses
     struct VenueData {
         /// @notice the decimal normalized last recorded balance of PCV Deposit
-        int128 lastRecordedBalance;
+        int128 lastRecordedPCV;
         /// @notice the decimal normalized last recorded profit of PCV Deposit
         int128 lastRecordedProfit;
     }
@@ -40,7 +40,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     mapping(address => VenueData) public venueRecord;
 
     /// @notice cached total PCV amount
-    uint256 public totalRecordedPcv;
+    uint256 public lastRecordedTotalPcv;
 
     ///@notice set of pcv deposit addresses
     EnumerableSet.AddressSet private venues;
@@ -68,8 +68,8 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     }
 
     /// @notice return the decimal normalized last recorded balance for venue
-    function lastRecordedBalance(address venue) public view returns (int128) {
-        return venueRecord[venue].lastRecordedBalance;
+    function lastRecordedPCV(address venue) public view returns (uint256) {
+        return venueRecord[venue].lastRecordedPCV.toUint256(); /// venue balance must be > -1, else safecast reverts
     }
 
     /// @notice return the decimal normalized last recorded profit for venue
@@ -103,12 +103,16 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     /// @notice get the total PCV balance by looping through the pcv deposits
     /// @dev this function is meant to be used offchain, as it is pretty gas expensive.
     /// this is an unsafe operation as it does not enforce the system is in an unlocked state
-    function getTotalCachedPcv() external view returns (uint256 totalPcv) {
+    function getTotalLastRecordedPcv()
+        external
+        view
+        returns (uint256 totalPcv)
+    {
         uint256 venueLength = venues.length();
 
         for (uint256 i = 0; i < venueLength; ) {
             address depositAddress = venues.at(i);
-            totalPcv += getVenueStaleBalance(depositAddress);
+            totalPcv += lastRecordedPCV(depositAddress);
 
             /// there will never be more than 100 total venues
             /// keep iteration math unchecked to save on gas
@@ -133,34 +137,6 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
 
         // Compute USD values of deposit
         return (oracleValue * venueBalance) / Constants.ETH_GRANULARITY;
-    }
-
-    /// @notice returns decimal normalized version of a given venues stale USD balance
-    /// does not account for unearned yield
-    function getVenueStaleBalance(address venue) public view returns (uint256) {
-        uint256 venueBalance = venueRecord[venue]
-            .lastRecordedBalance
-            .toUint256();
-
-        return venueBalance;
-    }
-
-    /// @notice returns decimal normalized version of a given venues USD pnl
-    function getVenueStaleProfit(
-        address venue
-    ) external view returns (uint256) {
-        // Read oracle to get USD values of delta
-        address oracle = venueToOracle[venue];
-
-        require(oracle != address(0), "PCVOracle: invalid caller deposit");
-        (uint256 oracleValue, bool oracleValid) = IOracleV2(oracle).read();
-
-        require(oracleValid, "PCVOracle: invalid oracle value");
-
-        uint256 venueProfit = venueRecord[venue].lastRecordedProfit.toUint256();
-
-        // Compute USD values of profit
-        return (oracleValue * venueProfit) / Constants.ETH_GRANULARITY;
     }
 
     /// ------------- PCV Deposit Only API -------------
@@ -332,20 +308,20 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     ) private {
         VenueData storage ptr = venueRecord[venue];
 
-        int128 newLastRecordedBalance = ptr.lastRecordedBalance +
+        int128 newLastRecordedPCV = ptr.lastRecordedPCV +
             deltaBalanceUSD.toInt128();
         int128 newLastRecordedProfit = ptr.lastRecordedProfit +
             deltaProfitUSD.toInt128();
 
         /// single SSTORE
-        ptr.lastRecordedBalance = newLastRecordedBalance;
+        ptr.lastRecordedPCV = newLastRecordedPCV;
         ptr.lastRecordedProfit = newLastRecordedProfit;
 
-        /// update totalRecordedPcv
+        /// update lastRecordedTotalPcv
         if (deltaBalanceUSD >= 0) {
-            totalRecordedPcv += deltaBalanceUSD.toUint256();
+            lastRecordedTotalPcv += deltaBalanceUSD.toUint256();
         } else {
-            totalRecordedPcv -= (-deltaBalanceUSD).toUint256();
+            lastRecordedTotalPcv -= (-deltaBalanceUSD).toUint256();
         }
 
         // Emit event

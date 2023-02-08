@@ -98,7 +98,7 @@ contract PCVOracleUnitTest is Test {
         assertEq(pcvOracle.getVenues().length, 2);
         uint256 totalPcv = pcvOracle.getTotalPcv();
         assertEq(totalPcv, 0);
-        assertEq(pcvOracle.totalRecordedPcv(), 0);
+        assertEq(pcvOracle.lastRecordedTotalPcv(), 0);
 
         assertEq(pcvOracle.venueToOracle(address(deposit1)), address(oracle1));
         assertEq(pcvOracle.venueToOracle(address(deposit2)), address(oracle2));
@@ -216,10 +216,10 @@ contract PCVOracleUnitTest is Test {
         assertEq(pcvOracle.isVenue(address(deposit2)), true);
         assertEq(pcvOracle.venueToOracle(address(deposit1)), address(oracle1));
         assertEq(pcvOracle.venueToOracle(address(deposit1)), address(oracle1));
-        assertEq(pcvOracle.getTotalPcv(), pcvOracle.getTotalCachedPcv());
+        assertEq(pcvOracle.getTotalPcv(), pcvOracle.getTotalLastRecordedPcv());
         assertEq(
-            uint256(pcvOracle.totalRecordedPcv()),
-            pcvOracle.getTotalCachedPcv()
+            uint256(pcvOracle.lastRecordedTotalPcv()),
+            pcvOracle.getTotalLastRecordedPcv()
         );
     }
 
@@ -377,8 +377,8 @@ contract PCVOracleUnitTest is Test {
         uint256 totalPcv1 = pcvOracle.getTotalPcv();
         assertEq(totalPcv1, 100e18); // 100$ total
         assertEq(
-            uint256(pcvOracle.totalRecordedPcv()),
-            pcvOracle.getTotalCachedPcv()
+            uint256(pcvOracle.lastRecordedTotalPcv()),
+            pcvOracle.getTotalLastRecordedPcv()
         );
 
         address[] memory venues = new address[](1);
@@ -391,10 +391,10 @@ contract PCVOracleUnitTest is Test {
         // check getPcv()
         uint256 totalPcv2 = pcvOracle.getTotalPcv();
         assertEq(totalPcv2, 0); // 0$ total
-        assertEq(uint256(pcvOracle.totalRecordedPcv()), totalPcv2);
+        assertEq(uint256(pcvOracle.lastRecordedTotalPcv()), totalPcv2);
         assertEq(
-            uint256(pcvOracle.totalRecordedPcv()),
-            pcvOracle.getTotalCachedPcv()
+            uint256(pcvOracle.lastRecordedTotalPcv()),
+            pcvOracle.getTotalLastRecordedPcv()
         );
     }
 
@@ -410,10 +410,10 @@ contract PCVOracleUnitTest is Test {
         // check getPcv()
         uint256 totalPcv1 = pcvOracle.getTotalPcv();
         assertEq(totalPcv1, 100e18); // 100$ total
-        assertEq(uint256(pcvOracle.totalRecordedPcv()), totalPcv1);
+        assertEq(uint256(pcvOracle.lastRecordedTotalPcv()), totalPcv1);
         assertEq(
-            uint256(pcvOracle.totalRecordedPcv()),
-            pcvOracle.getTotalCachedPcv()
+            uint256(pcvOracle.lastRecordedTotalPcv()),
+            pcvOracle.getTotalLastRecordedPcv()
         );
 
         // deposit 1 has 100$ + 300$
@@ -427,10 +427,10 @@ contract PCVOracleUnitTest is Test {
         uint256 totalPcv2 = pcvOracle.getTotalPcv();
 
         assertEq(totalPcv2, 800e18); // 800$ total
-        assertEq(uint256(pcvOracle.totalRecordedPcv()), totalPcv2);
+        assertEq(uint256(pcvOracle.lastRecordedTotalPcv()), totalPcv2);
         assertEq(
-            uint256(pcvOracle.totalRecordedPcv()),
-            pcvOracle.getTotalCachedPcv()
+            uint256(pcvOracle.lastRecordedTotalPcv()),
+            pcvOracle.getTotalLastRecordedPcv()
         );
 
         // A call from a PCVDeposit refreshes accounting
