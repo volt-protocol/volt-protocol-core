@@ -81,7 +81,7 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
         }
         IERC20(balanceReportedIn).transfer(to, amount);
         resistantBalance = IERC20(balanceReportedIn).balanceOf(address(this));
-        _pcvOracleHook(amount.toInt256().toInt128(), 0); /// update delta balance
+        _pcvOracleHook(-(amount.toInt256().toInt128()), 0); /// update balance with delta
     }
 
     function withdrawERC20(
