@@ -40,7 +40,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     mapping(address => VenueData) public venueRecord;
 
     /// @notice cached total PCV amount
-    int256 public totalRecordedPcv;
+    uint256 public totalRecordedPcv;
 
     ///@notice set of pcv deposit addresses
     EnumerableSet.AddressSet private venues;
@@ -138,20 +138,11 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     /// @notice returns decimal normalized version of a given venues stale USD balance
     /// does not account for unearned yield
     function getVenueStaleBalance(address venue) public view returns (uint256) {
-        // Read oracle to get USD values of delta
-        address oracle = venueToOracle[venue];
-
-        require(oracle != address(0), "PCVOracle: invalid caller deposit");
-        (uint256 oracleValue, bool oracleValid) = IOracleV2(oracle).read();
-
-        require(oracleValid, "PCVOracle: invalid oracle value");
-
         uint256 venueBalance = venueRecord[venue]
             .lastRecordedBalance
             .toUint256();
 
-        // Compute USD values of deposit
-        return (oracleValue * venueBalance) / Constants.ETH_GRANULARITY;
+        return venueBalance;
     }
 
     /// @notice returns decimal normalized version of a given venues USD pnl
@@ -351,7 +342,11 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         ptr.lastRecordedProfit = newLastRecordedProfit;
 
         /// update totalRecordedPcv
-        totalRecordedPcv += deltaBalanceUSD;
+        if (deltaBalanceUSD >= 0) {
+            totalRecordedPcv += deltaBalanceUSD.toUint256();
+        } else {
+            totalRecordedPcv -= (-deltaBalanceUSD).toUint256();
+        }
 
         // Emit event
         emit PCVUpdated(

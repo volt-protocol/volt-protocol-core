@@ -432,6 +432,8 @@ contract SystemUnitTest is Test {
     }
 
     function testPCVGuardWithdrawAllToSafeAddress() public {
+        entry.deposit(address(pcvDepositDai));
+        entry.deposit(address(pcvDepositUsdc));
         vm.startPrank(addresses.userAddress);
 
         pcvGuardian.withdrawAllToSafeAddress(address(daipsm));

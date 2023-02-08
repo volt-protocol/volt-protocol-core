@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import {console} from "@forge-std/console.sol";
-
 import {Test} from "@forge-std/Test.sol";
 import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
 import {PCVOracle} from "@voltprotocol/oracle/PCVOracle.sol";
@@ -418,13 +416,6 @@ contract PCVOracleUnitTest is Test {
             pcvOracle.getTotalCachedPcv()
         );
 
-        // grant roles to pcv deposits
-        vm.startPrank(addresses.governorAddress);
-        core.createRole(VoltRoles.PCV_DEPOSIT, VoltRoles.GOVERNOR);
-        core.grantRole(VoltRoles.PCV_DEPOSIT, address(deposit1));
-        core.grantRole(VoltRoles.PCV_DEPOSIT, address(deposit2));
-        vm.stopPrank();
-
         // deposit 1 has 100$ + 300$
         token1.mint(address(deposit1), 300e18);
         entry.deposit(address(deposit1));
@@ -435,14 +426,7 @@ contract PCVOracleUnitTest is Test {
         // check getPcv()
         uint256 totalPcv2 = pcvOracle.getTotalPcv();
 
-        console.log("totalPcv2: ", totalPcv2);
-        console.log(
-            "totalRecordedPcv: ",
-            uint256(pcvOracle.totalRecordedPcv())
-        );
-        console.log("totalCachedPcv: ", pcvOracle.getTotalCachedPcv());
-
-        assertEq(totalPcv2, 900e18); // 900$ total as deposit double records in mock pcv deposit
+        assertEq(totalPcv2, 800e18); // 800$ total
         assertEq(uint256(pcvOracle.totalRecordedPcv()), totalPcv2);
         assertEq(
             uint256(pcvOracle.totalRecordedPcv()),

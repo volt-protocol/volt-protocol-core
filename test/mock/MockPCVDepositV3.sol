@@ -64,8 +64,12 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
 
     // IPCVDeposit V1
     function deposit() external override globalLock(2) {
+        int256 startingBalance = resistantBalance.toInt256();
         resistantBalance = IERC20(balanceReportedIn).balanceOf(address(this));
-        _pcvOracleHook(resistantBalance.toInt256().toInt128(), 0);
+        _pcvOracleHook(
+            resistantBalance.toInt256().toInt128() - startingBalance,
+            0
+        );
     }
 
     function withdraw(
