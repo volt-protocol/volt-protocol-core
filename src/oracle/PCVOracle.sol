@@ -30,9 +30,9 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
 
     /// @notice track the venue's profit and losses
     struct VenueData {
-        /// @notice  last recorded balance of PCV Deposit
+        /// @notice the decimal normalized last recorded balance of PCV Deposit
         int128 lastRecordedBalance;
-        /// @notice last recorded profit of PCV Deposit
+        /// @notice the decimal normalized last recorded profit of PCV Deposit
         int128 lastRecordedProfit;
     }
 
@@ -40,7 +40,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     mapping(address => VenueData) public venueRecord;
 
     /// @notice cached total PCV amount
-    uint256 public totalRecordedPcv;
+    int256 public totalRecordedPcv;
 
     ///@notice set of pcv deposit addresses
     EnumerableSet.AddressSet private venues;
@@ -67,12 +67,12 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         return venues.contains(venue);
     }
 
-    /// @notice return last recorded balance for venue
+    /// @notice return the decimal normalized last recorded balance for venue
     function lastRecordedBalance(address venue) public view returns (int128) {
         return venueRecord[venue].lastRecordedBalance;
     }
 
-    /// @notice return last recorded profit for venue
+    /// @notice return the decimal normalized last recorded profit for venue
     function lastRecordedProfit(address venue) public view returns (int128) {
         return venueRecord[venue].lastRecordedProfit;
     }
@@ -351,15 +351,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         ptr.lastRecordedProfit = newLastRecordedProfit;
 
         /// update totalRecordedPcv
-        if (deltaBalanceUSD < 0) {
-            /// turn negative value positive, then subtract from uint256
-            totalRecordedPcv =
-                totalRecordedPcv -
-                (-deltaBalanceUSD).toUint256();
-        } else {
-            /// if >= 0, safecast will never revert
-            totalRecordedPcv += deltaBalanceUSD.toUint256();
-        }
+        totalRecordedPcv += deltaBalanceUSD;
 
         // Emit event
         emit PCVUpdated(

@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+import {PCVOracle} from "@voltprotocol/oracle/PCVOracle.sol";
 import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
 import {IPCVDepositV2} from "@voltprotocol/pcv/IPCVDepositV2.sol";
 import {PostProposalCheck} from "@test/integration/post-proposal-checks/PostProposalCheck.sol";
@@ -16,6 +17,7 @@ contract IntegrationTestCompoundBadDebtSentinel is PostProposalCheck {
         PCVGuardian pcvGuardian = PCVGuardian(
             addresses.mainnet("PCV_GUARDIAN")
         );
+        PCVOracle pcvOracle = PCVOracle(addresses.mainnet("PCV_ORACLE"));
         IPCVDepositV2 daiDeposit = IPCVDepositV2(
             addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
         );
@@ -31,6 +33,17 @@ contract IntegrationTestCompoundBadDebtSentinel is PostProposalCheck {
 
         address[] memory user = new address[](1);
         user[0] = yearn;
+
+        assertApproxEq(
+            int256(daiDeposit.balance()),
+            pcvOracle.lastRecordedBalance(address(daiDeposit)),
+            0
+        );
+        assertApproxEq(
+            int256(usdcDeposit.balance()) * 1e12,
+            pcvOracle.lastRecordedBalance(address(usdcDeposit)),
+            0
+        );
 
         assertTrue(badDebtSentinel.getTotalBadDebt(user) > 10_000_000e18);
 
