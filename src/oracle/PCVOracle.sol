@@ -100,28 +100,6 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         }
     }
 
-    /// @notice get the total PCV balance by looping through the pcv deposits
-    /// @dev this function is meant to be used offchain, as it is pretty gas expensive.
-    /// this is an unsafe operation as it does not enforce the system is in an unlocked state
-    function getTotalLastRecordedPcv()
-        external
-        view
-        returns (uint256 totalPcv)
-    {
-        uint256 venueLength = venues.length();
-
-        for (uint256 i = 0; i < venueLength; ) {
-            address depositAddress = venues.at(i);
-            totalPcv += lastRecordedPCV(depositAddress);
-
-            /// there will never be more than 100 total venues
-            /// keep iteration math unchecked to save on gas
-            unchecked {
-                i++;
-            }
-        }
-    }
-
     /// @notice returns decimal normalized version of a given venues USD balance
     function getVenueBalance(
         address venue
