@@ -216,11 +216,7 @@ contract PCVOracleUnitTest is Test {
         assertEq(pcvOracle.isVenue(address(deposit2)), true);
         assertEq(pcvOracle.venueToOracle(address(deposit1)), address(oracle1));
         assertEq(pcvOracle.venueToOracle(address(deposit1)), address(oracle1));
-        assertEq(pcvOracle.getTotalPcv(), pcvOracle.getTotalLastRecordedPcv());
-        assertEq(
-            uint256(pcvOracle.lastRecordedTotalPcv()),
-            pcvOracle.getTotalLastRecordedPcv()
-        );
+        assertEq(pcvOracle.getTotalPcv(), pcvOracle.lastRecordedTotalPcv());
     }
 
     function testRemoveVenues() public {
@@ -376,10 +372,6 @@ contract PCVOracleUnitTest is Test {
         // check getPcv()
         uint256 totalPcv1 = pcvOracle.getTotalPcv();
         assertEq(totalPcv1, 100e18); // 100$ total
-        assertEq(
-            uint256(pcvOracle.lastRecordedTotalPcv()),
-            pcvOracle.getTotalLastRecordedPcv()
-        );
 
         address[] memory venues = new address[](1);
         venues[0] = address(deposit1);
@@ -392,10 +384,6 @@ contract PCVOracleUnitTest is Test {
         uint256 totalPcv2 = pcvOracle.getTotalPcv();
         assertEq(totalPcv2, 0); // 0$ total
         assertEq(uint256(pcvOracle.lastRecordedTotalPcv()), totalPcv2);
-        assertEq(
-            uint256(pcvOracle.lastRecordedTotalPcv()),
-            pcvOracle.getTotalLastRecordedPcv()
-        );
     }
 
     function testAccountingOnHook() public {
@@ -411,10 +399,6 @@ contract PCVOracleUnitTest is Test {
         uint256 totalPcv1 = pcvOracle.getTotalPcv();
         assertEq(totalPcv1, 100e18); // 100$ total
         assertEq(uint256(pcvOracle.lastRecordedTotalPcv()), totalPcv1);
-        assertEq(
-            uint256(pcvOracle.lastRecordedTotalPcv()),
-            pcvOracle.getTotalLastRecordedPcv()
-        );
 
         // deposit 1 has 100$ + 300$
         token1.mint(address(deposit1), 300e18);
@@ -428,10 +412,6 @@ contract PCVOracleUnitTest is Test {
 
         assertEq(totalPcv2, 800e18); // 800$ total
         assertEq(uint256(pcvOracle.lastRecordedTotalPcv()), totalPcv2);
-        assertEq(
-            uint256(pcvOracle.lastRecordedTotalPcv()),
-            pcvOracle.getTotalLastRecordedPcv()
-        );
 
         // A call from a PCVDeposit refreshes accounting
         vm.startPrank(address(deposit2));
