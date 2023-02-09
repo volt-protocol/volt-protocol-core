@@ -6,6 +6,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
 import {IPCVDeposit} from "@voltprotocol/pcv/IPCVDeposit.sol";
+import {IGlobalReentrancyLock} from "@voltprotocol/core/IGlobalReentrancyLock.sol";
 
 contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
     using SafeCast for *;
@@ -33,7 +34,22 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
     }
 
     function setLastRecordedProfit(uint256 _lastRecordedProfit) public {
+        IGlobalReentrancyLock lock = globalReentrancyLock();
+        if (address(lock) != address(0)) {
+            /// pcv oracle hook requires lock level 2
+            lock.lock(1);
+            lock.lock(2);
+        }
+
+        int256 deltaProfit = _lastRecordedProfit.toInt256() -
+            lastRecordedProfit.toInt256();
         lastRecordedProfit = _lastRecordedProfit;
+        _pcvOracleHook(0, deltaProfit);
+
+        if (address(lock) != address(0)) {
+            lock.unlock(1);
+            lock.unlock(0);
+        }
     }
 
     function setCheckPCVController(bool value) public {

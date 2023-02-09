@@ -359,6 +359,31 @@ contract PCVOracleUnitTest is Test {
     // Accounting Checks
     // -------------------------------------------------
 
+    function testProfitTracking() public {
+        int128 venue1Profit = 10e18;
+        int128 venue2Profit = 20e18;
+
+        deposit1.setLastRecordedProfit(uint256(uint128(venue1Profit)));
+        deposit2.setLastRecordedProfit(uint256(uint128(venue2Profit)));
+
+        {
+            (int128 balance, int128 profit) = pcvOracle.venueRecord(
+                address(deposit1)
+            );
+            assertEq(balance, 0);
+            assertEq(profit, venue1Profit);
+        }
+        {
+            (int128 balance, int128 profit) = pcvOracle.venueRecord(
+                address(deposit2)
+            );
+            assertEq(balance, 0);
+            assertEq(profit, venue2Profit);
+        }
+
+        assertEq(pcvOracle.lastRecordedTotalPcv(), 0); /// profits are not part of total PCV
+    }
+
     function testGetVenueBalanceRevertsInvalidOracle() public {
         oracle1.setValues(oracle1.price(), false);
         vm.expectRevert("PCVOracle: invalid oracle value");
