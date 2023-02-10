@@ -6,10 +6,11 @@ import {Test} from "@forge-std/Test.sol";
 import {ICoreV2} from "@voltprotocol/core/ICoreV2.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
+import {getCoreV2} from "@test/unit/utils/Fixtures.sol";
 import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {MockCoreRefV2} from "@test/mock/MockCoreRefV2.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
-import {getCoreV2} from "@test/unit/utils/Fixtures.sol";
+import {IGlobalReentrancyLock} from "@voltprotocol/core/IGlobalReentrancyLock.sol";
 
 contract UnitTestCoreRefV2 is Test {
     ICoreV2 private core;
@@ -111,6 +112,36 @@ contract UnitTestCoreRefV2 is Test {
         vm.prank(addresses.governorAddress);
         core.grantLocker(address(this));
         coreRef.testSystemState();
+    }
+
+    function _disableLock() private {
+        vm.prank(addresses.governorAddress);
+        core.setGlobalReentrancyLock(IGlobalReentrancyLock(address(0)));
+    }
+
+    function testLockLevel1LockDisabled() public {
+        _disableLock();
+        coreRef.testSystemLocksToLevel1();
+    }
+
+    function testLockLevel2LockDisabled() public {
+        _disableLock();
+        coreRef.testSystemLocksToLevel2();
+    }
+
+    function testLockLevel3LockDisabled() public {
+        _disableLock();
+        coreRef.testSystemLocksToLevel3();
+    }
+
+    function testSystemLockLevel1LockDisabled() public {
+        _disableLock();
+        coreRef.testSystemLockLevel1();
+    }
+
+    function testSystemLockLevel2LockDisabled() public {
+        _disableLock();
+        coreRef.testSystemLockLevel2();
     }
 
     function testGuardianAsGuardian() public {
