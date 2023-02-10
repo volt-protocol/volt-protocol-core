@@ -42,6 +42,12 @@ interface IPCVOracle {
     /// @return boolean whether or not the venue is part of the venue list
     function isVenue(address venue) external view returns (bool);
 
+    /// @notice return the decimal normalized last recorded balance for venue
+    function lastRecordedPCV(address venue) external view returns (uint256);
+
+    /// @notice return the decimal normalized last recorded profit for venue
+    function lastRecordedProfit(address venue) external view returns (int128);
+
     /// @notice get the total PCV balance by looping through the pcv deposits
     /// @dev this function is meant to be used offchain, as it is pretty gas expensive.
     /// this is an unsafe operation as it does not enforce the system is in an unlocked state
