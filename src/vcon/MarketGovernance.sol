@@ -81,6 +81,8 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
     mapping(address => uint256) public venueTotalShares;
 
     /// @notice map an underlying token to the corresponding holding deposit
+    /// TODO remove this and all related logic once the PCV Guardian is re-written
+    /// instead add a reference to the PCV Guardian
     mapping(address => address) public underlyingTokenToHoldingDeposit;
 
     /// no balance checks when unstaking
