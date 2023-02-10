@@ -105,6 +105,13 @@ contract PCVRouterUnitTest is Test {
         core.createRole(VoltRoles.PCV_MOVER, VoltRoles.GOVERNOR);
         core.grantRole(VoltRoles.PCV_MOVER, address(this));
         core.setGlobalReentrancyLock(lock);
+
+        core.createRole(VoltRoles.PCV_DEPOSIT, VoltRoles.GOVERNOR);
+        core.grantRole(VoltRoles.PCV_DEPOSIT, address(depositToken1A));
+        core.grantRole(VoltRoles.PCV_DEPOSIT, address(depositToken1B));
+        core.grantRole(VoltRoles.PCV_DEPOSIT, address(depositToken2A));
+        core.grantRole(VoltRoles.PCV_DEPOSIT, address(depositToken2B));
+
         vm.stopPrank();
 
         // setup deposits

@@ -33,17 +33,29 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     /// 3. call core and unlock the lock back to starting level
     modifier globalLock(uint8 level) {
         IGlobalReentrancyLock lock = globalReentrancyLock();
-        lock.lock(level);
-        _;
-        lock.unlock(level - 1);
+
+        if (address(lock) != address(0)) {
+            lock.lock(level);
+            _;
+            lock.unlock(level - 1);
+        } else {
+            _; /// if lock is not set, allow function execution without global reentrancy locks
+        }
     }
 
     /// @notice modifier to restrict function acces to a certain lock level
     modifier isGlobalReentrancyLocked(uint8 level) {
         IGlobalReentrancyLock lock = globalReentrancyLock();
 
-        require(lock.lockLevel() == level, "CoreRef: System not at lock level");
-        _;
+        if (address(lock) != address(0)) {
+            require(
+                lock.lockLevel() == level,
+                "CoreRef: System not at lock level"
+            );
+            _;
+        } else {
+            _; /// if lock is not set, allow function execution without global lock level
+        }
     }
 
     /// @notice callable only by the Volt Minter

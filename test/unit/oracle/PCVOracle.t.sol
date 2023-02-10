@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
+import {stdError} from "@forge-std/StdError.sol";
 import {Test} from "@forge-std/Test.sol";
+
 import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
-import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {PCVOracle} from "@voltprotocol/oracle/PCVOracle.sol";
+import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
 import {getCoreV2} from "@test/unit/utils/Fixtures.sol";
@@ -25,9 +27,11 @@ contract PCVOracleUnitTest is Test {
     // test Tokens
     MockERC20 private token1;
     MockERC20 private token2;
+
     // test PCV Deposits
     MockPCVDepositV3 private deposit1;
     MockPCVDepositV3 private deposit2;
+
     // test Oracles
     MockOracleV2 private oracle1;
     MockOracleV2 private oracle2;
@@ -71,27 +75,51 @@ contract PCVOracleUnitTest is Test {
         core.grantLocker(address(pcvOracle));
         core.grantLocker(address(deposit1));
         core.grantLocker(address(deposit2));
+        core.setPCVOracle(IPCVOracle(address(pcvOracle)));
+
+        core.createRole(VoltRoles.PCV_DEPOSIT, VoltRoles.GOVERNOR);
+        core.grantRole(VoltRoles.PCV_DEPOSIT, address(deposit1));
+        core.grantRole(VoltRoles.PCV_DEPOSIT, address(deposit2));
+
+        oracle1.setValues(1e18, true);
+        oracle2.setValues(1e18, true);
+
+        // add venues
+        address[] memory venues = new address[](2);
+        venues[0] = address(deposit1);
+        venues[1] = address(deposit2);
+        address[] memory oracles = new address[](2);
+        oracles[0] = address(oracle1);
+        oracles[1] = address(oracle2);
+        pcvOracle.addVenues(venues, oracles);
+
         vm.stopPrank();
     }
 
     function testSetup() public {
-        assertEq(pcvOracle.getVenues().length, 0);
+        assertEq(pcvOracle.getVenues().length, 2);
+        assertEq(pcvOracle.getNumVenues(), 2);
         uint256 totalPcv = pcvOracle.getTotalPcv();
         assertEq(totalPcv, 0);
-    }
+        assertEq(pcvOracle.lastRecordedTotalPcv(), 0);
 
-    function testGetTotalPcvFailsWhileEntered() public {
-        vm.prank(address(deposit2));
-        lock.lock(1);
+        {
+            (int128 balance, int128 profit) = pcvOracle.venueRecord(
+                address(deposit1)
+            );
+            assertEq(balance, 0);
+            assertEq(profit, 0);
+        }
+        {
+            (int128 balance, int128 profit) = pcvOracle.venueRecord(
+                address(deposit2)
+            );
+            assertEq(balance, 0);
+            assertEq(profit, 0);
+        }
 
-        vm.expectRevert("PCVOracle: cannot read while entered");
-        pcvOracle.getTotalPcv();
-
-        vm.prank(address(deposit2));
-        lock.lock(2);
-
-        vm.expectRevert("PCVOracle: cannot read while entered");
-        pcvOracle.getTotalPcv();
+        assertEq(pcvOracle.venueToOracle(address(deposit1)), address(oracle1));
+        assertEq(pcvOracle.venueToOracle(address(deposit2)), address(oracle2));
     }
 
     // -------------------------------------------------
@@ -99,24 +127,11 @@ contract PCVOracleUnitTest is Test {
     // -------------------------------------------------
 
     function testSetVenueOracle() public {
-        assertEq(pcvOracle.venueToOracle(address(deposit1)), address(0));
+        assertEq(pcvOracle.venueToOracle(address(deposit1)), address(oracle1));
 
         // make deposit1 non-empty
         token1.mint(address(deposit1), 100e18);
         entry.deposit(address(deposit1));
-
-        // set oracle value to 1$
-        oracle1.setValues(1e18, true);
-
-        // add venue
-        address[] memory venues = new address[](1);
-        venues[0] = address(deposit1);
-        address[] memory oracles = new address[](1);
-        oracles[0] = address(oracle1);
-        vm.prank(addresses.governorAddress);
-        pcvOracle.addVenues(venues, oracles);
-
-        assertEq(pcvOracle.venueToOracle(address(deposit1)), address(oracle1));
 
         // create new oracle
         MockOracleV2 newOracle = new MockOracleV2();
@@ -143,8 +158,8 @@ contract PCVOracleUnitTest is Test {
 
     function testSetVenueOracleRevertIfDepositDoesntExist() public {
         vm.prank(addresses.governorAddress);
-        vm.expectRevert(bytes("PCVOracle: invalid venue"));
-        pcvOracle.setVenueOracle(address(deposit1), address(oracle1));
+        vm.expectRevert("PCVOracle: invalid venue");
+        pcvOracle.setVenueOracle(address(10000), address(oracle1));
     }
 
     function testSetVenueOracleRevertIfOracleInvalid() public {
@@ -153,19 +168,6 @@ contract PCVOracleUnitTest is Test {
         entry.deposit(address(deposit1));
         token2.mint(address(deposit2), 100e18);
         entry.deposit(address(deposit2));
-
-        oracle1.setValues(1e18, true);
-        oracle2.setValues(1e18, true);
-
-        // add deposits in PCVOracle
-        address[] memory venues = new address[](2);
-        venues[0] = address(deposit1);
-        venues[1] = address(deposit2);
-        address[] memory oracles = new address[](2);
-        oracles[0] = address(oracle1);
-        oracles[1] = address(oracle2);
-        vm.prank(addresses.governorAddress);
-        pcvOracle.addVenues(venues, oracles);
 
         // create new oracle
         MockOracleV2 newOracle = new MockOracleV2();
@@ -195,6 +197,9 @@ contract PCVOracleUnitTest is Test {
         address[] memory oracles = new address[](2);
         oracles[0] = address(oracle1);
         oracles[1] = address(oracle2);
+
+        vm.prank(addresses.governorAddress);
+        pcvOracle.removeVenues(venues);
 
         // pre-add check
         assertEq(pcvOracle.isVenue(address(deposit1)), false);
@@ -228,7 +233,8 @@ contract PCVOracleUnitTest is Test {
         assertEq(pcvOracle.isVenue(address(deposit1)), true);
         assertEq(pcvOracle.isVenue(address(deposit2)), true);
         assertEq(pcvOracle.venueToOracle(address(deposit1)), address(oracle1));
-        assertEq(pcvOracle.venueToOracle(address(deposit2)), address(oracle2));
+        assertEq(pcvOracle.venueToOracle(address(deposit1)), address(oracle1));
+        assertEq(pcvOracle.getTotalPcv(), pcvOracle.lastRecordedTotalPcv());
     }
 
     function testRemoveVenues() public {
@@ -241,10 +247,6 @@ contract PCVOracleUnitTest is Test {
         address[] memory oracles = new address[](2);
         oracles[0] = address(oracle1);
         oracles[1] = address(oracle2);
-
-        // add
-        vm.prank(addresses.governorAddress);
-        pcvOracle.addVenues(venues, oracles);
 
         // pre-remove check
         assertEq(pcvOracle.isVenue(address(deposit1)), true);
@@ -288,17 +290,21 @@ contract PCVOracleUnitTest is Test {
         token1.mint(address(deposit1), 100e18);
         entry.deposit(address(deposit1));
 
-        // set invalid oracle
-        oracle1.setValues(1e18, false);
-
         // prepare add
         address[] memory venues = new address[](1);
         venues[0] = address(deposit1);
         address[] memory oracles = new address[](1);
         oracles[0] = address(oracle1);
+
+        vm.prank(addresses.governorAddress);
+        pcvOracle.removeVenues(venues);
+
+        // set invalid oracle
+        oracle1.setValues(1e18, false);
+
         // add
         vm.prank(addresses.governorAddress);
-        vm.expectRevert(bytes("PCVOracle: invalid oracle value"));
+        vm.expectRevert("PCVOracle: invalid oracle value");
         pcvOracle.addVenues(venues, oracles);
     }
 
@@ -310,111 +316,146 @@ contract PCVOracleUnitTest is Test {
         token1.mint(address(deposit1), 100e18);
         entry.deposit(address(deposit1));
 
-        // set valid oracle
-        oracle1.setValues(1e18, true);
+        {
+            (int128 balance, int128 profit) = pcvOracle.venueRecord(
+                address(deposit1)
+            );
+            assertEq(balance, 100e18);
+            assertEq(profit, 0);
+        }
 
-        // prepare add
-        address[] memory venues = new address[](1);
-        venues[0] = address(deposit1);
-        address[] memory oracles = new address[](1);
-        oracles[0] = address(oracle1);
-        // add
-        vm.prank(addresses.governorAddress);
-        pcvOracle.addVenues(venues, oracles);
+        {
+            address[] memory venues = new address[](2);
+            venues[0] = address(deposit1);
+            venues[1] = address(deposit2);
+            address[] memory oracles = new address[](2);
+            oracles[0] = address(oracle1);
+            oracles[1] = address(oracle2);
 
-        // set invalid oracle
-        oracle1.setValues(1e18, false);
+            vm.prank(addresses.governorAddress);
+            pcvOracle.removeVenues(venues);
+        }
 
-        // remove
-        vm.prank(addresses.governorAddress);
-        vm.expectRevert(bytes("PCVOracle: invalid oracle value"));
-        pcvOracle.removeVenues(venues);
-    }
+        {
+            // prepare add
+            address[] memory venues = new address[](1);
+            venues[0] = address(deposit1);
+            address[] memory oracles = new address[](1);
+            oracles[0] = address(oracle1);
 
-    // ---------------- Access Control -----------------
+            // add
+            vm.prank(addresses.governorAddress);
+            pcvOracle.addVenues(venues, oracles);
 
-    function testSetVenueOracleAcl() public {
-        vm.expectRevert(bytes("CoreRef: Caller is not a governor"));
-        pcvOracle.setVenueOracle(address(deposit1), address(oracle1));
-    }
+            // set invalid oracle
+            oracle1.setValues(1e18, false);
 
-    function testAddVenuesAcl() public {
-        address[] memory venues = new address[](1);
-        address[] memory oracles = new address[](1);
-
-        vm.expectRevert(bytes("CoreRef: Caller is not a governor"));
-        pcvOracle.addVenues(venues, oracles);
-    }
-
-    function testRemoveVenuesAcl() public {
-        address[] memory venues = new address[](1);
-
-        vm.expectRevert(bytes("CoreRef: Caller is not a governor"));
-        pcvOracle.removeVenues(venues);
+            // remove
+            vm.prank(addresses.governorAddress);
+            vm.expectRevert("PCVOracle: invalid oracle value");
+            pcvOracle.removeVenues(venues);
+        }
     }
 
     // -------------------------------------------------
     // Accounting Checks
     // -------------------------------------------------
 
+    function testTotalPcvNegativeReverts() public {
+        vm.expectRevert(stdError.arithmeticError);
+        deposit1.setLastRecordedProfit(-1);
+    }
+
+    function testProfitTracking() public {
+        int128 venue1Profit = 10e18;
+        int128 venue2Profit = 20e18;
+
+        deposit1.setLastRecordedProfit(venue1Profit);
+        deposit2.setLastRecordedProfit(venue2Profit);
+
+        {
+            (int128 balance, int128 profit) = pcvOracle.venueRecord(
+                address(deposit1)
+            );
+            assertEq(balance, venue1Profit);
+            assertEq(profit, venue1Profit);
+        }
+        {
+            (int128 balance, int128 profit) = pcvOracle.venueRecord(
+                address(deposit2)
+            );
+            assertEq(balance, venue2Profit);
+            assertEq(profit, venue2Profit);
+        }
+
+        assertEq(
+            pcvOracle.lastRecordedTotalPcv(),
+            uint256(uint128(venue1Profit + venue2Profit))
+        ); /// profits are part of total PCV
+    }
+
+    function testGetVenueBalanceRevertsInvalidOracle() public {
+        oracle1.setValues(oracle1.price(), false);
+        vm.expectRevert("PCVOracle: invalid oracle value");
+        pcvOracle.getVenueBalance(address(deposit1));
+    }
+
     function testTrackDepositValueOnAddAndRemove() public {
+        {
+            address[] memory venues = new address[](1);
+            venues[0] = address(deposit2);
+            vm.prank(addresses.governorAddress);
+            pcvOracle.removeVenues(venues);
+        }
+
         // make deposit1 non-empty
         token1.mint(address(deposit1), 100e18);
         entry.deposit(address(deposit1));
 
-        // set oracle values
-        oracle1.setValues(1e18, true); // simulating "DAI" (1$ coin, 18 decimals)
-
-        // add venue
-        address[] memory venues = new address[](1);
-        venues[0] = address(deposit1);
-        address[] memory oracles = new address[](1);
-        oracles[0] = address(oracle1);
-        vm.prank(addresses.governorAddress);
-        pcvOracle.addVenues(venues, oracles);
+        assertEq(pcvOracle.lastRecordedPCV(address(deposit1)), 100e18);
+        assertEq(
+            pcvOracle.lastRecordedPCV(address(deposit1)),
+            pcvOracle.getVenueBalance(address(deposit1))
+        );
+        assertEq(pcvOracle.lastRecordedProfit(address(deposit1)), 0);
 
         // check getPcv()
         uint256 totalPcv1 = pcvOracle.getTotalPcv();
         assertEq(totalPcv1, 100e18); // 100$ total
 
-        // remove venue
-        vm.prank(addresses.governorAddress);
-        pcvOracle.removeVenues(venues);
+        {
+            address[] memory venues = new address[](1);
+            venues[0] = address(deposit1);
+            // remove venue
+            vm.prank(addresses.governorAddress);
+            pcvOracle.removeVenues(venues);
+        }
+
+        assertEq(pcvOracle.lastRecordedPCV(address(deposit1)), 0);
+        assertEq(pcvOracle.lastRecordedProfit(address(deposit1)), 0);
+
+        vm.expectRevert("PCVOracle: invalid caller deposit");
+        pcvOracle.getVenueBalance(address(deposit1));
 
         // check getPcv()
         uint256 totalPcv2 = pcvOracle.getTotalPcv();
         assertEq(totalPcv2, 0); // 0$ total
+        assertEq(uint256(pcvOracle.lastRecordedTotalPcv()), totalPcv2);
     }
 
     function testAccountingOnHook() public {
-        // make deposit1 non-empty
-        token1.mint(address(deposit1), 100e18);
-        entry.deposit(address(deposit1));
-
         // set oracle values
         oracle1.setValues(1e18, true); // simulating "DAI" (1$ coin, 18 decimals)
         oracle2.setValues(1e18 * 1e12, true); // simulating "USDC" (1$ coin, 6 decimals)
 
-        // add venues
-        address[] memory venues = new address[](2);
-        venues[0] = address(deposit1);
-        venues[1] = address(deposit2);
-        address[] memory oracles = new address[](2);
-        oracles[0] = address(oracle1);
-        oracles[1] = address(oracle2);
-        vm.prank(addresses.governorAddress);
-        pcvOracle.addVenues(venues, oracles);
+        // make deposit1 non-empty
+        token1.mint(address(deposit1), 100e18);
+        entry.deposit(address(deposit1));
 
         // check getPcv()
         uint256 totalPcv1 = pcvOracle.getTotalPcv();
         assertEq(totalPcv1, 100e18); // 100$ total
-
-        // grant roles to pcv deposits
-        vm.startPrank(addresses.governorAddress);
-        core.createRole(VoltRoles.PCV_DEPOSIT, VoltRoles.GOVERNOR);
-        core.grantRole(VoltRoles.PCV_DEPOSIT, address(deposit1));
-        core.grantRole(VoltRoles.PCV_DEPOSIT, address(deposit2));
-        vm.stopPrank();
+        assertEq(uint256(pcvOracle.lastRecordedTotalPcv()), totalPcv1);
 
         // deposit 1 has 100$ + 300$
         token1.mint(address(deposit1), 300e18);
@@ -425,7 +466,9 @@ contract PCVOracleUnitTest is Test {
 
         // check getPcv()
         uint256 totalPcv2 = pcvOracle.getTotalPcv();
+
         assertEq(totalPcv2, 800e18); // 800$ total
+        assertEq(uint256(pcvOracle.lastRecordedTotalPcv()), totalPcv2);
 
         // A call from a PCVDeposit refreshes accounting
         vm.startPrank(address(deposit2));
@@ -452,22 +495,12 @@ contract PCVOracleUnitTest is Test {
         // set oracle values
         oracle1.setValues(123456, true); // oracle valid
 
-        // add venues
-        address[] memory venues = new address[](2);
-        venues[0] = address(deposit1);
-        venues[1] = address(deposit2);
-        address[] memory oracles = new address[](2);
-        oracles[0] = address(oracle1);
-        oracles[1] = address(oracle2);
-        vm.prank(addresses.governorAddress);
-        pcvOracle.addVenues(venues, oracles);
-
         // set oracle values
         oracle1.setValues(123456, false); // oracle invalid
         oracle2.setValues(1e18, true);
 
         // getPcv() reverts because oracle is invalid
-        vm.expectRevert(bytes("PCVOracle: invalid oracle value"));
+        vm.expectRevert("PCVOracle: invalid oracle value");
         pcvOracle.getTotalPcv();
 
         // set oracle values
@@ -475,14 +508,50 @@ contract PCVOracleUnitTest is Test {
         oracle2.setValues(123456, false); // oracle invalid
 
         // getPcv() reverts because oracle is invalid
-        vm.expectRevert(bytes("PCVOracle: invalid oracle value"));
+        vm.expectRevert("PCVOracle: invalid oracle value");
         pcvOracle.getTotalPcv();
+    }
+
+    function testPcvHookFailsInvalidOracleValue() public {
+        // set oracle values
+        oracle1.setValues(123456, false); // oracle invalid
+
+        vm.startPrank(address(deposit1));
+
+        lock.lock(1);
+        lock.lock(2);
+
+        // getPcv() reverts because oracle is invalid
+        vm.expectRevert("PCVOracle: invalid oracle value");
+        pcvOracle.updateBalance(0, 0); /// 0 delta balance or profit
+
+        vm.stopPrank();
     }
 
     // ---------------- Access Control -----------------
 
+    function testSetVenueOracleAcl() public {
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        pcvOracle.setVenueOracle(address(deposit1), address(oracle1));
+    }
+
+    function testAddVenuesAcl() public {
+        address[] memory venues = new address[](1);
+        address[] memory oracles = new address[](1);
+
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        pcvOracle.addVenues(venues, oracles);
+    }
+
+    function testRemoveVenuesAcl() public {
+        address[] memory venues = new address[](1);
+
+        vm.expectRevert("CoreRef: Caller is not a governor");
+        pcvOracle.removeVenues(venues);
+    }
+
     function testUpdateBalanceAcl() public {
-        vm.expectRevert(bytes("UNAUTHORIZED"));
+        vm.expectRevert("UNAUTHORIZED");
         pcvOracle.updateBalance(0.5e18, 0);
     }
 

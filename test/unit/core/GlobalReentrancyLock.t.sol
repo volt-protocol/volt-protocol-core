@@ -49,8 +49,8 @@ contract UnitTestGlobalReentrancyLock is Test {
         assertTrue(core.isGovernor(address(core))); /// core contract is governor
         assertTrue(core.isGovernor(addresses.governorAddress)); /// msg.sender of contract is governor
 
-        assertTrue(lock.isUnlocked()); /// core starts out unlocked
-        assertTrue(!lock.isLocked()); /// core starts out not locked
+        assertTrue(lock.isUnlocked()); /// lock starts out unlocked
+        assertTrue(!lock.isLocked()); /// lock starts out not locked
         assertEq(lock.lastSender(), address(0));
         assertEq(lock.lastBlockEntered(), 0);
 
@@ -219,7 +219,7 @@ contract UnitTestGlobalReentrancyLock is Test {
 
             assertTrue(!lock.isLocked());
             assertEq(lock.lockLevel(), 0);
-            assertTrue(lock.isUnlocked()); /// core is fully unlocked
+            assertTrue(lock.isUnlocked()); /// lock is fully unlocked
             assertEq(toPrank, lock.lastSender());
 
             vm.roll(block.number + 1);

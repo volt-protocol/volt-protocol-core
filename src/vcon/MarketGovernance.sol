@@ -81,9 +81,9 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
     mapping(address => uint256) public venueTotalShares;
 
     /// @notice map an underlying token to the corresponding holding deposit
+    /// TODO remove this and all related logic once the PCV Guardian is re-written
+    /// instead add a reference to the PCV Guardian
     mapping(address => address) public underlyingTokenToHoldingDeposit;
-
-    /// no balance checks when unstaking
 
     /// ---------- Per Venue User Profit Tracking ----------
 
@@ -212,7 +212,7 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
     ) external globalLock(1) whenNotPaused {
         /// read unsafe because we are at lock level 1
         IPCVOracle oracle = pcvOracle();
-        uint256 totalPcv = oracle.getTotalPcvUnsafe();
+        uint256 totalPcv = oracle.getTotalPcv();
         uint256 totalVconStaked = getTotalVconStaked();
         unchecked {
             for (uint256 i = 0; i < movements.length; i++) {
@@ -523,7 +523,7 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
 
         IPCVDepositV2(venue).accrue();
 
-        uint256 lastRecordedProfit = IPCVDepositV2(venue).lastRecordedProfit();
+        uint256 lastRecordedProfit = IPCVDepositV2(venue).lastRecordedProfit(); /// get this from the pcv oracle as it will be decimal normalized
         uint256 endingLastRecordedSharePrice = venueLastRecordedVconSharePrice[
             venue
         ];

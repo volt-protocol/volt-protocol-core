@@ -1,14 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+import {PCVOracle} from "@voltprotocol/oracle/PCVOracle.sol";
 import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
 import {IPCVDepositV2} from "@voltprotocol/pcv/IPCVDepositV2.sol";
 import {PostProposalCheck} from "@test/integration/post-proposal-checks/PostProposalCheck.sol";
 import {CompoundBadDebtSentinel} from "@voltprotocol/pcv/compound/CompoundBadDebtSentinel.sol";
 
 contract IntegrationTestCompoundBadDebtSentinel is PostProposalCheck {
+    using SafeCast for *;
+
     function testBadDebtOverThresholdAllowsSentinelWithdraw() public {
         CompoundBadDebtSentinel badDebtSentinel = CompoundBadDebtSentinel(
             addresses.mainnet("COMPOUND_BAD_DEBT_SENTINEL")
@@ -16,6 +20,7 @@ contract IntegrationTestCompoundBadDebtSentinel is PostProposalCheck {
         PCVGuardian pcvGuardian = PCVGuardian(
             addresses.mainnet("PCV_GUARDIAN")
         );
+        PCVOracle pcvOracle = PCVOracle(addresses.mainnet("PCV_ORACLE"));
         IPCVDepositV2 daiDeposit = IPCVDepositV2(
             addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
         );
@@ -31,6 +36,17 @@ contract IntegrationTestCompoundBadDebtSentinel is PostProposalCheck {
 
         address[] memory user = new address[](1);
         user[0] = yearn;
+
+        assertApproxEq(
+            int256(daiDeposit.balance()),
+            pcvOracle.lastRecordedPCV(address(daiDeposit)).toInt256(),
+            0
+        );
+        assertApproxEq(
+            int256(usdcDeposit.balance()) * 1e12,
+            pcvOracle.lastRecordedPCV(address(usdcDeposit)).toInt256(),
+            0
+        );
 
         assertTrue(badDebtSentinel.getTotalBadDebt(user) > 10_000_000e18);
 

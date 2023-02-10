@@ -267,6 +267,13 @@ contract SystemUnitTest is Test {
         allocator.connectDeposit(address(usdcpsm), address(pcvDepositUsdc));
         allocator.connectDeposit(address(daipsm), address(pcvDepositDai));
 
+        /// top up contracts with tokens for testing
+        /// if done after the setting of pcv oracle, balances will be incorrect unless deposit is called
+        dai.mint(address(daipsm), daiTargetBalance);
+        usdc.mint(address(usdcpsm), usdcTargetBalance);
+        dai.mint(address(pcvDepositDai), daiTargetBalance);
+        usdc.mint(address(pcvDepositUsdc), usdcTargetBalance);
+
         /// Configure PCV Oracle
         address[] memory venues = new address[](2);
         venues[0] = address(pcvDepositDai);
@@ -280,13 +287,11 @@ contract SystemUnitTest is Test {
 
         core.setPCVOracle(pcvOracle);
 
-        vm.stopPrank();
+        core.createRole(VoltRoles.PCV_DEPOSIT, VoltRoles.GOVERNOR);
+        core.grantRole(VoltRoles.PCV_DEPOSIT, address(pcvDepositDai));
+        core.grantRole(VoltRoles.PCV_DEPOSIT, address(pcvDepositUsdc));
 
-        /// top up contracts with tokens for testing
-        dai.mint(address(daipsm), daiTargetBalance);
-        usdc.mint(address(usdcpsm), usdcTargetBalance);
-        dai.mint(address(pcvDepositDai), daiTargetBalance);
-        usdc.mint(address(pcvDepositUsdc), usdcTargetBalance);
+        vm.stopPrank();
 
         vm.label(address(timelockController), "Timelock Controller");
         vm.label(address(entry), "entry");
@@ -428,6 +433,8 @@ contract SystemUnitTest is Test {
     }
 
     function testPCVGuardWithdrawAllToSafeAddress() public {
+        entry.deposit(address(pcvDepositDai));
+        entry.deposit(address(pcvDepositUsdc));
         vm.startPrank(addresses.userAddress);
 
         pcvGuardian.withdrawAllToSafeAddress(address(daipsm));
