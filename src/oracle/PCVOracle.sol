@@ -6,9 +6,9 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 
 import {Constants} from "@voltprotocol/Constants.sol";
 import {IOracleV2} from "@voltprotocol/oracle/IOracleV2.sol";
-import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
 import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
+import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {IPCVDepositV2} from "@voltprotocol/pcv/IPCVDepositV2.sol";
 
 /// @notice Contract to centralize information about PCV in the Volt system.
