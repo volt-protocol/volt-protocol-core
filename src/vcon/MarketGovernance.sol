@@ -85,8 +85,6 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
     /// instead add a reference to the PCV Guardian
     mapping(address => address) public underlyingTokenToHoldingDeposit;
 
-    /// no balance checks when unstaking
-
     /// ---------- Per Venue User Profit Tracking ----------
 
     /// @dev convention for all double nested address mappings is key (venue -> user) -> value
