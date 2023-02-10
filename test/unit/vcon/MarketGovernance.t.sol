@@ -692,7 +692,7 @@ contract UnitTestMarketGovernance is SystemUnitTest {
                 totalShares;
 
             pcvDepositDai.setLastRecordedProfit(
-                pcvDepositDai.lastRecordedProfit() + periodGain
+                (pcvDepositDai.lastRecordedProfit() + periodGain).toInt256()
             );
 
             mgov.accrueVcon(address(pcvDepositDai));

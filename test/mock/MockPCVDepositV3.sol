@@ -33,7 +33,7 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
         resistantProtocolOwnedVolt = _resistantProtocolOwnedVolt;
     }
 
-    function setLastRecordedProfit(uint256 _lastRecordedProfit) public {
+    function setLastRecordedProfit(int256 _lastRecordedProfit) public {
         IGlobalReentrancyLock lock = globalReentrancyLock();
         if (address(lock) != address(0)) {
             /// pcv oracle hook requires lock level 2
@@ -41,10 +41,11 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
             lock.lock(2);
         }
 
-        int256 deltaProfit = _lastRecordedProfit.toInt256() -
+        int256 deltaProfit = _lastRecordedProfit -
             lastRecordedProfit.toInt256();
-        lastRecordedProfit = _lastRecordedProfit;
         _pcvOracleHook(deltaProfit, deltaProfit); /// balance increases with profits
+
+        lastRecordedProfit = _lastRecordedProfit.toUint256();
 
         if (address(lock) != address(0)) {
             lock.unlock(1);

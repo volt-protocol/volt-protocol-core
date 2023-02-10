@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
+import {stdError} from "@forge-std/StdError.sol";
 import {Test} from "@forge-std/Test.sol";
+
 import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
 import {PCVOracle} from "@voltprotocol/oracle/PCVOracle.sol";
 import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
@@ -359,12 +361,17 @@ contract PCVOracleUnitTest is Test {
     // Accounting Checks
     // -------------------------------------------------
 
+    function testTotalPcvNegativeReverts() public {
+        vm.expectRevert(stdError.arithmeticError);
+        deposit1.setLastRecordedProfit(-1);
+    }
+
     function testProfitTracking() public {
         int128 venue1Profit = 10e18;
         int128 venue2Profit = 20e18;
 
-        deposit1.setLastRecordedProfit(uint256(uint128(venue1Profit)));
-        deposit2.setLastRecordedProfit(uint256(uint128(venue2Profit)));
+        deposit1.setLastRecordedProfit(venue1Profit);
+        deposit2.setLastRecordedProfit(venue2Profit);
 
         {
             (int128 balance, int128 profit) = pcvOracle.venueRecord(
