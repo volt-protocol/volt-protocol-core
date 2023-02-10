@@ -514,7 +514,7 @@ contract PCVOracleUnitTest is Test {
 
     function testPcvHookFailsInvalidOracleValue() public {
         // set oracle values
-        oracle1.setValues(123456, false); // oracle valid
+        oracle1.setValues(123456, false); // oracle invalid
 
         vm.startPrank(address(deposit1));
 
