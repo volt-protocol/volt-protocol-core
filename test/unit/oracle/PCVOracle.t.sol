@@ -370,18 +370,21 @@ contract PCVOracleUnitTest is Test {
             (int128 balance, int128 profit) = pcvOracle.venueRecord(
                 address(deposit1)
             );
-            assertEq(balance, 0);
+            assertEq(balance, venue1Profit);
             assertEq(profit, venue1Profit);
         }
         {
             (int128 balance, int128 profit) = pcvOracle.venueRecord(
                 address(deposit2)
             );
-            assertEq(balance, 0);
+            assertEq(balance, venue2Profit);
             assertEq(profit, venue2Profit);
         }
 
-        assertEq(pcvOracle.lastRecordedTotalPcv(), 0); /// profits are not part of total PCV
+        assertEq(
+            pcvOracle.lastRecordedTotalPcv(),
+            uint256(uint128(venue1Profit + venue2Profit))
+        ); /// profits are part of total PCV
     }
 
     function testGetVenueBalanceRevertsInvalidOracle() public {

@@ -44,7 +44,7 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
         int256 deltaProfit = _lastRecordedProfit.toInt256() -
             lastRecordedProfit.toInt256();
         lastRecordedProfit = _lastRecordedProfit;
-        _pcvOracleHook(0, deltaProfit);
+        _pcvOracleHook(deltaProfit, deltaProfit); /// balance increases with profits
 
         if (address(lock) != address(0)) {
             lock.unlock(1);
@@ -82,10 +82,7 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
     function deposit() external override globalLock(2) {
         int256 startingBalance = resistantBalance.toInt256();
         resistantBalance = IERC20(balanceReportedIn).balanceOf(address(this));
-        _pcvOracleHook(
-            resistantBalance.toInt256().toInt128() - startingBalance,
-            0
-        );
+        _pcvOracleHook(resistantBalance.toInt256() - startingBalance, 0);
     }
 
     function withdraw(
