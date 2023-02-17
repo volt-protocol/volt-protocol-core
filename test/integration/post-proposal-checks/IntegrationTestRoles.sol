@@ -67,14 +67,30 @@ contract IntegrationTestRoles is PostProposalCheck {
 
         // PCV_DEPOSIT_ROLE
         assertEq(core.getRoleAdmin(VoltRoles.PCV_DEPOSIT), VoltRoles.GOVERNOR);
-        assertEq(core.getRoleMemberCount(VoltRoles.PCV_DEPOSIT), 2);
+        assertEq(core.getRoleMemberCount(VoltRoles.PCV_DEPOSIT), 6);
         assertEq(
             core.getRoleMember(VoltRoles.PCV_DEPOSIT, 0),
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI")
         );
         assertEq(
             core.getRoleMember(VoltRoles.PCV_DEPOSIT, 1),
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC")
+        );
+        assertEq(
+            core.getRoleMember(VoltRoles.PCV_DEPOSIT, 2),
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_DAI")
+        );
+        assertEq(
+            core.getRoleMember(VoltRoles.PCV_DEPOSIT, 3),
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_USDC")
+        );
+        assertEq(
+            core.getRoleMember(VoltRoles.PCV_DEPOSIT, 4),
+            addresses.mainnet("PCV_DEPOSIT_EULER_DAI")
+        );
+        assertEq(
+            core.getRoleMember(VoltRoles.PCV_DEPOSIT, 5),
+            addresses.mainnet("PCV_DEPOSIT_EULER_USDC")
         );
 
         // PCV_GUARD
@@ -157,7 +173,7 @@ contract IntegrationTestRoles is PostProposalCheck {
 
         // LOCKER_ROLE
         assertEq(core.getRoleAdmin(VoltRoles.LOCKER), VoltRoles.GOVERNOR);
-        assertEq(core.getRoleMemberCount(VoltRoles.LOCKER), 13);
+        assertEq(core.getRoleMemberCount(VoltRoles.LOCKER), 17);
         assertEq(
             core.getRoleMember(VoltRoles.LOCKER, 0),
             addresses.mainnet("SYSTEM_ENTRY")
@@ -180,11 +196,11 @@ contract IntegrationTestRoles is PostProposalCheck {
         );
         assertEq(
             core.getRoleMember(VoltRoles.LOCKER, 5),
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI")
         );
         assertEq(
             core.getRoleMember(VoltRoles.LOCKER, 6),
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC")
         );
         assertEq(
             core.getRoleMember(VoltRoles.LOCKER, 7),
@@ -209,6 +225,22 @@ contract IntegrationTestRoles is PostProposalCheck {
         assertEq(
             core.getRoleMember(VoltRoles.LOCKER, 12),
             addresses.mainnet("PSM_NONCUSTODIAL_USDC")
+        );
+        assertEq(
+            core.getRoleMember(VoltRoles.LOCKER, 13),
+            addresses.mainnet("PCV_DEPOSIT_EULER_DAI")
+        );
+        assertEq(
+            core.getRoleMember(VoltRoles.LOCKER, 14),
+            addresses.mainnet("PCV_DEPOSIT_EULER_USDC")
+        );
+        assertEq(
+            core.getRoleMember(VoltRoles.LOCKER, 15),
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_DAI")
+        );
+        assertEq(
+            core.getRoleMember(VoltRoles.LOCKER, 16),
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_USDC")
         );
 
         // MINTER

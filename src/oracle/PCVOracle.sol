@@ -28,15 +28,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     /// know the USD value of PCV deployed in a given venue.
     mapping(address => address) public venueToOracle;
 
-    /// @notice track the venue's profit and losses
-    struct VenueData {
-        /// @notice the decimal normalized last recorded balance of PCV Deposit
-        int128 lastRecordedPCV;
-        /// @notice the decimal normalized last recorded profit of PCV Deposit
-        int128 lastRecordedProfit;
-    }
-
-    /// @notice venue information, balance and profit
+    /// @notice venue information, balance and profit, normalized up to 18 decimals
     mapping(address => VenueData) public venueRecord;
 
     /// @notice cached total PCV amount
@@ -69,7 +61,20 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
 
     /// @notice return the decimal normalized last recorded balance for venue
     function lastRecordedPCV(address venue) public view returns (uint256) {
-        return venueRecord[venue].lastRecordedPCV.toUint256(); /// venue balance must be > -1, else safecast reverts
+        return venueRecord[venue].lastRecordedPCV;
+    }
+
+    /// @notice return the non-decimal normalized last recorded balance for venue
+    function lastRecordedPCVRaw(address venue) public view returns (uint256) {
+        // Read oracle to get USD values
+        address oracle = venueToOracle[venue];
+
+        require(oracle != address(0), "PCVOracle: invalid caller deposit");
+        (uint256 oracleValue, bool oracleValid) = IOracleV2(oracle).read();
+
+        require(oracleValid, "PCVOracle: invalid oracle value");
+
+        return venueRecord[venue].lastRecordedPCV / oracleValue;
     }
 
     /// @notice return the decimal normalized last recorded profit for venue
@@ -85,13 +90,8 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
 
         for (uint256 i = 0; i < venueLength; ) {
             address depositAddress = venues.at(i);
-            (uint256 oracleValue, bool oracleValid) = IOracleV2(
-                venueToOracle[depositAddress]
-            ).read();
-            require(oracleValid, "PCVOracle: invalid oracle value");
+            totalPcv += getVenueBalance(depositAddress);
 
-            uint256 balance = IPCVDepositV2(depositAddress).balance();
-            totalPcv += (oracleValue * balance) / Constants.ETH_GRANULARITY;
             /// there will never be more than 100 total venues
             /// keep iteration math unchecked to save on gas
             unchecked {
@@ -103,7 +103,7 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     /// @notice returns decimal normalized version of a given venues USD balance
     function getVenueBalance(
         address venue
-    ) external view override returns (uint256) {
+    ) public view override returns (uint256) {
         // Read oracle to get USD values of delta
         address oracle = venueToOracle[venue];
 
@@ -249,6 +249,9 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         }
     }
 
+    /// TODO add governance markdown flow
+    /// need a flow to create a phantom PCV deposit that doesn't exist but has a balance
+
     /// ------------- Helper Methods -------------
 
     function _setVenueOracle(address venue, address newOracle) private {
@@ -268,8 +271,10 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
         // Read oracle to get USD values of delta
         address oracle = venueToOracle[venue];
         require(oracle != address(0), "PCVOracle: invalid caller deposit");
+
         (uint256 oracleValue, bool oracleValid) = IOracleV2(oracle).read();
         require(oracleValid, "PCVOracle: invalid oracle value");
+
         // Compute USD values of delta
         int256 deltaBalanceUSD = (int256(oracleValue) * deltaBalance) /
             Constants.ETH_GRANULARITY_INT;
@@ -286,8 +291,8 @@ contract PCVOracle is IPCVOracle, CoreRefV2 {
     ) private {
         VenueData storage ptr = venueRecord[venue];
 
-        int128 newLastRecordedPCV = ptr.lastRecordedPCV +
-            deltaBalanceUSD.toInt128();
+        uint128 newLastRecordedPCV = (ptr.lastRecordedPCV.toInt256() +
+            deltaBalanceUSD).toUint256().toUint128();
         int128 newLastRecordedProfit = ptr.lastRecordedProfit +
             deltaProfitUSD.toInt128();
 

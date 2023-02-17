@@ -2,7 +2,6 @@ pragma solidity =0.8.13;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
-import {Vm} from "@forge-std/Vm.sol";
 import {Test} from "@forge-std/Test.sol";
 import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
 import {stdError} from "@forge-std/StdError.sol";
@@ -10,6 +9,7 @@ import {getCoreV2} from "@test/unit/utils/Fixtures.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {MockCToken} from "@test/mock/MockCToken.sol";
 import {MockMorpho} from "@test/mock/MockMorpho.sol";
+import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {IPCVDeposit} from "@voltprotocol/pcv/IPCVDeposit.sol";
 import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
@@ -71,6 +71,7 @@ contract UnitTestCompoundBadDebtSentinel is Test {
             address(core),
             address(morpho),
             address(token),
+            address(0),
             address(morpho),
             address(morpho)
         );
@@ -100,6 +101,8 @@ contract UnitTestCompoundBadDebtSentinel is Test {
             bytes4(keccak256("getAccountLiquidity(address)"))
         );
 
+        GenericCallMock mock = new GenericCallMock();
+
         vm.startPrank(addresses.governorAddress);
         core.grantLocker(address(entry));
         core.grantLocker(address(pcvGuardian));
@@ -108,7 +111,22 @@ contract UnitTestCompoundBadDebtSentinel is Test {
         core.grantPCVGuard(address(this));
         core.grantGuardian(address(badDebtSentinel));
         core.setGlobalReentrancyLock(lock);
+        core.setPCVOracle(IPCVOracle(address(mock)));
         vm.stopPrank();
+
+        mock.setResponseToCall(
+            address(0),
+            "",
+            abi.encode(true),
+            bytes4(keccak256("isVenue(address)"))
+        );
+
+        mock.setResponseToCall(
+            address(0),
+            "",
+            abi.encode(uint256(0)),
+            bytes4(keccak256("lastRecordedPCVRaw(address)"))
+        );
 
         vm.label(address(morpho), "Mock Morpho Market");
         vm.label(address(token), "Token");
@@ -277,7 +295,6 @@ contract UnitTestCompoundBadDebtSentinel is Test {
 
         deal(address(token), address(morpho), depositAmount);
         morpho.setBalance(address(morphoDeposit), depositAmount);
-        token.balanceOf(address(morpho));
 
         return 0;
     }

@@ -82,7 +82,7 @@ interface IMarketGovernance {
     event VenueIndexUpdated(
         address indexed venue,
         uint256 indexed timestamp,
-        uint256 profitIndex
+        int256 profitIndex
     );
 
     /// @notice emitted when the safe address for a given token denomination is updated

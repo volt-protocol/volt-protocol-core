@@ -9,27 +9,40 @@ import {IPCVDepositV2} from "@voltprotocol/pcv/IPCVDepositV2.sol";
 
 contract IntegrationTestPCVGuardian is PostProposalCheck {
     function testWithdrawAllToSafeAddress() public {
+        address[8] memory addressesToClean = [
+            addresses.mainnet("PSM_DAI"),
+            addresses.mainnet("PSM_USDC"),
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI"),
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC"),
+            addresses.mainnet("PCV_DEPOSIT_EULER_DAI"),
+            addresses.mainnet("PCV_DEPOSIT_EULER_USDC"),
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_DAI"),
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_DAI")
+        ];
+
         PCVGuardian pcvGuardian = PCVGuardian(
             addresses.mainnet("PCV_GUARDIAN")
         );
 
+        vm.roll(block.number + 1); /// compound time advance to accrue interest
+        vm.warp(block.timestamp + 15); /// euler time advance to accrue interest
+
         vm.startPrank(addresses.mainnet("GOVERNOR"));
-        address[4] memory addressesToClean = [
-            addresses.mainnet("PSM_DAI"),
-            addresses.mainnet("PSM_USDC"),
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI"),
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
-        ];
+
         for (uint256 i = 0; i < addressesToClean.length; i++) {
-            pcvGuardian.withdrawAllToSafeAddress(addressesToClean[i]);
+            if (IPCVDepositV2(addressesToClean[i]).balance() != 0) {
+                pcvGuardian.withdrawAllToSafeAddress(addressesToClean[i]);
+            }
+
             // Check only dust left after withdrawals
             assertLt(IPCVDepositV2(addressesToClean[i]).balance(), 1e6);
         }
+
         vm.stopPrank();
 
         // sanity checks
         address safeAddress = pcvGuardian.safeAddress();
-        require(safeAddress != address(0), "Safe address is 0 address");
+        assertTrue(safeAddress != address(0));
         require(
             IERC20(addresses.mainnet("DAI")).balanceOf(safeAddress) >
                 1_000_000 * 1e18,

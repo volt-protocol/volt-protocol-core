@@ -2,16 +2,17 @@ pragma solidity =0.8.13;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
-import {Vm} from "@forge-std/Vm.sol";
 import {Test} from "@forge-std/Test.sol";
 import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
 import {stdError} from "@forge-std/StdError.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {MockCToken} from "@test/mock/MockCToken.sol";
+import {GenericCallMock} from "@test/mock/GenericCallMock.sol";
 import {MockMorpho} from "@test/mock/MockMorpho.sol";
 import {IPCVDeposit} from "@voltprotocol/pcv/IPCVDeposit.sol";
 import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
 import {getCoreV2} from "@test/unit/utils/Fixtures.sol";
+import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
 import {MockERC20, IERC20} from "@test/mock/MockERC20.sol";
 import {MorphoCompoundPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoCompoundPCVDeposit.sol";
@@ -61,6 +62,7 @@ contract UnitTestMorphoCompoundPCVDeposit is Test {
             address(core),
             address(morpho),
             address(token),
+            address(0),
             address(morpho),
             address(morpho)
         );
@@ -72,6 +74,7 @@ contract UnitTestMorphoCompoundPCVDeposit is Test {
             address(this),
             toWhitelist
         );
+        GenericCallMock mock = new GenericCallMock();
 
         vm.startPrank(addresses.governorAddress);
         core.grantLocker(address(entry));
@@ -81,9 +84,25 @@ contract UnitTestMorphoCompoundPCVDeposit is Test {
         core.grantPCVController(address(pcvGuardian));
         core.grantPCVGuard(address(this));
         core.setGlobalReentrancyLock(lock);
+        core.setPCVOracle(IPCVOracle(address(mock)));
         vm.stopPrank();
 
-        vm.label(address(morpho), "Morpho");
+        /// everything is a venue
+        mock.setResponseToCall(
+            address(0),
+            "",
+            abi.encode(true),
+            bytes4(keccak256("isVenue(address)"))
+        );
+
+        mock.setResponseToCall(
+            address(0),
+            "",
+            abi.encode(uint256(0)),
+            bytes4(keccak256("lastRecordedPCVRaw(address)"))
+        );
+
+        vm.label(address(morpho), "MORPHO_COMPOUND");
         vm.label(address(token), "Token");
         vm.label(address(morphoDeposit), "MorphoDeposit");
 
@@ -95,29 +114,12 @@ contract UnitTestMorphoCompoundPCVDeposit is Test {
         assertEq(morphoDeposit.lens(), address(morpho));
         assertEq(address(morphoDeposit.morpho()), address(morpho));
         assertEq(morphoDeposit.cToken(), address(morpho));
-        assertEq(morphoDeposit.lastRecordedBalance(), 0);
-    }
-
-    function testUnderlyingMismatchConstructionFails() public {
-        MockCToken cToken = new MockCToken(address(1));
-
-        vm.expectRevert("MorphoCompoundPCVDeposit: Underlying mismatch");
-        new MorphoCompoundPCVDeposit(
-            address(core),
-            address(cToken),
-            address(token),
-            address(morpho),
-            address(morpho)
-        );
     }
 
     function testDeposit(uint120 depositAmount) public {
-        assertEq(morphoDeposit.lastRecordedBalance(), 0);
         token.mint(address(morphoDeposit), depositAmount);
 
         entry.deposit(address(morphoDeposit));
-
-        assertEq(morphoDeposit.lastRecordedBalance(), depositAmount);
     }
 
     function testDeposits(uint120[4] calldata depositAmount) public {
@@ -127,23 +129,15 @@ contract UnitTestMorphoCompoundPCVDeposit is Test {
             token.mint(address(morphoDeposit), depositAmount[i]);
 
             if (depositAmount[i] != 0) {
-                /// harvest event is not emitted if deposit amount is 0
                 vm.expectEmit(true, false, false, true, address(morphoDeposit));
-                if (morphoDeposit.balance() != 0) {
-                    emit Harvest(address(token), 0, block.timestamp);
-                }
                 emit Deposit(address(entry), depositAmount[i]);
             }
             entry.deposit(address(morphoDeposit));
 
             sumDeposit += depositAmount[i];
-            assertEq(morphoDeposit.lastRecordedBalance(), sumDeposit);
         }
 
-        assertEq(
-            morphoDeposit.lastRecordedBalance(),
-            morpho.balances(address(morphoDeposit))
-        );
+        assertEq(sumDeposit, morphoDeposit.balance());
     }
 
     function testWithdrawAll(uint120[4] calldata depositAmount) public {
@@ -162,7 +156,6 @@ contract UnitTestMorphoCompoundPCVDeposit is Test {
 
         assertEq(token.balanceOf(address(this)), sumDeposit);
         assertEq(morphoDeposit.balance(), 0);
-        assertEq(morphoDeposit.lastRecordedBalance(), 0);
     }
 
     function testAccrue(
@@ -177,20 +170,13 @@ contract UnitTestMorphoCompoundPCVDeposit is Test {
         }
         morpho.setBalance(address(morphoDeposit), sumDeposit + profitAccrued);
 
-        if (
-            morphoDeposit.balance() != 0 ||
-            morphoDeposit.lastRecordedBalance() != 0
-        ) {
+        if (morphoDeposit.balance() != 0) {
+            uint256 balance = morphoDeposit.balance();
             vm.expectEmit(true, false, false, true, address(morphoDeposit));
-            emit Harvest(
-                address(token),
-                uint256(profitAccrued).toInt256(),
-                block.timestamp
-            );
+            emit Harvest(address(token), balance.toInt256(), block.timestamp);
         }
         uint256 lastRecordedBalance = entry.accrue(address(morphoDeposit));
         assertEq(lastRecordedBalance, sumDeposit + profitAccrued);
-        assertEq(lastRecordedBalance, morphoDeposit.lastRecordedBalance());
     }
 
     function testWithdraw(
@@ -219,7 +205,6 @@ contract UnitTestMorphoCompoundPCVDeposit is Test {
             sumDeposit -= amountToWithdraw;
 
             uint256 balance = morphoDeposit.balance();
-            uint256 lastRecordedBalance = morphoDeposit.lastRecordedBalance();
 
             vm.expectEmit(true, true, false, true, address(morphoDeposit));
             emit Withdrawal(
@@ -228,19 +213,17 @@ contract UnitTestMorphoCompoundPCVDeposit is Test {
                 amountToWithdraw
             );
 
-            if (balance != 0 || lastRecordedBalance != 0) {
-                emit Harvest(address(token), 0, block.timestamp); /// no profits as already accrued
+            if (balance != 0) {
+                emit Harvest(
+                    address(token),
+                    balance.toInt256(),
+                    block.timestamp
+                ); /// no profits as already accrued
             }
 
             pcvGuardian.withdrawToSafeAddress(
                 address(morphoDeposit),
                 amountToWithdraw
-            );
-
-            assertEq(morphoDeposit.lastRecordedBalance(), sumDeposit);
-            assertEq(
-                morphoDeposit.lastRecordedBalance(),
-                morpho.balances(address(morphoDeposit))
             );
         }
     }
@@ -263,7 +246,6 @@ contract UnitTestMorphoCompoundPCVDeposit is Test {
         vm.prank(addresses.governorAddress);
         morphoDeposit.emergencyAction(calls);
 
-        assertEq(morphoDeposit.lastRecordedBalance(), amount);
         assertEq(morphoDeposit.balance(), 0);
     }
 
@@ -290,7 +272,6 @@ contract UnitTestMorphoCompoundPCVDeposit is Test {
         vm.prank(addresses.governorAddress);
         morphoDeposit.emergencyAction(calls);
 
-        assertEq(morphoDeposit.lastRecordedBalance(), 0);
         assertEq(morphoDeposit.balance(), amount);
     }
 
@@ -311,6 +292,7 @@ contract UnitTestMorphoCompoundPCVDeposit is Test {
     function testAccrueWhenPausedFails() public {
         vm.prank(addresses.governorAddress);
         morphoDeposit.pause();
+        assertTrue(morphoDeposit.paused());
         vm.expectRevert("Pausable: paused");
         entry.accrue(address(morphoDeposit));
     }
@@ -348,6 +330,7 @@ contract UnitTestMorphoCompoundPCVDeposit is Test {
             address(core),
             address(maliciousMorpho), /// cToken is not used in mock morpho deposit
             address(token),
+            address(0),
             address(maliciousMorpho),
             address(maliciousMorpho)
         );

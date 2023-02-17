@@ -24,7 +24,7 @@ contract UnitTestMarketGovernance is SystemUnitTest {
     ERC20HoldingPCVDeposit public daiHoldingDeposit;
     ERC20HoldingPCVDeposit public usdcHoldingDeposit;
 
-    uint256 public profitToVconRatioUsdc = 5e12; /// for each 1 wei in profit, 5e12 wei of vcon is received
+    uint256 public profitToVconRatioUsdc = 5; /// for each 1 wei in profit, 5 wei of vcon is received
     uint256 public profitToVconRatioDai = 5; /// for each 1 wei in profit, 5 wei of vcon is received
     uint256 public daiDepositAmount = 1_000_000e18;
     uint256 public usdcDepositAmount = 1_000_000e6;
@@ -123,6 +123,7 @@ contract UnitTestMarketGovernance is SystemUnitTest {
         assertEq(address(mgov.core()), coreAddress);
 
         assertEq(mgov.profitToVconRatio(address(0)), 0);
+        assertEq(mgov.profitToVconRatio(address(1)), 0);
         assertEq(
             mgov.profitToVconRatio(address(pcvDepositDai)),
             profitToVconRatioDai
@@ -640,14 +641,14 @@ contract UnitTestMarketGovernance is SystemUnitTest {
         uint128 startingSharePrice = mgov.venueLastRecordedVconSharePrice(
             address(pcvDepositDai)
         );
-        uint128 startingLastRecordedProfit = mgov.venueLastRecordedProfit(
+        int128 startingLastRecordedProfit = mgov.venueLastRecordedProfit(
             address(pcvDepositDai)
         );
 
         pcvDepositDai.setLastRecordedProfit(20_000e18);
         mgov.accrueVcon(address(pcvDepositDai));
 
-        uint128 endingLastRecordedProfit = mgov.venueLastRecordedProfit(
+        int128 endingLastRecordedProfit = mgov.venueLastRecordedProfit(
             address(pcvDepositDai)
         );
         uint128 endingSharePrice = mgov.venueLastRecordedVconSharePrice(
@@ -738,6 +739,8 @@ contract UnitTestMarketGovernance is SystemUnitTest {
             address(pcvDepositUsdc),
             address(this)
         );
+
+        mgov.accrueVcon(address(pcvDepositUsdc));
 
         mgov.unstake(shareAmount, address(pcvDepositUsdc), address(this));
 

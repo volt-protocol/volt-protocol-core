@@ -28,7 +28,7 @@ contract vip15 is TimelockProposal {
         /// ------- poke morpho to update p2p indexes -------
 
         _pushTimelockAction(
-            addresses.mainnet("MORPHO"),
+            addresses.mainnet("MORPHO_COMPOUND"),
             abi.encodeWithSignature(
                 "updateP2PIndexes(address)",
                 addresses.mainnet("CDAI")

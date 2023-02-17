@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {stdError} from "@forge-std/StdError.sol";
+import {console} from "@forge-std/console.sol";
 import {Test} from "@forge-std/Test.sol";
 
 import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
@@ -18,6 +20,8 @@ import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
 
 contract PCVOracleUnitTest is Test {
+    using SafeCast for *;
+
     CoreV2 private core;
     SystemEntry public entry;
 
@@ -104,14 +108,14 @@ contract PCVOracleUnitTest is Test {
         assertEq(pcvOracle.lastRecordedTotalPcv(), 0);
 
         {
-            (int128 balance, int128 profit) = pcvOracle.venueRecord(
+            (uint128 balance, int128 profit) = pcvOracle.venueRecord(
                 address(deposit1)
             );
             assertEq(balance, 0);
             assertEq(profit, 0);
         }
         {
-            (int128 balance, int128 profit) = pcvOracle.venueRecord(
+            (uint128 balance, int128 profit) = pcvOracle.venueRecord(
                 address(deposit2)
             );
             assertEq(balance, 0);
@@ -120,6 +124,16 @@ contract PCVOracleUnitTest is Test {
 
         assertEq(pcvOracle.venueToOracle(address(deposit1)), address(oracle1));
         assertEq(pcvOracle.venueToOracle(address(deposit2)), address(oracle2));
+    }
+
+    function testDecimalNormalization() public {
+        oracle1.setValues(1e12, true); /// only add 12 decimals on deposit, this means 6 are truncated from 18
+
+        token1.mint(address(deposit1), 100e18);
+        entry.deposit(address(deposit1));
+
+        assertEq(pcvOracle.lastRecordedPCV(address(deposit1)), 100e12); /// with scale up
+        assertEq(pcvOracle.lastRecordedPCVRaw(address(deposit1)), 100); /// remove scale up
     }
 
     // -------------------------------------------------
@@ -317,7 +331,7 @@ contract PCVOracleUnitTest is Test {
         entry.deposit(address(deposit1));
 
         {
-            (int128 balance, int128 profit) = pcvOracle.venueRecord(
+            (uint128 balance, int128 profit) = pcvOracle.venueRecord(
                 address(deposit1)
             );
             assertEq(balance, 100e18);
@@ -362,7 +376,7 @@ contract PCVOracleUnitTest is Test {
     // -------------------------------------------------
 
     function testTotalPcvNegativeReverts() public {
-        vm.expectRevert(stdError.arithmeticError);
+        vm.expectRevert("SafeCast: value must be positive");
         deposit1.setLastRecordedProfit(-1);
     }
 
@@ -374,17 +388,17 @@ contract PCVOracleUnitTest is Test {
         deposit2.setLastRecordedProfit(venue2Profit);
 
         {
-            (int128 balance, int128 profit) = pcvOracle.venueRecord(
+            (uint128 balance, int128 profit) = pcvOracle.venueRecord(
                 address(deposit1)
             );
-            assertEq(balance, venue1Profit);
+            assertEq(balance, venue1Profit.toUint256());
             assertEq(profit, venue1Profit);
         }
         {
-            (int128 balance, int128 profit) = pcvOracle.venueRecord(
+            (uint128 balance, int128 profit) = pcvOracle.venueRecord(
                 address(deposit2)
             );
-            assertEq(balance, venue2Profit);
+            assertEq(balance, venue2Profit.toUint256());
             assertEq(profit, venue2Profit);
         }
 
@@ -413,6 +427,7 @@ contract PCVOracleUnitTest is Test {
         entry.deposit(address(deposit1));
 
         assertEq(pcvOracle.lastRecordedPCV(address(deposit1)), 100e18);
+        assertEq(pcvOracle.lastRecordedPCVRaw(address(deposit1)), 100); /// remove scaling factor for raw value
         assertEq(
             pcvOracle.lastRecordedPCV(address(deposit1)),
             pcvOracle.getVenueBalance(address(deposit1))

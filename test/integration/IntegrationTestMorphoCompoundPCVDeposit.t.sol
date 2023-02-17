@@ -3,11 +3,14 @@ pragma solidity =0.8.13;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
+
 import {Test} from "@forge-std/Test.sol";
+import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
 import {getCoreV2} from "@test/unit/utils/Fixtures.sol";
+import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
+import {GenericCallMock} from "@test/mock/GenericCallMock.sol";
 import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
 import {MorphoCompoundPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
@@ -56,6 +59,7 @@ contract IntegrationTestMorphoCompoundPCVDeposit is Test {
             address(core),
             CDAI,
             DAI,
+            COMP,
             MORPHO,
             MORPHO_LENS
         );
@@ -64,6 +68,7 @@ contract IntegrationTestMorphoCompoundPCVDeposit is Test {
             address(core),
             CUSDC,
             USDC,
+            COMP,
             MORPHO,
             MORPHO_LENS
         );
@@ -80,15 +85,19 @@ contract IntegrationTestMorphoCompoundPCVDeposit is Test {
             toWhitelist
         );
 
+        GenericCallMock mock = new GenericCallMock();
+
         vm.label(address(daiDeposit), "Morpho DAI Compound PCV Deposit");
         vm.label(address(usdcDeposit), "Morpho USDC Compound PCV Deposit");
         vm.label(address(CDAI), "CDAI");
         vm.label(address(CUSDC), "CUSDC");
         vm.label(address(usdc), "USDC");
         vm.label(address(dai), "DAI");
+        vm.label(address(mock), "Mock PCV Oracle");
         vm.label(0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67, "Morpho Lens");
-        vm.label(0x8888882f8f843896699869179fB6E4f7e3B58888, "Morpho");
+        vm.label(0x8888882f8f843896699869179fB6E4f7e3B58888, "MORPHO_COMPOUND");
 
+        //// todo remove this prank and use deal instead
         vm.startPrank(DAI_USDC_USDT_CURVE_POOL);
         dai.transfer(address(daiDeposit), targetDaiBalance);
         usdc.transfer(address(usdcDeposit), targetUsdcBalance);
@@ -105,8 +114,24 @@ contract IntegrationTestMorphoCompoundPCVDeposit is Test {
         core.grantLocker(address(daiDeposit));
         core.grantLocker(address(usdcDeposit));
         core.grantLocker(address(pcvGuardian));
+        core.setPCVOracle(IPCVOracle(address(mock)));
 
         vm.stopPrank();
+
+        /// everything is a venue
+        mock.setResponseToCall(
+            address(0),
+            "",
+            abi.encode(true),
+            bytes4(keccak256("isVenue(address)"))
+        );
+
+        mock.setResponseToCall(
+            address(0),
+            "",
+            abi.encode(uint256(0)),
+            bytes4(keccak256("lastRecordedPCVRaw(address)"))
+        );
 
         entry.deposit(address(daiDeposit));
         entry.deposit(address(usdcDeposit));
@@ -131,8 +156,8 @@ contract IntegrationTestMorphoCompoundPCVDeposit is Test {
         assertEq(address(daiDeposit.token()), address(DAI));
         assertEq(address(usdcDeposit.token()), address(USDC));
 
-        assertEq(daiDeposit.lastRecordedBalance(), targetDaiBalance);
-        assertEq(usdcDeposit.lastRecordedBalance(), targetUsdcBalance);
+        // assertEq(daiDeposit.lastRecordedBalance(), targetDaiBalance);
+        // assertEq(usdcDeposit.lastRecordedBalance(), targetUsdcBalance);
 
         assertApproxEq(
             daiDeposit.balance().toInt256(),

@@ -7,9 +7,10 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ILens} from "@voltprotocol/pcv/morpho/ILens.sol";
 import {IMorpho} from "@voltprotocol/pcv/morpho/IMorpho.sol";
 import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
+import {Constants} from "@voltprotocol/Constants.sol";
 import {PCVDepositV2} from "@voltprotocol/pcv/PCVDepositV2.sol";
 
-/// @notice PCV Deposit for Morpho-Compound V2.
+/// @notice PCV Deposit for Morpho-Aave V2.
 /// Implements the PCV Deposit interface to deposit and withdraw funds in Morpho
 /// Liquidity profile of Morpho for this deposit is fully liquid for USDC and DAI
 /// because the incentivized rates are higher than the P2P rate.
@@ -26,44 +27,45 @@ import {PCVDepositV2} from "@voltprotocol/pcv/PCVDepositV2.sol";
 /// @dev Depositing and withdrawing in a single block will cause a very small loss
 /// of funds, less than a pip. The way to not realize this loss is by depositing and
 /// then withdrawing at least 1 block later. That way, interest accrues.
-/// This is not a Morpho specific issue. Compound rounds in the protocol's favor.
+/// This is not a Morpho specific issue.
+/// TODO confirm that Aave rounds in the protocol's favor.
 /// The issue is caused by constraints inherent to solidity and the EVM.
 /// There are no floating point numbers, this means there is precision loss,
 /// and protocol engineers are forced to choose who to round in favor of.
 /// Engineers must round in favor of the protocol to avoid deposits of 0 giving
 /// the user a balance.
-contract MorphoCompoundPCVDeposit is PCVDepositV2 {
+contract MorphoAavePCVDeposit is PCVDepositV2 {
     using SafeERC20 for IERC20;
 
     /// ------------------------------------------
     /// ---------- Immutables/Constant -----------
     /// ------------------------------------------
 
-    /// @notice reference to the lens contract for morpho-compound v2
+    /// @notice reference to the lens contract for morpho-aave v2
     address public immutable lens;
 
-    /// @notice reference to the morpho-compound v2 market
+    /// @notice reference to the morpho-aave v2 market
     address public immutable morpho;
 
-    /// @notice cToken in compound this deposit tracks
+    /// @notice aToken in aave this deposit tracks
     /// used to inform morpho about the desired market to supply liquidity
-    address public immutable cToken;
+    address public immutable aToken;
 
     /// @param _core reference to the core contract
-    /// @param _cToken cToken this deposit references
+    /// @param _aToken aToken this deposit references
     /// @param _underlying Token denomination of this deposit
     /// @param _rewardToken Reward token denomination of this deposit
     /// @param _morpho reference to the morpho-compound v2 market
     /// @param _lens reference to the morpho-compound v2 lens
     constructor(
         address _core,
-        address _cToken,
+        address _aToken,
         address _underlying,
         address _rewardToken,
         address _morpho,
         address _lens
     ) PCVDepositV2(_underlying, _rewardToken) CoreRefV2(_core) {
-        cToken = _cToken;
+        aToken = _aToken;
         morpho = _morpho;
         lens = _lens;
     }
@@ -73,10 +75,10 @@ contract MorphoCompoundPCVDeposit is PCVDepositV2 {
     /// ------------------------------------------
 
     /// @notice Returns the distribution of assets supplied by this contract through Morpho-Compound.
-    /// @return sum of suppliedP2P and suppliedOnPool for the given CToken
+    /// @return sum of suppliedP2P and suppliedOnPool for the given aToken
     function balance() public view override returns (uint256) {
         (, , uint256 totalSupplied) = ILens(lens).getCurrentSupplyBalanceInOf(
-            cToken,
+            aToken,
             address(this)
         );
 
@@ -89,8 +91,8 @@ contract MorphoCompoundPCVDeposit is PCVDepositV2 {
 
     /// @notice accrue interest in the underlying morpho venue
     function _accrueUnderlying() internal override {
-        /// accrue interest in Morpho
-        IMorpho(morpho).updateP2PIndexes(cToken);
+        /// accrue interest in Morpho Aave
+        IMorpho(morpho).updateIndexes(aToken);
     }
 
     /// @dev withdraw from the underlying morpho market.
@@ -98,7 +100,7 @@ contract MorphoCompoundPCVDeposit is PCVDepositV2 {
         uint256 amount,
         address to
     ) internal override {
-        IMorpho(morpho).withdraw(cToken, amount);
+        IMorpho(morpho).withdraw(aToken, amount);
         IERC20(token).safeTransfer(to, amount);
     }
 
@@ -106,18 +108,18 @@ contract MorphoCompoundPCVDeposit is PCVDepositV2 {
     function _supply(uint256 amount) internal override {
         IERC20(token).approve(address(morpho), amount);
         IMorpho(morpho).supply(
-            cToken, /// cToken to supply liquidity to
+            aToken, /// aToken to supply liquidity to
             address(this), /// the address of the user you want to supply on behalf of
             amount
         );
     }
 
-    /// @dev claim rewards from the underlying Compound market.
+    /// @dev claim rewards from the underlying aave market.
     /// returns amount of reward tokens claimed
     function _claim() internal override returns (uint256) {
-        address[] memory cTokens = new address[](1);
-        cTokens[0] = cToken;
+        address[] memory aTokens = new address[](1);
+        aTokens[0] = aToken;
 
-        return IMorpho(morpho).claimRewards(cTokens, false); /// bool set false to receive COMP
+        return IMorpho(morpho).claimRewards(aTokens, false); /// bool set false to receive COMP
     }
 }

@@ -72,7 +72,7 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
     /// into a single slot for gas optimization
 
     /// @notice last recorded profit index per venue
-    mapping(address => uint128) public venueLastRecordedProfit;
+    mapping(address => int128) public venueLastRecordedProfit;
 
     /// @notice last recorded VCON share price index per venue
     mapping(address => uint128) public venueLastRecordedVconSharePrice;
@@ -230,7 +230,8 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
                     oracle.isVenue(destination),
                     "MarketGovernance: invalid destination"
                 );
-                /// if swapper is used, validate in PCV Router whiteliste
+
+                /// if swapper is used, validate in PCV Router whitelist
                 if (swapper != address(0)) {
                     require(
                         PCVRouter(pcvRouter).isPCVSwapper(swapper),
@@ -519,18 +520,17 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
     function _accrue(address venue) private {
         /// cache starting recorded profit before the external call even though
         /// there is no way to call _accrue without setting the global reentrancy lock to level 1
-        uint256 startingLastRecordedProfit = venueLastRecordedProfit[venue];
+        int256 startingLastRecordedProfit = venueLastRecordedProfit[venue];
 
         IPCVDepositV2(venue).accrue();
 
-        uint256 lastRecordedProfit = IPCVDepositV2(venue).lastRecordedProfit(); /// get this from the pcv oracle as it will be decimal normalized
+        int256 lastRecordedProfit = pcvOracle().lastRecordedProfit(venue); /// get this from the pcv oracle as it will be decimal normalized
         uint256 endingLastRecordedSharePrice = venueLastRecordedVconSharePrice[
             venue
         ];
-        int256 venueProfit = (lastRecordedProfit.toInt256() -
-            startingLastRecordedProfit.toInt256());
+        int256 venueProfit = lastRecordedProfit - startingLastRecordedProfit;
 
-        require(venueProfit >= 0, "MarketGovernance: loss scenario");
+        require(venueProfit >= 0, "MarketGovernance: loss scenario"); /// TODO remove this
 
         /// update venue last recorded profit regardless
         /// of participation in market governance
@@ -557,7 +557,7 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         }
 
         /// update the venue's profit index
-        venueLastRecordedProfit[venue] = lastRecordedProfit.toUint128();
+        venueLastRecordedProfit[venue] = lastRecordedProfit.toInt128();
 
         emit VenueIndexUpdated(venue, block.timestamp, lastRecordedProfit);
     }
@@ -638,10 +638,10 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
 
         IPCVDepositV2(venue).accrue();
 
-        uint256 lastRecordedProfit = IPCVDepositV2(venue).lastRecordedProfit();
+        int128 lastRecordedProfit = pcvOracle().lastRecordedProfit(venue);
 
         /// update the venue's profit index
-        venueLastRecordedProfit[venue] = lastRecordedProfit.toUint128();
+        venueLastRecordedProfit[venue] = lastRecordedProfit;
         /// update the venue's share price
         venueLastRecordedVconSharePrice[venue] = newSharePrice;
 

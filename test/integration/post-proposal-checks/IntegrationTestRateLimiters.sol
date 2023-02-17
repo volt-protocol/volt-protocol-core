@@ -60,8 +60,12 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
             addresses.mainnet("GLOBAL_SYSTEM_EXIT_RATE_LIMITER")
         );
         pcvOracle = PCVOracle(addresses.mainnet("PCV_ORACLE"));
-        morphoUsdcPCVDeposit = addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC");
-        morphoDaiPCVDeposit = addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI");
+        morphoUsdcPCVDeposit = addresses.mainnet(
+            "PCV_DEPOSIT_MORPHO_COMPOUND_USDC"
+        );
+        morphoDaiPCVDeposit = addresses.mainnet(
+            "PCV_DEPOSIT_MORPHO_COMPOUND_DAI"
+        );
     }
 
     /*
@@ -214,7 +218,7 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
         uint256 startingExitBuffer = gserl.buffer();
         (, uint256 expectedBufferDepletion) = allocator.getDripDetails(
             address(daipsm),
-            PCVDeposit(address(morphoDaiPCVDeposit))
+            address(morphoDaiPCVDeposit)
         );
         allocator.drip(address(morphoDaiPCVDeposit));
         assertEq(startingExitBuffer - expectedBufferDepletion, gserl.buffer());
@@ -303,7 +307,7 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
 
         (, uint256 expectedBufferDepletion) = allocator.getDripDetails(
             address(usdcpsm),
-            PCVDeposit(address(morphoUsdcPCVDeposit))
+            address(morphoUsdcPCVDeposit)
         );
         allocator.drip(address(morphoUsdcPCVDeposit));
         uint256 endingExitBuffer = gserl.buffer();

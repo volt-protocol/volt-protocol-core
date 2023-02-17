@@ -10,6 +10,7 @@ import {VoltV2} from "@voltprotocol/volt/VoltV2.sol";
 import {PCVOracle} from "@voltprotocol/oracle/PCVOracle.sol";
 import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
+import {GenericCallMock} from "@test/mock/GenericCallMock.sol";
 import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
 
 contract IntegrationTestPCVOracle is PostProposalCheck {
@@ -29,7 +30,9 @@ contract IntegrationTestPCVOracle is PostProposalCheck {
         dai = IERC20(addresses.mainnet("DAI"));
         volt = VoltV2(addresses.mainnet("VOLT"));
         grlm = addresses.mainnet("GLOBAL_RATE_LIMITED_MINTER");
-        morphoDaiPCVDeposit = addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI");
+        morphoDaiPCVDeposit = addresses.mainnet(
+            "PCV_DEPOSIT_MORPHO_COMPOUND_DAI"
+        );
         daipsm = PegStabilityModule(addresses.mainnet("PSM_DAI"));
         pcvOracle = PCVOracle(addresses.mainnet("PCV_ORACLE"));
         pcvGuardian = PCVGuardian(addresses.mainnet("PCV_GUARDIAN"));
@@ -46,8 +49,24 @@ contract IntegrationTestPCVOracle is PostProposalCheck {
     function testUnsetPcvOracle() public {
         address multisig = addresses.mainnet("GOVERNOR");
 
+        GenericCallMock mock = new GenericCallMock();
+
+        mock.setResponseToCall(
+            address(0),
+            "",
+            abi.encode(true),
+            bytes4(keccak256("isVenue(address)"))
+        );
+
+        mock.setResponseToCall(
+            address(0),
+            "",
+            abi.encode(uint256(0)),
+            bytes4(keccak256("lastRecordedPCVRaw(address)"))
+        );
+
         vm.prank(multisig);
-        core.setPCVOracle(IPCVOracle(address(0)));
+        core.setPCVOracle(IPCVOracle(address(mock)));
 
         vm.prank(multisig);
         pcvGuardian.withdrawToSafeAddress(morphoDaiPCVDeposit, 100e18);

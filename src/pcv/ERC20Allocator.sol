@@ -216,7 +216,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2 {
 
         (uint256 amountToDrip, uint256 adjustedAmountToDrip) = getDripDetails(
             psm,
-            pcvDeposit
+            address(pcvDeposit)
         );
 
         /// Effects
@@ -299,7 +299,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2 {
     /// reverts if not drip eligbile
     function getDripDetails(
         address psm,
-        PCVDeposit pcvDeposit
+        address pcvDeposit
     ) public view returns (uint256 amountToDrip, uint256 adjustedAmountToDrip) {
         PSMInfo memory toDrip = allPSMs[psm];
 
@@ -324,7 +324,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2 {
         /// amountToDrip = 1,000e6
 
         amountToDrip = Math.min(
-            Math.min(targetBalanceDelta, pcvDeposit.balance()),
+            Math.min(targetBalanceDelta, PCVDeposit(pcvDeposit).balance()),
             /// adjust for decimals here as buffer is 1e18 scaled,
             /// and if token is not scaled by 1e18, then this amountToDrip could be over the buffer
             /// because buffer is 1e18 adjusted, and decimals normalizer is used to adjust up to the buffer
