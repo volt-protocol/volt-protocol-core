@@ -16,8 +16,10 @@ import {PCVRouter} from "@voltprotocol/pcv/PCVRouter.sol";
 import {PCVOracle} from "@voltprotocol/oracle/PCVOracle.sol";
 import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
 import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
+import {PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
 import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
+import {IPCVDepositV2} from "@voltprotocol/pcv/IPCVDepositV2.sol";
 import {MigratorRouter} from "@voltprotocol/v1-migration/MigratorRouter.sol";
 import {ERC20Allocator} from "@voltprotocol/pcv/ERC20Allocator.sol";
 import {NonCustodialPSM} from "@voltprotocol/peg/NonCustodialPSM.sol";
@@ -30,7 +32,6 @@ import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
 import {IPegStabilityModule} from "@voltprotocol/peg/IPegStabilityModule.sol";
 import {ConstantPriceOracle} from "@voltprotocol/oracle/ConstantPriceOracle.sol";
 import {CompoundBadDebtSentinel} from "@voltprotocol/pcv/compound/CompoundBadDebtSentinel.sol";
-import {IPCVDeposit, PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
 import {IVoltMigrator, VoltMigrator} from "@voltprotocol/v1-migration/VoltMigrator.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "@voltprotocol/rate-limits/GlobalRateLimitedMinter.sol";
@@ -212,7 +213,7 @@ contract vip16 is Proposal {
             /// Euler Deposits
             EulerPCVDeposit eulerDaiPCVDeposit = new EulerPCVDeposit(
                 addresses.mainnet("CORE"),
-                addresses.mainnet("EDAI"),
+                addresses.mainnet("EULER_DAI"),
                 addresses.mainnet("EULER_MAIN"),
                 addresses.mainnet("DAI"),
                 address(0)
@@ -220,7 +221,7 @@ contract vip16 is Proposal {
 
             EulerPCVDeposit eulerUsdcPCVDeposit = new EulerPCVDeposit(
                 addresses.mainnet("CORE"),
-                addresses.mainnet("EUSDC"),
+                addresses.mainnet("EULER_USDC"),
                 addresses.mainnet("EULER_MAIN"),
                 addresses.mainnet("USDC"),
                 address(0)
@@ -276,7 +277,7 @@ contract vip16 is Proposal {
                 IERC20(addresses.mainnet("USDC")),
                 VOLT_FLOOR_PRICE_USDC,
                 VOLT_CEILING_PRICE_USDC,
-                IPCVDeposit(
+                IPCVDepositV2(
                     addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC")
                 )
             );
@@ -289,7 +290,7 @@ contract vip16 is Proposal {
                 IERC20(addresses.mainnet("DAI")),
                 VOLT_FLOOR_PRICE_DAI,
                 VOLT_CEILING_PRICE_DAI,
-                IPCVDeposit(
+                IPCVDepositV2(
                     addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI")
                 )
             );

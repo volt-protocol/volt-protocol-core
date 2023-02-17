@@ -13,8 +13,8 @@ import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
 import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
-import {IPCVDeposit} from "@voltprotocol/pcv/IPCVDeposit.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
+import {IPCVDepositV2} from "@voltprotocol/pcv/IPCVDepositV2.sol";
 import {NonCustodialPSM} from "@voltprotocol/peg/NonCustodialPSM.sol";
 import {MockPCVDepositV3} from "@test/mock/MockPCVDepositV3.sol";
 import {VoltSystemOracle} from "@voltprotocol/oracle/VoltSystemOracle.sol";
@@ -59,7 +59,7 @@ interface IERC20Mintable is IERC20 {
 contract NonCustodialPSMUnitTest is Test {
     using SafeCast for *;
 
-    event PCVDepositUpdate(IPCVDeposit oldTarget, IPCVDeposit newPCVDeposit);
+    event PCVDepositUpdate(address oldTarget, address newPCVDeposit);
 
     CoreV2 private core;
     SystemEntry private entry;
@@ -145,7 +145,7 @@ contract NonCustodialPSMUnitTest is Test {
             dai,
             voltFloorPrice,
             voltCeilingPrice,
-            IPCVDeposit(address(pcvDeposit))
+            IPCVDepositV2(address(pcvDeposit))
         );
 
         custodialPsm = new PegStabilityModule(
@@ -261,7 +261,7 @@ contract NonCustodialPSMUnitTest is Test {
             dai,
             voltFloorPrice,
             voltCeilingPrice,
-            IPCVDeposit(address(pcvDeposit))
+            IPCVDepositV2(address(pcvDeposit))
         );
 
         assertEq(psm.getExitValue(amount), amount / (1e12));
@@ -277,7 +277,7 @@ contract NonCustodialPSMUnitTest is Test {
             dai,
             voltFloorPrice,
             voltCeilingPrice,
-            IPCVDeposit(address(pcvDeposit))
+            IPCVDepositV2(address(pcvDeposit))
         );
 
         assertEq(psm.getExitValue(amount), uint256(amount) * (1e12));
@@ -501,11 +501,11 @@ contract NonCustodialPSMUnitTest is Test {
     }
 
     function testSetPCVDepositGovernorSucceeds() public {
-        IPCVDeposit newDeposit = IPCVDeposit(
+        IPCVDepositV2 newDeposit = IPCVDepositV2(
             address(new MockPCVDepositV3(coreAddress, address(dai)))
         );
         vm.expectEmit(true, true, false, true, address(psm));
-        emit PCVDepositUpdate(pcvDeposit, newDeposit);
+        emit PCVDepositUpdate(address(pcvDeposit), address(newDeposit));
         vm.prank(addresses.governorAddress);
         psm.setPCVDeposit(newDeposit);
 
@@ -513,7 +513,7 @@ contract NonCustodialPSMUnitTest is Test {
     }
 
     function testSetPCVDepositGovernorFailsMismatchUnderlyingToken() public {
-        IPCVDeposit newDeposit = IPCVDeposit(
+        IPCVDepositV2 newDeposit = IPCVDepositV2(
             address(new MockPCVDepositV3(coreAddress, address(12345)))
         );
         vm.prank(addresses.governorAddress);
@@ -530,7 +530,7 @@ contract NonCustodialPSMUnitTest is Test {
 
     function testSetPCVDepositNonGovernorFails() public {
         vm.expectRevert("CoreRef: Caller is not a governor");
-        psm.setPCVDeposit(IPCVDeposit(address(0)));
+        psm.setPCVDeposit(IPCVDepositV2(address(0)));
     }
 
     function testSetOracleCeilingPriceNonGovernorFails() public {

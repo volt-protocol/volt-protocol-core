@@ -77,6 +77,11 @@ abstract contract BasePegStabilityModule is IPegStabilityModule, OracleRefV2 {
 
     /// ----------- Public View-Only API ----------
 
+    /// @notice return address of token
+    function token() public view returns (address) {
+        return address(underlyingToken);
+    }
+
     /// @notice calculate the amount of VOLT out for a given `amountIn` of underlying
     /// First get oracle price of token
     /// Then figure out how many dollars that amount in is worth by multiplying price * amount.

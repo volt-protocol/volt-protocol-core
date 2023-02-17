@@ -97,11 +97,8 @@ contract IntegrationTestMorphoCompoundPCVDeposit is Test {
         vm.label(0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67, "Morpho Lens");
         vm.label(0x8888882f8f843896699869179fB6E4f7e3B58888, "MORPHO_COMPOUND");
 
-        //// todo remove this prank and use deal instead
-        vm.startPrank(DAI_USDC_USDT_CURVE_POOL);
-        dai.transfer(address(daiDeposit), targetDaiBalance);
-        usdc.transfer(address(usdcDeposit), targetUsdcBalance);
-        vm.stopPrank();
+        deal(address(dai), address(daiDeposit), targetDaiBalance);
+        deal(address(usdc), address(usdcDeposit), targetUsdcBalance);
 
         vm.startPrank(addresses.governorAddress);
 
@@ -147,8 +144,8 @@ contract IntegrationTestMorphoCompoundPCVDeposit is Test {
         assertEq(daiDeposit.lens(), MORPHO_LENS);
         assertEq(usdcDeposit.lens(), MORPHO_LENS);
 
-        assertEq(daiDeposit.balanceReportedIn(), address(dai));
-        assertEq(usdcDeposit.balanceReportedIn(), address(usdc));
+        assertEq(daiDeposit.token(), address(dai));
+        assertEq(usdcDeposit.token(), address(usdc));
 
         assertEq(address(daiDeposit.cToken()), address(CDAI));
         assertEq(address(usdcDeposit.cToken()), address(CUSDC));

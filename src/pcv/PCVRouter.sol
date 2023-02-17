@@ -8,7 +8,7 @@ import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
 import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {IPCVRouter} from "@voltprotocol/pcv/IPCVRouter.sol";
 import {IPCVSwapper} from "@voltprotocol/pcv/IPCVSwapper.sol";
-import {IPCVDeposit} from "@voltprotocol/pcv/IPCVDeposit.sol";
+import {IPCVDepositV2} from "@voltprotocol/pcv/IPCVDepositV2.sol";
 
 /// @title Volt Protocol PCV Router
 /// @notice A contract that allows PCV movements between deposits.
@@ -117,11 +117,11 @@ contract PCVRouter is IPCVRouter, CoreRefV2 {
 
         // Check underlying tokens
         require(
-            IPCVDeposit(source).balanceReportedIn() == sourceAsset,
+            IPCVDepositV2(source).token() == sourceAsset,
             "PCVRouter: invalid source asset"
         );
         require(
-            IPCVDeposit(destination).balanceReportedIn() == destinationAsset,
+            IPCVDepositV2(destination).token() == destinationAsset,
             "PCVRouter: invalid destination asset"
         );
         // Check swapper, if applicable
@@ -190,7 +190,7 @@ contract PCVRouter is IPCVRouter, CoreRefV2 {
         address sourceAsset,
         address destinationAsset
     ) external whenNotPaused onlyPCVController globalLock(1) {
-        uint256 amount = IPCVDeposit(source).balance();
+        uint256 amount = IPCVDepositV2(source).balance();
         _movePCV(
             source,
             destination,
@@ -213,17 +213,17 @@ contract PCVRouter is IPCVRouter, CoreRefV2 {
         // Do transfer
         uint256 amountDestination;
         if (swapper != address(0)) {
-            IPCVDeposit(source).withdraw(swapper, amountSource);
+            IPCVDepositV2(source).withdraw(swapper, amountSource);
             amountDestination = IPCVSwapper(swapper).swap(
                 sourceAsset,
                 destinationAsset,
                 destination
             );
         } else {
-            IPCVDeposit(source).withdraw(destination, amountSource);
+            IPCVDepositV2(source).withdraw(destination, amountSource);
             amountDestination = amountSource;
         }
-        IPCVDeposit(destination).deposit();
+        IPCVDepositV2(destination).deposit();
 
         // Emit event
         emit PCVMovement(source, destination, amountSource, amountDestination);

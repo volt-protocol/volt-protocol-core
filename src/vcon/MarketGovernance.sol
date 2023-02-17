@@ -160,7 +160,7 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
             "MarketGovernance: invalid share amount"
         );
 
-        address denomination = IPCVDepositV2(venue).balanceReportedIn();
+        address denomination = IPCVDepositV2(venue).token();
         address destination = underlyingTokenToHoldingDeposit[denomination];
         require(
             destination != address(0),
@@ -448,9 +448,8 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
         int256 destinationVenueBalance,
         uint256 totalVconStaked
     ) private {
-        address sourceAsset = IPCVDepositV2(source).balanceReportedIn();
-        address destinationAsset = IPCVDepositV2(destination)
-            .balanceReportedIn();
+        address sourceAsset = IPCVDepositV2(source).token();
+        address destinationAsset = IPCVDepositV2(destination).token();
 
         /// validate pcv movement
         /// check underlying assets match up and if not that swapper is provided and valid
@@ -604,7 +603,7 @@ contract MarketGovernance is CoreRefV2, IMarketGovernance {
     ) external onlyGovernor {
         require(pcvOracle().isVenue(venue), "MarketGovernance: invalid venue");
         require(
-            IPCVDepositV2(venue).balanceReportedIn() == token,
+            IPCVDepositV2(venue).token() == token,
             "MarketGovernance: underlying mismatch"
         );
 

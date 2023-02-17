@@ -7,7 +7,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ILens} from "@voltprotocol/pcv/morpho/ILens.sol";
 import {IMorpho} from "@voltprotocol/pcv/morpho/IMorpho.sol";
 import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
-import {Constants} from "@voltprotocol/Constants.sol";
 import {PCVDepositV2} from "@voltprotocol/pcv/PCVDepositV2.sol";
 
 /// @notice PCV Deposit for Morpho-Aave V2.
@@ -19,11 +18,6 @@ import {PCVDepositV2} from "@voltprotocol/pcv/PCVDepositV2.sol";
 /// and then calls supply on Morpho, which pulls the underlying token to Morpho,
 /// drawing down on the approved amount to be spent,
 /// and then giving this PCV Deposit credits on Morpho in exchange for the underlying
-/// @dev PCV Guardian functions withdrawERC20ToSafeAddress and withdrawAllERC20ToSafeAddress
-/// will not work with removing Morpho Tokens on the Morpho PCV Deposit because Morpho
-/// has no concept of mTokens. This means if the contract is paused, or an issue is
-/// surfaced in Morpho and liquidity is locked, Volt will need to rely on social
-/// coordination with the Morpho team to recover funds.
 /// @dev Depositing and withdrawing in a single block will cause a very small loss
 /// of funds, less than a pip. The way to not realize this loss is by depositing and
 /// then withdrawing at least 1 block later. That way, interest accrues.
@@ -55,8 +49,8 @@ contract MorphoAavePCVDeposit is PCVDepositV2 {
     /// @param _aToken aToken this deposit references
     /// @param _underlying Token denomination of this deposit
     /// @param _rewardToken Reward token denomination of this deposit
-    /// @param _morpho reference to the morpho-compound v2 market
-    /// @param _lens reference to the morpho-compound v2 lens
+    /// @param _morpho reference to the morpho-aave v2 market
+    /// @param _lens reference to the morpho-aave v2 lens
     constructor(
         address _core,
         address _aToken,
@@ -74,7 +68,7 @@ contract MorphoAavePCVDeposit is PCVDepositV2 {
     /// ------------------ Views -----------------
     /// ------------------------------------------
 
-    /// @notice Returns the distribution of assets supplied by this contract through Morpho-Compound.
+    /// @notice Returns the distribution of assets supplied by this contract through Morpho-Aave.
     /// @return sum of suppliedP2P and suppliedOnPool for the given aToken
     function balance() public view override returns (uint256) {
         (, , uint256 totalSupplied) = ILens(lens).getCurrentSupplyBalanceInOf(

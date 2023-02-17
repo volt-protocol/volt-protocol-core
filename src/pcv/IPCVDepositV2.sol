@@ -55,9 +55,9 @@ interface IPCVDepositV2 {
     /// to the lastRecordedBalance variable
     function deposit() external;
 
-    /// @notice claim COMP rewards for supplying to Morpho.
-    /// Does not require reentrancy lock as no smart contract state is mutated
-    /// in this function.
+    /// @notice claim token rewards for supplying.
+    /// Does not require reentrancy lock as no internal smart
+    /// contract state is mutated in this function.
     function harvest() external;
 
     /// @notice function that emits an event tracking profits and losses
@@ -69,13 +69,10 @@ interface IPCVDepositV2 {
 
     // ----------- Getters -----------
 
-    /// @notice gets the effective balance of "balanceReportedIn" token if the deposit were fully withdrawn
+    /// @notice gets the effective balance of token if the deposit were fully withdrawn
     function balance() external view returns (uint256);
 
-    /// @notice gets the token address in which this deposit returns its balance
-    function balanceReportedIn() external view returns (address);
-
-    /// @notice address of underlying token
+    /// @notice token address in which this deposit returns its balance
     function token() external view returns (address);
 
     /// @notice address of reward token

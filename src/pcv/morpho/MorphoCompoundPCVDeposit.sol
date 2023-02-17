@@ -18,11 +18,6 @@ import {PCVDepositV2} from "@voltprotocol/pcv/PCVDepositV2.sol";
 /// and then calls supply on Morpho, which pulls the underlying token to Morpho,
 /// drawing down on the approved amount to be spent,
 /// and then giving this PCV Deposit credits on Morpho in exchange for the underlying
-/// @dev PCV Guardian functions withdrawERC20ToSafeAddress and withdrawAllERC20ToSafeAddress
-/// will not work with removing Morpho Tokens on the Morpho PCV Deposit because Morpho
-/// has no concept of mTokens. This means if the contract is paused, or an issue is
-/// surfaced in Morpho and liquidity is locked, Volt will need to rely on social
-/// coordination with the Morpho team to recover funds.
 /// @dev Depositing and withdrawing in a single block will cause a very small loss
 /// of funds, less than a pip. The way to not realize this loss is by depositing and
 /// then withdrawing at least 1 block later. That way, interest accrues.

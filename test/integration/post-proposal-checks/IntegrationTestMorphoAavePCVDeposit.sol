@@ -5,7 +5,6 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {console} from "@forge-std/console.sol";
-import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
 import {IPCVDepositV2} from "@voltprotocol/pcv/IPCVDepositV2.sol";
 import {PostProposalCheck} from "@test/integration/post-proposal-checks/PostProposalCheck.sol";
@@ -94,40 +93,5 @@ contract IntegrationTestMorphoAavePCVDeposit is PostProposalCheck {
             (depositAmount * 1e6).toInt256(),
             0
         );
-    }
-
-    function testWithdrawPCVGuardian() public {
-        testCanDepositAave();
-
-        PCVGuardian pcvGuardian = PCVGuardian(
-            addresses.mainnet("PCV_GUARDIAN")
-        );
-
-        address[2] memory addressesToClean = [
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_DAI"),
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_USDC")
-        ];
-
-        vm.startPrank(addresses.mainnet("GOVERNOR"));
-        for (uint256 i = 0; i < addressesToClean.length; i++) {
-            pcvGuardian.withdrawAllToSafeAddress(addressesToClean[i]);
-            // Check only dust left after withdrawals
-            assertLt(IPCVDepositV2(addressesToClean[i]).balance(), 1e6);
-        }
-        vm.stopPrank();
-
-        // sanity checks
-        address safeAddress = pcvGuardian.safeAddress();
-        require(safeAddress != address(0), "Safe address is 0 address");
-        assertApproxEq(
-            IERC20(addresses.mainnet("DAI")).balanceOf(safeAddress).toInt256(),
-            (depositAmount * 1e18).toInt256(),
-            0
-        ); // ~1M DAI
-        assertApproxEq(
-            IERC20(addresses.mainnet("USDC")).balanceOf(safeAddress).toInt256(),
-            (depositAmount * 1e6).toInt256(),
-            0
-        ); // ~1M USDC
     }
 }

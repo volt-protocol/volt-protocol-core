@@ -2,7 +2,7 @@
 pragma solidity 0.8.13;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IPCVDeposit} from "@voltprotocol/pcv/IPCVDeposit.sol";
+import {IPCVDepositV2} from "@voltprotocol/pcv/IPCVDepositV2.sol";
 
 /**
  * @title Volt Peg Stability Module
@@ -22,15 +22,15 @@ interface INonCustodialPSM {
     // ----------- Governor or Admin Only State Changing API -----------
 
     /// @notice set the target for sending surplus reserves
-    function setPCVDeposit(IPCVDeposit newTarget) external;
+    function setPCVDeposit(IPCVDepositV2 newTarget) external;
 
     // ----------- Getters -----------
 
     /// @notice the PCV deposit target to deposit and withdraw from
-    function pcvDeposit() external view returns (IPCVDeposit);
+    function pcvDeposit() external view returns (IPCVDepositV2);
 
     // ----------- Events -----------
 
     /// @notice event emitted when surplus target is updated
-    event PCVDepositUpdate(IPCVDeposit oldTarget, IPCVDeposit newTarget);
+    event PCVDepositUpdate(address oldTarget, address newTarget);
 }

@@ -6,20 +6,22 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {ILens} from "@voltprotocol/pcv/morpho/ILens.sol";
-import {ICToken} from "@voltprotocol/pcv/morpho/ICompound.sol";
-import {IMorpho} from "@voltprotocol/pcv/morpho/IMorpho.sol";
 import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
 import {IPCVDepositV2} from "@voltprotocol/pcv/IPCVDepositV2.sol";
 
 /// @title abstract PCV Deposit contract.
-/// if PCV Oracle is not set, this contract will revert
+/// if PCV Oracle is not set, this contract will revert and not allow operations
+/// if global reentrancy lock is not set, this contract will still work.
 /// @author Elliot Friedman
 abstract contract PCVDepositV2 is IPCVDepositV2, CoreRefV2 {
     using SafeERC20 for IERC20;
     using SafeCast for *;
 
-    /// @notice reference to underlying token
+    /// ------------------------------------------
+    /// --------------- Immutables ---------------
+    /// ------------------------------------------
+
+    /// @notice reference to reward token
     address public immutable override rewardToken;
 
     /// @notice reference to underlying token
@@ -35,21 +37,12 @@ abstract contract PCVDepositV2 is IPCVDepositV2, CoreRefV2 {
     }
 
     /// ------------------------------------------
-    /// -------------- View Only API -------------
-    /// ------------------------------------------
-
-    /// @notice return the underlying token denomination for this deposit
-    function balanceReportedIn() external view returns (address) {
-        return address(token);
-    }
-
-    /// ------------------------------------------
     /// ----------- Permissionless API -----------
     /// ------------------------------------------
 
-    /// @notice deposit ERC-20 tokens to Morpho-Compound
-    /// non-reentrant to block malicious reentrant state changes
-    /// to the lastRecordedBalance variable
+    /// @notice deposit ERC-20 tokens to underlying venue
+    /// uses global reentrancy lock to block malicious reentrant
+    /// state changes to the lastRecordedBalance variable
     function deposit() public whenNotPaused globalLock(2) {
         /// ------ Check ------
 
@@ -86,9 +79,9 @@ abstract contract PCVDepositV2 is IPCVDepositV2, CoreRefV2 {
         emit Deposit(msg.sender, amount);
     }
 
-    /// @notice claim COMP rewards for supplying to Morpho.
-    /// Does not require reentrancy lock as no smart contract state is mutated
-    /// in this function.
+    /// @notice claim token rewards for supplying to underlying venue.
+    /// Does not require reentrancy lock as no internal smart contract
+    /// state is mutated in this function.
     function harvest() external globalLock(2) {
         uint256 claimedAmount = _claim();
 
@@ -127,8 +120,8 @@ abstract contract PCVDepositV2 is IPCVDepositV2, CoreRefV2 {
         _pcvOracleHook(-(amount.toInt256()) + profit, profit);
     }
 
-    /// @notice withdraw all tokens from Morpho
-    /// non-reentrant as state changes and external calls are made
+    /// @notice withdraw all tokens from underlying venue
+    /// global reentrancy locked as state changes and external calls are made
     /// @param to the address PCV will be sent to
     function withdrawAll(address to) external onlyPCVController globalLock(2) {
         /// compute profit from interest accrued and emit an event
@@ -197,7 +190,8 @@ abstract contract PCVDepositV2 is IPCVDepositV2, CoreRefV2 {
         }
 
         /// currentBalance should always be greater than or equal to
-        /// the deposited amount, except on the same block a deposit occurs, or a loss event in morpho
+        /// the deposited amount, except on the same block a deposit
+        /// occurs, or a loss event in underlying venue.
 
         /// Compute profit
         int256 profit = int256(currentBalance) - int256(lastRecordedBalance);
@@ -211,10 +205,10 @@ abstract contract PCVDepositV2 is IPCVDepositV2, CoreRefV2 {
     /// @notice helper avoid repeated code in withdraw and withdrawAll
     /// anytime this function is called it is by an external function in this smart contract
     /// with a reentrancy guard. This ensures lastRecordedBalance never desynchronizes.
-    /// Morpho is assumed to be a loss-less venue. over the course of less than 1 block,
+    /// All current venues are assumed to be loss-less venues. Over the course of less than 1 block,
     /// it is possible to lose funds. However, after 1 block, deposits are expected to always
     /// be in profit at least with current interest rates around 0.8% natively on Compound,
-    /// ignoring all COMP and Morpho rewards.
+    /// ignoring all other token rewards.
     /// @param to recipient of withdraw funds
     /// @param amount to withdraw
     /// @param recordPnl whether or not to record PnL. Set to false in withdrawAll

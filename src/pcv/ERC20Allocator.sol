@@ -7,7 +7,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
-import {PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
+import {IPCVDepositV2} from "@voltprotocol/pcv/IPCVDepositV2.sol";
 import {IERC20Allocator} from "@voltprotocol/pcv/IERC20Allocator.sol";
 
 /// @notice Contract to remove all excess funds past a target balance from a smart contract
@@ -66,7 +66,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2 {
         uint248 psmTargetBalance,
         int8 decimalsNormalizer
     ) external override onlyGovernor {
-        address token = PCVDeposit(psm).balanceReportedIn();
+        address token = IPCVDepositV2(psm).token();
 
         require(
             allPSMs[psm].token == address(0),
@@ -92,7 +92,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2 {
         address psm,
         uint248 psmTargetBalance
     ) external override onlyGovernor {
-        address token = PCVDeposit(psm).balanceReportedIn();
+        address token = IPCVDepositV2(psm).token();
         address storedToken = allPSMs[psm].token;
         require(
             storedToken != address(0),
@@ -129,7 +129,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2 {
 
         /// assert pcv deposit and psm share same denomination
         require(
-            PCVDeposit(pcvDeposit).balanceReportedIn() == pcvToken,
+            IPCVDepositV2(pcvDeposit).token() == pcvToken,
             "ERC20Allocator: token mismatch"
         );
         require(pcvToken != address(0), "ERC20Allocator: invalid underlying");
@@ -186,10 +186,10 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2 {
 
         /// pull funds from pull target and send to push target
         /// automatically pulls underlying token
-        PCVDeposit(psm).withdraw(pcvDeposit, amountToSkim);
+        IPCVDepositV2(psm).withdraw(pcvDeposit, amountToSkim);
 
         /// deposit pulled funds into the selected yield venue
-        PCVDeposit(pcvDeposit).deposit();
+        IPCVDepositV2(pcvDeposit).deposit();
 
         emit Skimmed(amountToSkim, pcvDeposit);
     }
@@ -201,13 +201,13 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2 {
         address psm = pcvDepositToPSM[pcvDeposit];
         require(psm != address(0), "ERC20Allocator: invalid PCVDeposit");
 
-        _drip(psm, PCVDeposit(pcvDeposit));
+        _drip(psm, IPCVDepositV2(pcvDeposit));
     }
 
     /// helper function that does the dripping
     /// @param psm peg stability module to drip to
     /// @param pcvDeposit pcv deposit to pull funds from
-    function _drip(address psm, PCVDeposit pcvDeposit) internal {
+    function _drip(address psm, IPCVDepositV2 pcvDeposit) internal {
         /// Check
         require(
             _checkDripCondition(psm, pcvDeposit),
@@ -239,8 +239,8 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2 {
         require(psm != address(0), "ERC20Allocator: invalid PCVDeposit");
 
         /// don't check buffer != 0 as that will happen in drip function on effects
-        if (_checkDripCondition(psm, PCVDeposit(pcvDeposit))) {
-            _drip(psm, PCVDeposit(pcvDeposit));
+        if (_checkDripCondition(psm, IPCVDepositV2(pcvDeposit))) {
+            _drip(psm, IPCVDepositV2(pcvDeposit));
         } else if (_checkSkimCondition(psm)) {
             _skim(psm, pcvDeposit);
         }
@@ -324,7 +324,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2 {
         /// amountToDrip = 1,000e6
 
         amountToDrip = Math.min(
-            Math.min(targetBalanceDelta, PCVDeposit(pcvDeposit).balance()),
+            Math.min(targetBalanceDelta, IPCVDepositV2(pcvDeposit).balance()),
             /// adjust for decimals here as buffer is 1e18 scaled,
             /// and if token is not scaled by 1e18, then this amountToDrip could be over the buffer
             /// because buffer is 1e18 adjusted, and decimals normalizer is used to adjust up to the buffer
@@ -355,7 +355,7 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2 {
         }
 
         address psm = pcvDepositToPSM[pcvDeposit];
-        return _checkDripCondition(psm, PCVDeposit(pcvDeposit));
+        return _checkDripCondition(psm, IPCVDepositV2(pcvDeposit));
     }
 
     /// @notice function that returns whether the amount of tokens held
@@ -386,13 +386,13 @@ contract ERC20Allocator is IERC20Allocator, CoreRefV2 {
         /// cannot drip with an empty buffer
         return
             (globalSystemExitRateLimiter().buffer() != 0 &&
-                _checkDripCondition(psm, PCVDeposit(pcvDeposit))) ||
+                _checkDripCondition(psm, IPCVDepositV2(pcvDeposit))) ||
             _checkSkimCondition(psm);
     }
 
     function _checkDripCondition(
         address psm,
-        PCVDeposit pcvDeposit
+        IPCVDepositV2 pcvDeposit
     ) internal view returns (bool) {
         /// direct balanceOf call is cheaper than calling balance on psm
         /// also cannot drip if balance in underlying venue is 0

@@ -64,8 +64,8 @@ contract Addresses is Test {
 
         // ---------- EULER ADDRESSES ----------
         _addMainnet("EULER_MAIN", 0x27182842E098f60e3D576794A5bFFb0777E025d3);
-        _addMainnet("EUSDC", 0xEb91861f8A4e1C12333F42DCE8fB0Ecdc28dA716);
-        _addMainnet("EDAI", 0xe025E3ca2bE02316033184551D4d3Aa22024D9DC);
+        _addMainnet("EULER_USDC", 0xEb91861f8A4e1C12333F42DCE8fB0Ecdc28dA716);
+        _addMainnet("EULER_DAI", 0xe025E3ca2bE02316033184551D4d3Aa22024D9DC);
 
         // ---------- ORACLE ADDRESSES ----------
         _addMainnet(

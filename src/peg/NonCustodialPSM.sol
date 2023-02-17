@@ -8,7 +8,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {Constants} from "@voltprotocol/Constants.sol";
 import {OracleRefV2} from "@voltprotocol/refs/OracleRefV2.sol";
-import {IPCVDeposit} from "@voltprotocol/pcv/IPCVDeposit.sol";
+import {IPCVDepositV2} from "@voltprotocol/pcv/IPCVDepositV2.sol";
 import {INonCustodialPSM} from "@voltprotocol/peg/INonCustodialPSM.sol";
 import {BasePegStabilityModule} from "@voltprotocol/peg/BasePegStabilityModule.sol";
 
@@ -25,7 +25,7 @@ contract NonCustodialPSM is BasePegStabilityModule, INonCustodialPSM {
     using SafeCast for *;
 
     /// @notice reference to the fully liquid venue redemptions can occur in
-    IPCVDeposit public pcvDeposit;
+    IPCVDepositV2 public pcvDeposit;
 
     /// @notice construct the PSM
     /// @param coreAddress reference to core
@@ -45,7 +45,7 @@ contract NonCustodialPSM is BasePegStabilityModule, INonCustodialPSM {
         IERC20 underlyingTokenAddress,
         uint128 floorPrice,
         uint128 ceilingPrice,
-        IPCVDeposit pcvDepositAddress
+        IPCVDepositV2 pcvDepositAddress
     )
         BasePegStabilityModule(
             coreAddress,
@@ -67,7 +67,7 @@ contract NonCustodialPSM is BasePegStabilityModule, INonCustodialPSM {
     /// @param newTarget new PCV Deposit target for this PSM
     /// enforces that underlying on this PSM and new Deposit are the same
     function setPCVDeposit(
-        IPCVDeposit newTarget
+        IPCVDepositV2 newTarget
     ) external override onlyGovernor {
         _setPCVDeposit(newTarget);
     }
@@ -193,14 +193,14 @@ contract NonCustodialPSM is BasePegStabilityModule, INonCustodialPSM {
 
     /// @notice helper function to set the PCV deposit
     /// @param newPCVDeposit the new PCV deposit that this PSM will pull assets from and deposit assets into
-    function _setPCVDeposit(IPCVDeposit newPCVDeposit) private {
+    function _setPCVDeposit(IPCVDepositV2 newPCVDeposit) private {
         require(
-            newPCVDeposit.balanceReportedIn() == address(underlyingToken),
+            newPCVDeposit.token() == address(underlyingToken),
             "PegStabilityModule: Underlying token mismatch"
         );
-        IPCVDeposit oldTarget = pcvDeposit;
+        IPCVDepositV2 oldTarget = pcvDeposit;
         pcvDeposit = newPCVDeposit;
 
-        emit PCVDepositUpdate(oldTarget, newPCVDeposit);
+        emit PCVDepositUpdate(address(oldTarget), address(newPCVDeposit));
     }
 }
