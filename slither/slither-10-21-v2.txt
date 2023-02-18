@@ -96,7 +96,7 @@ Parameter PermissionsV2.isGovernor(address)._address (contracts/core/Permissions
 Parameter PermissionsV2.isGuardian(address)._address (contracts/core/PermissionsV2.sol#247) is not in mixedCase
 Parameter PermissionsV2.isLocker(address)._address (contracts/core/PermissionsV2.sol#255) is not in mixedCase
 Parameter PermissionsV2.isPCVGuard(address)._address (contracts/core/PermissionsV2.sol#262) is not in mixedCase
-Parameter PermissionsV2.isRateLimitedMinter(address)._address (contracts/core/PermissionsV2.sol#270) is not in mixedCase
+Parameter PermissionsV2.isPsmMinter(address)._address (contracts/core/PermissionsV2.sol#270) is not in mixedCase
 Parameter PermissionsV2.isRateLimitedRedeemer(address)._address (contracts/core/PermissionsV2.sol#279) is not in mixedCase
 Function IRateLimitedV2.MAX_RATE_LIMIT_PER_SECOND() (contracts/utils/IRateLimitedV2.sol#11) is not in mixedCase
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#conformance-to-solidity-naming-conventions

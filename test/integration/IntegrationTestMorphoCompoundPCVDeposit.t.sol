@@ -11,7 +11,6 @@ import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
 import {GenericCallMock} from "@test/mock/GenericCallMock.sol";
-import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
 import {MorphoCompoundPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";

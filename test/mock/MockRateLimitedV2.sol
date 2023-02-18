@@ -7,8 +7,8 @@ contract MockRateLimitedV2 is RateLimitedV2 {
     constructor(
         address _core,
         uint256 _maxRateLimitPerSecond,
-        uint128 _rateLimitPerSecond,
-        uint128 _bufferCap
+        uint64 _rateLimitPerSecond,
+        uint96 _bufferCap
     )
         RateLimitedV2(_maxRateLimitPerSecond, _rateLimitPerSecond, _bufferCap)
         CoreRefV2(_core)

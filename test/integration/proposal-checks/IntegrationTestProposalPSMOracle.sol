@@ -8,7 +8,7 @@ import {Addresses} from "@test/proposals/Addresses.sol";
 import {IOracleRef} from "@voltprotocol/v1/IOracleRef.sol";
 import {IOracleRefV2} from "@voltprotocol/refs/IOracleRefV2.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
-import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
+import {IPegStabilityModule} from "@voltprotocol/peg/IPegStabilityModule.sol";
 
 contract IntegrationTestProposalPSMOracle is Test {
     function setUp() public {}
@@ -77,7 +77,7 @@ contract IntegrationTestProposalPSMOracle is Test {
     function testPSMSameMint() public {
         // Init
         Addresses addresses = new Addresses();
-        PegStabilityModule psm = PegStabilityModule(
+        IPegStabilityModule psm = IPegStabilityModule(
             addresses.mainnet("PSM_USDC")
         );
         IERC20 volt = IERC20(addresses.mainnet("VOLT"));
@@ -99,7 +99,7 @@ contract IntegrationTestProposalPSMOracle is Test {
         addresses = proposals.addresses(); // get post-proposal addresses
 
         // Use post-proposal contracts if they have been migrated
-        psm = PegStabilityModule(addresses.mainnet("PSM_USDC"));
+        psm = IPegStabilityModule(addresses.mainnet("PSM_USDC"));
         volt = IERC20(addresses.mainnet("VOLT"));
         token = IERC20(addresses.mainnet("USDC"));
 

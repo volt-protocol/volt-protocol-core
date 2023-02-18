@@ -39,10 +39,10 @@ contract GlobalRateLimitedMinterUnitTest is Test {
     uint256 public constant maxRateLimitPerSecondMinting = 100e18;
 
     /// replenish 500k VOLT per day
-    uint128 public constant rateLimitPerSecondMinting = 5.787e18;
+    uint64 public constant rateLimitPerSecondMinting = 5.787e18;
 
     /// buffer cap of 1.5m VOLT
-    uint128 public constant bufferCapMinting = 1_500_000e18;
+    uint96 public constant bufferCapMinting = 1_500_000e18;
 
     function setUp() public {
         vm.warp(1); /// warp past 0
@@ -65,12 +65,10 @@ contract GlobalRateLimitedMinterUnitTest is Test {
         core.grantMinter(address(grlm));
         core.grantLocker(address(grlm));
 
-        core.grantRateLimitedMinter(guardianAddresses.pcvGuardAddress1);
-        core.grantRateLimitedMinter(guardianAddresses.pcvGuardAddress2);
-        core.grantRateLimitedRedeemer(guardianAddresses.pcvGuardAddress1);
-        core.grantRateLimitedRedeemer(guardianAddresses.pcvGuardAddress2);
+        core.grantPsmMinter(guardianAddresses.pcvGuardAddress1);
+        core.grantPsmMinter(guardianAddresses.pcvGuardAddress2);
+        core.grantPsmMinter(address(minter));
 
-        core.grantRateLimitedMinter(address(minter));
         core.grantLocker(address(minter));
 
         core.setGlobalRateLimitedMinter(
@@ -88,10 +86,10 @@ contract GlobalRateLimitedMinterUnitTest is Test {
     function testSetup() public {
         assertTrue(core.isMinter(address(grlm)));
         assertTrue(
-            core.isRateLimitedMinter(guardianAddresses.pcvGuardAddress1)
+            core.isPsmMinter(guardianAddresses.pcvGuardAddress1)
         );
         assertTrue(
-            core.isRateLimitedMinter(guardianAddresses.pcvGuardAddress2)
+            core.isPsmMinter(guardianAddresses.pcvGuardAddress2)
         );
 
         assertEq(address(core.globalRateLimitedMinter()), address(grlm));
@@ -134,7 +132,7 @@ contract GlobalRateLimitedMinterUnitTest is Test {
         uint80 depleteAmount
     ) public {
         vm.prank(addresses.governorAddress);
-        core.grantRateLimitedRedeemer(address(minter));
+        core.grantPsmMinter(address(minter));
 
         minter.mint(address(this), depleteAmount);
 

@@ -13,7 +13,6 @@ import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {IVolt, IVoltBurn} from "@voltprotocol/volt/IVolt.sol";
 import {IGlobalReentrancyLock} from "@voltprotocol/core/IGlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter} from "@voltprotocol/rate-limits/IGlobalRateLimitedMinter.sol";
-import {IGlobalSystemExitRateLimiter} from "@voltprotocol/rate-limits/IGlobalSystemExitRateLimiter.sol";
 
 /// @title A Reference to Core
 /// @author Volt Protocol
@@ -154,16 +153,6 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         returns (IGlobalRateLimitedMinter)
     {
         return _core.globalRateLimitedMinter();
-    }
-
-    /// @notice address of the GlobalSystemExitRateLimiter contract referenced by Core
-    /// @return IGlobalSystemExitRateLimiter implementation address
-    function globalSystemExitRateLimiter()
-        internal
-        view
-        returns (IGlobalSystemExitRateLimiter)
-    {
-        return _core.globalSystemExitRateLimiter();
     }
 
     /// @notice address of the Global Reentrancy Lock contract reference

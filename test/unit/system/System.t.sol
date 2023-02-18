@@ -18,11 +18,9 @@ import {PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
 import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
 import {MockCoreRefV2} from "@test/mock/MockCoreRefV2.sol";
-import {ERC20Allocator} from "@voltprotocol/pcv/ERC20Allocator.sol";
 import {GenericCallMock} from "@test/mock/GenericCallMock.sol";
 import {MockPCVDepositV3} from "@test/mock/MockPCVDepositV3.sol";
 import {VoltSystemOracle} from "@voltprotocol/oracle/VoltSystemOracle.sol";
-import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
 import {IPCVDepositBalances} from "@voltprotocol/pcv/IPCVDepositBalances.sol";
 import {ConstantPriceOracle} from "@voltprotocol/oracle/ConstantPriceOracle.sol";
 import {MorphoCompoundPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoCompoundPCVDeposit.sol";
@@ -70,12 +68,9 @@ contract SystemUnitTest is Test {
 
     ICoreV2 public core;
     SystemEntry public entry;
-    PegStabilityModule public daipsm;
-    PegStabilityModule public usdcpsm;
     MockPCVDepositV3 public pcvDepositDai;
     MockPCVDepositV3 public pcvDepositUsdc;
     PCVGuardian public pcvGuardian;
-    ERC20Allocator public allocator;
     VoltSystemOracle public oracle;
     TimelockController public timelockController;
     GlobalRateLimitedMinter public grlm;
@@ -104,16 +99,10 @@ contract SystemUnitTest is Test {
     uint256 public constant maxRateLimitPerSecondMinting = 100e18;
 
     /// replenish 500k VOLT per day
-    uint128 public constant rateLimitPerSecondMinting = 5.787e18;
+    uint64 public constant rateLimitPerSecondMinting = 5.787e18;
 
     /// buffer cap of 1.5m VOLT
-    uint128 public constant bufferCapMinting = 1_500_000e18;
-
-    /// ---------- ALLOCATOR PARAMS ----------
-
-    uint256 public constant maxRateLimitPerSecond = 1_000e18; /// 1k volt per second
-    uint128 public constant rateLimitPerSecond = 10e18; /// 10 volt per second
-    uint128 public constant bufferCap = 1_000_000e18; /// buffer cap is 1m volt
+    uint96 public constant bufferCapMinting = 1_500_000e18;
 
     /// ---------- PSM PARAMS ----------
 
@@ -155,28 +144,6 @@ contract SystemUnitTest is Test {
             bufferCapMinting
         );
 
-        usdcpsm = new PegStabilityModule(
-            coreAddress,
-            address(oracle),
-            address(0),
-            -12,
-            false,
-            usdc,
-            voltFloorPriceUsdc,
-            voltCeilingPriceUsdc
-        );
-
-        daipsm = new PegStabilityModule(
-            coreAddress,
-            address(oracle),
-            address(0),
-            0,
-            false,
-            dai,
-            voltFloorPriceDai,
-            voltCeilingPriceDai
-        );
-
         pcvDepositDai = new MockPCVDepositV3(coreAddress, address(dai));
         pcvDepositUsdc = new MockPCVDepositV3(coreAddress, address(usdc));
 
@@ -201,18 +168,15 @@ contract SystemUnitTest is Test {
             executorAddresses
         );
 
-        address[] memory toWhitelist = new address[](4);
+        address[] memory toWhitelist = new address[](2);
         toWhitelist[0] = address(pcvDepositDai);
         toWhitelist[1] = address(pcvDepositUsdc);
-        toWhitelist[2] = address(usdcpsm);
-        toWhitelist[3] = address(daipsm);
 
         pcvGuardian = new PCVGuardian(
             coreAddress,
             address(timelockController),
             toWhitelist
         );
-        allocator = new ERC20Allocator(coreAddress);
 
         timelockController.renounceRole(
             timelockController.TIMELOCK_ADMIN_ROLE(),
@@ -223,7 +187,6 @@ contract SystemUnitTest is Test {
 
         core.grantPCVController(address(pcvGuardian));
         core.grantPCVController(address(pcvRouter));
-        core.grantPCVController(address(allocator));
 
         core.grantPCVGuard(addresses.userAddress);
         core.grantPCVGuard(addresses.secondUserAddress);
@@ -233,18 +196,11 @@ contract SystemUnitTest is Test {
         core.grantGovernor(address(timelockController));
 
         core.grantMinter(address(grlm));
-        core.grantRateLimitedMinter(address(daipsm));
-        core.grantRateLimitedMinter(address(usdcpsm));
-        core.grantRateLimitedRedeemer(address(daipsm));
-        core.grantRateLimitedRedeemer(address(usdcpsm));
 
         core.grantLocker(address(pcvDepositUsdc));
         core.grantLocker(address(pcvDepositDai));
         core.grantLocker(address(pcvGuardian));
-        core.grantLocker(address(allocator));
         core.grantLocker(address(pcvOracle));
-        core.grantLocker(address(usdcpsm));
-        core.grantLocker(address(daipsm));
         core.grantLocker(address(entry));
         core.grantLocker(address(grlm));
 
@@ -253,24 +209,8 @@ contract SystemUnitTest is Test {
         );
         core.setGlobalReentrancyLock(lock);
 
-        allocator.connectPSM(
-            address(usdcpsm),
-            usdcTargetBalance,
-            usdcDecimalsNormalizer
-        );
-        allocator.connectPSM(
-            address(daipsm),
-            daiTargetBalance,
-            daiDecimalsNormalizer
-        );
-
-        allocator.connectDeposit(address(usdcpsm), address(pcvDepositUsdc));
-        allocator.connectDeposit(address(daipsm), address(pcvDepositDai));
-
         /// top up contracts with tokens for testing
         /// if done after the setting of pcv oracle, balances will be incorrect unless deposit is called
-        dai.mint(address(daipsm), daiTargetBalance);
-        usdc.mint(address(usdcpsm), usdcTargetBalance);
         dai.mint(address(pcvDepositDai), daiTargetBalance);
         usdc.mint(address(pcvDepositUsdc), usdcTargetBalance);
 
@@ -295,8 +235,6 @@ contract SystemUnitTest is Test {
 
         vm.label(address(timelockController), "Timelock Controller");
         vm.label(address(entry), "entry");
-        vm.label(address(daipsm), "daipsm");
-        vm.label(address(usdcpsm), "usdcpsm");
         vm.label(address(pcvDepositDai), "pcvDepositDai");
         vm.label(address(pcvDepositUsdc), "pcvDepositUsdc");
         vm.label(address(this), "address this");
@@ -305,10 +243,6 @@ contract SystemUnitTest is Test {
     }
 
     function testSetup() public {
-        assertTrue(core.isLocker(address(usdcpsm)));
-        assertTrue(core.isLocker(address(daipsm)));
-        assertTrue(core.isLocker(address(allocator)));
-
         assertTrue(
             !timelockController.hasRole(
                 timelockController.TIMELOCK_ADMIN_ROLE(),
@@ -375,50 +309,16 @@ contract SystemUnitTest is Test {
         );
 
         assertTrue(core.isMinter(address(grlm)));
-        assertTrue(core.isRateLimitedMinter(address(usdcpsm)));
-        assertTrue(core.isRateLimitedMinter(address(daipsm)));
 
         assertEq(address(core.globalRateLimitedMinter()), address(grlm));
 
         assertTrue(pcvGuardian.isWhitelistAddress(address(pcvDepositDai)));
         assertTrue(pcvGuardian.isWhitelistAddress(address(pcvDepositUsdc)));
-        assertTrue(pcvGuardian.isWhitelistAddress(address(usdcpsm)));
-        assertTrue(pcvGuardian.isWhitelistAddress(address(daipsm)));
 
         assertEq(pcvGuardian.safeAddress(), address(timelockController));
         assertEq(oracle.monthlyChangeRate(), monthlyChangeRate);
 
-        {
-            (
-                address psmToken,
-                uint248 psmTargetBalance,
-                int8 decimalsNormalizer
-            ) = allocator.allPSMs(address(usdcpsm));
-            address psmAddress = allocator.pcvDepositToPSM(
-                address(pcvDepositUsdc)
-            );
-            assertEq(psmTargetBalance, usdcTargetBalance);
-            assertEq(decimalsNormalizer, usdcDecimalsNormalizer);
-            assertEq(psmAddress, address(usdcpsm));
-            assertEq(psmToken, address(usdc));
-        }
-        {
-            (
-                address psmToken,
-                uint248 psmTargetBalance,
-                int8 decimalsNormalizer
-            ) = allocator.allPSMs(address(daipsm));
-            address psmAddress = allocator.pcvDepositToPSM(
-                address(pcvDepositDai)
-            );
-            assertEq(psmTargetBalance, daiTargetBalance);
-            assertEq(decimalsNormalizer, daiDecimalsNormalizer);
-            assertEq(psmAddress, address(daipsm));
-            assertEq(psmToken, address(dai));
-        }
-
         assertTrue(core.isPCVController(address(pcvGuardian)));
-        assertTrue(core.isPCVController(address(allocator)));
 
         assertTrue(core.isGovernor(address(timelockController)));
         assertTrue(core.isGovernor(address(core)));
@@ -437,8 +337,6 @@ contract SystemUnitTest is Test {
         entry.deposit(address(pcvDepositUsdc));
         vm.startPrank(addresses.userAddress);
 
-        pcvGuardian.withdrawAllToSafeAddress(address(daipsm));
-        pcvGuardian.withdrawAllToSafeAddress(address(usdcpsm));
         pcvGuardian.withdrawAllToSafeAddress(address(pcvDepositDai));
         pcvGuardian.withdrawAllToSafeAddress(address(pcvDepositUsdc));
 
@@ -454,106 +352,7 @@ contract SystemUnitTest is Test {
         );
 
         assertEq(dai.balanceOf(address(pcvDepositDai)), 0);
-        assertEq(dai.balanceOf(address(daipsm)), 0);
-
         assertEq(usdc.balanceOf(address(pcvDepositUsdc)), 0);
-        assertEq(usdc.balanceOf(address(usdcpsm)), 0);
-    }
-
-    function testMintRedeemSamePriceLosesMoneyDai(uint128 mintAmount) public {
-        vm.assume(mintAmount != 0);
-
-        uint256 voltAmountOut = daipsm.getMintAmountOut(mintAmount);
-
-        vm.assume(voltAmountOut <= grlm.buffer());
-
-        uint256 startingBuffer = grlm.buffer();
-        assertEq(volt.balanceOf(address(this)), 0);
-        dai.mint(address(this), mintAmount);
-        uint256 startingBalance = dai.balanceOf(address(this));
-
-        dai.approve(address(daipsm), mintAmount);
-        daipsm.mint(address(this), mintAmount, voltAmountOut);
-
-        uint256 bufferAfterMint = grlm.buffer();
-
-        assertEq(startingBuffer - voltAmountOut, bufferAfterMint);
-
-        uint256 voltBalance = volt.balanceOf(address(this));
-        uint256 underlyingAmountOut = daipsm.getRedeemAmountOut(voltBalance);
-        uint256 userStartingUnderlyingBalance = dai.balanceOf(address(this));
-
-        volt.approve(address(daipsm), voltBalance);
-        daipsm.redeem(address(this), voltBalance, underlyingAmountOut);
-
-        uint256 userEndingUnderlyingBalance = dai.balanceOf(address(this));
-        uint256 bufferAfterRedeem = grlm.buffer();
-
-        uint256 endingBalance = dai.balanceOf(address(this));
-
-        assertEq(bufferAfterRedeem - voltBalance, bufferAfterMint); /// assert buffer
-        assertEq(
-            userEndingUnderlyingBalance - underlyingAmountOut,
-            userStartingUnderlyingBalance
-        );
-        assertTrue(startingBalance >= endingBalance);
-        assertEq(volt.balanceOf(address(daipsm)), 0);
-        assertEq(startingBuffer, bufferAfterRedeem);
-    }
-
-    function testMintRedeemSamePriceLosesOrBreaksEvenDaiNonFuzz() public {
-        uint128 mintAmount = 1_000e18;
-
-        uint256 voltAmountOut = daipsm.getMintAmountOut(mintAmount);
-        volt.mint(address(daipsm), voltAmountOut);
-
-        assertEq(volt.balanceOf(address(this)), 0);
-        dai.mint(address(this), mintAmount);
-        uint256 startingBalance = dai.balanceOf(address(this));
-
-        dai.approve(address(daipsm), mintAmount);
-        daipsm.mint(address(this), mintAmount, voltAmountOut);
-
-        uint256 voltBalance = volt.balanceOf(address(this));
-        volt.approve(address(daipsm), voltBalance);
-        daipsm.redeem(address(this), voltBalance, 0);
-
-        uint256 endingBalance = dai.balanceOf(address(this));
-
-        assertTrue(startingBalance >= endingBalance);
-
-        assertEq(volt.balanceOf(address(daipsm)), voltAmountOut);
-    }
-
-    function testMintRedeemSamePriceLosesOrBreaksEvenUsdc(
-        uint80 mintAmount
-    ) public {
-        vm.assume(mintAmount != 0);
-
-        uint256 voltAmountOut = usdcpsm.getMintAmountOut(mintAmount);
-        vm.assume(voltAmountOut <= grlm.buffer()); /// avoid rate limit hit error
-
-        assertEq(volt.balanceOf(address(this)), 0);
-        usdc.mint(address(this), mintAmount);
-        uint256 startingBalance = usdc.balanceOf(address(this));
-        uint256 startingBuffer = grlm.buffer();
-
-        usdc.approve(address(usdcpsm), mintAmount);
-        usdcpsm.mint(address(this), mintAmount, voltAmountOut);
-
-        uint256 bufferAfterMint = grlm.buffer();
-        assertEq(bufferAfterMint + voltAmountOut, startingBuffer);
-
-        uint256 voltBalance = volt.balanceOf(address(this));
-        volt.approve(address(usdcpsm), voltBalance);
-        usdcpsm.redeem(address(this), voltBalance, 0);
-
-        uint256 bufferAfterRedeem = grlm.buffer();
-        uint256 endingBalance = usdc.balanceOf(address(this));
-
-        assertEq(bufferAfterRedeem, startingBuffer);
-        assertTrue(startingBalance >= endingBalance);
-        assertEq(volt.balanceOf(address(usdcpsm)), 0);
     }
 
     function _emergencyPause() private {
@@ -563,32 +362,6 @@ contract SystemUnitTest is Test {
         assertEq(lock.lockLevel(), 2);
         assertTrue(lock.isLocked());
         assertTrue(!lock.isUnlocked());
-    }
-
-    function testPsmFailureOnSystemEmergencyPause() public {
-        _emergencyPause();
-
-        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
-        usdcpsm.mint(address(this), 0, 0);
-
-        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
-        usdcpsm.redeem(address(this), 0, 0);
-
-        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
-        daipsm.mint(address(this), 0, 0);
-
-        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
-        daipsm.redeem(address(this), 0, 0);
-    }
-
-    function testAllocatorFailureOnSystemEmergencyPause() public {
-        _emergencyPause();
-
-        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
-        allocator.drip(address(pcvDepositDai));
-
-        vm.expectRevert("GlobalReentrancyLock: invalid lock level");
-        allocator.skim(address(pcvDepositDai));
     }
 
     function testPcvGuardianFailureOnSystemEmergencyPause() public {
@@ -708,9 +481,6 @@ contract SystemUnitTest is Test {
             "",
             bytes4(keccak256("updateP2PIndexes(address)"))
         );
-
-        vm.prank(addresses.governorAddress);
-        allocator.connectDeposit(address(usdcpsm), address(deposit));
 
         vm.expectRevert("GlobalReentrancyLock: invalid lock level");
         entry.accrue(address(deposit));

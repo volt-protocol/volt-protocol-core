@@ -1,16 +1,16 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.8.13;
 
-import {Addresses} from "@test/proposals/Addresses.sol";
-import {TimelockProposal} from "@test/proposals/proposalTypes/TimelockProposal.sol";
-
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
 import {Core} from "@voltprotocol/v1/Core.sol";
+import {Addresses} from "@test/proposals/Addresses.sol";
+import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
 import {PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
-import {ERC20Allocator} from "@voltprotocol/pcv/ERC20Allocator.sol";
-import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
+import {IERC20Allocator} from "@voltprotocol/pcv/IERC20Allocator.sol";
+import {NonCustodialPSM} from "@voltprotocol/peg/NonCustodialPSM.sol";
+import {TimelockProposal} from "@test/proposals/proposalTypes/TimelockProposal.sol";
 
 /*
 VIP15 deprecates the old system and sends all protocol funds to the
@@ -354,13 +354,13 @@ contract vip15 is TimelockProposal {
 
     function validate(Addresses addresses, address /* deployer*/) public {
         Core core = Core(addresses.mainnet("CORE"));
-        PegStabilityModule daiPriceBoundPSM = PegStabilityModule(
+        NonCustodialPSM daiPriceBoundPSM = NonCustodialPSM(
             addresses.mainnet("VOLT_DAI_PSM")
         );
-        PegStabilityModule usdcPriceBoundPSM = PegStabilityModule(
+        NonCustodialPSM usdcPriceBoundPSM = NonCustodialPSM(
             addresses.mainnet("VOLT_USDC_PSM")
         );
-        ERC20Allocator allocator = ERC20Allocator(
+        IERC20Allocator allocator = IERC20Allocator(
             addresses.mainnet("ERC20ALLOCATOR")
         );
         PCVDeposit daiDeposit = PCVDeposit(
@@ -416,7 +416,7 @@ contract vip15 is TimelockProposal {
         assertTrue(daiDeposit.paused());
         assertTrue(usdcDeposit.paused());
 
-        assertTrue(allocator.paused());
+        assertTrue(CoreRefV2(address(allocator)).paused());
 
         /// pcv deposits
         assertTrue(daiDeposit.balance() < 1e18); /// less than $1 left in Morpho

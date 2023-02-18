@@ -8,7 +8,6 @@ import {ICoreV2} from "@voltprotocol/core/ICoreV2.sol";
 import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {PermissionsV2} from "@voltprotocol/core/PermissionsV2.sol";
 import {IGlobalRateLimitedMinter} from "@voltprotocol/rate-limits/IGlobalRateLimitedMinter.sol";
-import {IGlobalSystemExitRateLimiter} from "@voltprotocol/rate-limits/IGlobalSystemExitRateLimiter.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
 
 /// @title Source of truth for VOLT Protocol
@@ -23,9 +22,6 @@ contract CoreV2 is ICoreV2, PermissionsV2 {
 
     /// @notice address of the global rate limited minter
     IGlobalRateLimitedMinter public globalRateLimitedMinter;
-
-    /// @notice address of the global system exit rate limiter
-    IGlobalSystemExitRateLimiter public globalSystemExitRateLimiter;
 
     /// @notice address of the pcv oracle
     IPCVOracle public pcvOracle;
@@ -81,20 +77,6 @@ contract CoreV2 is ICoreV2, PermissionsV2 {
         pcvOracle = newPCVOracle;
 
         emit PCVOracleUpdate(oldPCVOracle, address(newPCVOracle));
-    }
-
-    /// @notice governor only function to set the Global Rate Limited Minter
-    /// @param newGlobalSystemExitRateLimiter new volt global rate limited minter
-    function setGlobalSystemExitRateLimiter(
-        IGlobalSystemExitRateLimiter newGlobalSystemExitRateLimiter
-    ) external onlyGovernor {
-        address oldGserl = address(globalSystemExitRateLimiter);
-        globalSystemExitRateLimiter = newGlobalSystemExitRateLimiter;
-
-        emit GlobalSystemExitRateLimiterUpdate(
-            oldGserl,
-            address(newGlobalSystemExitRateLimiter)
-        );
     }
 
     /// @notice governor only function to set the Global Reentrancy Lock

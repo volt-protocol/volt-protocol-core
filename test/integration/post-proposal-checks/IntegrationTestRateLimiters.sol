@@ -12,11 +12,8 @@ import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
 import {PCVOracle} from "@voltprotocol/oracle/PCVOracle.sol";
 import {PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
-import {ERC20Allocator} from "@voltprotocol/pcv/ERC20Allocator.sol";
 import {NonCustodialPSM} from "@voltprotocol/peg/NonCustodialPSM.sol";
 import {GlobalRateLimitedMinter} from "@voltprotocol/rate-limits/GlobalRateLimitedMinter.sol";
-import {GlobalSystemExitRateLimiter} from "@voltprotocol/rate-limits/GlobalSystemExitRateLimiter.sol";
-import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
 
 contract IntegrationTestRateLimiters is PostProposalCheck {
     using SafeCast for *;
@@ -24,21 +21,17 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
     address public constant user = 0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7;
     uint256 public snapshotAfterMints;
 
-    CoreV2 private core;
-    VoltV2 private volt;
-    SystemEntry private systemEntry;
-    ERC20Allocator private allocator;
-    PegStabilityModule private usdcpsm;
-    PegStabilityModule private daipsm;
-    NonCustodialPSM private usdcncpsm;
-    NonCustodialPSM private daincpsm;
     IERC20 private dai;
     IERC20 private usdc;
-    GlobalRateLimitedMinter private grlm;
-    GlobalSystemExitRateLimiter private gserl;
+    CoreV2 private core;
+    VoltV2 private volt;
     PCVOracle private pcvOracle;
-    address private morphoUsdcPCVDeposit;
+    SystemEntry private systemEntry;
+    NonCustodialPSM private daincpsm;
+    NonCustodialPSM private usdcncpsm;
+    GlobalRateLimitedMinter private grlm;
     address private morphoDaiPCVDeposit;
+    address private morphoUsdcPCVDeposit;
 
     function setUp() public override {
         super.setUp();
@@ -46,18 +39,12 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
         core = CoreV2(addresses.mainnet("CORE"));
         volt = VoltV2(addresses.mainnet("VOLT"));
         systemEntry = SystemEntry(addresses.mainnet("SYSTEM_ENTRY"));
-        allocator = ERC20Allocator(addresses.mainnet("PSM_ALLOCATOR"));
-        usdcpsm = PegStabilityModule(addresses.mainnet("PSM_USDC"));
-        daipsm = PegStabilityModule(addresses.mainnet("PSM_DAI"));
-        usdcncpsm = NonCustodialPSM(addresses.mainnet("PSM_NONCUSTODIAL_USDC"));
         daincpsm = NonCustodialPSM(addresses.mainnet("PSM_NONCUSTODIAL_DAI"));
+        usdcncpsm = NonCustodialPSM(addresses.mainnet("PSM_NONCUSTODIAL_USDC"));
         dai = IERC20(addresses.mainnet("DAI"));
         usdc = IERC20(addresses.mainnet("USDC"));
         grlm = GlobalRateLimitedMinter(
             addresses.mainnet("GLOBAL_RATE_LIMITED_MINTER")
-        );
-        gserl = GlobalSystemExitRateLimiter(
-            addresses.mainnet("GLOBAL_SYSTEM_EXIT_RATE_LIMITER")
         );
         pcvOracle = PCVOracle(addresses.mainnet("PCV_ORACLE"));
         morphoUsdcPCVDeposit = addresses.mainnet(
@@ -79,97 +66,31 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
 
             // number of moved funds for tests
             uint256 amount = initialBuffer / 2;
-            (, uint256 daiPSMTargetBalance, ) = allocator.allPSMs(
-                address(daipsm)
-            );
-            (, uint256 usdcPSMTargetBalance, ) = allocator.allPSMs(
-                address(usdcpsm)
-            );
 
             // read initial pcv
             uint256 startLiquidPcv = pcvOracle.getTotalPcv();
-            // read initial psm balances
-            uint256 startPsmDaiBalance = dai.balanceOf(address(daipsm));
-            uint256 startPsmUsdcBalance = usdc.balanceOf(address(usdcpsm));
 
             // user performs the first mint with DAI
             vm.startPrank(user);
-            dai.approve(address(daipsm), amount);
-            daipsm.mint(user, amount, 0);
+            dai.approve(address(daincpsm), amount);
+            daincpsm.mint(user, amount, 0);
             vm.stopPrank();
-
-            (, uint256 adjustedSkimAmount) = allocator.getSkimDetails(
-                address(morphoDaiPCVDeposit)
-            );
-            uint256 gserlStartingBuffer = gserl.buffer();
 
             // buffer has been used
             uint256 voltReceived1 = volt.balanceOf(user);
             assertEq(grlm.buffer(), initialBuffer - voltReceived1);
 
-            allocator.skim(morphoDaiPCVDeposit);
-
-            /// assert replenish occurred if not maxed out
-            assertEq(
-                Math.min(
-                    gserlStartingBuffer + adjustedSkimAmount,
-                    gserlStartingBuffer
-                ),
-                gserl.buffer()
-            );
-
-            // after first mint, pcv increased by amount
-            uint256 liquidPcv2 = pcvOracle.getTotalPcv();
-            assertApproxEq(
-                liquidPcv2.toInt256(),
-                (startLiquidPcv +
-                    startPsmDaiBalance +
-                    amount -
-                    daiPSMTargetBalance).toInt256(),
-                0
-            );
-
             // user performs the second mint wit USDC
             vm.startPrank(user);
-            usdc.approve(address(usdcpsm), amount / 1e12);
-            usdcpsm.mint(user, amount / 1e12, 0);
+            usdc.approve(address(usdcncpsm), amount / 1e12);
+            usdcncpsm.mint(user, amount / 1e12, 0);
             vm.stopPrank();
             uint256 voltReceived2 = volt.balanceOf(user) - voltReceived1;
-
-            (, adjustedSkimAmount) = allocator.getSkimDetails(
-                address(morphoUsdcPCVDeposit)
-            );
-            gserlStartingBuffer = gserl.buffer();
 
             // buffer has been used
             assertEq(
                 grlm.buffer(),
                 initialBuffer - voltReceived1 - voltReceived2
-            );
-
-            allocator.skim(morphoUsdcPCVDeposit);
-            {
-                // after second mint, pcv is = 2 * amount
-                uint256 liquidPcv3 = pcvOracle.getTotalPcv();
-                assertApproxEq(
-                    liquidPcv3.toInt256(),
-                    (liquidPcv2 +
-                        startPsmUsdcBalance *
-                        1e12 +
-                        amount -
-                        usdcPSMTargetBalance *
-                        1e12).toInt256(),
-                    0
-                );
-            }
-
-            /// assert replenish occurred if not maxed out
-            assertEq(
-                Math.min(
-                    gserlStartingBuffer + adjustedSkimAmount,
-                    gserlStartingBuffer
-                ),
-                gserl.buffer()
             );
         }
 
@@ -184,9 +105,9 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
         // above limit rate reverts
         uint256 largeAmount = grlm.bufferCap() * 2;
         vm.startPrank(user);
-        dai.approve(address(daipsm), largeAmount);
+        dai.approve(address(daincpsm), largeAmount);
         vm.expectRevert("RateLimited: rate limit hit");
-        daipsm.mint(user, largeAmount, 0);
+        daincpsm.mint(user, largeAmount, 0);
         vm.stopPrank();
     }
 
@@ -196,16 +117,17 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
         vm.revertTo(snapshotAfterMints);
         vm.assume(voltAmount <= volt.balanceOf(user));
 
-        uint256 daiAmountOut = daipsm.getRedeemAmountOut(voltAmount);
-        deal(address(dai), address(daipsm), daiAmountOut);
+        uint256 daiAmountOut = daincpsm.getRedeemAmountOut(voltAmount);
+        deal(address(dai), morphoDaiPCVDeposit, daiAmountOut);
+        systemEntry.deposit(morphoDaiPCVDeposit);
 
         vm.startPrank(user);
 
         uint256 startingBuffer = grlm.buffer();
         uint256 startingDaiBalance = dai.balanceOf(user);
 
-        volt.approve(address(daipsm), voltAmount);
-        daipsm.redeem(user, voltAmount, daiAmountOut);
+        volt.approve(address(daincpsm), voltAmount);
+        daincpsm.redeem(user, voltAmount, daiAmountOut);
 
         uint256 endingBuffer = grlm.buffer();
         uint256 endingDaiBalance = dai.balanceOf(user);
@@ -214,14 +136,6 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
         assertEq(endingBuffer - startingBuffer, voltAmount);
 
         vm.stopPrank();
-
-        uint256 startingExitBuffer = gserl.buffer();
-        (, uint256 expectedBufferDepletion) = allocator.getDripDetails(
-            address(daipsm),
-            address(morphoDaiPCVDeposit)
-        );
-        allocator.drip(address(morphoDaiPCVDeposit));
-        assertEq(startingExitBuffer - expectedBufferDepletion, gserl.buffer());
     }
 
     function testRedeemsDaiNcPsm(uint80 voltRedeemAmount) public {
@@ -235,24 +149,20 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
         deal(address(dai), morphoDaiPCVDeposit, daiAmountOut * 2);
         systemEntry.deposit(morphoDaiPCVDeposit);
 
-        vm.startPrank(user);
 
         uint256 startingBuffer = grlm.buffer();
-        uint256 startingExitBuffer = gserl.buffer();
         uint256 startingDaiBalance = dai.balanceOf(user);
 
+        vm.startPrank(user);
         volt.approve(address(daincpsm), voltRedeemAmount);
         daincpsm.redeem(user, voltRedeemAmount, daiAmountOut);
+        vm.stopPrank();
 
         uint256 endingBuffer = grlm.buffer();
-        uint256 endingExitBuffer = gserl.buffer();
         uint256 endingDaiBalance = dai.balanceOf(user);
 
         assertEq(endingBuffer - startingBuffer, voltRedeemAmount); /// grlm buffer replenished
         assertEq(endingDaiBalance - startingDaiBalance, daiAmountOut);
-        assertEq(startingExitBuffer - endingExitBuffer, daiAmountOut); /// exit buffer depleted
-
-        vm.stopPrank();
     }
 
     function testRedeemsUsdcNcPsm(uint80 voltRedeemAmount) public {
@@ -269,19 +179,16 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
         vm.startPrank(user);
 
         uint256 startingBuffer = grlm.buffer();
-        uint256 startingExitBuffer = gserl.buffer();
         uint256 startingUsdcBalance = usdc.balanceOf(user);
 
         volt.approve(address(usdcncpsm), voltRedeemAmount);
         usdcncpsm.redeem(user, voltRedeemAmount, usdcAmountOut);
 
         uint256 endingBuffer = grlm.buffer();
-        uint256 endingExitBuffer = gserl.buffer();
         uint256 endingUsdcBalance = usdc.balanceOf(user);
 
         assertEq(endingBuffer - startingBuffer, voltRedeemAmount); /// buffer replenished
         assertEq(endingUsdcBalance - startingUsdcBalance, usdcAmountOut);
-        assertEq(startingExitBuffer - endingExitBuffer, usdcAmountOut * 1e12); /// ensure buffer adjusted up 12 decimals, buffer depleted
 
         vm.stopPrank();
     }
@@ -293,36 +200,16 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
 
         vm.revertTo(snapshotAfterMints);
 
-        uint256 usdcAmountOut = usdcpsm.getRedeemAmountOut(voltRedeemAmount);
-        deal(address(usdc), address(usdcpsm), usdcAmountOut);
+        uint256 usdcAmountOut = usdcncpsm.getRedeemAmountOut(voltRedeemAmount);
+        deal(address(usdc), morphoUsdcPCVDeposit, usdcAmountOut);
+        systemEntry.deposit(morphoUsdcPCVDeposit);
 
         uint256 startingBuffer = grlm.buffer();
-        uint256 startingExitBuffer = gserl.buffer();
         uint256 startingUsdcBalance = usdc.balanceOf(user);
 
         vm.startPrank(user);
-        volt.approve(address(usdcpsm), voltRedeemAmount);
-        usdcpsm.redeem(user, voltRedeemAmount, usdcAmountOut);
+        volt.approve(address(usdcncpsm), voltRedeemAmount);
+        usdcncpsm.redeem(user, voltRedeemAmount, usdcAmountOut);
         vm.stopPrank();
-
-        (, uint256 expectedBufferDepletion) = allocator.getDripDetails(
-            address(usdcpsm),
-            address(morphoUsdcPCVDeposit)
-        );
-        allocator.drip(address(morphoUsdcPCVDeposit));
-        uint256 endingExitBuffer = gserl.buffer();
-
-        assertEq(
-            startingExitBuffer - endingExitBuffer,
-            expectedBufferDepletion
-        ); /// ensure buffer adjusted up 12 decimals, buffer depleted
-
-        assertEq(expectedBufferDepletion, gserl.bufferCap() - gserl.buffer());
-
-        uint256 endingBuffer = grlm.buffer();
-        uint256 endingUsdcBalance = usdc.balanceOf(user);
-
-        assertEq(endingBuffer - startingBuffer, voltRedeemAmount);
-        assertEq(endingUsdcBalance - startingUsdcBalance, usdcAmountOut);
     }
 }

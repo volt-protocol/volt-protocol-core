@@ -18,12 +18,10 @@ import {IPCVDepositV2} from "@voltprotocol/pcv/IPCVDepositV2.sol";
 import {NonCustodialPSM} from "@voltprotocol/peg/NonCustodialPSM.sol";
 import {MockPCVDepositV3} from "@test/mock/MockPCVDepositV3.sol";
 import {VoltSystemOracle} from "@voltprotocol/oracle/VoltSystemOracle.sol";
-import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
 import {getCoreV2, getVoltSystemOracle} from "@test/unit/utils/Fixtures.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "@voltprotocol/rate-limits/GlobalRateLimitedMinter.sol";
-import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "@voltprotocol/rate-limits/GlobalSystemExitRateLimiter.sol";
 
 /// deployment steps
 /// 1. core v2
@@ -68,9 +66,7 @@ contract NonCustodialPSMUnitTest is Test {
     NonCustodialPSM private psm;
     VoltSystemOracle private oracle;
     GlobalRateLimitedMinter private grlm;
-    GlobalSystemExitRateLimiter private gserl;
     MockPCVDepositV3 private pcvDeposit;
-    PegStabilityModule private custodialPsm;
     IGlobalReentrancyLock private lock;
 
     address private voltAddress;
@@ -88,10 +84,10 @@ contract NonCustodialPSMUnitTest is Test {
     uint256 public constant maxRateLimitPerSecondMinting = 100e18;
 
     /// replenish 500k VOLT per day
-    uint128 public constant rateLimitPerSecondMinting = 5.787e18;
+    uint64 public constant rateLimitPerSecondMinting = 5.787e18;
 
     /// buffer cap of 1.5m VOLT
-    uint128 public constant bufferCapMinting = 1_500_000e18;
+    uint96 public constant bufferCapMinting = 1_500_000e18;
 
     /// ---------- ALLOCATOR PARAMS ----------
 
@@ -148,45 +144,20 @@ contract NonCustodialPSMUnitTest is Test {
             IPCVDepositV2(address(pcvDeposit))
         );
 
-        custodialPsm = new PegStabilityModule(
-            coreAddress,
-            address(oracle),
-            address(0),
-            0,
-            false,
-            dai,
-            voltFloorPrice,
-            voltCeilingPrice
-        );
-
-        gserl = new GlobalSystemExitRateLimiter(
-            coreAddress,
-            maxRateLimitPerSecond,
-            rateLimitPerSecond,
-            bufferCap
-        );
-
         vm.startPrank(addresses.governorAddress);
 
         core.grantPCVController(address(psm));
         core.grantMinter(address(grlm));
 
-        core.grantSystemExitRateLimitDepleter(address(psm));
-        core.grantRateLimitedRedeemer(address(psm));
-        core.grantRateLimitedRedeemer(address(custodialPsm));
+        core.grantPsmMinter(address(psm));
 
         core.grantLocker(address(entry));
         core.grantLocker(address(psm));
-        core.grantLocker(address(custodialPsm));
         core.grantLocker(address(pcvDeposit));
         core.grantLocker(address(grlm));
-        core.grantLocker(address(gserl));
 
         core.setGlobalRateLimitedMinter(
             IGlobalRateLimitedMinter(address(grlm))
-        );
-        core.setGlobalSystemExitRateLimiter(
-            IGlobalSystemExitRateLimiter(address(gserl))
         );
         core.setGlobalReentrancyLock(lock);
 
@@ -194,7 +165,6 @@ contract NonCustodialPSMUnitTest is Test {
 
         /// top up contracts with tokens for testing
         dai.mint(address(pcvDeposit), daiTargetBalance);
-        dai.mint(address(custodialPsm), daiTargetBalance);
         entry.deposit(address(pcvDeposit));
 
         vm.label(address(psm), "psm");
@@ -206,8 +176,7 @@ contract NonCustodialPSMUnitTest is Test {
         assertTrue(core.isLocker(address(psm)));
 
         assertTrue(core.isMinter(address(grlm)));
-        assertTrue(!core.isRateLimitedMinter(address(psm)));
-        assertTrue(core.isRateLimitedRedeemer(address(psm)));
+        assertTrue(core.isPsmMinter(address(psm)));
         assertTrue(core.isPCVController(address(psm)));
 
         assertEq(address(core.globalRateLimitedMinter()), address(grlm));
@@ -218,18 +187,10 @@ contract NonCustodialPSMUnitTest is Test {
         assertEq(address(psm.pcvDeposit()), address(pcvDeposit));
         assertEq(psm.decimalsNormalizer(), 0);
         assertEq(address(psm.underlyingToken()), address(dai));
-
-        assertEq(
-            address(psm.underlyingToken()),
-            address(custodialPsm.underlyingToken())
-        );
-        assertEq(psm.decimalsNormalizer(), custodialPsm.decimalsNormalizer());
-        assertEq(psm.ceiling(), custodialPsm.ceiling());
-        assertEq(psm.floor(), custodialPsm.floor());
     }
 
     function testGetMaxRedeemAmountIn() public {
-        uint256 buffer = gserl.buffer();
+        uint256 buffer = grlm.buffer();
         uint256 oraclePrice = psm.readOracle();
 
         uint256 pcvDepositBalance = pcvDeposit.balance();
@@ -328,10 +289,6 @@ contract NonCustodialPSMUnitTest is Test {
             amountOut.toInt256(),
             0
         );
-        assertEq(
-            psm.getRedeemAmountOut(amountVoltIn).toInt256(),
-            custodialPsm.getRedeemAmountOut(amountVoltIn).toInt256()
-        );
         assertApproxEqPpq(
             psm.getRedeemAmountOut(amountVoltIn).toInt256(),
             amountOut.toInt256(),
@@ -343,7 +300,7 @@ contract NonCustodialPSMUnitTest is Test {
         vm.assume(redeemAmount != 0);
         uint256 amountOut;
 
-        {
+
             uint256 voltBalance = volt.balanceOf(address(this));
             uint256 underlyingAmountOut = psm.getRedeemAmountOut(voltBalance);
             uint256 userStartingUnderlyingBalance = dai.balanceOf(
@@ -357,7 +314,7 @@ contract NonCustodialPSMUnitTest is Test {
                 underlyingAmountOut,
                 psm.redeem(address(this), voltBalance, underlyingAmountOut)
             );
-            assertEq(bufferCap - underlyingAmountOut, gserl.buffer());
+            assertEq(bufferCap - underlyingAmountOut, grlm.buffer());
 
             uint256 depositEndingUnderlyingBalance = pcvDeposit.balance();
             uint256 userEndingUnderlyingBalance = dai.balanceOf(address(this));
@@ -380,54 +337,6 @@ contract NonCustodialPSMUnitTest is Test {
                 userStartingUnderlyingBalance
             );
             assertEq(volt.balanceOf(address(psm)), 0);
-        }
-        {
-            uint256 voltBalance = volt.balanceOf(address(this));
-            uint256 underlyingAmountOut = custodialPsm.getRedeemAmountOut(
-                voltBalance
-            );
-            uint256 userStartingUnderlyingBalance = dai.balanceOf(
-                address(this)
-            );
-            uint256 depositStartingUnderlyingBalance = custodialPsm.balance();
-
-            volt.approve(address(psm), voltBalance);
-            assertEq(
-                underlyingAmountOut,
-                custodialPsm.redeem(
-                    address(this),
-                    voltBalance,
-                    underlyingAmountOut
-                )
-            );
-
-            uint256 depositEndingUnderlyingBalance = custodialPsm.balance();
-            uint256 userEndingUnderlyingBalance = dai.balanceOf(address(this));
-            uint256 bufferAfterRedeem = grlm.buffer();
-
-            uint256 endingBalance = dai.balanceOf(address(this));
-
-            assertEq(endingBalance, underlyingAmountOut);
-
-            assertEq(
-                depositStartingUnderlyingBalance -
-                    depositEndingUnderlyingBalance,
-                underlyingAmountOut
-            );
-
-            assertEq(bufferAfterRedeem, grlm.bufferCap());
-            assertEq(bufferAfterRedeem, grlm.buffer());
-            assertEq(
-                userEndingUnderlyingBalance - underlyingAmountOut,
-                userStartingUnderlyingBalance
-            );
-            assertEq(
-                userEndingUnderlyingBalance - userStartingUnderlyingBalance,
-                amountOut
-            );
-            assertEq(volt.balanceOf(address(psm)), 0);
-            assertEq(amountOut, underlyingAmountOut);
-        }
     }
 
     function testRedeemDifferentialSucceeds(uint128 redeemAmount) public {
@@ -457,7 +366,7 @@ contract NonCustodialPSMUnitTest is Test {
             underlyingAmountOut
         );
 
-        assertEq(bufferCap - underlyingAmountOut, gserl.buffer());
+        assertEq(bufferCap - underlyingAmountOut, grlm.buffer());
 
         assertEq(bufferAfterRedeem, grlm.bufferCap());
         assertEq(bufferAfterRedeem, grlm.buffer());

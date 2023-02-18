@@ -93,40 +93,11 @@ interface IPegStabilityModule {
 
     // ----------- Events -----------
 
-    event Withdrawal(
-        address indexed _caller,
-        address indexed _to,
-        uint256 _amount
-    );
-
-    /// @notice event emitted when erc20 tokens are withdrawn
-    event WithdrawERC20(
-        address indexed _caller,
-        address indexed _token,
-        address indexed _to,
-        uint256 _amount
-    );
-
-    /// @notice event emitted when excess PCV is allocated
-    event AllocateSurplus(address indexed caller, uint256 amount);
-
     /// @notice event emitted upon a redemption
     event Redeem(address to, uint256 amountVoltIn, uint256 amountAssetOut);
 
     /// @notice event emitted when Volt gets minted
     event Mint(address to, uint256 amountIn, uint256 amountVoltOut);
-
-    /// @notice event that is emitted when redemptions are paused
-    event RedemptionsPaused(address account);
-
-    /// @notice event that is emitted when redemptions are unpaused
-    event RedemptionsUnpaused(address account);
-
-    /// @notice event that is emitted when minting is paused
-    event MintingPaused(address account);
-
-    /// @notice event that is emitted when minting is unpaused
-    event MintingUnpaused(address account);
 
     /// @notice event emitted when minimum floor price is updated
     event OracleFloorUpdate(uint128 oldFloor, uint128 newFloor);

@@ -4,12 +4,13 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
+import {console} from "@forge-std/console.sol";
+
 import {Vm} from "@forge-std/Vm.sol";
 import {Test} from "@forge-std/Test.sol";
 import {ICoreV2} from "@voltprotocol/core/ICoreV2.sol";
 import {PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
-import {ERC20Allocator} from "@voltprotocol/pcv/ERC20Allocator.sol";
 import {MockRateLimitedV2} from "@test/mock/MockRateLimitedV2.sol";
 import {ERC20HoldingPCVDeposit} from "@test/mock/ERC20HoldingPCVDeposit.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
@@ -40,13 +41,13 @@ contract UnitTestRateLimitedV2 is Test {
     ICoreV2 private core;
 
     /// @notice maximum rate limit per second in RateLimitedV2
-    uint256 private constant maxRateLimitPerSecond = 1_000_000e18;
+    uint256 private constant maxRateLimitPerSecond = 10e18;
 
     /// @notice rate limit per second in RateLimitedV2
-    uint128 private constant rateLimitPerSecond = 10_000e18;
+    uint64 private constant rateLimitPerSecond = 10e18;
 
     /// @notice buffer cap in RateLimitedV2
-    uint128 private constant bufferCap = 10_000_000e18;
+    uint96 private constant bufferCap = 10_000_000e18;
 
     function setUp() public {
         core = getCoreV2();
@@ -62,7 +63,9 @@ contract UnitTestRateLimitedV2 is Test {
         assertEq(rlm.bufferCap(), bufferCap);
         assertEq(rlm.rateLimitPerSecond(), rateLimitPerSecond);
         assertEq(rlm.MAX_RATE_LIMIT_PER_SECOND(), maxRateLimitPerSecond);
-        assertEq(rlm.buffer(), bufferCap); /// buffer has not been depleted
+        assertEq(rlm.buffer(), bufferCap / 2); /// buffer starts at midpoint
+        assertEq(rlm.midPoint(), bufferCap / 2); /// mid point is buffercap / 2
+        assertEq(rlm.buffer(), rlm.midPoint()); /// buffer starts at midpoint
     }
 
     /// ACL Tests
@@ -73,15 +76,16 @@ contract UnitTestRateLimitedV2 is Test {
     }
 
     function testSetBufferCapGovSucceeds() public {
-        uint256 newBufferCap = 100_000e18;
+        uint96 newBufferCap = 100_000e18;
 
         vm.prank(addresses.governorAddress);
         vm.expectEmit(true, false, false, true, address(rlm));
         emit BufferCapUpdate(bufferCap, newBufferCap);
-        rlm.setBufferCap(newBufferCap.toUint128());
+        rlm.setBufferCap(newBufferCap);
 
         assertEq(rlm.bufferCap(), newBufferCap);
-        assertEq(rlm.buffer(), newBufferCap); /// buffer has not been depleted
+        assertEq(rlm.buffer(), newBufferCap / 2); /// buffer starts at midpoint
+        assertEq(rlm.buffer(), rlm.midPoint());
     }
 
     function testSetRateLimitPerSecondNonGovFails() public {
@@ -92,23 +96,33 @@ contract UnitTestRateLimitedV2 is Test {
     function testSetRateLimitPerSecondAboveMaxFails() public {
         vm.expectRevert("RateLimited: rateLimitPerSecond too high");
         vm.prank(addresses.governorAddress);
-        rlm.setRateLimitPerSecond(maxRateLimitPerSecond.toUint128() + 1);
+        rlm.setRateLimitPerSecond(uint64(maxRateLimitPerSecond + 1));
     }
 
     function testSetRateLimitPerSecondSucceeds() public {
         vm.prank(addresses.governorAddress);
-        rlm.setRateLimitPerSecond(maxRateLimitPerSecond.toUint128());
+        rlm.setRateLimitPerSecond(uint64(maxRateLimitPerSecond));
         assertEq(rlm.rateLimitPerSecond(), maxRateLimitPerSecond);
     }
 
     function testDepleteBufferFailsWhenZeroBuffer() public {
-        rlm.depleteBuffer(bufferCap);
+        rlm.depleteBuffer(rlm.midPoint()); /// fully exhaust buffer
         vm.expectRevert("RateLimited: no rate limit buffer");
         rlm.depleteBuffer(bufferCap);
     }
 
+    function testReplenishBufferFailsWhenAtBufferCap() public {
+        console.log("\nstarting test");
+        rlm.buffer(); /// where are we at?
+        rlm.replenishBuffer(rlm.midPoint()); /// completely fill buffer
+        console.log("\n");
+        rlm.buffer(); /// where are we at?
+        vm.expectRevert("RateLimited: buffer cap overflow");
+        rlm.replenishBuffer(1);
+    }
+
     function testSetRateLimitPerSecondGovSucceeds() public {
-        uint256 newRateLimitPerSecond = 15_000e18;
+        uint256 newRateLimitPerSecond = rateLimitPerSecond - 1;
 
         vm.prank(addresses.governorAddress);
         vm.expectEmit(true, false, false, true, address(rlm));
@@ -116,29 +130,30 @@ contract UnitTestRateLimitedV2 is Test {
             rateLimitPerSecond,
             newRateLimitPerSecond
         );
-        rlm.setRateLimitPerSecond(newRateLimitPerSecond.toUint128());
+        rlm.setRateLimitPerSecond(uint64(newRateLimitPerSecond));
 
         assertEq(rlm.rateLimitPerSecond(), newRateLimitPerSecond);
     }
 
     function testDepleteBuffer(uint128 amountToPull, uint16 warpAmount) public {
-        if (amountToPull > bufferCap) {
+        if (amountToPull > bufferCap / 2) {
             vm.expectRevert("RateLimited: rate limit hit");
             rlm.depleteBuffer(amountToPull);
         } else {
             vm.expectEmit(true, false, false, true, address(rlm));
-            emit BufferUsed(amountToPull, bufferCap - amountToPull);
+            emit BufferUsed(amountToPull, bufferCap / 2 - amountToPull);
             rlm.depleteBuffer(amountToPull);
+
             uint256 endingBuffer = rlm.buffer();
-            assertEq(endingBuffer, bufferCap - amountToPull);
+            assertEq(endingBuffer, bufferCap / 2 - amountToPull);
             assertEq(block.timestamp, rlm.lastBufferUsedTime());
 
             vm.warp(block.timestamp + warpAmount);
 
             uint256 accruedBuffer = warpAmount * rateLimitPerSecond;
-            uint256 expectedBuffer = Math.min(
+            uint256 expectedBuffer = Math.min( /// only accumulate to mid point after depletion
                 endingBuffer + accruedBuffer,
-                bufferCap
+                bufferCap / 2
             );
             assertEq(expectedBuffer, rlm.buffer());
         }
@@ -148,12 +163,12 @@ contract UnitTestRateLimitedV2 is Test {
         uint128 amountToReplenish,
         uint16 warpAmount
     ) public {
-        rlm.depleteBuffer(bufferCap); /// fully exhaust buffer
+        rlm.depleteBuffer(bufferCap / 2); /// fully exhaust buffer
         assertEq(rlm.buffer(), 0);
 
         uint256 actualAmountToReplenish = Math.min(
             amountToReplenish,
-            bufferCap
+            bufferCap / 2
         );
         vm.expectEmit(true, false, false, true, address(rlm));
         emit BufferReplenished(amountToReplenish, actualAmountToReplenish);
@@ -167,7 +182,7 @@ contract UnitTestRateLimitedV2 is Test {
         uint256 accruedBuffer = warpAmount * rateLimitPerSecond;
         uint256 expectedBuffer = Math.min(
             amountToReplenish + accruedBuffer,
-            bufferCap
+            bufferCap / 2
         );
         assertEq(expectedBuffer, rlm.buffer());
     }

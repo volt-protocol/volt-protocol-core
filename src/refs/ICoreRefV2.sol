@@ -8,7 +8,6 @@ import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {IVolt, IVoltBurn} from "@voltprotocol/volt/IVolt.sol";
 import {IGlobalReentrancyLock} from "@voltprotocol/core/IGlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter} from "@voltprotocol/rate-limits/IGlobalRateLimitedMinter.sol";
-import {IGlobalSystemExitRateLimiter} from "@voltprotocol/rate-limits/IGlobalSystemExitRateLimiter.sol";
 
 /// @title CoreRef interface
 /// @author Volt Protocol

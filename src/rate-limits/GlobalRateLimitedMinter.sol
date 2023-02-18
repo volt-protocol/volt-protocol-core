@@ -13,6 +13,7 @@ import {RateLimitedV2} from "@voltprotocol/utils/RateLimitedV2.sol";
 /// Peg Stability Modules will be granted the RATE_LIMIT_SYSTEM_ENTRY_REPLENISH_ROLE to replenish
 /// this contract's on a global rate limit when burning Volt.
 contract GlobalRateLimitedMinter is IGlobalRateLimitedMinter, RateLimitedV2 {
+
     /// @param _core reference to the core smart contract
     /// @param _maxRateLimitPerSecond maximum rate limit per second that governance can set
     /// @param _rateLimitPerSecond starting rate limit per second for Volt minting
@@ -20,8 +21,8 @@ contract GlobalRateLimitedMinter is IGlobalRateLimitedMinter, RateLimitedV2 {
     constructor(
         address _core,
         uint256 _maxRateLimitPerSecond,
-        uint128 _rateLimitPerSecond,
-        uint128 _bufferCap
+        uint64 _rateLimitPerSecond,
+        uint96 _bufferCap
     )
         CoreRefV2(_core)
         RateLimitedV2(_maxRateLimitPerSecond, _rateLimitPerSecond, _bufferCap)
@@ -37,7 +38,7 @@ contract GlobalRateLimitedMinter is IGlobalRateLimitedMinter, RateLimitedV2 {
     )
         external
         /// checks
-        onlyVoltRole(VoltRoles.RATE_LIMIT_SYSTEM_ENTRY_DEPLETE)
+        onlyVoltRole(VoltRoles.PSM_MINTER)
         /// system must be level 1 locked before this function can execute
         /// asserts system is inside PSM mint when this function is called
         globalLock(2)
@@ -53,7 +54,7 @@ contract GlobalRateLimitedMinter is IGlobalRateLimitedMinter, RateLimitedV2 {
     )
         external
         /// checks
-        onlyVoltRole(VoltRoles.RATE_LIMIT_SYSTEM_ENTRY_REPLENISH)
+        onlyVoltRole(VoltRoles.PSM_MINTER)
         /// system must be level 1 locked before this function can execute
         /// asserts system is inside PSM redeem when this function is called
         globalLock(2)
@@ -61,3 +62,7 @@ contract GlobalRateLimitedMinter is IGlobalRateLimitedMinter, RateLimitedV2 {
         _replenishBuffer(amount); /// effects
     }
 }
+
+/// two goals:
+/// 1. cap the Volt supply and creation of new Volt to 5.8m
+/// 2. slow the redemption of Volt to only allow .5m per day to leave the system.

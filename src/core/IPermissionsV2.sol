@@ -6,6 +6,7 @@ import {IAccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 /// @title Permissions interface
 /// @author Volt Protocol
 interface IPermissionsV2 is IAccessControl {
+
     // ----------- Governor only state changing api -----------
 
     function createRole(bytes32 role, bytes32 adminRole) external;
@@ -22,17 +23,7 @@ interface IPermissionsV2 is IAccessControl {
 
     function grantPCVGuard(address pcvGuard) external;
 
-    function grantRateLimitedMinter(address rateLimitedMinter) external;
-
-    function grantRateLimitedRedeemer(address rateLimitedRedeemer) external;
-
-    function grantSystemExitRateLimitDepleter(
-        address rateLimitedDepleter
-    ) external;
-
-    function grantSystemExitRateLimitReplenisher(
-        address rateLimitedReplenisher
-    ) external;
+    function grantPsmMinter(address rateLimitedMinter) external;
 
     function revokeMinter(address minter) external;
 
@@ -46,17 +37,7 @@ interface IPermissionsV2 is IAccessControl {
 
     function revokePCVGuard(address pcvGuard) external;
 
-    function revokeRateLimitedMinter(address rateLimitedMinter) external;
-
-    function revokeRateLimitedRedeemer(address rateLimitedRedeemer) external;
-
-    function revokeSystemExitRateLimitDepleter(
-        address rateLimitedDepleter
-    ) external;
-
-    function revokeSystemExitRateLimitReplenisher(
-        address rateLimitedReplenisher
-    ) external;
+    function revokePsmMinter(address rateLimitedMinter) external;
 
     // ----------- Revoker only state changing api -----------
 
@@ -76,19 +57,7 @@ interface IPermissionsV2 is IAccessControl {
 
     function isPCVGuard(address _address) external view returns (bool);
 
-    function isRateLimitedMinter(address _address) external view returns (bool);
-
-    function isRateLimitedRedeemer(
-        address _address
-    ) external view returns (bool);
-
-    function isSystemExitRateLimitReplenisher(
-        address _address
-    ) external view returns (bool);
-
-    function isSystemExitRateLimitDepleter(
-        address _address
-    ) external view returns (bool);
+    function isPsmMinter(address _address) external view returns (bool);
 
     // ----------- Predefined Roles -----------
 
@@ -115,14 +84,7 @@ interface IPermissionsV2 is IAccessControl {
 
     /// @notice granted to peg stability modules that will call in to deplete buffer
     /// and mint Volt
-    function RATE_LIMIT_SYSTEM_ENTRY_DEPLETE_ROLE()
-        external
-        view
-        returns (bytes32);
-
-    /// @notice granted to peg stability modules that will call in to replenish the
-    /// buffer Volt is minted from
-    function RATE_LIMIT_SYSTEM_ENTRY_REPLENISH_ROLE()
+    function PSM_MINTER()
         external
         view
         returns (bytes32);

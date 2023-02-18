@@ -38,22 +38,10 @@ library VoltRoles {
 
     /// ----------- Rate limiters for Global System Entry / Exit ---------------
 
-    /// @notice can mint VOLT through GlobalRateLimitedMinter on a rate limit
-    bytes32 internal constant RATE_LIMIT_SYSTEM_ENTRY_DEPLETE =
-        keccak256("RATE_LIMIT_SYSTEM_ENTRY_DEPLETE_ROLE");
-
-    /// @notice can redeem VOLT and replenish the GlobalRateLimitedMinter buffer
-    /// @notice non custodial PSM role.
-    bytes32 internal constant RATE_LIMIT_SYSTEM_ENTRY_REPLENISH =
-        keccak256("RATE_LIMIT_SYSTEM_ENTRY_REPLENISH_ROLE");
-
-    /// @notice can delpete buffer through the GlobalSystemExitRateLimiter buffer
-    bytes32 internal constant RATE_LIMIT_SYSTEM_EXIT_DEPLETE =
-        keccak256("RATE_LIMIT_SYSTEM_EXIT_DEPLETE_ROLE");
-
-    /// @notice can replenish buffer through GlobalSystemExitRateLimiter
-    bytes32 internal constant RATE_LIMIT_SYSTEM_EXIT_REPLENISH =
-        keccak256("RATE_LIMIT_SYSTEM_EXIT_REPLENISH_ROLE");
+    /// @notice can replenish and deplete buffer through the GlobalRateLimiter.
+    /// replenishing burns Volt, depleting mints Volt
+    bytes32 internal constant PSM_MINTER =
+        keccak256("PSM_MINTER_ROLE");
 
     /*///////////////////////////////////////////////////////////////
                                  Minor Roles

@@ -11,17 +11,17 @@ import {PCVOracle} from "@voltprotocol/oracle/PCVOracle.sol";
 import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
 import {GenericCallMock} from "@test/mock/GenericCallMock.sol";
-import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
+import {NonCustodialPSM} from "@voltprotocol/peg/NonCustodialPSM.sol";
 
 contract IntegrationTestPCVOracle is PostProposalCheck {
     CoreV2 private core;
     IERC20 private dai;
     VoltV2 private volt;
     address private grlm;
-    address private morphoDaiPCVDeposit;
-    PegStabilityModule private daipsm;
     PCVOracle private pcvOracle;
+    NonCustodialPSM private daipsm;
     PCVGuardian private pcvGuardian;
+    address private morphoDaiPCVDeposit;
 
     function setUp() public override {
         super.setUp();
@@ -33,7 +33,7 @@ contract IntegrationTestPCVOracle is PostProposalCheck {
         morphoDaiPCVDeposit = addresses.mainnet(
             "PCV_DEPOSIT_MORPHO_COMPOUND_DAI"
         );
-        daipsm = PegStabilityModule(addresses.mainnet("PSM_DAI"));
+        daipsm = NonCustodialPSM(addresses.mainnet("PSM_NONCUSTODIAL_DAI"));
         pcvOracle = PCVOracle(addresses.mainnet("PCV_ORACLE"));
         pcvGuardian = PCVGuardian(addresses.mainnet("PCV_GUARDIAN"));
     }

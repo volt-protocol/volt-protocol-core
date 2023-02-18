@@ -11,10 +11,14 @@ interface IRateLimitedV2 {
     function MAX_RATE_LIMIT_PER_SECOND() external view returns (uint256);
 
     /// @notice the rate per second for this contract
-    function rateLimitPerSecond() external view returns (uint128);
+    function rateLimitPerSecond() external view returns (uint64);
 
     /// @notice the cap of the buffer that can be used at once
-    function bufferCap() external view returns (uint128);
+    function bufferCap() external view returns (uint96);
+
+    /// @notice buffer cap / 2
+    /// this is the target for the buffer
+    function midPoint() external view returns (uint96);
 
     /// @notice the last time the buffer was used by the contract
     function lastBufferUsedTime() external view returns (uint32);
@@ -29,10 +33,10 @@ interface IRateLimitedV2 {
     /// ------------- Governor Only API's -------------
 
     /// @notice set the rate limit per second
-    function setRateLimitPerSecond(uint128 newRateLimitPerSecond) external;
+    function setRateLimitPerSecond(uint64 newRateLimitPerSecond) external;
 
     /// @notice set the buffer cap
-    function setBufferCap(uint128 newBufferCap) external;
+    function setBufferCap(uint96 newBufferCap) external;
 
     /// ------------- Events -------------
 
