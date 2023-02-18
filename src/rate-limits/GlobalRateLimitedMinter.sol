@@ -13,7 +13,6 @@ import {RateLimitedV2} from "@voltprotocol/utils/RateLimitedV2.sol";
 /// Peg Stability Modules will be granted the RATE_LIMIT_SYSTEM_ENTRY_REPLENISH_ROLE to replenish
 /// this contract's on a global rate limit when burning Volt.
 contract GlobalRateLimitedMinter is IGlobalRateLimitedMinter, RateLimitedV2 {
-
     /// @param _core reference to the core smart contract
     /// @param _maxRateLimitPerSecond maximum rate limit per second that governance can set
     /// @param _rateLimitPerSecond starting rate limit per second for Volt minting

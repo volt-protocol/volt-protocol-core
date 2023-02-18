@@ -137,7 +137,10 @@ abstract contract RateLimitedV2 is IRateLimitedV2, CoreRefV2 {
 
         uint256 _bufferCap = bufferCap; /// gas opti, save an SLOAD
 
-        require(newBuffer + amount <= _bufferCap, "RateLimited: buffer cap overflow");
+        require(
+            newBuffer + amount <= _bufferCap,
+            "RateLimited: buffer cap overflow"
+        );
 
         uint32 blockTimestamp = block.timestamp.toUint32();
 

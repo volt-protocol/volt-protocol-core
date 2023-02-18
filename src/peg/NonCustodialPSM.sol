@@ -62,7 +62,8 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRefV2 {
             backupOracleAddress,
             decimalNormalizer,
             invert
-        ) {
+        )
+    {
         underlyingToken = underlyingTokenAddress;
 
         _setFloor(floorPrice);
@@ -179,7 +180,11 @@ contract NonCustodialPSM is INonCustodialPSM, OracleRefV2 {
 
         /// ------- Interactions with Untrusted Contract -------
 
-        underlyingToken.safeTransferFrom(msg.sender, address(pcvDeposit), amountIn); /// Interaction -- untrusted contract
+        underlyingToken.safeTransferFrom(
+            msg.sender,
+            address(pcvDeposit),
+            amountIn
+        ); /// Interaction -- untrusted contract
         pcvDeposit.deposit(); /// deposit into underlying venue to register new amount of PCV
 
         emit Mint(to, amountIn, amountVoltOut);

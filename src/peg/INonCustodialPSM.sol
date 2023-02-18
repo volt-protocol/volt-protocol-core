@@ -61,7 +61,7 @@ interface INonCustodialPSM {
     /// @notice sets the ceiling price in BP
     function setOracleCeilingPrice(uint128 newCeiling) external;
 
-    /// @notice set the target for sending proceeds and 
+    /// @notice set the target for sending proceeds and
     function setPCVDeposit(IPCVDepositV2 newTarget) external;
 
     // ----------- Getters -----------

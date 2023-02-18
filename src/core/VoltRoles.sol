@@ -40,8 +40,7 @@ library VoltRoles {
 
     /// @notice can replenish and deplete buffer through the GlobalRateLimiter.
     /// replenishing burns Volt, depleting mints Volt
-    bytes32 internal constant PSM_MINTER =
-        keccak256("PSM_MINTER_ROLE");
+    bytes32 internal constant PSM_MINTER = keccak256("PSM_MINTER_ROLE");
 
     /*///////////////////////////////////////////////////////////////
                                  Minor Roles

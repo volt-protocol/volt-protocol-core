@@ -6,7 +6,6 @@ import {IAccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 /// @title Permissions interface
 /// @author Volt Protocol
 interface IPermissionsV2 is IAccessControl {
-
     // ----------- Governor only state changing api -----------
 
     function createRole(bytes32 role, bytes32 adminRole) external;
@@ -84,8 +83,5 @@ interface IPermissionsV2 is IAccessControl {
 
     /// @notice granted to peg stability modules that will call in to deplete buffer
     /// and mint Volt
-    function PSM_MINTER()
-        external
-        view
-        returns (bytes32);
+    function PSM_MINTER() external view returns (bytes32);
 }
