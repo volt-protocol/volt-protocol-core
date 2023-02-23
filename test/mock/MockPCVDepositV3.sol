@@ -103,11 +103,11 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
     }
 
     function withdrawERC20(
-        address token,
+        address _token,
         address to,
         uint256 amount
     ) external override {
-        IERC20(token).transfer(to, amount);
+        IERC20(_token).transfer(to, amount);
     }
 
     function withdrawETH(
@@ -119,5 +119,9 @@ contract MockPCVDepositV3 is IPCVDeposit, CoreRefV2 {
 
     function balance() public view override returns (uint256) {
         return IERC20(balanceReportedIn).balanceOf(address(this));
+    }
+
+    function token() public view returns (address) {
+        return balanceReportedIn;
     }
 }

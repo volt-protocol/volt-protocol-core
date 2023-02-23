@@ -30,7 +30,7 @@ abstract contract RateLimitedV2 is IRateLimitedV2, CoreRefV2 {
     /// @notice the rate per second for this contract
     uint64 public rateLimitPerSecond;
 
-    /// @notice the cap of the buffer that can be used at once
+    /// @notice buffer upper limit
     uint96 public bufferCap;
 
     /// @notice buffercap / 2
@@ -172,6 +172,7 @@ abstract contract RateLimitedV2 is IRateLimitedV2, CoreRefV2 {
         uint96 newMidPoint = newBufferCap / 2;
         midPoint = newMidPoint; /// start at midpoint
         bufferCap = newBufferCap; /// set buffer cap
+        console.log("set buffer cap: ", bufferCap);
 
         emit BufferCapUpdate(oldBufferCap, newBufferCap);
     }

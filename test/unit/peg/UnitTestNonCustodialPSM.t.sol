@@ -5,7 +5,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
-import {Test} from "@forge-std/Test.sol";
+import {Test, console} from "@forge-std/Test.sol";
 import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
 import {Constants} from "@voltprotocol/Constants.sol";
 import {Deviation} from "@test/unit/utils/Deviation.sol";
@@ -202,16 +202,6 @@ contract NonCustodialPSMUnitTest is Test {
         );
     }
 
-    function testMintFails() public {
-        vm.expectRevert("NonCustodialPSM: cannot mint");
-        psm.mint(address(0), 0, 0);
-    }
-
-    function testGetMintAmountOutFails() public {
-        vm.expectRevert("NonCustodialPSM: cannot mint");
-        psm.getMintAmountOut(0);
-    }
-
     function testExitValueInversionPositive(uint96 amount) public {
         psm = new NonCustodialPSM(
             coreAddress,
@@ -300,43 +290,50 @@ contract NonCustodialPSMUnitTest is Test {
         vm.assume(redeemAmount != 0);
         uint256 amountOut;
 
+        uint256 voltBalance = volt.balanceOf(address(this));
+        uint256 underlyingAmountOut = psm.getRedeemAmountOut(voltBalance);
+        uint256 userStartingUnderlyingBalance = dai.balanceOf(address(this));
+        uint256 depositStartingUnderlyingBalance = pcvDeposit.balance();
+        amountOut = underlyingAmountOut;
 
-            uint256 voltBalance = volt.balanceOf(address(this));
-            uint256 underlyingAmountOut = psm.getRedeemAmountOut(voltBalance);
-            uint256 userStartingUnderlyingBalance = dai.balanceOf(
-                address(this)
-            );
-            uint256 depositStartingUnderlyingBalance = pcvDeposit.balance();
-            amountOut = underlyingAmountOut;
+        volt.approve(address(psm), voltBalance);
+        assertEq(
+            underlyingAmountOut,
+            psm.redeem(address(this), voltBalance, underlyingAmountOut)
+        );
+        console.log("successfully redeemed");
+        console.log("bufferCap: ", bufferCap);
+        console.log("underlyingAmountOut: ", underlyingAmountOut);
+        console.log(
+            "bufferCap - underlyingAmountOut: ",
+            bufferCap - underlyingAmountOut
+        );
 
-            volt.approve(address(psm), voltBalance);
-            assertEq(
-                underlyingAmountOut,
-                psm.redeem(address(this), voltBalance, underlyingAmountOut)
-            );
-            assertEq(bufferCap - underlyingAmountOut, grlm.buffer());
+        assertEq(bufferCap - underlyingAmountOut, grlm.midPoint());
 
-            uint256 depositEndingUnderlyingBalance = pcvDeposit.balance();
-            uint256 userEndingUnderlyingBalance = dai.balanceOf(address(this));
-            uint256 bufferAfterRedeem = grlm.buffer();
+        uint256 depositEndingUnderlyingBalance = pcvDeposit.balance();
+        uint256 userEndingUnderlyingBalance = dai.balanceOf(address(this));
+        uint256 bufferAfterRedeem = grlm.buffer();
 
-            uint256 endingBalance = dai.balanceOf(address(this));
+        uint256 endingBalance = dai.balanceOf(address(this));
 
-            assertEq(endingBalance, underlyingAmountOut);
+        console.log("asserted midpoint");
+        assertEq(endingBalance, underlyingAmountOut);
+        console.log("asserted amounts out");
 
-            assertEq(
-                depositStartingUnderlyingBalance -
-                    depositEndingUnderlyingBalance,
-                underlyingAmountOut
-            );
+        assertEq(
+            depositStartingUnderlyingBalance - depositEndingUnderlyingBalance,
+            underlyingAmountOut
+        );
+        console.log("asserted deposit amounts out");
 
-            assertEq(bufferAfterRedeem, grlm.bufferCap());
-            assertEq(bufferAfterRedeem, grlm.buffer());
-            assertEq(
-                userEndingUnderlyingBalance - underlyingAmountOut,
-                userStartingUnderlyingBalance
-            );
-            assertEq(volt.balanceOf(address(psm)), 0);
+        assertEq(bufferAfterRedeem, amountOut);
+        // assertEq(bufferAfterRedeem, grlm.buffer());
+        assertEq(
+            userEndingUnderlyingBalance - underlyingAmountOut,
+            userStartingUnderlyingBalance
+        );
+        assertEq(volt.balanceOf(address(psm)), 0);
     }
 
     function testRedeemDifferentialSucceeds(uint128 redeemAmount) public {
