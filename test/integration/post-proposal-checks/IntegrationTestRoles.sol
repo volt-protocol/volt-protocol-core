@@ -254,5 +254,37 @@ contract IntegrationTestRoles is PostProposalCheck {
             core.getRoleMember(VoltRoles.RATE_LIMIT_SYSTEM_EXIT_REPLENISH, 0),
             addresses.mainnet("PSM_ALLOCATOR")
         );
+
+        /// TIMELOCK ROLES
+        /// Proposer
+        assertEq(
+            core.getRoleAdmin(VoltRoles.TIMELOCK_PROPOSER),
+            VoltRoles.GOVERNOR
+        );
+        assertEq(core.getRoleMemberCount(VoltRoles.TIMELOCK_PROPOSER), 1);
+        assertEq(
+            core.getRoleMember(VoltRoles.TIMELOCK_PROPOSER, 0),
+            addresses.mainnet("GOVERNOR")
+        );
+        /// Executor
+        assertEq(
+            core.getRoleAdmin(VoltRoles.TIMELOCK_EXECUTOR),
+            VoltRoles.GOVERNOR
+        );
+        assertEq(core.getRoleMemberCount(VoltRoles.TIMELOCK_EXECUTOR), 1);
+        assertEq(
+            core.getRoleMember(VoltRoles.TIMELOCK_EXECUTOR, 0),
+            address(0)
+        );
+        /// Canceller
+        assertEq(
+            core.getRoleAdmin(VoltRoles.TIMELOCK_CANCELLER),
+            VoltRoles.GOVERNOR
+        );
+        assertEq(core.getRoleMemberCount(VoltRoles.TIMELOCK_CANCELLER), 1);
+        assertEq(
+            core.getRoleMember(VoltRoles.TIMELOCK_CANCELLER, 0),
+            addresses.mainnet("GOVERNOR")
+        );
     }
 }
