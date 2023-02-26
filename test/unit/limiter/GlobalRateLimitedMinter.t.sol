@@ -85,12 +85,8 @@ contract GlobalRateLimitedMinterUnitTest is Test {
 
     function testSetup() public {
         assertTrue(core.isMinter(address(grlm)));
-        assertTrue(
-            core.isPsmMinter(guardianAddresses.pcvGuardAddress1)
-        );
-        assertTrue(
-            core.isPsmMinter(guardianAddresses.pcvGuardAddress2)
-        );
+        assertTrue(core.isPsmMinter(guardianAddresses.pcvGuardAddress1));
+        assertTrue(core.isPsmMinter(guardianAddresses.pcvGuardAddress2));
 
         assertEq(address(core.globalRateLimitedMinter()), address(grlm));
     }
@@ -119,6 +115,7 @@ contract GlobalRateLimitedMinterUnitTest is Test {
 
     function testMintAsMinterSucceeds(uint80 mintAmount) public {
         uint256 startingBuffer = grlm.buffer();
+        mintAmount = uint80(Math.min(mintAmount, grlm.midPoint())); /// avoid buffer overflow
 
         minter.mint(address(this), mintAmount);
         uint256 endingBuffer = grlm.buffer();
@@ -133,6 +130,12 @@ contract GlobalRateLimitedMinterUnitTest is Test {
     ) public {
         vm.prank(addresses.governorAddress);
         core.grantPsmMinter(address(minter));
+
+        /// bound inputs to avoid rate limit over or under flows which would cause a revert
+        depleteAmount = uint80(Math.min(depleteAmount, grlm.midPoint()));
+        replenishAmount = uint80(
+            Math.min(replenishAmount, grlm.buffer() - depleteAmount)
+        );
 
         minter.mint(address(this), depleteAmount);
 

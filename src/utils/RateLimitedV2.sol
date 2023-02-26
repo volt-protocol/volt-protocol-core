@@ -3,7 +3,6 @@ pragma solidity =0.8.13;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {console} from "@forge-std/console.sol";
 
 import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
 import {IRateLimitedV2} from "@voltprotocol/utils/IRateLimitedV2.sol";
@@ -92,10 +91,6 @@ abstract contract RateLimitedV2 is IRateLimitedV2, CoreRefV2 {
         uint256 cachedBufferStored = bufferStored;
         uint256 bufferDelta = rateLimitPerSecond * elapsed;
 
-        console.log("midPoint: ", midPoint);
-        console.log("bufferDelta: ", bufferDelta);
-        console.log("bufferStored: ", cachedBufferStored);
-
         /// converge on mid point
         if (cachedBufferStored < midPoint) {
             /// buffer is below mid point, time accumulation can bring it back up to the mid point
@@ -105,7 +100,6 @@ abstract contract RateLimitedV2 is IRateLimitedV2, CoreRefV2 {
             return Math.max(cachedBufferStored - bufferDelta, midPoint);
         }
 
-        console.log("returning buffer stored");
         /// if already at mid point, do nothing
         return cachedBufferStored;
     }
@@ -116,8 +110,8 @@ abstract contract RateLimitedV2 is IRateLimitedV2, CoreRefV2 {
     function _depleteBuffer(uint256 amount) internal {
         uint256 newBuffer = buffer();
 
-        require(newBuffer != 0, "RateLimited: no rate limit buffer");
-        require(amount <= newBuffer, "RateLimited: rate limit hit");
+        /// this line could be removed to save on gas as calculating newBufferStored will underflow if amount is gt buffer
+        require(amount <= newBuffer, "RateLimited: buffer cap underflow");
 
         uint32 blockTimestamp = block.timestamp.toUint32();
         uint224 newBufferStored = (newBuffer - amount).toUint224();
@@ -172,7 +166,6 @@ abstract contract RateLimitedV2 is IRateLimitedV2, CoreRefV2 {
         uint96 newMidPoint = newBufferCap / 2;
         midPoint = newMidPoint; /// start at midpoint
         bufferCap = newBufferCap; /// set buffer cap
-        console.log("set buffer cap: ", bufferCap);
 
         emit BufferCapUpdate(oldBufferCap, newBufferCap);
     }

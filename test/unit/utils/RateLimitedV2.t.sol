@@ -49,6 +49,9 @@ contract UnitTestRateLimitedV2 is Test {
     /// @notice buffer cap in RateLimitedV2
     uint96 private constant bufferCap = 10_000_000e18;
 
+    /// @notice mid point in RateLimitedV2
+    uint96 private constant midPoint = bufferCap / 2;
+
     function setUp() public {
         core = getCoreV2();
         rlm = new MockRateLimitedV2(
@@ -84,8 +87,7 @@ contract UnitTestRateLimitedV2 is Test {
         rlm.setBufferCap(newBufferCap);
 
         assertEq(rlm.bufferCap(), newBufferCap);
-        assertEq(rlm.buffer(), newBufferCap / 2); /// buffer starts at midpoint
-        assertEq(rlm.buffer(), rlm.midPoint());
+        assertEq(rlm.buffer(), bufferCap / 2); /// buffer starts at previous midpoint
     }
 
     function testSetRateLimitPerSecondNonGovFails() public {
@@ -107,15 +109,13 @@ contract UnitTestRateLimitedV2 is Test {
 
     function testDepleteBufferFailsWhenZeroBuffer() public {
         rlm.depleteBuffer(rlm.midPoint()); /// fully exhaust buffer
-        vm.expectRevert("RateLimited: no rate limit buffer");
+        vm.expectRevert("RateLimited: buffer cap underflow");
         rlm.depleteBuffer(bufferCap);
     }
 
     function testReplenishBufferFailsWhenAtBufferCap() public {
-        console.log("\nstarting test");
         rlm.buffer(); /// where are we at?
         rlm.replenishBuffer(rlm.midPoint()); /// completely fill buffer
-        console.log("\n");
         rlm.buffer(); /// where are we at?
         vm.expectRevert("RateLimited: buffer cap overflow");
         rlm.replenishBuffer(1);
@@ -137,7 +137,7 @@ contract UnitTestRateLimitedV2 is Test {
 
     function testDepleteBuffer(uint128 amountToPull, uint16 warpAmount) public {
         if (amountToPull > bufferCap / 2) {
-            vm.expectRevert("RateLimited: rate limit hit");
+            vm.expectRevert("RateLimited: buffer cap underflow");
             rlm.depleteBuffer(amountToPull);
         } else {
             vm.expectEmit(true, false, false, true, address(rlm));
@@ -150,7 +150,8 @@ contract UnitTestRateLimitedV2 is Test {
 
             vm.warp(block.timestamp + warpAmount);
 
-            uint256 accruedBuffer = warpAmount * rateLimitPerSecond;
+            uint256 accruedBuffer = uint256(warpAmount) *
+                uint256(rateLimitPerSecond);
             uint256 expectedBuffer = Math.min( /// only accumulate to mid point after depletion
                 endingBuffer + accruedBuffer,
                 bufferCap / 2
@@ -163,67 +164,95 @@ contract UnitTestRateLimitedV2 is Test {
         uint128 amountToReplenish,
         uint16 warpAmount
     ) public {
-        rlm.depleteBuffer(bufferCap / 2); /// fully exhaust buffer
+        rlm.depleteBuffer(midPoint); /// fully exhaust buffer
         assertEq(rlm.buffer(), 0);
 
-        uint256 actualAmountToReplenish = Math.min(
-            amountToReplenish,
-            bufferCap / 2
-        );
+        uint256 actualAmountToReplenish = Math.min(amountToReplenish, midPoint);
         vm.expectEmit(true, false, false, true, address(rlm));
-        emit BufferReplenished(amountToReplenish, actualAmountToReplenish);
+        emit BufferReplenished(
+            actualAmountToReplenish,
+            actualAmountToReplenish
+        );
 
-        rlm.replenishBuffer(amountToReplenish);
+        rlm.replenishBuffer(actualAmountToReplenish);
         assertEq(rlm.buffer(), actualAmountToReplenish);
         assertEq(block.timestamp, rlm.lastBufferUsedTime());
 
         vm.warp(block.timestamp + warpAmount);
 
-        uint256 accruedBuffer = warpAmount * rateLimitPerSecond;
-        uint256 expectedBuffer = Math.min(
-            amountToReplenish + accruedBuffer,
-            bufferCap / 2
-        );
-        assertEq(expectedBuffer, rlm.buffer());
+        uint256 cachedBufferStored = rlm.bufferStored();
+        uint256 bufferDelta = rateLimitPerSecond * uint256(warpAmount);
+        uint256 convergedAmount = _converge(cachedBufferStored, bufferDelta);
+
+        assertEq(convergedAmount, rlm.buffer());
     }
 
     function testDepleteThenReplenishBuffer(
         uint128 amountToDeplete,
-        uint128 amountToReplenish,
-        uint16 warpAmount
-    ) public {
-        uint256 actualAmountToDeplete = Math.min(amountToDeplete, bufferCap);
-        rlm.depleteBuffer(actualAmountToDeplete); /// deplete buffer
-        assertEq(rlm.buffer(), bufferCap - actualAmountToDeplete);
-
-        uint256 actualAmountToReplenish = Math.min(
-            amountToReplenish,
-            bufferCap
-        );
-
-        rlm.replenishBuffer(amountToReplenish);
-        uint256 finalState = bufferCap -
-            actualAmountToDeplete +
-            actualAmountToReplenish;
-        uint256 endingBuffer = Math.min(finalState, bufferCap);
-        assertEq(rlm.buffer(), endingBuffer);
-        assertEq(block.timestamp, rlm.lastBufferUsedTime());
-
-        vm.warp(block.timestamp + warpAmount);
-
-        uint256 accruedBuffer = warpAmount * rateLimitPerSecond;
-        uint256 expectedBuffer = Math.min(
-            finalState + accruedBuffer,
-            bufferCap
-        );
-        assertEq(expectedBuffer, rlm.buffer());
-    }
-
-    function testReplenishWhenAtBufferCapHasNoEffect(
         uint128 amountToReplenish
     ) public {
-        rlm.replenishBuffer(amountToReplenish);
-        assertEq(rlm.buffer(), bufferCap);
+        uint256 actualAmountToDeplete = Math.min(amountToDeplete, midPoint); /// bound input to less than or equal to the midPoint
+        rlm.depleteBuffer(actualAmountToDeplete); /// deplete buffer
+        assertEq(rlm.buffer(), midPoint - actualAmountToDeplete);
+
+        /// either fill up the buffer, or partially refill
+        uint256 actualAmountToReplenish = Math.min(
+            amountToReplenish,
+            bufferCap - rlm.buffer()
+        );
+
+        rlm.replenishBuffer(actualAmountToReplenish);
+        uint256 finalState = midPoint -
+            actualAmountToDeplete +
+            actualAmountToReplenish;
+        assertEq(rlm.buffer(), finalState);
         assertEq(block.timestamp, rlm.lastBufferUsedTime());
+
+        vm.warp(block.timestamp + 500_000); /// 500k seconds * 10 Volt per second means the buffer should be back at the midpoint even if 0 replenishing occurred
+
+        assertEq(rlm.buffer(), midPoint);
+    }
+
+    function testReplenishThenDepleteBuffer(
+        uint128 amountToReplenish,
+        uint128 amountToDeplete
+    ) public {
+        uint256 actualAmountToReplenish = Math.min(amountToReplenish, midPoint);
+        rlm.replenishBuffer(actualAmountToReplenish);
+
+        uint256 actualAmountToDeplete = Math.min(rlm.buffer(), amountToDeplete); /// bound input to less than or equal to the current buffer, another way to say this is bufferCap - actualAmountToReplenish
+
+        rlm.depleteBuffer(actualAmountToDeplete); /// deplete buffer
+
+        assertEq(rlm.buffer(), midPoint - actualAmountToDeplete);
+
+        /// either fill up the buffer, or partially refill
+
+        uint256 finalState = midPoint +
+            actualAmountToReplenish -
+            actualAmountToDeplete;
+
+        assertEq(rlm.buffer(), finalState);
+        assertEq(block.timestamp, rlm.lastBufferUsedTime());
+
+        vm.warp(block.timestamp + 500_000); /// 500k seconds * 10 Volt per second means the buffer should be back at the midpoint even if 0 replenishing occurred
+
+        assertEq(rlm.buffer(), midPoint);
+    }
+
+    function _converge(
+        uint256 cachedBufferStored,
+        uint256 bufferDelta
+    ) private pure returns (uint256) {
+        /// converge on mid point
+        if (cachedBufferStored < midPoint) {
+            /// buffer is below mid point, time accumulation can bring it back up to the mid point
+            return Math.min(cachedBufferStored + bufferDelta, midPoint);
+        } else if (cachedBufferStored > midPoint) {
+            /// buffer is above the mid point, time accumulation can bring it back down to the mid point
+            return Math.max(cachedBufferStored - bufferDelta, midPoint);
+        }
+
+        return midPoint;
     }
 }

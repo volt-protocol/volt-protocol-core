@@ -89,12 +89,6 @@ contract NonCustodialPSMUnitTest is Test {
     /// buffer cap of 1.5m VOLT
     uint96 public constant bufferCapMinting = 1_500_000e18;
 
-    /// ---------- ALLOCATOR PARAMS ----------
-
-    uint256 public constant maxRateLimitPerSecond = 1_000e18; /// 1k volt per second
-    uint128 public constant rateLimitPerSecond = 10e18; /// 10 volt per second
-    uint128 public constant bufferCap = type(uint128).max; /// buffer cap is 2^128-1
-
     /// ---------- PSM PARAMS ----------
 
     uint128 public constant voltFloorPrice = 1.05e18; /// 1 volt for 1.05 dai is the minimum price
@@ -168,6 +162,7 @@ contract NonCustodialPSMUnitTest is Test {
         entry.deposit(address(pcvDeposit));
 
         vm.label(address(psm), "psm");
+        vm.label(address(volt), "volt");
         vm.label(address(pcvDeposit), "pcvDeposit");
         vm.label(address(this), "address this");
     }
@@ -286,92 +281,58 @@ contract NonCustodialPSMUnitTest is Test {
         );
     }
 
-    function testRedeemFuzz(uint128 redeemAmount) public {
+    function testRedeemFuzz(uint72 redeemAmount) public {
         vm.assume(redeemAmount != 0);
-        uint256 amountOut;
 
+        volt.mint(address(this), redeemAmount);
+        uint256 startingVoltSupply = volt.totalSupply();
         uint256 voltBalance = volt.balanceOf(address(this));
-        uint256 underlyingAmountOut = psm.getRedeemAmountOut(voltBalance);
+        uint256 underlyingAmountOut = psm.getRedeemAmountOut(redeemAmount);
         uint256 userStartingUnderlyingBalance = dai.balanceOf(address(this));
         uint256 depositStartingUnderlyingBalance = pcvDeposit.balance();
-        amountOut = underlyingAmountOut;
 
         volt.approve(address(psm), voltBalance);
         assertEq(
             underlyingAmountOut,
             psm.redeem(address(this), voltBalance, underlyingAmountOut)
         );
-        console.log("successfully redeemed");
-        console.log("bufferCap: ", bufferCap);
-        console.log("underlyingAmountOut: ", underlyingAmountOut);
-        console.log(
-            "bufferCap - underlyingAmountOut: ",
-            bufferCap - underlyingAmountOut
-        );
-
-        assertEq(bufferCap - underlyingAmountOut, grlm.midPoint());
+        assertEq(grlm.midPoint() + redeemAmount, grlm.buffer()); /// redemptions make buffer increase by amount of Volt burned
 
         uint256 depositEndingUnderlyingBalance = pcvDeposit.balance();
         uint256 userEndingUnderlyingBalance = dai.balanceOf(address(this));
-        uint256 bufferAfterRedeem = grlm.buffer();
-
         uint256 endingBalance = dai.balanceOf(address(this));
 
-        console.log("asserted midpoint");
         assertEq(endingBalance, underlyingAmountOut);
-        console.log("asserted amounts out");
 
         assertEq(
             depositStartingUnderlyingBalance - depositEndingUnderlyingBalance,
             underlyingAmountOut
         );
-        console.log("asserted deposit amounts out");
 
-        assertEq(bufferAfterRedeem, amountOut);
-        // assertEq(bufferAfterRedeem, grlm.buffer());
         assertEq(
             userEndingUnderlyingBalance - underlyingAmountOut,
             userStartingUnderlyingBalance
         );
-        assertEq(volt.balanceOf(address(psm)), 0);
+        assertEq(startingVoltSupply - volt.totalSupply(), redeemAmount); /// all redeemed Volt is burned
     }
 
-    function testRedeemDifferentialSucceeds(uint128 redeemAmount) public {
-        vm.assume(redeemAmount != 0);
+    function testRedeemWithZeroVoltFails() public {
+        assertEq(volt.totalSupply(), 0);
+        assertEq(volt.balanceOf(address(this)), 0);
 
-        uint256 voltBalance = volt.balanceOf(address(this));
-        uint256 underlyingAmountOut = psm.getRedeemAmountOut(voltBalance);
-        uint256 userStartingUnderlyingBalance = dai.balanceOf(address(this));
-        uint256 depositStartingUnderlyingBalance = pcvDeposit.balance();
+        volt.approve(address(psm), 1);
 
-        volt.approve(address(psm), voltBalance);
-        assertEq(
-            underlyingAmountOut,
-            psm.redeem(address(this), voltBalance, underlyingAmountOut)
-        );
+        vm.expectRevert("ERC20: burn amount exceeds balance");
+        psm.redeem(address(this), 1, 0);
+    }
 
-        uint256 depositEndingUnderlyingBalance = pcvDeposit.balance();
-        uint256 userEndingUnderlyingBalance = dai.balanceOf(address(this));
-        uint256 bufferAfterRedeem = grlm.buffer();
+    function testRedeemWithoutApprovalFails() public {
+        assertEq(volt.totalSupply(), 0);
+        assertEq(volt.balanceOf(address(this)), 0);
+        assertEq(volt.allowance(address(this), address(psm)), 0);
 
-        uint256 endingBalance = dai.balanceOf(address(this));
-
-        assertEq(endingBalance, underlyingAmountOut);
-
-        assertEq(
-            depositStartingUnderlyingBalance - depositEndingUnderlyingBalance,
-            underlyingAmountOut
-        );
-
-        assertEq(bufferCap - underlyingAmountOut, grlm.buffer());
-
-        assertEq(bufferAfterRedeem, grlm.bufferCap());
-        assertEq(bufferAfterRedeem, grlm.buffer());
-        assertEq(
-            userEndingUnderlyingBalance - underlyingAmountOut,
-            userStartingUnderlyingBalance
-        );
-        assertEq(volt.balanceOf(address(psm)), 0);
+        vm.expectRevert("ERC20: insufficient allowance");
+        psm.redeem(address(this), 1, 1);
     }
 
     function testSetOracleFloorPriceGovernorSucceedsFuzz(

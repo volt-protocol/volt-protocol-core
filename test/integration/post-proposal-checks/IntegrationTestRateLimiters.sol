@@ -106,7 +106,7 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
         uint256 largeAmount = grlm.bufferCap() * 2;
         vm.startPrank(user);
         dai.approve(address(daincpsm), largeAmount);
-        vm.expectRevert("RateLimited: rate limit hit");
+        vm.expectRevert("RateLimited: buffer cap underflow");
         daincpsm.mint(user, largeAmount, 0);
         vm.stopPrank();
     }
@@ -148,7 +148,6 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
         uint256 daiAmountOut = daincpsm.getRedeemAmountOut(voltRedeemAmount);
         deal(address(dai), morphoDaiPCVDeposit, daiAmountOut * 2);
         systemEntry.deposit(morphoDaiPCVDeposit);
-
 
         uint256 startingBuffer = grlm.buffer();
         uint256 startingDaiBalance = dai.balanceOf(user);

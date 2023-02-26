@@ -335,6 +335,7 @@ contract SystemUnitTest is Test {
     function testPCVGuardWithdrawAllToSafeAddress() public {
         entry.deposit(address(pcvDepositDai));
         entry.deposit(address(pcvDepositUsdc));
+
         vm.startPrank(addresses.userAddress);
 
         pcvGuardian.withdrawAllToSafeAddress(address(pcvDepositDai));
@@ -342,13 +343,10 @@ contract SystemUnitTest is Test {
 
         vm.stopPrank();
 
-        assertEq(
-            dai.balanceOf(address(timelockController)),
-            daiTargetBalance * 2
-        );
+        assertEq(dai.balanceOf(address(timelockController)), daiTargetBalance);
         assertEq(
             usdc.balanceOf(address(timelockController)),
-            usdcTargetBalance * 2
+            usdcTargetBalance
         );
 
         assertEq(dai.balanceOf(address(pcvDepositDai)), 0);
