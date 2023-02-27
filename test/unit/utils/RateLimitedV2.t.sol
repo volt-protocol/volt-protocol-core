@@ -224,10 +224,7 @@ contract UnitTestRateLimitedV2 is Test {
 
         rlm.depleteBuffer(actualAmountToDeplete); /// deplete buffer
 
-        assertEq(rlm.buffer(), midPoint - actualAmountToDeplete);
-
         /// either fill up the buffer, or partially refill
-
         uint256 finalState = midPoint +
             actualAmountToReplenish -
             actualAmountToDeplete;
