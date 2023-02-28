@@ -13,10 +13,10 @@ jobs:
       - run:
           name: Install dependencies
           command: npm install
-      - save_cache:
-          key: repo-{{ .Environment.CIRCLE_SHA1 }}
-          paths:
-            - ~/repo
+      # - save_cache:
+      #     key: repo-{{ .Environment.CIRCLE_SHA1 }}
+      #     paths:
+      #       - ~/repo
 
   lint:
     working_directory: ~/repo
@@ -37,9 +37,9 @@ jobs:
     resource_class: xlarge
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - repo-{{ .Environment.CIRCLE_SHA1 }}
+      # - restore_cache:
+      #     keys:
+      #       - repo-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Setup env
           command: echo "export PATH=$PATH:$(pwd)/.circleci" >> /home/circleci/.bashrc
@@ -49,6 +49,9 @@ jobs:
       - run:
           name: Download Foundry
           command: curl -L https://foundry.paradigm.xyz | bash; source /home/circleci/.bashrc; $HOME/.foundry/bin/foundryup
+      - run:
+          name: Debug Foundry Version
+          command: $HOME/.foundry/bin/foundry -V
       - run:
           name: Run tests
           command: |
