@@ -9,9 +9,7 @@ import {IPCVDepositV2} from "@voltprotocol/pcv/IPCVDepositV2.sol";
 
 contract IntegrationTestPCVGuardian is PostProposalCheck {
     function testWithdrawAllToSafeAddress() public {
-        address[8] memory addressesToClean = [
-            addresses.mainnet("PSM_DAI"),
-            addresses.mainnet("PSM_USDC"),
+        address[6] memory addressesToClean = [
             addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI"),
             addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC"),
             addresses.mainnet("PCV_DEPOSIT_EULER_DAI"),

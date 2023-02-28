@@ -21,7 +21,6 @@ import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
 import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
 import {IOracleRefV2} from "@voltprotocol/refs/IOracleRefV2.sol";
 import {IPCVDepositV2} from "@voltprotocol/pcv/IPCVDepositV2.sol";
-import {MigratorRouter} from "@voltprotocol/v1-migration/MigratorRouter.sol";
 import {NonCustodialPSM} from "@voltprotocol/peg/NonCustodialPSM.sol";
 import {MakerPCVSwapper} from "@voltprotocol/pcv/maker/MakerPCVSwapper.sol";
 import {VoltSystemOracle} from "@voltprotocol/oracle/VoltSystemOracle.sol";
@@ -31,7 +30,6 @@ import {MorphoAavePCVDeposit} from "@voltprotocol/pcv/morpho/MorphoAavePCVDeposi
 import {IPegStabilityModule} from "@voltprotocol/peg/IPegStabilityModule.sol";
 import {ConstantPriceOracle} from "@voltprotocol/oracle/ConstantPriceOracle.sol";
 import {CompoundBadDebtSentinel} from "@voltprotocol/pcv/compound/CompoundBadDebtSentinel.sol";
-import {IVoltMigrator, VoltMigrator} from "@voltprotocol/v1-migration/VoltMigrator.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "@voltprotocol/rate-limits/GlobalRateLimitedMinter.sol";
 
@@ -266,31 +264,6 @@ contract vip16 is Proposal {
             );
         }
 
-        /// Volt Migration
-        {
-            VoltMigrator voltMigrator = new VoltMigrator(
-                addresses.mainnet("CORE"),
-                IVolt(addresses.mainnet("VOLT"))
-            );
-
-            /// TODO revisit this
-            // MigratorRouter migratorRouter = new MigratorRouter(
-            //     IVolt(addresses.mainnet("VOLT")),
-            //     IVoltMigrator(address(voltMigrator)),
-            //     IPegStabilityModule(addresses.mainnet("PSM_DAI")),
-            //     IPegStabilityModule(addresses.mainnet("PSM_USDC"))
-            // );
-
-            addresses.addMainnet(
-                "V1_MIGRATION_MIGRATOR",
-                address(voltMigrator)
-            );
-            // addresses.addMainnet(
-            //     "V1_MIGRATION_ROUTER",
-            //     address(migratorRouter)
-            // );
-        }
-
         /// PCV Movement
         {
             SystemEntry systemEntry = new SystemEntry(
@@ -406,10 +379,7 @@ contract vip16 is Proposal {
         core.createRole(VoltRoles.PCV_MOVER, VoltRoles.GOVERNOR);
         core.grantRole(VoltRoles.PCV_MOVER, addresses.mainnet("GOVERNOR")); /// team multisig
 
-        core.createRole(
-            VoltRoles.PSM_MINTER,
-            VoltRoles.GOVERNOR
-        );
+        core.createRole(VoltRoles.PSM_MINTER, VoltRoles.GOVERNOR);
         core.grantRole(
             VoltRoles.PSM_MINTER,
             addresses.mainnet("PSM_NONCUSTODIAL_DAI")
@@ -530,9 +500,6 @@ contract vip16 is Proposal {
         CoreV2 core = CoreV2(addresses.mainnet("CORE"));
         PCVOracle pcvOracle = PCVOracle(addresses.mainnet("PCV_ORACLE"));
         PCVRouter pcvRouter = PCVRouter(addresses.mainnet("PCV_ROUTER"));
-        MigratorRouter migratorRouter = MigratorRouter(
-            addresses.mainnet("V1_MIGRATION_ROUTER")
-        );
         VoltSystemOracle oracle = VoltSystemOracle(
             addresses.mainnet("VOLT_SYSTEM_ORACLE")
         );
@@ -625,12 +592,6 @@ contract vip16 is Proposal {
             ),
             address(core)
         );
-        assertEq(
-            address(
-                CoreRefV2(addresses.mainnet("V1_MIGRATION_MIGRATOR")).core()
-            ),
-            address(core)
-        );
         // V1_MIGRATION_ROUTER is not CoreRef, it is only a util contract to call other contracts
         assertEq(
             address(CoreRefV2(addresses.mainnet("SYSTEM_ENTRY")).core()),
@@ -681,7 +642,6 @@ contract vip16 is Proposal {
         );
         assertEq(address(core.pcvOracle()), addresses.mainnet("PCV_ORACLE"));
 
-
         // pcv oracle
         assertEq(pcvOracle.getVenues().length, 6);
         assertEq(
@@ -716,19 +676,17 @@ contract vip16 is Proposal {
 
         // oracle references
         assertEq(
-            address(IOracleRefV2(addresses.mainnet("PSM_NONCUSTODIAL_DAI")).oracle()),
+            address(
+                IOracleRefV2(addresses.mainnet("PSM_NONCUSTODIAL_DAI")).oracle()
+            ),
             addresses.mainnet("VOLT_SYSTEM_ORACLE")
         );
         assertEq(
-            address(IOracleRefV2(addresses.mainnet("PSM_NONCUSTODIAL_USDC")).oracle()),
+            address(
+                IOracleRefV2(addresses.mainnet("PSM_NONCUSTODIAL_USDC"))
+                    .oracle()
+            ),
             addresses.mainnet("VOLT_SYSTEM_ORACLE")
-        );
-
-        // volt v1 migration references
-        assertEq(address(migratorRouter.newVolt()), addresses.mainnet("VOLT"));
-        assertEq(
-            address(migratorRouter.OLD_VOLT()),
-            addresses.mainnet("V1_VOLT")
         );
 
         /// compound bad debt sentinel

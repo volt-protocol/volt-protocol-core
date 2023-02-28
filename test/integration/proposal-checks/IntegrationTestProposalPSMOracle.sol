@@ -99,7 +99,7 @@ contract IntegrationTestProposalPSMOracle is Test {
         addresses = proposals.addresses(); // get post-proposal addresses
 
         // Use post-proposal contracts if they have been migrated
-        psm = IPegStabilityModule(addresses.mainnet("PSM_USDC"));
+        psm = IPegStabilityModule(addresses.mainnet("PSM_NONCUSTODIAL_USDC"));
         volt = IERC20(addresses.mainnet("VOLT"));
         token = IERC20(addresses.mainnet("USDC"));
 

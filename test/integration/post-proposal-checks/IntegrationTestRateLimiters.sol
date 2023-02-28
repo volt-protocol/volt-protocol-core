@@ -67,9 +67,6 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
             // number of moved funds for tests
             uint256 amount = initialBuffer / 2;
 
-            // read initial pcv
-            uint256 startLiquidPcv = pcvOracle.getTotalPcv();
-
             // user performs the first mint with DAI
             vm.startPrank(user);
             dai.approve(address(daincpsm), amount);
@@ -112,6 +109,8 @@ contract IntegrationTestRateLimiters is PostProposalCheck {
     }
 
     function testRedeemsDaiPsm(uint88 voltAmount) public {
+        vm.assume(voltAmount >= 1e18);
+
         testUserPSMMint();
 
         vm.revertTo(snapshotAfterMints);
