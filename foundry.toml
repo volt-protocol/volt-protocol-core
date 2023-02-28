@@ -9,7 +9,7 @@ test = 'test'
 script = 'script'
 
 # contracts in libs are excluded from code coverage reports
-libs = ['node_modules', 'test', 'script', 'src/external', 'src/v1']
+libs = ['node_modules', 'script', 'src/external', 'src/v1']
 
 [fuzz]
 runs = 5000
