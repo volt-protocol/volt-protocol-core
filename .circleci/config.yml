@@ -54,7 +54,7 @@ jobs:
           command: source /home/circleci/.bashrc && export PATH=$PATH:$HOME/.foundry/bin
       - run:
           name: Install Foundry
-          command: foundryup -b master
+          command: $HOME/.foundry/bin/foundryup -b master
       - run:
           name: Run tests
           command: |
