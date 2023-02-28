@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.8.13;
 
-import {IGlobalRateLimitedMinter} from "@voltprotocol/rate-limits/IGlobalRateLimitedMinter.sol";
 import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
 import {RateLimitedV2} from "@voltprotocol/utils/RateLimitedV2.sol";
+import {IGlobalRateLimitedMinter} from "@voltprotocol/rate-limits/IGlobalRateLimitedMinter.sol";
 
 /// @notice contract to mint Volt on a rate limit.
 /// All minting should flow through this smart contract.
@@ -61,7 +61,3 @@ contract GlobalRateLimitedMinter is IGlobalRateLimitedMinter, RateLimitedV2 {
         _replenishBuffer(amount); /// effects
     }
 }
-
-/// two goals:
-/// 1. cap the Volt supply and creation of new Volt to 5.8m
-/// 2. slow the redemption of Volt to only allow .5m per day to leave the system.
