@@ -37,6 +37,8 @@ VIP16 does not do any multisig or timelock actions, only deployment of contracts
 and tying them together properly.
 */
 
+/// TODO uncomment pcv deposit checks when things are back online
+
 contract vip16 is Proposal {
     using SafeCast for *;
 
