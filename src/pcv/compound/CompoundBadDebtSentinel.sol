@@ -6,7 +6,7 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
 import {PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
 import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
-import {IComptroller} from "@voltprotocol/external/compound/ICompound.sol";
+import {IComptroller} from "@voltprotocol/pcv/morpho/ICompound.sol";
 import {ICompoundBadDebtSentinel} from "@voltprotocol/pcv/compound/ICompoundBadDebtSentinel.sol";
 
 /// @notice Contract that removes all funds from Compound

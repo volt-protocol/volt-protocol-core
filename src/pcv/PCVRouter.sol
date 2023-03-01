@@ -8,7 +8,7 @@ import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
 import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {IPCVRouter} from "@voltprotocol/pcv/IPCVRouter.sol";
 import {IPCVSwapper} from "@voltprotocol/pcv/IPCVSwapper.sol";
-import {IPCVDeposit} from "@voltprotocol/pcv/IPCVDeposit.sol";
+import {IPCVDepositV2} from "@voltprotocol/pcv/IPCVDepositV2.sol";
 
 /// @title Volt Protocol PCV Router
 /// @notice A contract that allows PCV movements between deposits.
@@ -81,6 +81,9 @@ contract PCVRouter is IPCVRouter, CoreRefV2 {
     /// @notice Move PCV by withdrawing it from a PCVDeposit and deposit it in
     /// a destination PCVDeposit, eventually using a PCVSwapper in-between
     /// for asset conversion.
+    ///
+    /// Only callable at lock level 1.
+    ///
     /// This function requires a less trusted PCV_MOVER role, and performs checks
     /// at runtime that the PCV Deposits are indeed added in the PCV Oracle, that
     /// underlying tokens are correct, and that the PCVSwapper used (if any) has
@@ -98,7 +101,12 @@ contract PCVRouter is IPCVRouter, CoreRefV2 {
         uint256 amount,
         address sourceAsset,
         address destinationAsset
-    ) external whenNotPaused onlyVoltRole(VoltRoles.PCV_MOVER) globalLock(1) {
+    )
+        external
+        whenNotPaused
+        onlyVoltRole(VoltRoles.PCV_MOVER)
+        isGlobalReentrancyLocked(1)
+    {
         // Check both deposits are still valid for PCVOracle
         IPCVOracle _pcvOracle = pcvOracle();
         require(_pcvOracle.isVenue(source), "PCVRouter: invalid source");
@@ -109,11 +117,11 @@ contract PCVRouter is IPCVRouter, CoreRefV2 {
 
         // Check underlying tokens
         require(
-            IPCVDeposit(source).balanceReportedIn() == sourceAsset,
+            IPCVDepositV2(source).token() == sourceAsset,
             "PCVRouter: invalid source asset"
         );
         require(
-            IPCVDeposit(destination).balanceReportedIn() == destinationAsset,
+            IPCVDepositV2(destination).token() == destinationAsset,
             "PCVRouter: invalid destination asset"
         );
         // Check swapper, if applicable
@@ -182,7 +190,7 @@ contract PCVRouter is IPCVRouter, CoreRefV2 {
         address sourceAsset,
         address destinationAsset
     ) external whenNotPaused onlyPCVController globalLock(1) {
-        uint256 amount = IPCVDeposit(source).balance();
+        uint256 amount = IPCVDepositV2(source).balance();
         _movePCV(
             source,
             destination,
@@ -205,17 +213,17 @@ contract PCVRouter is IPCVRouter, CoreRefV2 {
         // Do transfer
         uint256 amountDestination;
         if (swapper != address(0)) {
-            IPCVDeposit(source).withdraw(swapper, amountSource);
+            IPCVDepositV2(source).withdraw(swapper, amountSource);
             amountDestination = IPCVSwapper(swapper).swap(
                 sourceAsset,
                 destinationAsset,
                 destination
             );
         } else {
-            IPCVDeposit(source).withdraw(destination, amountSource);
+            IPCVDepositV2(source).withdraw(destination, amountSource);
             amountDestination = amountSource;
         }
-        IPCVDeposit(destination).deposit();
+        IPCVDepositV2(destination).deposit();
 
         // Emit event
         emit PCVMovement(source, destination, amountSource, amountDestination);

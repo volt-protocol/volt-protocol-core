@@ -309,93 +309,24 @@ contract UnitTestPermissionsV2 is Test {
 
     function testGovAddsMinterRoleSucceeds() public {
         vm.prank(addresses.governorAddress);
-        core.grantRateLimitedMinter(address(this));
-        assertTrue(core.isRateLimitedMinter(address(this)));
+        core.grantPsmMinter(address(this));
+        assertTrue(core.isPsmMinter(address(this)));
     }
 
     function testGovRevokesMinterRoleSucceeds() public {
         testGovAddsMinterRoleSucceeds();
         vm.prank(addresses.governorAddress);
-        core.revokeRateLimitedMinter(address(this));
-        assertTrue(!core.isRateLimitedMinter(address(this)));
+        core.revokePsmMinter(address(this));
+        assertTrue(!core.isPsmMinter(address(this)));
     }
 
     function testNonGovAddsMinterRoleFails() public {
         vm.expectRevert("Permissions: Caller is not a governor");
-        core.grantRateLimitedMinter(address(this));
+        core.grantPsmMinter(address(this));
     }
 
     function testNonGovRevokesMinterRoleFails() public {
         vm.expectRevert("Permissions: Caller is not a governor");
-        core.revokeRateLimitedMinter(address(this));
-    }
-
-    function testGovAddsRedeemerRoleSucceeds() public {
-        vm.prank(addresses.governorAddress);
-        core.grantRateLimitedRedeemer(address(this));
-        assertTrue(core.isRateLimitedRedeemer(address(this)));
-    }
-
-    function testGovRevokesRedeemerRoleSucceeds() public {
-        testGovAddsRedeemerRoleSucceeds();
-        vm.prank(addresses.governorAddress);
-        core.revokeRateLimitedRedeemer(address(this));
-        assertTrue(!core.isRateLimitedRedeemer(address(this)));
-    }
-
-    function testNonGovAddsRedeemerRoleFails() public {
-        vm.expectRevert("Permissions: Caller is not a governor");
-        core.grantRateLimitedRedeemer(address(this));
-    }
-
-    function testNonGovRevokesRedeemerRoleFails() public {
-        vm.expectRevert("Permissions: Caller is not a governor");
-        core.revokeRateLimitedRedeemer(address(this));
-    }
-
-    function testGovAddsRateLimitedDepleterRoleSucceeds() public {
-        vm.prank(addresses.governorAddress);
-        core.grantSystemExitRateLimitDepleter(address(this));
-        assertTrue(core.isSystemExitRateLimitDepleter(address(this)));
-    }
-
-    function testGovRevokesRateLimitedDepleterRoleSucceeds() public {
-        testGovAddsRedeemerRoleSucceeds();
-        vm.prank(addresses.governorAddress);
-        core.revokeSystemExitRateLimitDepleter(address(this));
-        assertTrue(!core.isSystemExitRateLimitDepleter(address(this)));
-    }
-
-    function testNonGovAddsRateLimitedDepleterRoleFails() public {
-        vm.expectRevert("Permissions: Caller is not a governor");
-        core.grantSystemExitRateLimitDepleter(address(this));
-    }
-
-    function testNonGovRevokesRateLimitedDepleterRoleFails() public {
-        vm.expectRevert("Permissions: Caller is not a governor");
-        core.revokeSystemExitRateLimitDepleter(address(this));
-    }
-
-    function testGovAddsRateLimitedReplenisherRoleSucceeds() public {
-        vm.prank(addresses.governorAddress);
-        core.grantSystemExitRateLimitReplenisher(address(this));
-        assertTrue(core.isSystemExitRateLimitReplenisher(address(this)));
-    }
-
-    function testGovRevokesRateLimitedReplenisherRoleSucceeds() public {
-        testGovAddsRedeemerRoleSucceeds();
-        vm.prank(addresses.governorAddress);
-        core.revokeSystemExitRateLimitReplenisher(address(this));
-        assertTrue(!core.isSystemExitRateLimitReplenisher(address(this)));
-    }
-
-    function testNonGovAddsRateLimitedReplenisherRoleFails() public {
-        vm.expectRevert("Permissions: Caller is not a governor");
-        core.grantSystemExitRateLimitReplenisher(address(this));
-    }
-
-    function testNonGovRevokesRateLimitedReplenisherRoleFails() public {
-        vm.expectRevert("Permissions: Caller is not a governor");
-        core.revokeSystemExitRateLimitReplenisher(address(this));
+        core.revokePsmMinter(address(this));
     }
 }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
 import {MockERC20} from "@test/mock/MockERC20.sol";
@@ -20,8 +21,10 @@ contract MockPCVSwapper is IPCVSwapper {
     function canSwap(
         address assetIn,
         address assetOut
-    ) external view returns (bool) {
-        return address(tokenIn) == assetIn && address(tokenOut) == assetOut;
+    ) public view returns (bool) {
+        return
+            (address(tokenIn) == assetIn && address(tokenOut) == assetOut) ||
+            (address(tokenIn) == assetOut && address(tokenOut) == assetIn);
     }
 
     function swap(
@@ -29,16 +32,17 @@ contract MockPCVSwapper is IPCVSwapper {
         address assetOut,
         address destination
     ) external returns (uint256) {
-        require(assetIn == address(tokenIn), "MockPCVSwapper: invalid assetIn");
-        require(
-            assetOut == address(tokenOut),
-            "MockPCVSwapper: invalid assetOut"
-        );
+        require(canSwap(assetIn, assetOut), "MockPCVSwapper: invalid swap");
 
-        uint256 amountIn = tokenIn.balanceOf(address(this));
-        uint256 amountOut = (amountIn * exchangeRate) / 1e18;
-        tokenIn.mockBurn(address(this), amountIn);
-        tokenOut.mint(destination, amountOut);
+        uint256 amountIn = MockERC20(assetIn).balanceOf(address(this));
+
+        /// if regular flow, do regular rate, otherwise reverse rate
+        uint256 amountOut = address(tokenIn) == assetIn
+            ? (amountIn * exchangeRate) / 1e18
+            : ((amountIn * 1e18) / exchangeRate);
+
+        MockERC20(assetIn).mockBurn(address(this), amountIn);
+        MockERC20(assetOut).mint(destination, amountOut);
 
         emit Swap(assetIn, assetOut, destination, amountIn, amountOut);
 

@@ -6,7 +6,6 @@ import {IVolt, IERC20} from "@voltprotocol/volt/IVolt.sol";
 import {IPermissionsV2} from "@voltprotocol/core/IPermissionsV2.sol";
 import {IGlobalReentrancyLock} from "@voltprotocol/core/IGlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter} from "@voltprotocol/rate-limits/IGlobalRateLimitedMinter.sol";
-import {IGlobalSystemExitRateLimiter} from "@voltprotocol/rate-limits/IGlobalSystemExitRateLimiter.sol";
 
 /// @title Core Interface
 /// @author Volt Protocol
@@ -29,12 +28,6 @@ interface ICoreV2 is IPermissionsV2 {
     event PCVOracleUpdate(
         address indexed oldPcvOracle,
         address indexed newPcvOracle
-    );
-
-    /// @notice emitted when reference to global system exit rate limiter is updated
-    event GlobalSystemExitRateLimiterUpdate(
-        address indexed oldGserl,
-        address indexed newGserl
     );
 
     /// @notice emitted when reference to global reentrancy lock is updated
@@ -78,12 +71,6 @@ interface ICoreV2 is IPermissionsV2 {
     /// @param newGlobalRateLimitedMinter new volt global rate limited minter
     function setGlobalRateLimitedMinter(
         IGlobalRateLimitedMinter newGlobalRateLimitedMinter
-    ) external;
-
-    /// @notice governor only function to set the Global Rate Limited Minter
-    /// @param newGlobalSystemExitRateLimiter new volt global rate limited minter
-    function setGlobalSystemExitRateLimiter(
-        IGlobalSystemExitRateLimiter newGlobalSystemExitRateLimiter
     ) external;
 
     /// @notice governor only function to set the PCV Oracle

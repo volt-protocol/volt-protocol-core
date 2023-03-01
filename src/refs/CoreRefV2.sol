@@ -13,7 +13,6 @@ import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {IVolt, IVoltBurn} from "@voltprotocol/volt/IVolt.sol";
 import {IGlobalReentrancyLock} from "@voltprotocol/core/IGlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter} from "@voltprotocol/rate-limits/IGlobalRateLimitedMinter.sol";
-import {IGlobalSystemExitRateLimiter} from "@voltprotocol/rate-limits/IGlobalSystemExitRateLimiter.sol";
 
 /// @title A Reference to Core
 /// @author Volt Protocol
@@ -33,17 +32,29 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
     /// 3. call core and unlock the lock back to starting level
     modifier globalLock(uint8 level) {
         IGlobalReentrancyLock lock = globalReentrancyLock();
-        lock.lock(level);
-        _;
-        lock.unlock(level - 1);
+
+        if (address(lock) != address(0)) {
+            lock.lock(level);
+            _;
+            lock.unlock(level - 1);
+        } else {
+            _; /// if lock is not set, allow function execution without global reentrancy locks
+        }
     }
 
     /// @notice modifier to restrict function acces to a certain lock level
     modifier isGlobalReentrancyLocked(uint8 level) {
         IGlobalReentrancyLock lock = globalReentrancyLock();
 
-        require(lock.lockLevel() == level, "CoreRef: System not at lock level");
-        _;
+        if (address(lock) != address(0)) {
+            require(
+                lock.lockLevel() == level,
+                "CoreRef: System not at lock level"
+            );
+            _;
+        } else {
+            _; /// if lock is not set, allow function execution without global lock level
+        }
     }
 
     /// @notice callable only by the Volt Minter
@@ -142,16 +153,6 @@ abstract contract CoreRefV2 is ICoreRefV2, Pausable {
         returns (IGlobalRateLimitedMinter)
     {
         return _core.globalRateLimitedMinter();
-    }
-
-    /// @notice address of the GlobalSystemExitRateLimiter contract referenced by Core
-    /// @return IGlobalSystemExitRateLimiter implementation address
-    function globalSystemExitRateLimiter()
-        internal
-        view
-        returns (IGlobalSystemExitRateLimiter)
-    {
-        return _core.globalSystemExitRateLimiter();
     }
 
     /// @notice address of the Global Reentrancy Lock contract reference

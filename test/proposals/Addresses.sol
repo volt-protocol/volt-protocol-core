@@ -62,6 +62,11 @@ contract Addresses is Test {
             0xF10d810De7F0Fbd455De30f8c43AbA56F253B73B
         );
 
+        // ---------- EULER ADDRESSES ----------
+        _addMainnet("EULER_MAIN", 0x27182842E098f60e3D576794A5bFFb0777E025d3);
+        _addMainnet("EULER_USDC", 0xEb91861f8A4e1C12333F42DCE8fB0Ecdc28dA716);
+        _addMainnet("EULER_DAI", 0xe025E3ca2bE02316033184551D4d3Aa22024D9DC);
+
         // ---------- ORACLE ADDRESSES ----------
         _addMainnet(
             "ORACLE_PASS_THROUGH",
@@ -126,6 +131,10 @@ contract Addresses is Test {
             0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B
         );
 
+        // ---------- Aave ADDRESSES ----------
+        _addMainnet("ADAI", 0x028171bCA77440897B824Ca71D1c56caC55b68A3);
+        _addMainnet("AUSDC", 0xBcca60bB61934080951369a648Fb03DF4F96263C);
+
         // ---------- Maker ADDRESSES ----------
         _addMainnet(
             "MAKER_DAI_USDC_PSM",
@@ -187,18 +196,20 @@ contract Addresses is Test {
         );
 
         // ---------- MORPHO ADDRESSES ----------
-        _addMainnet("MORPHO", 0x8888882f8f843896699869179fB6E4f7e3B58888);
-        _addMainnet("MORPHO_LENS", 0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67);
 
-        // ---------- MAPLE ADDRESSES ----------
-        _addMainnet("MPL_TOKEN", 0x33349B282065b0284d756F0577FB39c158F935e6);
         _addMainnet(
-            "MPL_ORTHOGONAL_POOL",
-            0xFeBd6F15Df3B73DC4307B1d7E65D46413e710C27
+            "MORPHO_COMPOUND",
+            0x8888882f8f843896699869179fB6E4f7e3B58888
         );
         _addMainnet(
-            "MPL_ORTHOGONAL_REWARDS",
-            0x7869D7a3B074b5fa484dc04798E254c9C06A5e90
+            "MORPHO_LENS_COMPOUND",
+            0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67
+        );
+
+        _addMainnet("MORPHO_AAVE", 0x777777c9898D384F785Ee44Acfe945efDFf5f3E0);
+        _addMainnet(
+            "MORPHO_LENS_AAVE",
+            0x507fA343d0A90786d86C7cd885f5C49263A91FF4
         );
     }
 

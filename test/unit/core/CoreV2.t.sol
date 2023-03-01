@@ -15,7 +15,6 @@ import {getCoreV2} from "@test/unit/utils/Fixtures.sol";
 import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
 import {IGlobalRateLimitedMinter} from "@voltprotocol/rate-limits/IGlobalRateLimitedMinter.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
-import {IGlobalSystemExitRateLimiter} from "@voltprotocol/rate-limits/IGlobalSystemExitRateLimiter.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
 
 contract UnitTestCoreV2 is Test {
@@ -40,12 +39,6 @@ contract UnitTestCoreV2 is Test {
     event PCVOracleUpdate(
         address indexed oldPcvOracle,
         address indexed newPcvOracle
-    );
-
-    /// @notice emitted when reference to global system exit rate limiter is updated
-    event GlobalSystemExitRateLimiterUpdate(
-        address indexed oldGserl,
-        address indexed newGserl
     );
 
     function setUp() public {
@@ -106,26 +99,6 @@ contract UnitTestCoreV2 is Test {
         vm.expectRevert("Permissions: Caller is not a governor");
         core.setGlobalRateLimitedMinter(
             IGlobalRateLimitedMinter(addresses.userAddress)
-        );
-    }
-
-    function testGovernorSetsGlobalSystemExitRateLimiter() public {
-        address newGserl = address(103927828732);
-        vm.expectEmit(true, true, false, true, address(core));
-        emit GlobalSystemExitRateLimiterUpdate(address(0), newGserl);
-
-        vm.prank(addresses.governorAddress);
-        core.setGlobalSystemExitRateLimiter(
-            IGlobalSystemExitRateLimiter(newGserl)
-        );
-
-        assertEq(address(core.globalSystemExitRateLimiter()), newGserl);
-    }
-
-    function testNonGovernorFailsSettingGlobalSystemExitRateLimiter() public {
-        vm.expectRevert("Permissions: Caller is not a governor");
-        core.setGlobalSystemExitRateLimiter(
-            IGlobalSystemExitRateLimiter(addresses.userAddress)
         );
     }
 

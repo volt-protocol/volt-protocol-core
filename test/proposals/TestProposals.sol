@@ -8,7 +8,6 @@ import {Proposal} from "@test/proposals/proposalTypes/Proposal.sol";
 
 import {vip15} from "@test/proposals/vips/vip15.sol";
 import {vip16} from "@test/proposals/vips/vip16.sol";
-import {vip17} from "@test/proposals/vips/vip17.sol";
 
 /*
 How to use:
@@ -44,7 +43,7 @@ contract TestProposals is Test {
 
         proposals.push(Proposal(address(new vip15())));
         proposals.push(Proposal(address(new vip16())));
-        proposals.push(Proposal(address(new vip17())));
+        // proposals.push(Proposal(address(new vip17())));
         nProposals = proposals.length;
     }
 

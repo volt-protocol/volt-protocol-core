@@ -5,7 +5,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
-import {Test} from "@forge-std/Test.sol";
+import {Test, console} from "@forge-std/Test.sol";
 import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
 import {Constants} from "@voltprotocol/Constants.sol";
 import {Deviation} from "@test/unit/utils/Deviation.sol";
@@ -13,17 +13,15 @@ import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
 import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
-import {IPCVDeposit} from "@voltprotocol/pcv/IPCVDeposit.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
+import {IPCVDepositV2} from "@voltprotocol/pcv/IPCVDepositV2.sol";
 import {NonCustodialPSM} from "@voltprotocol/peg/NonCustodialPSM.sol";
 import {MockPCVDepositV3} from "@test/mock/MockPCVDepositV3.sol";
 import {VoltSystemOracle} from "@voltprotocol/oracle/VoltSystemOracle.sol";
-import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
 import {getCoreV2, getVoltSystemOracle} from "@test/unit/utils/Fixtures.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "@voltprotocol/rate-limits/GlobalRateLimitedMinter.sol";
-import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "@voltprotocol/rate-limits/GlobalSystemExitRateLimiter.sol";
 
 /// deployment steps
 /// 1. core v2
@@ -59,7 +57,7 @@ interface IERC20Mintable is IERC20 {
 contract NonCustodialPSMUnitTest is Test {
     using SafeCast for *;
 
-    event PCVDepositUpdate(IPCVDeposit oldTarget, IPCVDeposit newPCVDeposit);
+    event PCVDepositUpdate(address oldTarget, address newPCVDeposit);
 
     CoreV2 private core;
     SystemEntry private entry;
@@ -68,9 +66,7 @@ contract NonCustodialPSMUnitTest is Test {
     NonCustodialPSM private psm;
     VoltSystemOracle private oracle;
     GlobalRateLimitedMinter private grlm;
-    GlobalSystemExitRateLimiter private gserl;
     MockPCVDepositV3 private pcvDeposit;
-    PegStabilityModule private custodialPsm;
     IGlobalReentrancyLock private lock;
 
     address private voltAddress;
@@ -88,16 +84,10 @@ contract NonCustodialPSMUnitTest is Test {
     uint256 public constant maxRateLimitPerSecondMinting = 100e18;
 
     /// replenish 500k VOLT per day
-    uint128 public constant rateLimitPerSecondMinting = 5.787e18;
+    uint64 public constant rateLimitPerSecondMinting = 5.787e18;
 
     /// buffer cap of 1.5m VOLT
-    uint128 public constant bufferCapMinting = 1_500_000e18;
-
-    /// ---------- ALLOCATOR PARAMS ----------
-
-    uint256 public constant maxRateLimitPerSecond = 1_000e18; /// 1k volt per second
-    uint128 public constant rateLimitPerSecond = 10e18; /// 10 volt per second
-    uint128 public constant bufferCap = type(uint128).max; /// buffer cap is 2^128-1
+    uint96 public constant bufferCapMinting = 1_500_000e18;
 
     /// ---------- PSM PARAMS ----------
 
@@ -145,25 +135,7 @@ contract NonCustodialPSMUnitTest is Test {
             dai,
             voltFloorPrice,
             voltCeilingPrice,
-            IPCVDeposit(address(pcvDeposit))
-        );
-
-        custodialPsm = new PegStabilityModule(
-            coreAddress,
-            address(oracle),
-            address(0),
-            0,
-            false,
-            dai,
-            voltFloorPrice,
-            voltCeilingPrice
-        );
-
-        gserl = new GlobalSystemExitRateLimiter(
-            coreAddress,
-            maxRateLimitPerSecond,
-            rateLimitPerSecond,
-            bufferCap
+            IPCVDepositV2(address(pcvDeposit))
         );
 
         vm.startPrank(addresses.governorAddress);
@@ -171,22 +143,15 @@ contract NonCustodialPSMUnitTest is Test {
         core.grantPCVController(address(psm));
         core.grantMinter(address(grlm));
 
-        core.grantSystemExitRateLimitDepleter(address(psm));
-        core.grantRateLimitedRedeemer(address(psm));
-        core.grantRateLimitedRedeemer(address(custodialPsm));
+        core.grantPsmMinter(address(psm));
 
         core.grantLocker(address(entry));
         core.grantLocker(address(psm));
-        core.grantLocker(address(custodialPsm));
         core.grantLocker(address(pcvDeposit));
         core.grantLocker(address(grlm));
-        core.grantLocker(address(gserl));
 
         core.setGlobalRateLimitedMinter(
             IGlobalRateLimitedMinter(address(grlm))
-        );
-        core.setGlobalSystemExitRateLimiter(
-            IGlobalSystemExitRateLimiter(address(gserl))
         );
         core.setGlobalReentrancyLock(lock);
 
@@ -194,10 +159,10 @@ contract NonCustodialPSMUnitTest is Test {
 
         /// top up contracts with tokens for testing
         dai.mint(address(pcvDeposit), daiTargetBalance);
-        dai.mint(address(custodialPsm), daiTargetBalance);
         entry.deposit(address(pcvDeposit));
 
         vm.label(address(psm), "psm");
+        vm.label(address(volt), "volt");
         vm.label(address(pcvDeposit), "pcvDeposit");
         vm.label(address(this), "address this");
     }
@@ -206,8 +171,7 @@ contract NonCustodialPSMUnitTest is Test {
         assertTrue(core.isLocker(address(psm)));
 
         assertTrue(core.isMinter(address(grlm)));
-        assertTrue(!core.isRateLimitedMinter(address(psm)));
-        assertTrue(core.isRateLimitedRedeemer(address(psm)));
+        assertTrue(core.isPsmMinter(address(psm)));
         assertTrue(core.isPCVController(address(psm)));
 
         assertEq(address(core.globalRateLimitedMinter()), address(grlm));
@@ -218,18 +182,10 @@ contract NonCustodialPSMUnitTest is Test {
         assertEq(address(psm.pcvDeposit()), address(pcvDeposit));
         assertEq(psm.decimalsNormalizer(), 0);
         assertEq(address(psm.underlyingToken()), address(dai));
-
-        assertEq(
-            address(psm.underlyingToken()),
-            address(custodialPsm.underlyingToken())
-        );
-        assertEq(psm.decimalsNormalizer(), custodialPsm.decimalsNormalizer());
-        assertEq(psm.ceiling(), custodialPsm.ceiling());
-        assertEq(psm.floor(), custodialPsm.floor());
     }
 
     function testGetMaxRedeemAmountIn() public {
-        uint256 buffer = gserl.buffer();
+        uint256 buffer = grlm.buffer();
         uint256 oraclePrice = psm.readOracle();
 
         uint256 pcvDepositBalance = pcvDeposit.balance();
@@ -239,16 +195,6 @@ contract NonCustodialPSMUnitTest is Test {
             (Math.min(buffer, pcvDepositBalance) * Constants.ETH_GRANULARITY) /
                 oraclePrice
         );
-    }
-
-    function testMintFails() public {
-        vm.expectRevert("NonCustodialPSM: cannot mint");
-        psm.mint(address(0), 0, 0);
-    }
-
-    function testGetMintAmountOutFails() public {
-        vm.expectRevert("NonCustodialPSM: cannot mint");
-        psm.getMintAmountOut(0);
     }
 
     function testExitValueInversionPositive(uint96 amount) public {
@@ -261,7 +207,7 @@ contract NonCustodialPSMUnitTest is Test {
             dai,
             voltFloorPrice,
             voltCeilingPrice,
-            IPCVDeposit(address(pcvDeposit))
+            IPCVDepositV2(address(pcvDeposit))
         );
 
         assertEq(psm.getExitValue(amount), amount / (1e12));
@@ -277,7 +223,7 @@ contract NonCustodialPSMUnitTest is Test {
             dai,
             voltFloorPrice,
             voltCeilingPrice,
-            IPCVDeposit(address(pcvDeposit))
+            IPCVDepositV2(address(pcvDeposit))
         );
 
         assertEq(psm.getExitValue(amount), uint256(amount) * (1e12));
@@ -328,10 +274,6 @@ contract NonCustodialPSMUnitTest is Test {
             amountOut.toInt256(),
             0
         );
-        assertEq(
-            psm.getRedeemAmountOut(amountVoltIn).toInt256(),
-            custodialPsm.getRedeemAmountOut(amountVoltIn).toInt256()
-        );
         assertApproxEqPpq(
             psm.getRedeemAmountOut(amountVoltIn).toInt256(),
             amountOut.toInt256(),
@@ -339,102 +281,13 @@ contract NonCustodialPSMUnitTest is Test {
         );
     }
 
-    function testRedeemFuzz(uint128 redeemAmount) public {
-        vm.assume(redeemAmount != 0);
-        uint256 amountOut;
-
-        {
-            uint256 voltBalance = volt.balanceOf(address(this));
-            uint256 underlyingAmountOut = psm.getRedeemAmountOut(voltBalance);
-            uint256 userStartingUnderlyingBalance = dai.balanceOf(
-                address(this)
-            );
-            uint256 depositStartingUnderlyingBalance = pcvDeposit.balance();
-            amountOut = underlyingAmountOut;
-
-            volt.approve(address(psm), voltBalance);
-            assertEq(
-                underlyingAmountOut,
-                psm.redeem(address(this), voltBalance, underlyingAmountOut)
-            );
-            assertEq(bufferCap - underlyingAmountOut, gserl.buffer());
-
-            uint256 depositEndingUnderlyingBalance = pcvDeposit.balance();
-            uint256 userEndingUnderlyingBalance = dai.balanceOf(address(this));
-            uint256 bufferAfterRedeem = grlm.buffer();
-
-            uint256 endingBalance = dai.balanceOf(address(this));
-
-            assertEq(endingBalance, underlyingAmountOut);
-
-            assertEq(
-                depositStartingUnderlyingBalance -
-                    depositEndingUnderlyingBalance,
-                underlyingAmountOut
-            );
-
-            assertEq(bufferAfterRedeem, grlm.bufferCap());
-            assertEq(bufferAfterRedeem, grlm.buffer());
-            assertEq(
-                userEndingUnderlyingBalance - underlyingAmountOut,
-                userStartingUnderlyingBalance
-            );
-            assertEq(volt.balanceOf(address(psm)), 0);
-        }
-        {
-            uint256 voltBalance = volt.balanceOf(address(this));
-            uint256 underlyingAmountOut = custodialPsm.getRedeemAmountOut(
-                voltBalance
-            );
-            uint256 userStartingUnderlyingBalance = dai.balanceOf(
-                address(this)
-            );
-            uint256 depositStartingUnderlyingBalance = custodialPsm.balance();
-
-            volt.approve(address(psm), voltBalance);
-            assertEq(
-                underlyingAmountOut,
-                custodialPsm.redeem(
-                    address(this),
-                    voltBalance,
-                    underlyingAmountOut
-                )
-            );
-
-            uint256 depositEndingUnderlyingBalance = custodialPsm.balance();
-            uint256 userEndingUnderlyingBalance = dai.balanceOf(address(this));
-            uint256 bufferAfterRedeem = grlm.buffer();
-
-            uint256 endingBalance = dai.balanceOf(address(this));
-
-            assertEq(endingBalance, underlyingAmountOut);
-
-            assertEq(
-                depositStartingUnderlyingBalance -
-                    depositEndingUnderlyingBalance,
-                underlyingAmountOut
-            );
-
-            assertEq(bufferAfterRedeem, grlm.bufferCap());
-            assertEq(bufferAfterRedeem, grlm.buffer());
-            assertEq(
-                userEndingUnderlyingBalance - underlyingAmountOut,
-                userStartingUnderlyingBalance
-            );
-            assertEq(
-                userEndingUnderlyingBalance - userStartingUnderlyingBalance,
-                amountOut
-            );
-            assertEq(volt.balanceOf(address(psm)), 0);
-            assertEq(amountOut, underlyingAmountOut);
-        }
-    }
-
-    function testRedeemDifferentialSucceeds(uint128 redeemAmount) public {
+    function testRedeemFuzz(uint72 redeemAmount) public {
         vm.assume(redeemAmount != 0);
 
+        volt.mint(address(this), redeemAmount);
+        uint256 startingVoltSupply = volt.totalSupply();
         uint256 voltBalance = volt.balanceOf(address(this));
-        uint256 underlyingAmountOut = psm.getRedeemAmountOut(voltBalance);
+        uint256 underlyingAmountOut = psm.getRedeemAmountOut(redeemAmount);
         uint256 userStartingUnderlyingBalance = dai.balanceOf(address(this));
         uint256 depositStartingUnderlyingBalance = pcvDeposit.balance();
 
@@ -443,11 +296,10 @@ contract NonCustodialPSMUnitTest is Test {
             underlyingAmountOut,
             psm.redeem(address(this), voltBalance, underlyingAmountOut)
         );
+        assertEq(grlm.midPoint() + redeemAmount, grlm.buffer()); /// redemptions make buffer increase by amount of Volt burned
 
         uint256 depositEndingUnderlyingBalance = pcvDeposit.balance();
         uint256 userEndingUnderlyingBalance = dai.balanceOf(address(this));
-        uint256 bufferAfterRedeem = grlm.buffer();
-
         uint256 endingBalance = dai.balanceOf(address(this));
 
         assertEq(endingBalance, underlyingAmountOut);
@@ -457,15 +309,30 @@ contract NonCustodialPSMUnitTest is Test {
             underlyingAmountOut
         );
 
-        assertEq(bufferCap - underlyingAmountOut, gserl.buffer());
-
-        assertEq(bufferAfterRedeem, grlm.bufferCap());
-        assertEq(bufferAfterRedeem, grlm.buffer());
         assertEq(
             userEndingUnderlyingBalance - underlyingAmountOut,
             userStartingUnderlyingBalance
         );
-        assertEq(volt.balanceOf(address(psm)), 0);
+        assertEq(startingVoltSupply - volt.totalSupply(), redeemAmount); /// all redeemed Volt is burned
+    }
+
+    function testRedeemWithZeroVoltFails() public {
+        assertEq(volt.totalSupply(), 0);
+        assertEq(volt.balanceOf(address(this)), 0);
+
+        volt.approve(address(psm), 1);
+
+        vm.expectRevert("ERC20: burn amount exceeds balance");
+        psm.redeem(address(this), 1, 0);
+    }
+
+    function testRedeemWithoutApprovalFails() public {
+        assertEq(volt.totalSupply(), 0);
+        assertEq(volt.balanceOf(address(this)), 0);
+        assertEq(volt.allowance(address(this), address(psm)), 0);
+
+        vm.expectRevert("ERC20: insufficient allowance");
+        psm.redeem(address(this), 1, 1);
     }
 
     function testSetOracleFloorPriceGovernorSucceedsFuzz(
@@ -501,11 +368,11 @@ contract NonCustodialPSMUnitTest is Test {
     }
 
     function testSetPCVDepositGovernorSucceeds() public {
-        IPCVDeposit newDeposit = IPCVDeposit(
+        IPCVDepositV2 newDeposit = IPCVDepositV2(
             address(new MockPCVDepositV3(coreAddress, address(dai)))
         );
         vm.expectEmit(true, true, false, true, address(psm));
-        emit PCVDepositUpdate(pcvDeposit, newDeposit);
+        emit PCVDepositUpdate(address(pcvDeposit), address(newDeposit));
         vm.prank(addresses.governorAddress);
         psm.setPCVDeposit(newDeposit);
 
@@ -513,7 +380,7 @@ contract NonCustodialPSMUnitTest is Test {
     }
 
     function testSetPCVDepositGovernorFailsMismatchUnderlyingToken() public {
-        IPCVDeposit newDeposit = IPCVDeposit(
+        IPCVDepositV2 newDeposit = IPCVDepositV2(
             address(new MockPCVDepositV3(coreAddress, address(12345)))
         );
         vm.prank(addresses.governorAddress);
@@ -530,7 +397,7 @@ contract NonCustodialPSMUnitTest is Test {
 
     function testSetPCVDepositNonGovernorFails() public {
         vm.expectRevert("CoreRef: Caller is not a governor");
-        psm.setPCVDeposit(IPCVDeposit(address(0)));
+        psm.setPCVDeposit(IPCVDepositV2(address(0)));
     }
 
     function testSetOracleCeilingPriceNonGovernorFails() public {

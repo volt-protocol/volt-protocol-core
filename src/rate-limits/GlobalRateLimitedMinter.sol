@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.8.13;
 
-import {IGlobalRateLimitedMinter} from "@voltprotocol/rate-limits/IGlobalRateLimitedMinter.sol";
 import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
 import {VoltRoles} from "@voltprotocol/core/VoltRoles.sol";
 import {RateLimitedV2} from "@voltprotocol/utils/RateLimitedV2.sol";
+import {IGlobalRateLimitedMinter} from "@voltprotocol/rate-limits/IGlobalRateLimitedMinter.sol";
 
 /// @notice contract to mint Volt on a rate limit.
 /// All minting should flow through this smart contract.
@@ -20,8 +20,8 @@ contract GlobalRateLimitedMinter is IGlobalRateLimitedMinter, RateLimitedV2 {
     constructor(
         address _core,
         uint256 _maxRateLimitPerSecond,
-        uint128 _rateLimitPerSecond,
-        uint128 _bufferCap
+        uint64 _rateLimitPerSecond,
+        uint96 _bufferCap
     )
         CoreRefV2(_core)
         RateLimitedV2(_maxRateLimitPerSecond, _rateLimitPerSecond, _bufferCap)
@@ -37,7 +37,7 @@ contract GlobalRateLimitedMinter is IGlobalRateLimitedMinter, RateLimitedV2 {
     )
         external
         /// checks
-        onlyVoltRole(VoltRoles.RATE_LIMIT_SYSTEM_ENTRY_DEPLETE)
+        onlyVoltRole(VoltRoles.PSM_MINTER)
         /// system must be level 1 locked before this function can execute
         /// asserts system is inside PSM mint when this function is called
         globalLock(2)
@@ -53,7 +53,7 @@ contract GlobalRateLimitedMinter is IGlobalRateLimitedMinter, RateLimitedV2 {
     )
         external
         /// checks
-        onlyVoltRole(VoltRoles.RATE_LIMIT_SYSTEM_ENTRY_REPLENISH)
+        onlyVoltRole(VoltRoles.PSM_MINTER)
         /// system must be level 1 locked before this function can execute
         /// asserts system is inside PSM redeem when this function is called
         globalLock(2)

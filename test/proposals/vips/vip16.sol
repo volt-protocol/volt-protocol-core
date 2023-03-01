@@ -16,29 +16,28 @@ import {PCVRouter} from "@voltprotocol/pcv/PCVRouter.sol";
 import {PCVOracle} from "@voltprotocol/oracle/PCVOracle.sol";
 import {CoreRefV2} from "@voltprotocol/refs/CoreRefV2.sol";
 import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
+import {PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
 import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
-import {MigratorRouter} from "@voltprotocol/v1-migration/MigratorRouter.sol";
-import {ERC20Allocator} from "@voltprotocol/pcv/ERC20Allocator.sol";
+import {IOracleRefV2} from "@voltprotocol/refs/IOracleRefV2.sol";
+import {IPCVDepositV2} from "@voltprotocol/pcv/IPCVDepositV2.sol";
 import {NonCustodialPSM} from "@voltprotocol/peg/NonCustodialPSM.sol";
 import {MakerPCVSwapper} from "@voltprotocol/pcv/maker/MakerPCVSwapper.sol";
 import {VoltSystemOracle} from "@voltprotocol/oracle/VoltSystemOracle.sol";
-import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
+// import {EulerPCVDeposit} from "@voltprotocol/pcv/euler/EulerPCVDeposit.sol";
 import {IPegStabilityModule} from "@voltprotocol/peg/IPegStabilityModule.sol";
 import {ConstantPriceOracle} from "@voltprotocol/oracle/ConstantPriceOracle.sol";
 import {CompoundBadDebtSentinel} from "@voltprotocol/pcv/compound/CompoundBadDebtSentinel.sol";
-import {IPCVDeposit, PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
-import {MorphoCompoundPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoCompoundPCVDeposit.sol";
-import {IVoltMigrator, VoltMigrator} from "@voltprotocol/v1-migration/VoltMigrator.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "@voltprotocol/rate-limits/GlobalRateLimitedMinter.sol";
-import {IGlobalSystemExitRateLimiter, GlobalSystemExitRateLimiter} from "@voltprotocol/rate-limits/GlobalSystemExitRateLimiter.sol";
 
 /*
 VIP16 Executes after VIP15 (SystemV1 deprecation), and deploys the new SystemV2.
 VIP16 does not do any multisig or timelock actions, only deployment of contracts
 and tying them together properly.
 */
+
+/// TODO uncomment pcv deposit checks when deposits are added back to the repo
 
 contract vip16 is Proposal {
     using SafeCast for *;
@@ -65,10 +64,10 @@ contract vip16 is Proposal {
     uint256 public constant MAX_RATE_LIMIT_PER_SECOND_MINTING = 100e18;
 
     /// replenish 0 VOLT per day
-    uint128 public constant RATE_LIMIT_PER_SECOND_MINTING = 0;
+    uint64 public constant RATE_LIMIT_PER_SECOND_MINTING = 0;
 
     /// buffer cap of 3m VOLT
-    uint128 public constant BUFFER_CAP_MINTING = 3_000_000e18;
+    uint96 public constant BUFFER_CAP_MINTING = 3_000_000e18;
 
     /// ---------- RATE LIMITED MINTER PARAMS ----------
 
@@ -80,12 +79,6 @@ contract vip16 is Proposal {
 
     /// buffer cap of 0.5m VOLT
     uint128 public constant BUFFER_CAP_EXITING = 500_000e18;
-
-    /// ---------- ALLOCATOR PARAMS ----------
-
-    uint256 public constant ALLOCATOR_MAX_RATE_LIMIT_PER_SECOND = 1_000e18; /// 1k volt per second
-    uint128 public constant ALLOCATOR_RATE_LIMIT_PER_SECOND = 10e18; /// 10 volt per second
-    uint128 public constant ALLOCATOR_BUFFER_CAP = 1_000_000e18; /// buffer cap is 1m volt
 
     /// ---------- PSM PARAMS ----------
 
@@ -129,51 +122,40 @@ contract vip16 is Proposal {
                 RATE_LIMIT_PER_SECOND_MINTING,
                 BUFFER_CAP_MINTING
             );
-            GlobalSystemExitRateLimiter gserl = new GlobalSystemExitRateLimiter(
-                addresses.mainnet("CORE"),
-                MAX_RATE_LIMIT_PER_SECOND_EXITING,
-                RATE_LIMIT_PER_SECOND_EXIT,
-                BUFFER_CAP_EXITING
-            );
 
             addresses.addMainnet(
                 "TIMELOCK_CONTROLLER",
                 address(timelockController)
             );
             addresses.addMainnet("GLOBAL_RATE_LIMITED_MINTER", address(grlm));
-            addresses.addMainnet(
-                "GLOBAL_SYSTEM_EXIT_RATE_LIMITER",
-                address(gserl)
-            );
         }
+        // {
+        //     /// Euler Deposits
+        //     EulerPCVDeposit eulerDaiPCVDeposit = new EulerPCVDeposit(
+        //         addresses.mainnet("CORE"),
+        //         addresses.mainnet("EULER_DAI"),
+        //         addresses.mainnet("EULER_MAIN"),
+        //         addresses.mainnet("DAI"),
+        //         address(0)
+        //     );
 
-        /// PCV Deposits
-        {
-            MorphoCompoundPCVDeposit morphoDaiPCVDeposit = new MorphoCompoundPCVDeposit(
-                    addresses.mainnet("CORE"),
-                    addresses.mainnet("CDAI"),
-                    addresses.mainnet("DAI"),
-                    addresses.mainnet("MORPHO"),
-                    addresses.mainnet("MORPHO_LENS")
-                );
+        //     EulerPCVDeposit eulerUsdcPCVDeposit = new EulerPCVDeposit(
+        //         addresses.mainnet("CORE"),
+        //         addresses.mainnet("EULER_USDC"),
+        //         addresses.mainnet("EULER_MAIN"),
+        //         addresses.mainnet("USDC"),
+        //         address(0)
+        //     );
 
-            MorphoCompoundPCVDeposit morphoUsdcPCVDeposit = new MorphoCompoundPCVDeposit(
-                    addresses.mainnet("CORE"),
-                    addresses.mainnet("CUSDC"),
-                    addresses.mainnet("USDC"),
-                    addresses.mainnet("MORPHO"),
-                    addresses.mainnet("MORPHO_LENS")
-                );
-
-            addresses.addMainnet(
-                "PCV_DEPOSIT_MORPHO_DAI",
-                address(morphoDaiPCVDeposit)
-            );
-            addresses.addMainnet(
-                "PCV_DEPOSIT_MORPHO_USDC",
-                address(morphoUsdcPCVDeposit)
-            );
-        }
+        //     addresses.addMainnet(
+        //         "PCV_DEPOSIT_EULER_DAI",
+        //         address(eulerDaiPCVDeposit)
+        //     );
+        //     addresses.addMainnet(
+        //         "PCV_DEPOSIT_EULER_USDC",
+        //         address(eulerUsdcPCVDeposit)
+        //     );
+        // }
 
         /// VOLT rate
         {
@@ -186,87 +168,40 @@ contract vip16 is Proposal {
 
         /// Peg Stability
         {
-            PegStabilityModule daipsm = new PegStabilityModule(
-                addresses.mainnet("CORE"),
-                addresses.mainnet("VOLT_SYSTEM_ORACLE"),
-                address(0),
-                0,
-                false,
-                IERC20(addresses.mainnet("DAI")),
-                VOLT_FLOOR_PRICE_DAI,
-                VOLT_CEILING_PRICE_DAI
-            );
-            PegStabilityModule usdcpsm = new PegStabilityModule(
-                addresses.mainnet("CORE"),
-                addresses.mainnet("VOLT_SYSTEM_ORACLE"),
-                address(0),
-                -12,
-                false,
-                IERC20(addresses.mainnet("USDC")),
-                VOLT_FLOOR_PRICE_USDC,
-                VOLT_CEILING_PRICE_USDC
-            );
-            NonCustodialPSM usdcNonCustodialPsm = new NonCustodialPSM(
-                addresses.mainnet("CORE"),
-                addresses.mainnet("VOLT_SYSTEM_ORACLE"),
-                address(0),
-                -12,
-                false,
-                IERC20(addresses.mainnet("USDC")),
-                VOLT_FLOOR_PRICE_USDC,
-                VOLT_CEILING_PRICE_USDC,
-                IPCVDeposit(addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC"))
-            );
-            NonCustodialPSM daiNonCustodialPsm = new NonCustodialPSM(
-                addresses.mainnet("CORE"),
-                addresses.mainnet("VOLT_SYSTEM_ORACLE"),
-                address(0),
-                0,
-                false,
-                IERC20(addresses.mainnet("DAI")),
-                VOLT_FLOOR_PRICE_DAI,
-                VOLT_CEILING_PRICE_DAI,
-                IPCVDeposit(addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI"))
-            );
-            ERC20Allocator allocator = new ERC20Allocator(
-                addresses.mainnet("CORE")
-            );
-
-            addresses.addMainnet("PSM_DAI", address(daipsm));
-            addresses.addMainnet("PSM_USDC", address(usdcpsm));
-            addresses.addMainnet(
-                "PSM_NONCUSTODIAL_USDC",
-                address(usdcNonCustodialPsm)
-            );
-            addresses.addMainnet(
-                "PSM_NONCUSTODIAL_DAI",
-                address(daiNonCustodialPsm)
-            );
-            addresses.addMainnet("PSM_ALLOCATOR", address(allocator));
-        }
-
-        /// Volt Migration
-        {
-            VoltMigrator voltMigrator = new VoltMigrator(
-                addresses.mainnet("CORE"),
-                IVolt(addresses.mainnet("VOLT"))
-            );
-
-            MigratorRouter migratorRouter = new MigratorRouter(
-                IVolt(addresses.mainnet("VOLT")),
-                IVoltMigrator(address(voltMigrator)),
-                IPegStabilityModule(addresses.mainnet("PSM_DAI")),
-                IPegStabilityModule(addresses.mainnet("PSM_USDC"))
-            );
-
-            addresses.addMainnet(
-                "V1_MIGRATION_MIGRATOR",
-                address(voltMigrator)
-            );
-            addresses.addMainnet(
-                "V1_MIGRATION_ROUTER",
-                address(migratorRouter)
-            );
+            // NonCustodialPSM usdcNonCustodialPsm = new NonCustodialPSM(
+            //     addresses.mainnet("CORE"),
+            //     addresses.mainnet("VOLT_SYSTEM_ORACLE"),
+            //     address(0),
+            //     -12,
+            //     false,
+            //     IERC20(addresses.mainnet("USDC")),
+            //     VOLT_FLOOR_PRICE_USDC,
+            //     VOLT_CEILING_PRICE_USDC,
+            //     IPCVDepositV2(
+            //         addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC")
+            //     )
+            // );
+            // NonCustodialPSM daiNonCustodialPsm = new NonCustodialPSM(
+            //     addresses.mainnet("CORE"),
+            //     addresses.mainnet("VOLT_SYSTEM_ORACLE"),
+            //     address(0),
+            //     0,
+            //     false,
+            //     IERC20(addresses.mainnet("DAI")),
+            //     VOLT_FLOOR_PRICE_DAI,
+            //     VOLT_CEILING_PRICE_DAI,
+            //     IPCVDepositV2(
+            //         addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI")
+            //     )
+            // );
+            // addresses.addMainnet(
+            //     "PSM_NONCUSTODIAL_USDC",
+            //     address(usdcNonCustodialPsm)
+            // );
+            // addresses.addMainnet(
+            //     "PSM_NONCUSTODIAL_DAI",
+            //     address(daiNonCustodialPsm)
+            // );
         }
 
         /// PCV Movement
@@ -279,15 +214,25 @@ contract vip16 is Proposal {
                 addresses.mainnet("CORE")
             );
 
-            address[] memory pcvGuardianSafeAddresses = new address[](4);
-            pcvGuardianSafeAddresses[0] = addresses.mainnet(
-                "PCV_DEPOSIT_MORPHO_DAI"
-            );
-            pcvGuardianSafeAddresses[1] = addresses.mainnet(
-                "PCV_DEPOSIT_MORPHO_USDC"
-            );
-            pcvGuardianSafeAddresses[2] = addresses.mainnet("PSM_USDC");
-            pcvGuardianSafeAddresses[3] = addresses.mainnet("PSM_DAI");
+            address[] memory pcvGuardianSafeAddresses = new address[](0);
+            // pcvGuardianSafeAddresses[0] = addresses.mainnet(
+            //     "PCV_DEPOSIT_MORPHO_COMPOUND_DAI"
+            // );
+            // pcvGuardianSafeAddresses[1] = addresses.mainnet(
+            //     "PCV_DEPOSIT_MORPHO_COMPOUND_USDC"
+            // );
+            // pcvGuardianSafeAddresses[2] = addresses.mainnet(
+            //     "PCV_DEPOSIT_EULER_DAI"
+            // );
+            // pcvGuardianSafeAddresses[3] = addresses.mainnet(
+            //     "PCV_DEPOSIT_EULER_USDC"
+            // );
+            // pcvGuardianSafeAddresses[4] = addresses.mainnet(
+            //     "PCV_DEPOSIT_MORPHO_AAVE_DAI"
+            // );
+            // pcvGuardianSafeAddresses[5] = addresses.mainnet(
+            //     "PCV_DEPOSIT_MORPHO_AAVE_USDC"
+            // );
 
             PCVGuardian pcvGuardian = new PCVGuardian(
                 addresses.mainnet("CORE"),
@@ -343,9 +288,6 @@ contract vip16 is Proposal {
         TimelockController timelockController = TimelockController(
             payable(addresses.mainnet("TIMELOCK_CONTROLLER"))
         );
-        ERC20Allocator allocator = ERC20Allocator(
-            addresses.mainnet("PSM_ALLOCATOR")
-        );
         PCVOracle pcvOracle = PCVOracle(addresses.mainnet("PCV_ORACLE"));
         PCVRouter pcvRouter = PCVRouter(addresses.mainnet("PCV_ROUTER"));
         VoltSystemOracle oracle = VoltSystemOracle(
@@ -359,11 +301,6 @@ contract vip16 is Proposal {
                 addresses.mainnet("GLOBAL_RATE_LIMITED_MINTER")
             )
         );
-        core.setGlobalSystemExitRateLimiter(
-            IGlobalSystemExitRateLimiter(
-                addresses.mainnet("GLOBAL_SYSTEM_EXIT_RATE_LIMITER")
-            )
-        );
         core.setPCVOracle(IPCVOracle(addresses.mainnet("PCV_ORACLE")));
         core.setGlobalReentrancyLock(
             IGlobalReentrancyLock(addresses.mainnet("GLOBAL_LOCK"))
@@ -373,51 +310,50 @@ contract vip16 is Proposal {
         core.grantGovernor(addresses.mainnet("TIMELOCK_CONTROLLER"));
         core.grantGovernor(addresses.mainnet("GOVERNOR")); /// team multisig
 
-        core.grantPCVController(addresses.mainnet("PSM_ALLOCATOR"));
         core.grantPCVController(addresses.mainnet("PCV_GUARDIAN"));
         core.grantPCVController(addresses.mainnet("PCV_ROUTER"));
         core.grantPCVController(addresses.mainnet("GOVERNOR")); /// team multisig
-        core.grantPCVController(addresses.mainnet("PSM_NONCUSTODIAL_DAI"));
-        core.grantPCVController(addresses.mainnet("PSM_NONCUSTODIAL_USDC"));
+        // core.grantPCVController(addresses.mainnet("PSM_NONCUSTODIAL_DAI"));
+        // core.grantPCVController(addresses.mainnet("PSM_NONCUSTODIAL_USDC"));
 
         core.createRole(VoltRoles.PCV_MOVER, VoltRoles.GOVERNOR);
         core.grantRole(VoltRoles.PCV_MOVER, addresses.mainnet("GOVERNOR")); /// team multisig
 
-        core.createRole(
-            VoltRoles.RATE_LIMIT_SYSTEM_EXIT_DEPLETE,
-            VoltRoles.GOVERNOR
-        );
-        core.grantRole(
-            VoltRoles.RATE_LIMIT_SYSTEM_EXIT_DEPLETE,
-            addresses.mainnet("PSM_ALLOCATOR")
-        );
-        core.grantRole(
-            VoltRoles.RATE_LIMIT_SYSTEM_EXIT_DEPLETE,
-            addresses.mainnet("PSM_NONCUSTODIAL_DAI")
-        );
-        core.grantRole(
-            VoltRoles.RATE_LIMIT_SYSTEM_EXIT_DEPLETE,
-            addresses.mainnet("PSM_NONCUSTODIAL_USDC")
-        );
-
-        core.createRole(
-            VoltRoles.RATE_LIMIT_SYSTEM_EXIT_REPLENISH,
-            VoltRoles.GOVERNOR
-        );
-        core.grantRole(
-            VoltRoles.RATE_LIMIT_SYSTEM_EXIT_REPLENISH,
-            addresses.mainnet("PSM_ALLOCATOR")
-        );
+        // core.createRole(VoltRoles.PSM_MINTER, VoltRoles.GOVERNOR);
+        // core.grantRole(
+        //     VoltRoles.PSM_MINTER,
+        //     addresses.mainnet("PSM_NONCUSTODIAL_DAI")
+        // );
+        // core.grantRole(
+        //     VoltRoles.PSM_MINTER,
+        //     addresses.mainnet("PSM_NONCUSTODIAL_USDC")
+        // );
 
         core.createRole(VoltRoles.PCV_DEPOSIT, VoltRoles.GOVERNOR);
-        core.grantRole(
-            VoltRoles.PCV_DEPOSIT,
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
-        );
-        core.grantRole(
-            VoltRoles.PCV_DEPOSIT,
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
-        );
+        // core.grantRole(
+        //     VoltRoles.PCV_DEPOSIT,
+        //     addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI")
+        // );
+        // core.grantRole(
+        //     VoltRoles.PCV_DEPOSIT,
+        //     addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC")
+        // );
+        // core.grantRole(
+        //     VoltRoles.PCV_DEPOSIT,
+        //     addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_DAI")
+        // );
+        // core.grantRole(
+        //     VoltRoles.PCV_DEPOSIT,
+        //     addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_USDC")
+        // );
+        // core.grantRole(
+        //     VoltRoles.PCV_DEPOSIT,
+        //     addresses.mainnet("PCV_DEPOSIT_EULER_DAI")
+        // );
+        // core.grantRole(
+        //     VoltRoles.PCV_DEPOSIT,
+        //     addresses.mainnet("PCV_DEPOSIT_EULER_USDC")
+        // );
 
         core.grantPCVGuard(addresses.mainnet("EOA_1"));
         core.grantPCVGuard(addresses.mainnet("EOA_2"));
@@ -427,73 +363,41 @@ contract vip16 is Proposal {
         core.grantGuardian(addresses.mainnet("GOVERNOR")); /// team multisig
         core.grantGuardian(addresses.mainnet("COMPOUND_BAD_DEBT_SENTINEL"));
 
-        core.grantRateLimitedMinter(addresses.mainnet("PSM_DAI"));
-        core.grantRateLimitedMinter(addresses.mainnet("PSM_USDC"));
-
-        core.grantRateLimitedRedeemer(addresses.mainnet("PSM_DAI"));
-        core.grantRateLimitedRedeemer(addresses.mainnet("PSM_USDC"));
-        core.grantRateLimitedRedeemer(
-            addresses.mainnet("PSM_NONCUSTODIAL_DAI")
-        );
-        core.grantRateLimitedRedeemer(
-            addresses.mainnet("PSM_NONCUSTODIAL_USDC")
-        );
-
-        core.grantSystemExitRateLimitDepleter(
-            addresses.mainnet("PSM_NONCUSTODIAL_DAI")
-        );
-        core.grantSystemExitRateLimitDepleter(
-            addresses.mainnet("PSM_NONCUSTODIAL_USDC")
-        );
-
-        core.grantSystemExitRateLimitReplenisher(
-            addresses.mainnet("PSM_ALLOCATOR")
-        );
+        // core.grantPsmMinter(addresses.mainnet("PSM_NONCUSTODIAL_DAI"));
+        // core.grantPsmMinter(addresses.mainnet("PSM_NONCUSTODIAL_USDC"));
 
         core.grantLocker(addresses.mainnet("SYSTEM_ENTRY"));
-        core.grantLocker(addresses.mainnet("PSM_ALLOCATOR"));
         core.grantLocker(addresses.mainnet("PCV_ORACLE"));
-        core.grantLocker(addresses.mainnet("PSM_DAI"));
-        core.grantLocker(addresses.mainnet("PSM_USDC"));
-        core.grantLocker(addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI"));
-        core.grantLocker(addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC"));
+        // core.grantLocker(addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI"));
+        // core.grantLocker(addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC"));
         core.grantLocker(addresses.mainnet("GLOBAL_RATE_LIMITED_MINTER"));
-        core.grantLocker(addresses.mainnet("GLOBAL_SYSTEM_EXIT_RATE_LIMITER"));
         core.grantLocker(addresses.mainnet("PCV_ROUTER"));
         core.grantLocker(addresses.mainnet("PCV_GUARDIAN"));
-        core.grantLocker(addresses.mainnet("PSM_NONCUSTODIAL_DAI"));
-        core.grantLocker(addresses.mainnet("PSM_NONCUSTODIAL_USDC"));
+        // core.grantLocker(addresses.mainnet("PSM_NONCUSTODIAL_DAI"));
+        // core.grantLocker(addresses.mainnet("PSM_NONCUSTODIAL_USDC"));
+        // core.grantLocker(addresses.mainnet("PCV_DEPOSIT_EULER_DAI"));
+        // core.grantLocker(addresses.mainnet("PCV_DEPOSIT_EULER_USDC"));
+        // core.grantLocker(addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_DAI"));
+        // core.grantLocker(addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_USDC"));
 
         core.grantMinter(addresses.mainnet("GLOBAL_RATE_LIMITED_MINTER"));
 
-        /// Allocator config
-        allocator.connectPSM(
-            addresses.mainnet("PSM_USDC"),
-            USDC_TARGET_BALANCE,
-            USDC_DECIMALS_NORMALIZER
-        );
-        allocator.connectPSM(
-            addresses.mainnet("PSM_DAI"),
-            DAI_TARGET_BALANCE,
-            DAI_DECIMALS_NORMALIZER
-        );
-        allocator.connectDeposit(
-            addresses.mainnet("PSM_USDC"),
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
-        );
-        allocator.connectDeposit(
-            addresses.mainnet("PSM_DAI"),
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
-        );
-
         /// Configure PCV Oracle
-        address[] memory venues = new address[](2);
-        venues[0] = addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI");
-        venues[1] = addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC");
+        address[] memory venues = new address[](0);
+        // venues[0] = addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI");
+        // venues[1] = addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC");
+        // venues[0] = addresses.mainnet("PCV_DEPOSIT_EULER_DAI");
+        // venues[1] = addresses.mainnet("PCV_DEPOSIT_EULER_USDC");
+        // venues[4] = addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_DAI");
+        // venues[5] = addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_USDC");
 
-        address[] memory oracles = new address[](2);
-        oracles[0] = addresses.mainnet("ORACLE_CONSTANT_DAI");
-        oracles[1] = addresses.mainnet("ORACLE_CONSTANT_USDC");
+        address[] memory oracles = new address[](0);
+        // oracles[0] = addresses.mainnet("ORACLE_CONSTANT_DAI");
+        // oracles[1] = addresses.mainnet("ORACLE_CONSTANT_USDC");
+        // oracles[2] = addresses.mainnet("ORACLE_CONSTANT_DAI");
+        // oracles[3] = addresses.mainnet("ORACLE_CONSTANT_USDC");
+        // oracles[4] = addresses.mainnet("ORACLE_CONSTANT_DAI");
+        // oracles[5] = addresses.mainnet("ORACLE_CONSTANT_USDC");
 
         pcvOracle.addVenues(venues, oracles);
 
@@ -534,14 +438,8 @@ contract vip16 is Proposal {
 
     function validate(Addresses addresses, address /* deployer*/) public {
         CoreV2 core = CoreV2(addresses.mainnet("CORE"));
-        ERC20Allocator allocator = ERC20Allocator(
-            addresses.mainnet("PSM_ALLOCATOR")
-        );
         PCVOracle pcvOracle = PCVOracle(addresses.mainnet("PCV_ORACLE"));
         PCVRouter pcvRouter = PCVRouter(addresses.mainnet("PCV_ROUTER"));
-        MigratorRouter migratorRouter = MigratorRouter(
-            addresses.mainnet("V1_MIGRATION_ROUTER")
-        );
         VoltSystemOracle oracle = VoltSystemOracle(
             addresses.mainnet("VOLT_SYSTEM_ORACLE")
         );
@@ -579,58 +477,61 @@ contract vip16 is Proposal {
             address(core)
         );
         assertEq(
-            address(
-                CoreRefV2(addresses.mainnet("GLOBAL_SYSTEM_EXIT_RATE_LIMITER"))
-                    .core()
-            ),
-            address(core)
-        );
-        assertEq(
             address(CoreRefV2(addresses.mainnet("VOLT_SYSTEM_ORACLE")).core()),
             address(core)
         );
-        assertEq(
-            address(
-                CoreRefV2(addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")).core()
-            ),
-            address(core)
-        );
-        assertEq(
-            address(
-                CoreRefV2(addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")).core()
-            ),
-            address(core)
-        );
-        assertEq(
-            address(CoreRefV2(addresses.mainnet("PSM_DAI")).core()),
-            address(core)
-        );
-        assertEq(
-            address(CoreRefV2(addresses.mainnet("PSM_USDC")).core()),
-            address(core)
-        );
-        assertEq(
-            address(
-                CoreRefV2(addresses.mainnet("PSM_NONCUSTODIAL_USDC")).core()
-            ),
-            address(core)
-        );
-        assertEq(
-            address(
-                CoreRefV2(addresses.mainnet("PSM_NONCUSTODIAL_DAI")).core()
-            ),
-            address(core)
-        );
-        assertEq(
-            address(CoreRefV2(addresses.mainnet("PSM_ALLOCATOR")).core()),
-            address(core)
-        );
-        assertEq(
-            address(
-                CoreRefV2(addresses.mainnet("V1_MIGRATION_MIGRATOR")).core()
-            ),
-            address(core)
-        );
+        // assertEq(
+        //     address(
+        //         CoreRefV2(addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI"))
+        //             .core()
+        //     ),
+        //     address(core)
+        // );
+        // assertEq(
+        //     address(
+        //         CoreRefV2(addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC"))
+        //             .core()
+        //     ),
+        //     address(core)
+        // );
+        // assertEq(
+        //     address(
+        //         CoreRefV2(addresses.mainnet("PCV_DEPOSIT_EULER_DAI")).core()
+        //     ),
+        //     address(core)
+        // );
+        // assertEq(
+        //     address(
+        //         CoreRefV2(addresses.mainnet("PCV_DEPOSIT_EULER_USDC")).core()
+        //     ),
+        //     address(core)
+        // );
+        // assertEq(
+        //     address(
+        //         CoreRefV2(addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_DAI"))
+        //             .core()
+        //     ),
+        //     address(core)
+        // );
+        // assertEq(
+        //     address(
+        //         CoreRefV2(addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_USDC"))
+        //             .core()
+        //     ),
+        //     address(core)
+        // );
+        // assertEq(
+        //     address(
+        //         CoreRefV2(addresses.mainnet("PSM_NONCUSTODIAL_USDC")).core()
+        //     ),
+        //     address(core)
+        // );
+        // assertEq(
+        //     address(
+        //         CoreRefV2(addresses.mainnet("PSM_NONCUSTODIAL_DAI")).core()
+        //     ),
+        //     address(core)
+        // );
         // V1_MIGRATION_ROUTER is not CoreRef, it is only a util contract to call other contracts
         assertEq(
             address(CoreRefV2(addresses.mainnet("SYSTEM_ENTRY")).core()),
@@ -679,44 +580,34 @@ contract vip16 is Proposal {
             address(core.globalRateLimitedMinter()),
             addresses.mainnet("GLOBAL_RATE_LIMITED_MINTER")
         );
-        assertEq(
-            address(core.globalSystemExitRateLimiter()),
-            addresses.mainnet("GLOBAL_SYSTEM_EXIT_RATE_LIMITER")
-        );
         assertEq(address(core.pcvOracle()), addresses.mainnet("PCV_ORACLE"));
 
-        // psm allocator
-        assertEq(
-            allocator.pcvDepositToPSM(
-                addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
-            ),
-            addresses.mainnet("PSM_USDC")
-        );
-        assertEq(
-            allocator.pcvDepositToPSM(
-                addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
-            ),
-            addresses.mainnet("PSM_DAI")
-        );
-        (address psmToken1, , ) = allocator.allPSMs(
-            addresses.mainnet("PSM_DAI")
-        );
-        (address psmToken2, , ) = allocator.allPSMs(
-            addresses.mainnet("PSM_USDC")
-        );
-        assertEq(psmToken1, addresses.mainnet("DAI"));
-        assertEq(psmToken2, addresses.mainnet("USDC"));
-
         // pcv oracle
-        assertEq(pcvOracle.getVenues().length, 2);
-        assertEq(
-            pcvOracle.getVenues()[0],
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
-        );
-        assertEq(
-            pcvOracle.getVenues()[1],
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
-        );
+        assertEq(pcvOracle.getVenues().length, 0);
+        // assertEq(
+        //     pcvOracle.getVenues()[0],
+        //     addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI")
+        // );
+        // assertEq(
+        //     pcvOracle.getVenues()[1],
+        //     addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC")
+        // );
+        // assertEq(
+        //     pcvOracle.getVenues()[0],
+        //     addresses.mainnet("PCV_DEPOSIT_EULER_DAI")
+        // );
+        // assertEq(
+        //     pcvOracle.getVenues()[1],
+        //     addresses.mainnet("PCV_DEPOSIT_EULER_USDC")
+        // );
+        // assertEq(
+        //     pcvOracle.getVenues()[4],
+        //     addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_DAI")
+        // );
+        // assertEq(
+        //     pcvOracle.getVenues()[5],
+        //     addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_USDC")
+        // );
 
         // pcv router
         assertTrue(
@@ -724,33 +615,31 @@ contract vip16 is Proposal {
         );
 
         // oracle references
-        assertEq(
-            address(PegStabilityModule(addresses.mainnet("PSM_DAI")).oracle()),
-            addresses.mainnet("VOLT_SYSTEM_ORACLE")
-        );
-        assertEq(
-            address(PegStabilityModule(addresses.mainnet("PSM_USDC")).oracle()),
-            addresses.mainnet("VOLT_SYSTEM_ORACLE")
-        );
-
-        // volt v1 migration references
-        assertEq(address(migratorRouter.newVolt()), addresses.mainnet("VOLT"));
-        assertEq(
-            address(migratorRouter.OLD_VOLT()),
-            addresses.mainnet("V1_VOLT")
-        );
+        // assertEq(
+        //     address(
+        //         IOracleRefV2(addresses.mainnet("PSM_NONCUSTODIAL_DAI")).oracle()
+        //     ),
+        //     addresses.mainnet("VOLT_SYSTEM_ORACLE")
+        // );
+        // assertEq(
+        //     address(
+        //         IOracleRefV2(addresses.mainnet("PSM_NONCUSTODIAL_USDC"))
+        //             .oracle()
+        //     ),
+        //     addresses.mainnet("VOLT_SYSTEM_ORACLE")
+        // );
 
         /// compound bad debt sentinel
-        assertTrue(
-            badDebtSentinel.isCompoundPcvDeposit(
-                addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
-            )
-        );
-        assertTrue(
-            badDebtSentinel.isCompoundPcvDeposit(
-                addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
-            )
-        );
+        // assertTrue(
+        //     badDebtSentinel.isCompoundPcvDeposit(
+        //         addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC")
+        //     )
+        // );
+        // assertTrue(
+        //     badDebtSentinel.isCompoundPcvDeposit(
+        //         addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI")
+        //     )
+        // );
         assertEq(
             badDebtSentinel.pcvGuardian(),
             addresses.mainnet("PCV_GUARDIAN")
