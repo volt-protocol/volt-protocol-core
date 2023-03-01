@@ -27,7 +27,7 @@ contract vip17 is MultisigProposal {
         // We expect a 100% PCV change in the PCV Oracle for this proposal, because
         // before this proposal, PCV oracle has 0 PCV, but after, it will list all
         // the protocol's funds.
-        EXPECT_PCV_CHANGE = 1e18;
+        // EXPECT_PCV_CHANGE = 1e18;
         // We changed the way oracles are handled in PSMs (value is inverted, and
         // the decimals are handled differently), so skip the PSM oracle test.
         SKIP_PSM_ORACLE_TEST = true;
