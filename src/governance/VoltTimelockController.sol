@@ -7,7 +7,9 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
 
 /// @title An override of the regular OZ governance/TimelockController to allow uniform
 /// access control in the Volt system based on roles defined in Core.
-/// @dev The roles and roles management from OZ access/AccessControl.sol are bypassed.
+/// @dev The roles and roles management from OZ access/AccessControl.sol are ignored, we
+/// chose not to fork TimelockController and just bypass its access control system, to
+/// introduce as few code changes as possible on top of OpenZeppelin's governance code.
 /// @author eswak
 contract VoltTimelockController is TimelockController, CoreRefV2 {
     constructor(
