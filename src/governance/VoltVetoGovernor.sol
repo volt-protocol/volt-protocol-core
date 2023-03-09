@@ -158,16 +158,14 @@ contract VoltVetoGovernor is CoreRefV2, Governor, GovernorVotes {
         public
         view
         virtual
-        returns (
-            uint256 againstVotes,
-            uint256 /* forVotes*/,
-            uint256 /* abstainVotes*/
-        )
+        returns (uint256 againstVotes, uint256 forVotes, uint256 abstainVotes)
     {
         // againstVotes are supporting the execution of Veto
         againstVotes = _proposalVotes[proposalId].againstVotes;
         // no forVotes can be cast in the Veto module, keep 0 value
+        forVotes = 0;
         // no abstainVotes can be cast in the Veto module, keep 0 value
+        abstainVotes = 0;
     }
 
     /**

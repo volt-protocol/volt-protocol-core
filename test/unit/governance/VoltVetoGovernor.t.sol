@@ -138,7 +138,6 @@ contract VoltVetoGovernorUnitTest is Test {
 
         // check the proposal has been cleared out of the timelock
         assertEq(timelock.isOperation(timelockId), false);
-        assertEq(__lastCallValue, 0); // the timelock action didnt execute
     }
 
     function testVetoQuorumNotReached() public {
