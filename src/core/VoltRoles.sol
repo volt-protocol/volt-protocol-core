@@ -56,16 +56,14 @@ library VoltRoles {
         keccak256("RATE_LIMIT_SYSTEM_EXIT_REPLENISH_ROLE");
 
     /// ----------- Timelock management ----------------------------------------
+    /// The hashes are the same as OpenZeppelins's roles in TimelockController
 
     /// @notice can propose new actions in timelocks
-    bytes32 internal constant TIMELOCK_PROPOSER =
-        keccak256("TIMELOCK_PROPOSER_ROLE");
+    bytes32 internal constant TIMELOCK_PROPOSER = keccak256("PROPOSER_ROLE");
     /// @notice can execute actions in timelocks after their delay
-    bytes32 internal constant TIMELOCK_EXECUTOR =
-        keccak256("TIMELOCK_EXECUTOR_ROLE");
+    bytes32 internal constant TIMELOCK_EXECUTOR = keccak256("EXECUTOR_ROLE");
     /// @notice can cancel actions in timelocks
-    bytes32 internal constant TIMELOCK_CANCELLER =
-        keccak256("TIMELOCK_CANCELLER_ROLE");
+    bytes32 internal constant TIMELOCK_CANCELLER = keccak256("CANCELLER_ROLE");
 
     /*///////////////////////////////////////////////////////////////
                                 Minor Roles

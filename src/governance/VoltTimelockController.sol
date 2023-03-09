@@ -26,18 +26,7 @@ contract VoltTimelockController is TimelockController, CoreRefV2 {
         bytes32 role,
         address account
     ) public view virtual override returns (bool) {
-        bytes32 roleToCheck = role;
-        // Remap governance/TimelockController.sol non-virtual public constants to Volt roles
-        if (role == PROPOSER_ROLE) {
-            roleToCheck = VoltRoles.TIMELOCK_PROPOSER;
-        }
-        if (role == EXECUTOR_ROLE) {
-            roleToCheck = VoltRoles.TIMELOCK_EXECUTOR;
-        }
-        if (role == CANCELLER_ROLE) {
-            roleToCheck = VoltRoles.TIMELOCK_CANCELLER;
-        }
-        return core().hasRole(roleToCheck, account);
+        return core().hasRole(role, account);
     }
 
     /// @dev override of OZ access/AccessControl.sol, noop because role management is handled in Core.

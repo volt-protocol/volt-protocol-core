@@ -33,7 +33,7 @@ contract VoltVetoGovernor is CoreRefV2, Governor, GovernorVotes {
 
     constructor(
         address _core,
-        address _timelockAddress,
+        address initialTimelock,
         address _token,
         uint256 initialQuorum
     )
@@ -42,7 +42,7 @@ contract VoltVetoGovernor is CoreRefV2, Governor, GovernorVotes {
         GovernorVotes(IVotes(_token))
     {
         _setQuorum(initialQuorum);
-        _updateTimelock(_timelockAddress);
+        _updateTimelock(initialTimelock);
     }
 
     /// ------------------------------------------------------------------------
@@ -85,18 +85,11 @@ contract VoltVetoGovernor is CoreRefV2, Governor, GovernorVotes {
     event TimelockChange(address oldTimelock, address newTimelock);
 
     /// @notice the timelock linked to this veto governor
-    TimelockController private _timelock;
+    address public timelock;
 
     /// @notice mapping of proposalId (in this Governor) to timelockId (action ID in
     /// the timelock linked to this governor).
     mapping(uint256 => bytes32) private _timelockIds;
-
-    /**
-     * @dev Public accessor to check the address of the timelock
-     */
-    function timelock() public view returns (address) {
-        return address(_timelock);
-    }
 
     /// @notice Set the timelock this veto governor can cancel from.
     function updateTimelock(
@@ -106,8 +99,8 @@ contract VoltVetoGovernor is CoreRefV2, Governor, GovernorVotes {
     }
 
     function _updateTimelock(address newTimelock) private {
-        emit TimelockChange(address(_timelock), newTimelock);
-        _timelock = TimelockController(payable(newTimelock));
+        emit TimelockChange(timelock, newTimelock);
+        timelock = newTimelock;
     }
 
     /// ------------------------------------------------------------------------
@@ -165,14 +158,16 @@ contract VoltVetoGovernor is CoreRefV2, Governor, GovernorVotes {
         public
         view
         virtual
-        returns (uint256 againstVotes, uint256 forVotes, uint256 abstainVotes)
+        returns (
+            uint256 againstVotes,
+            uint256 /* forVotes*/,
+            uint256 /* abstainVotes*/
+        )
     {
-        ProposalVote storage proposalvote = _proposalVotes[proposalId];
-        return (
-            proposalvote.againstVotes,
-            proposalvote.forVotes,
-            proposalvote.abstainVotes
-        );
+        // againstVotes are supporting the execution of Veto
+        againstVotes = _proposalVotes[proposalId].againstVotes;
+        // no forVotes can be cast in the Veto module, keep 0 value
+        // no abstainVotes can be cast in the Veto module, keep 0 value
     }
 
     /**
@@ -188,17 +183,14 @@ contract VoltVetoGovernor is CoreRefV2, Governor, GovernorVotes {
     }
 
     /**
-     * @dev See {Governor-_voteSucceeded}. In this module, the forVotes must be strictly over the againstVotes.
      * @dev Veto votes are always considered "successful" in this part of the logic, as there is no opposition
      * between 'for' and 'against' votes, since people cannot vote 'for'. For a veto to be considered successful,
      * it only needs to reach quorum.
      */
     function _voteSucceeded(
-        uint256 proposalId
-    ) internal view virtual override returns (bool) {
-        ProposalVote storage proposalvote = _proposalVotes[proposalId];
-
-        return proposalvote.againstVotes != 0;
+        uint256 /* proposalId*/
+    ) internal pure virtual override returns (bool) {
+        return true;
     }
 
     /**
@@ -278,7 +270,9 @@ contract VoltVetoGovernor is CoreRefV2, Governor, GovernorVotes {
 
         // at this stage, status from super can be one of: Active, Succeeded, Defeated
         // Read timestamp in the timelock to determine the state of the proposal
-        uint256 timelockOperationTimestamp = _timelock.getTimestamp(queueid);
+        uint256 timelockOperationTimestamp = TimelockController(
+            payable(timelock)
+        ).getTimestamp(queueid);
 
         // proposal already cleared from the timelock by something else
         if (timelockOperationTimestamp == 0) {
@@ -292,7 +286,10 @@ contract VoltVetoGovernor is CoreRefV2, Governor, GovernorVotes {
         // proposal still in waiting period in the timelock
         if (timelockOperationTimestamp > block.timestamp) {
             // ready to veto
-            if (_quorumReached(proposalId) && _voteSucceeded(proposalId)) {
+            // no need for "&& _voteSucceeded(proposalId)" in condition because
+            // veto votes are always succeeded (there is no tallying for 'for'
+            // votes against 'against' votes), the only condition is the quorum.
+            if (_quorumReached(proposalId)) {
                 return ProposalState.Succeeded;
             }
             // need more votes to veto
@@ -321,7 +318,8 @@ contract VoltVetoGovernor is CoreRefV2, Governor, GovernorVotes {
     /// governor's linked timelock.
     function createVeto(bytes32 timelockId) external returns (uint256) {
         // Check that the operation is pending in the timelock
-        uint256 timelockExecutionTime = _timelock.getTimestamp(timelockId);
+        uint256 timelockExecutionTime = TimelockController(payable(timelock))
+            .getTimestamp(timelockId);
         require(
             timelockExecutionTime > 1,
             "VoltVetoGovernor: action must be pending"
@@ -383,7 +381,7 @@ contract VoltVetoGovernor is CoreRefV2, Governor, GovernorVotes {
         )
     {
         targets = new address[](1);
-        targets[0] = address(_timelock);
+        targets[0] = timelock;
         values = new uint256[](1); // 0 eth
         calldatas = new bytes[](1);
         calldatas[0] = abi.encodeWithSelector(
