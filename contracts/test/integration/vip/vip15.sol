@@ -31,6 +31,7 @@ import {ITimelockSimulation} from "../utils/ITimelockSimulation.sol";
 /// 1. connect new oracle to oracle pass through with updated rate
 /// 2. disable minting on USDC PSM
 /// 3. disable minting on DAI PSM
+/// 4. pause morpho PCV router
 
 contract vip15 is DSTest, IVIP {
     using SafeERC20 for IERC20;
@@ -39,8 +40,8 @@ contract vip15 is DSTest, IVIP {
 
     ITimelockSimulation.action[] private mainnetProposal;
 
-    VoltSystemOracle public oracle;
-    /// = VoltSystemOracle(MainnetAddresses.VOLT_SYSTEM_ORACLE_0_BIPS); TODO hardcode this once deployed
+    VoltSystemOracle public oracle =
+        VoltSystemOracle(MainnetAddresses.VOLT_SYSTEM_ORACLE_0_BIPS);
 
     uint256 public startPrice = 1062988312906423708;
 
@@ -56,12 +57,6 @@ contract vip15 is DSTest, IVIP {
         if (block.chainid != 1) {
             return;
         }
-
-        oracle = new VoltSystemOracle(
-            monthlyChangeRateBasisPoints,
-            block.timestamp,
-            startPrice
-        );
 
         mainnetProposal.push(
             ITimelockSimulation.action({
@@ -126,7 +121,7 @@ contract vip15 is DSTest, IVIP {
             monthlyChangeRateBasisPoints
         );
         assertEq(oracle.monthlyChangeRateBasisPoints(), 0); /// pause rate updates to Volt on Mainnet
-        assertEq(oracle.periodStartTime(), block.timestamp - 1 days);
+        assertTrue(oracle.periodStartTime() < block.timestamp); /// start time is in the past
         assertEq(opt.getCurrentOraclePrice(), startPrice);
         assertEq(oracle.oraclePrice(), startPrice);
 

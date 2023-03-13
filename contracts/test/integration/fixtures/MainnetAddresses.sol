@@ -48,6 +48,10 @@ library MainnetAddresses {
     address public constant ORACLE_PASS_THROUGH =
         0xe733985a92Bfd5BC676095561BacE90E04606E4a;
 
+    address public constant VOLT_SYSTEM_ORACLE_0_BIPS =
+        0xa8425d4876A56d29AB2F2029e4c1d652CD20b478;
+
+    /// Deprecated
     address public constant VOLT_SYSTEM_ORACLE_144_BIPS =
         0xB8Ac4931A618B06498966cba3a560B867D8f567F;
 
