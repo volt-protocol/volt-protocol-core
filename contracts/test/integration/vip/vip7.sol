@@ -17,7 +17,7 @@ import {PCVGuardian} from "../../../pcv/PCVGuardian.sol";
 import {MakerRouter} from "../../../pcv/maker/MakerRouter.sol";
 import {IPCVGuardian} from "../../../pcv/IPCVGuardian.sol";
 
-contract vip7 is DSTest, IVIP, AllRoles {
+contract vip7 is DSTest, IVIP {
     using SafeERC20 for IERC20;
 
     Vm public constant vm = Vm(HEVM_ADDRESS);
