@@ -126,6 +126,9 @@ contract IntegrationTestPriceBoundPSMDaiTest is TimelockSimulation, vip7 {
 
     /// @notice pcv deposit receives underlying token on mint
     function testSwapUnderlyingForVolt() public {
+        vm.prank(MainnetAddresses.GOVERNOR);
+        core.grantMinter(address(psm));
+
         uint256 userStartingVoltBalance = volt.balanceOf(address(this));
         uint256 minAmountOut = psm.getMintAmountOut(mintAmount);
         uint256 startingPSMUnderlyingBalance = underlyingToken.balanceOf(

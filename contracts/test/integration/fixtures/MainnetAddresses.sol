@@ -48,6 +48,10 @@ library MainnetAddresses {
     address public constant ORACLE_PASS_THROUGH =
         0xe733985a92Bfd5BC676095561BacE90E04606E4a;
 
+    address public constant VOLT_SYSTEM_ORACLE_0_BIPS =
+        0xa8425d4876A56d29AB2F2029e4c1d652CD20b478;
+
+    /// Deprecated
     address public constant VOLT_SYSTEM_ORACLE_144_BIPS =
         0xB8Ac4931A618B06498966cba3a560B867D8f567F;
 
@@ -55,7 +59,7 @@ library MainnetAddresses {
 
     address public constant EOA_1 = 0xB320e376Be6459421695F2b6B1E716AE4bc8129A;
     address public constant EOA_2 = 0xd90E9181B20D8D1B5034d9f5737804Da182039F6;
-    address public constant EOA_3 = 0xA96D4a5c343d6fE141751399Fc230E9E8Ecb6fb6;
+    address public constant EOA_3 = 0xA96D4a5c343d6fE141751399Fc230E9E8Ecb6fb6; /// Revoked and inactive
     address public constant EOA_4 = 0x6ef71cA9cD708883E129559F5edBFb9d9D5C6148;
 
     address public constant PCV_GUARD_ADMIN =

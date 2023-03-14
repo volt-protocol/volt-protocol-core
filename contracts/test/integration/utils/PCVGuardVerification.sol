@@ -201,11 +201,17 @@ contract PCVGuardVerification is DSTest {
             : allArbitrumPCVDeposits;
 
         for (uint256 i = 0; i < allDeposits.length; i++) {
-            vm.prank(MainnetAddresses.EOA_1);
-            address pcvGuardian = block.chainid == 1
-                ? MainnetAddresses.PCV_GUARDIAN
-                : ArbitrumAddresses.PCV_GUARDIAN;
-            PCVGuardian(pcvGuardian).withdrawAllToSafeAddress(allDeposits[i]);
+            if (IPCVDeposit(allDeposits[i]).balance() != 0) {
+                /// morpho reverts on 0 balance
+                address pcvGuardian = block.chainid == 1
+                    ? MainnetAddresses.PCV_GUARDIAN
+                    : ArbitrumAddresses.PCV_GUARDIAN;
+
+                vm.prank(MainnetAddresses.EOA_1);
+                PCVGuardian(pcvGuardian).withdrawAllToSafeAddress(
+                    allDeposits[i]
+                );
+            }
         }
 
         revert("success"); /// always revert so as not to mess up mint and redeem tests
