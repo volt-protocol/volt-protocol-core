@@ -6,7 +6,6 @@ import {Addresses} from "@test/proposals/Addresses.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
 import {IVolt} from "@voltprotocol/volt/IVolt.sol";
 import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
@@ -26,6 +25,7 @@ import {VoltSystemOracle} from "@voltprotocol/oracle/VoltSystemOracle.sol";
 import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
 import {IPegStabilityModule} from "@voltprotocol/peg/IPegStabilityModule.sol";
 import {ConstantPriceOracle} from "@voltprotocol/oracle/ConstantPriceOracle.sol";
+import {VoltTimelockController} from "@voltprotocol/governance/VoltTimelockController.sol";
 import {CompoundBadDebtSentinel} from "@voltprotocol/pcv/compound/CompoundBadDebtSentinel.sol";
 import {IPCVDeposit, PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
 import {MorphoCompoundPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoCompoundPCVDeposit.sol";
@@ -111,17 +111,12 @@ contract vip16 is Proposal {
             addresses.addMainnet("GLOBAL_LOCK", address(lock));
         }
 
-        /// all addresses will be able to execute
+        /// Timelock & rate limits
         {
-            address[] memory executorAddresses = new address[](0);
-
-            address[] memory proposerCancellerAddresses = new address[](1);
-            proposerCancellerAddresses[0] = addresses.mainnet("GOVERNOR");
-            TimelockController timelockController = new TimelockController(
-                TIMELOCK_DELAY,
-                proposerCancellerAddresses,
-                executorAddresses
-            );
+            VoltTimelockController timelockController = new VoltTimelockController(
+                    addresses.mainnet("CORE"),
+                    TIMELOCK_DELAY
+                );
 
             GlobalRateLimitedMinter grlm = new GlobalRateLimitedMinter(
                 addresses.mainnet("CORE"),
@@ -340,9 +335,6 @@ contract vip16 is Proposal {
 
     function afterDeploy(Addresses addresses, address deployer) public {
         CoreV2 core = CoreV2(addresses.mainnet("CORE"));
-        TimelockController timelockController = TimelockController(
-            payable(addresses.mainnet("TIMELOCK_CONTROLLER"))
-        );
         ERC20Allocator allocator = ERC20Allocator(
             addresses.mainnet("PSM_ALLOCATOR")
         );
@@ -418,6 +410,19 @@ contract vip16 is Proposal {
             VoltRoles.PCV_DEPOSIT,
             addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
         );
+
+        core.createRole(VoltRoles.TIMELOCK_PROPOSER, VoltRoles.GOVERNOR);
+        core.createRole(VoltRoles.TIMELOCK_EXECUTOR, VoltRoles.GOVERNOR);
+        core.createRole(VoltRoles.TIMELOCK_CANCELLER, VoltRoles.GOVERNOR);
+        core.grantRole(
+            VoltRoles.TIMELOCK_PROPOSER,
+            addresses.mainnet("GOVERNOR")
+        ); /// team multisig
+        core.grantRole(VoltRoles.TIMELOCK_EXECUTOR, address(0)); /// everyone can execute
+        core.grantRole(
+            VoltRoles.TIMELOCK_CANCELLER,
+            addresses.mainnet("GOVERNOR")
+        ); /// team multisig
 
         core.grantPCVGuard(addresses.mainnet("EOA_1"));
         core.grantPCVGuard(addresses.mainnet("EOA_2"));
@@ -515,16 +520,6 @@ contract vip16 is Proposal {
             monthlyChangeRate
         );
 
-        /// Allow all addresses to execute proposals once completed
-        timelockController.grantRole(
-            timelockController.EXECUTOR_ROLE(),
-            address(0)
-        );
-        /// Cleanup
-        timelockController.renounceRole(
-            timelockController.TIMELOCK_ADMIN_ROLE(),
-            deployer
-        );
         core.revokeGovernor(deployer);
     }
 

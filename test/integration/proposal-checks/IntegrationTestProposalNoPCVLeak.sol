@@ -8,7 +8,6 @@ import {TestProposals} from "@test/proposals/TestProposals.sol";
 
 import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
 import {PCVOracle} from "@voltprotocol/oracle/PCVOracle.sol";
-import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
 contract IntegrationTestProposalNoPCVLeak is Test {
     function setUp() public {}

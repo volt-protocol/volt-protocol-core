@@ -24,4 +24,18 @@ contract MockERC20 is ERC20, ERC20Burnable {
     ) public {
         _approve(owner, spender, amount);
     }
+
+    // mock governance features of ERC20Votes
+    mapping(address => uint256) public _votes;
+
+    function getPastVotes(
+        address account,
+        uint256 /* blockNumber*/
+    ) external view returns (uint256) {
+        return _votes[account];
+    }
+
+    function mockSetVotes(address account, uint256 votes) external {
+        _votes[account] = votes;
+    }
 }
