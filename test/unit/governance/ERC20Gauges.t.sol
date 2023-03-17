@@ -9,8 +9,43 @@ contract ERC20GaugesUnitTest is Test {
     address constant gauge1 = address(0xDEAD);
     address constant gauge2 = address(0xBEEF);
 
+    uint32 constant _CYCLE_LENGTH = 1 hours;
+    uint32 constant _FREEZE_PERIOD = 10 minutes;
+
     function setUp() public {
-        token = new MockERC20Gauges(3600, 600); // 1 hour cycles, 10 minute freeze
+        vm.warp(1679067867);
+        vm.roll(16848497);
+        token = new MockERC20Gauges(_CYCLE_LENGTH, _FREEZE_PERIOD);
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                        TEST INITIAL STATE
+    //////////////////////////////////////////////////////////////*/
+
+    function testInitialState() public {
+        assertEq(token.gaugeCycleLength(), _CYCLE_LENGTH);
+        assertEq(token.incrementFreezeWindow(), _FREEZE_PERIOD);
+        assertEq(token.getUserGaugeWeight(address(this), gauge1), 0);
+        assertEq(token.getUserGaugeWeight(address(this), gauge2), 0);
+        assertEq(token.getUserWeight(address(this)), 0);
+        assertEq(token.getGaugeCycleEnd(), 1679068800);
+        assertEq(token.getGaugeWeight(gauge1), 0);
+        assertEq(token.getGaugeWeight(gauge2), 0);
+        assertEq(token.getStoredGaugeWeight(gauge1), 0);
+        assertEq(token.getStoredGaugeWeight(gauge2), 0);
+        assertEq(token.totalWeight(), 0);
+        assertEq(token.storedTotalWeight(), 0);
+        assertEq(token.gauges().length, 0);
+        assertEq(token.gauges(0, 0).length, 0);
+        assertEq(token.isGauge(gauge1), false);
+        assertEq(token.isGauge(gauge2), false);
+        assertEq(token.numGauges(), 0);
+        assertEq(token.deprecatedGauges().length, 0);
+        assertEq(token.numDeprecatedGauges(), 0);
+        assertEq(token.userGauges(address(this)).length, 0);
+        assertEq(token.isUserGauge(address(this), gauge1), false);
+        assertEq(token.isUserGauge(address(this), gauge2), false);
+        assertEq(token.userGauges(address(this), 0, 0).length, 0);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -68,6 +103,16 @@ contract ERC20GaugesUnitTest is Test {
         token.addGauge(gauge1);
     }
 
+    function testGetGaugesPaginated() public {
+        token.setMaxGauges(2);
+        token.addGauge(gauge1);
+        token.addGauge(gauge2);
+
+        assertEq(token.gauges(0, 1).length, 1);
+        assertEq(token.gauges(0, 1)[0], gauge1);
+        assertEq(token.gauges(1, 1)[0], gauge2);
+    }
+
     function testRemoveGauge() public {
         token.setMaxGauges(2);
         token.addGauge(gauge1);
@@ -114,7 +159,7 @@ contract ERC20GaugesUnitTest is Test {
         require(token.incrementGauge(gauge1, 1e18) == 1e18);
         require(token.incrementGauge(gauge2, 1e18) == 2e18);
 
-        vm.warp(3600); // warp 1 hour to store changes
+        vm.warp(block.timestamp + _CYCLE_LENGTH); // warp 1 cycle to store changes
         require(token.calculateGaugeAllocation(gauge1, 100e18) == 50e18);
         require(token.calculateGaugeAllocation(gauge2, 100e18) == 50e18);
 
@@ -124,9 +169,18 @@ contract ERC20GaugesUnitTest is Test {
         require(token.calculateGaugeAllocation(gauge1, 100e18) == 50e18);
         require(token.calculateGaugeAllocation(gauge2, 100e18) == 50e18);
 
-        vm.warp(7200); // warp another hour to store changes again
+        vm.warp(block.timestamp + _CYCLE_LENGTH); // warp another cycle to store changes again
         require(token.calculateGaugeAllocation(gauge1, 100e18) == 25e18);
         require(token.calculateGaugeAllocation(gauge2, 100e18) == 75e18);
+
+        // deprecate gauge
+        token.removeGauge(gauge1);
+        require(token.calculateGaugeAllocation(gauge1, 100e18) == 0);
+        require(token.calculateGaugeAllocation(gauge2, 100e18) == 75e18);
+
+        vm.warp(block.timestamp + _CYCLE_LENGTH); // warp another cycle to store changes again
+        require(token.calculateGaugeAllocation(gauge1, 100e18) == 0);
+        require(token.calculateGaugeAllocation(gauge2, 100e18) == 100e18);
     }
 
     function testIncrement(
@@ -174,6 +228,21 @@ contract ERC20GaugesUnitTest is Test {
                 );
             }
         }
+    }
+
+    function testGetUserGaugesPaginated() public {
+        token.setMaxGauges(2);
+        token.addGauge(gauge1);
+        token.addGauge(gauge2);
+        token.mint(address(this), 100e18);
+        token.incrementGauge(gauge1, 40e18);
+        token.incrementGauge(gauge2, 60e18);
+
+        assertEq(token.isUserGauge(address(this), gauge1), true);
+        assertEq(token.isUserGauge(address(this), gauge2), true);
+        assertEq(token.userGauges(address(this), 0, 1).length, 1);
+        assertEq(token.userGauges(address(this), 0, 1)[0], gauge1);
+        assertEq(token.userGauges(address(this), 1, 1)[0], gauge2);
     }
 
     function testIncrementDuringFreeze(
@@ -279,6 +348,9 @@ contract ERC20GaugesUnitTest is Test {
         token.addGauge(gauge1);
         token.addGauge(gauge2);
 
+        // warp to end of cycle
+        vm.warp(token.getGaugeCycleEnd());
+
         // gauge1,user1 +1
         require(token.incrementGauge(gauge1, 1e18) == 1e18);
         require(token.getUserGaugeWeight(address(this), gauge1) == 1e18);
@@ -289,7 +361,7 @@ contract ERC20GaugesUnitTest is Test {
         require(token.getStoredGaugeWeight(gauge1) == 0);
         require(token.storedTotalWeight() == 0);
 
-        vm.warp(block.timestamp + 3600); // warp one cycle
+        vm.warp(block.timestamp + _CYCLE_LENGTH); // warp one cycle
 
         require(token.getStoredGaugeWeight(gauge1) == 1e18);
         require(token.storedTotalWeight() == 1e18);
@@ -304,7 +376,7 @@ contract ERC20GaugesUnitTest is Test {
         require(token.getStoredGaugeWeight(gauge2) == 0);
         require(token.storedTotalWeight() == 1e18);
 
-        vm.warp(block.timestamp + 1800); // warp half cycle
+        vm.warp(block.timestamp + _CYCLE_LENGTH / 2); // warp half cycle
 
         require(token.getStoredGaugeWeight(gauge2) == 0);
         require(token.storedTotalWeight() == 1e18);
@@ -316,13 +388,13 @@ contract ERC20GaugesUnitTest is Test {
         require(token.getGaugeWeight(gauge1) == 5e18);
         require(token.totalWeight() == 7e18);
 
-        vm.warp(block.timestamp + 1800); // warp half cycle
+        vm.warp(block.timestamp + _CYCLE_LENGTH / 2); // warp half cycle
 
         require(token.getStoredGaugeWeight(gauge1) == 5e18);
         require(token.getStoredGaugeWeight(gauge2) == 2e18);
         require(token.storedTotalWeight() == 7e18);
 
-        vm.warp(block.timestamp + 3600); // warp full cycle
+        vm.warp(block.timestamp + _CYCLE_LENGTH); // warp full cycle
 
         require(token.getStoredGaugeWeight(gauge1) == 5e18);
         require(token.getStoredGaugeWeight(gauge2) == 2e18);
@@ -391,7 +463,7 @@ contract ERC20GaugesUnitTest is Test {
         gaugeList[1] = gauge1;
         weights[0] = 2e18;
         weights[1] = 4e18;
-        //vm.expectRevert(abi.encodeWithSignature("InvalidGaugeError()"));
+        vm.expectRevert(abi.encodeWithSignature("InvalidGaugeError()"));
         token.incrementGauges(gaugeList, weights);
     }
 
@@ -490,7 +562,7 @@ contract ERC20GaugesUnitTest is Test {
         require(token.getStoredGaugeWeight(gauge1) == 0);
         require(token.storedTotalWeight() == 0);
 
-        vm.warp(block.timestamp + 3600); // warp full cycle
+        vm.warp(block.timestamp + _CYCLE_LENGTH); // warp full cycle
 
         require(token.getStoredGaugeWeight(gauge1) == 2e18);
         require(token.storedTotalWeight() == 2e18);
@@ -504,7 +576,7 @@ contract ERC20GaugesUnitTest is Test {
         require(token.getStoredGaugeWeight(gauge1) == 2e18);
         require(token.storedTotalWeight() == 2e18);
 
-        vm.warp(block.timestamp + 3600); // warp full cycle
+        vm.warp(block.timestamp + _CYCLE_LENGTH); // warp full cycle
 
         require(token.getStoredGaugeWeight(gauge1) == 0);
         require(token.storedTotalWeight() == 0);
