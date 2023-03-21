@@ -45,15 +45,17 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
         ... Rename to remove "contract" from name because we don't check if target is a contract
     - Consistency: make incrementGauges return a uint112 instead of uint256
     - Import OpenZeppelin ERC20 & EnumerableSet instead of Solmate's
-    - (TODO) Change error management style
+    - Changed error management style (use require + messages instead of Solidity errors)
     - (TODO) Add negative weight voting
 */
 abstract contract ERC20Gauges is ERC20 {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     constructor(uint32 _gaugeCycleLength, uint32 _incrementFreezeWindow) {
-        if (_incrementFreezeWindow >= _gaugeCycleLength)
-            revert IncrementFreezeError();
+        require(
+            _incrementFreezeWindow < _gaugeCycleLength,
+            "ERC20Gauges: invalid increment freeze"
+        );
         gaugeCycleLength = _gaugeCycleLength;
         incrementFreezeWindow = _incrementFreezeWindow;
     }
@@ -253,18 +255,6 @@ abstract contract ERC20Gauges is ERC20 {
                         USER GAUGE OPERATIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice thrown when trying to increment/decrement a mismatched number of gauges and weights.
-    error SizeMismatchError();
-
-    /// @notice thrown when trying to increment over the max allowed gauges.
-    error MaxGaugeError();
-
-    /// @notice thrown when incrementing over a users free weight.
-    error OverWeightError();
-
-    /// @notice thrown when incremending during the freeze window.
-    error IncrementFreezeError();
-
     /// @notice emitted when incrementing a gauge
     event IncrementGaugeWeight(
         address indexed user,
@@ -302,18 +292,21 @@ abstract contract ERC20Gauges is ERC20 {
         uint112 weight,
         uint32 cycle
     ) internal {
-        if (_deprecatedGauges.contains(gauge)) revert InvalidGaugeError();
+        require(
+            !_deprecatedGauges.contains(gauge),
+            "ERC20Gauges: deprecated gauge"
+        );
         unchecked {
-            if (cycle - block.timestamp <= incrementFreezeWindow)
-                revert IncrementFreezeError();
+            require(
+                cycle - block.timestamp > incrementFreezeWindow,
+                "ERC20Gauges: freeze period"
+            );
         }
 
         bool added = _userGauges[user].add(gauge); // idempotent add
-        if (
-            added &&
-            _userGauges[user].length() > maxGauges &&
-            !canExceedMaxGauges[user]
-        ) revert MaxGaugeError();
+        if (added && _userGauges[user].length() > maxGauges) {
+            require(canExceedMaxGauges[user], "ERC20Gauges: exceed max gauges");
+        }
 
         getUserGaugeWeight[user][gauge] += weight;
 
@@ -329,7 +322,7 @@ abstract contract ERC20Gauges is ERC20 {
     ) internal returns (uint112 newUserWeight) {
         newUserWeight = getUserWeight[user] + weight;
         // Ensure under weight
-        if (newUserWeight > balanceOf(user)) revert OverWeightError();
+        require(newUserWeight <= balanceOf(user), "ERC20Gauges: overweight");
 
         // Update gauge state
         getUserWeight[user] = newUserWeight;
@@ -348,7 +341,7 @@ abstract contract ERC20Gauges is ERC20 {
         uint112[] calldata weights
     ) external returns (uint112 newUserWeight) {
         uint256 size = gaugeList.length;
-        if (weights.length != size) revert SizeMismatchError();
+        require(weights.length == size, "ERC20Gauges: size mismatch");
 
         // store total in summary for batch update on user/global state
         uint112 weightsSum;
@@ -432,7 +425,7 @@ abstract contract ERC20Gauges is ERC20 {
         uint112[] calldata weights
     ) external returns (uint112 newUserWeight) {
         uint256 size = gaugeList.length;
-        if (weights.length != size) revert SizeMismatchError();
+        require(weights.length == size, "ERC20Gauges: size mismatch");
 
         // store total in summary for batch update on user/global state
         uint112 weightsSum;
@@ -494,9 +487,6 @@ abstract contract ERC20Gauges is ERC20 {
                         ADMIN GAUGE OPERATIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice thrown when trying to increment or remove a non-live gauge, or add a live gauge.
-    error InvalidGaugeError();
-
     /// @notice emitted when adding a new gauge to the live set.
     event AddGauge(address indexed gauge);
 
@@ -523,8 +513,10 @@ abstract contract ERC20Gauges is ERC20 {
         bool newAdd = _gauges.add(gauge);
         bool previouslyDeprecated = _deprecatedGauges.remove(gauge);
         // add and fail loud if zero address or already present and not deprecated
-        if (gauge == address(0) || !(newAdd || previouslyDeprecated))
-            revert InvalidGaugeError();
+        require(
+            gauge != address(0) && (newAdd || previouslyDeprecated),
+            "ERC20Gauges: invalid gauge"
+        );
 
         uint32 currentCycle = _getGaugeCycleEnd();
 
@@ -539,7 +531,7 @@ abstract contract ERC20Gauges is ERC20 {
 
     function _removeGauge(address gauge) internal {
         // add to deprecated and fail loud if not present
-        if (!_deprecatedGauges.add(gauge)) revert InvalidGaugeError();
+        require(_deprecatedGauges.add(gauge), "ERC20Gauges: invalid gauge");
 
         uint32 currentCycle = _getGaugeCycleEnd();
 

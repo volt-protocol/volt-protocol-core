@@ -68,7 +68,7 @@ contract ERC20GaugesUnitTest is Test {
         uint256 uniqueGauges;
         for (uint256 i = 0; i < 8; i++) {
             if (token.isGauge(gauges[i]) || gauges[i] == address(0)) {
-                vm.expectRevert(abi.encodeWithSignature("InvalidGaugeError()"));
+                vm.expectRevert("ERC20Gauges: invalid gauge");
                 token.addGauge(gauges[i]);
             } else {
                 token.addGauge(gauges[i]);
@@ -99,7 +99,7 @@ contract ERC20GaugesUnitTest is Test {
     function testAddGaugeTwice() public {
         token.setMaxGauges(2);
         token.addGauge(gauge1);
-        vm.expectRevert(abi.encodeWithSignature("InvalidGaugeError()"));
+        vm.expectRevert("ERC20Gauges: invalid gauge");
         token.addGauge(gauge1);
     }
 
@@ -126,7 +126,7 @@ contract ERC20GaugesUnitTest is Test {
         token.setMaxGauges(2);
         token.addGauge(gauge1);
         token.removeGauge(gauge1);
-        vm.expectRevert(abi.encodeWithSignature("InvalidGaugeError()"));
+        vm.expectRevert("ERC20Gauges: invalid gauge");
         token.removeGauge(gauge1);
     }
 
@@ -262,7 +262,7 @@ contract ERC20GaugesUnitTest is Test {
                 1
         );
 
-        vm.expectRevert(abi.encodeWithSignature("IncrementFreezeError()"));
+        vm.expectRevert("ERC20Gauges: freeze period");
         token.incrementGauge(gauge1, amount);
     }
 
@@ -275,7 +275,7 @@ contract ERC20GaugesUnitTest is Test {
         token.addGauge(gauge2);
 
         token.incrementGauge(gauge1, 1e18);
-        vm.expectRevert(abi.encodeWithSignature("MaxGaugeError()"));
+        vm.expectRevert("ERC20Gauges: exceed max gauges");
         token.incrementGauge(gauge2, 1e18);
     }
 
@@ -405,7 +405,7 @@ contract ERC20GaugesUnitTest is Test {
         token.setMaxGauges(2);
         token.addGauge(gauge1);
         token.removeGauge(gauge1);
-        vm.expectRevert(abi.encodeWithSignature("InvalidGaugeError()"));
+        vm.expectRevert("ERC20Gauges: deprecated gauge");
         token.incrementGauge(gauge1, amount);
     }
 
@@ -418,7 +418,7 @@ contract ERC20GaugesUnitTest is Test {
         token.mint(address(this), amount);
 
         require(token.incrementGauge(gauge1, amount) == amount);
-        vm.expectRevert(abi.encodeWithSignature("OverWeightError()"));
+        vm.expectRevert("ERC20Gauges: overweight");
         token.incrementGauge(gauge2, 1);
     }
 
@@ -463,7 +463,7 @@ contract ERC20GaugesUnitTest is Test {
         gaugeList[1] = gauge1;
         weights[0] = 2e18;
         weights[1] = 4e18;
-        vm.expectRevert(abi.encodeWithSignature("InvalidGaugeError()"));
+        vm.expectRevert("ERC20Gauges: deprecated gauge");
         token.incrementGauges(gaugeList, weights);
     }
 
@@ -480,7 +480,7 @@ contract ERC20GaugesUnitTest is Test {
         gaugeList[1] = gauge1;
         weights[0] = 50e18;
         weights[1] = 51e18;
-        vm.expectRevert(abi.encodeWithSignature("OverWeightError()"));
+        vm.expectRevert("ERC20Gauges: overweight");
         token.incrementGauges(gaugeList, weights);
     }
 
@@ -498,7 +498,7 @@ contract ERC20GaugesUnitTest is Test {
         gaugeList[1] = gauge1;
         weights[0] = 1e18;
         weights[1] = 2e18;
-        vm.expectRevert(abi.encodeWithSignature("SizeMismatchError()"));
+        vm.expectRevert("ERC20Gauges: size mismatch");
         token.incrementGauges(gaugeList, weights);
     }
 
@@ -661,7 +661,7 @@ contract ERC20GaugesUnitTest is Test {
         weights[1] = 2e18;
 
         require(token.incrementGauges(gaugeList, weights) == 3e18);
-        vm.expectRevert(abi.encodeWithSignature("SizeMismatchError()"));
+        vm.expectRevert("ERC20Gauges: size mismatch");
         token.decrementGauges(gaugeList, new uint112[](0));
     }
 
