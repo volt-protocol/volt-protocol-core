@@ -5,23 +5,23 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 /** 
- @title  An ERC20 with an embedded "Gauge" style vote with liquid weights
- @author joeysantoro, eswak
- @notice This contract is meant to be used to support gauge style votes with weights associated with resource allocation.
-         Holders can allocate weight in any proportion to supported gauges.
-         A "gauge" is represented by an address which would receive the resources periodically or continuously.
-         For example, gauges can be used to direct token emissions, similar to Curve or Tokemak.
-         Alternatively, gauges can be used to direct another quantity such as relative access to a line of credit.
-         This contract is abstract, and a parent shall implement public setter with adequate access control to manage
-         the gauge set and caps.
-         "Live" gauges are in the set `_gauges`.  
-         Users can only add weight to live gauges but can remove weight from live or deprecated gauges.
-         Gauges can be deprecated and reinstated, and will maintain any non-removed weight from before.
- @dev    SECURITY NOTES: `maxGauges` is a critical variable to protect against gas DOS attacks upon token transfer. 
-         This must be low enough to allow complicated transactions to fit in a block.
-         Weight state is preserved on the gauge and user level even when a gauge is removed, in case it is re-added. 
-         This maintains state efficiently, and global accounting is managed only on the `_totalWeight`
- @dev This contract was originally published as part of TribeDAO's flywheel-v2 repo, please see:
+@title  An ERC20 with an embedded "Gauge" style vote with liquid weights
+@author joeysantoro, eswak
+@notice This contract is meant to be used to support gauge style votes with weights associated with resource allocation.
+        Holders can allocate weight in any proportion to supported gauges.
+        A "gauge" is represented by an address which would receive the resources periodically or continuously.
+        For example, gauges can be used to direct token emissions, similar to Curve or Tokemak.
+        Alternatively, gauges can be used to direct another quantity such as relative access to a line of credit.
+        This contract is abstract, and a parent shall implement public setter with adequate access control to manage
+        the gauge set and caps.
+        "Live" gauges are in the set `_gauges`.  
+        Users can only add weight to live gauges but can remove weight from live or deprecated gauges.
+        Gauges can be deprecated and reinstated, and will maintain any non-removed weight from before.
+@dev    SECURITY NOTES: `maxGauges` is a critical variable to protect against gas DOS attacks upon token transfer. 
+        This must be low enough to allow complicated transactions to fit in a block.
+        Weight state is preserved on the gauge and user level even when a gauge is removed, in case it is re-added. 
+        This maintains state efficiently, and global accounting is managed only on the `_totalWeight`
+@dev This contract was originally published as part of TribeDAO's flywheel-v2 repo, please see:
     https://github.com/fei-protocol/flywheel-v2/blob/main/src/token/ERC20Gauges.sol
     The original version was included in 2 audits :
     - https://code4rena.com/reports/2022-04-xtribe/
@@ -45,8 +45,7 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
         ... Rename to remove "contract" from name because we don't check if target is a contract
     - Consistency: make incrementGauges return a uint112 instead of uint256
     - Import OpenZeppelin ERC20 & EnumerableSet instead of Solmate's
-    - Changed error management style (use require + messages instead of Solidity errors)
-    - (TODO) Add negative weight voting
+    - Update error management style (use require + messages instead of Solidity errors)
 */
 abstract contract ERC20Gauges is ERC20 {
     using EnumerableSet for EnumerableSet.AddressSet;
