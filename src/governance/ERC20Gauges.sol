@@ -164,7 +164,7 @@ abstract contract ERC20Gauges is ERC20 {
         for (uint256 i = 0; i < num; ) {
             unchecked {
                 values[i] = _gauges.at(offset + i); // will revert if out of bounds
-                i++;
+                ++i;
             }
         }
     }
@@ -217,7 +217,7 @@ abstract contract ERC20Gauges is ERC20 {
         for (uint256 i = 0; i < num; ) {
             unchecked {
                 values[i] = _userGauges[user].at(offset + i); // will revert if out of bounds
-                i++;
+                ++i;
             }
         }
     }
@@ -355,7 +355,7 @@ abstract contract ERC20Gauges is ERC20 {
 
             _incrementGaugeWeight(msg.sender, gauge, weight, currentCycle);
             unchecked {
-                i++;
+                ++i;
             }
         }
         return
@@ -440,7 +440,7 @@ abstract contract ERC20Gauges is ERC20 {
 
             _decrementGaugeWeight(msg.sender, gauge, weight, currentCycle);
             unchecked {
-                i++;
+                ++i;
             }
         }
         return
@@ -521,7 +521,7 @@ abstract contract ERC20Gauges is ERC20 {
 
         // Check if some previous weight exists and re-add to total. Gauge and user weights are preserved.
         weight = _getGaugeWeight[gauge].currentWeight;
-        if (weight > 0) {
+        if (weight != 0) {
             _writeGaugeWeight(_totalWeight, _add, weight, currentCycle);
         }
 
@@ -536,7 +536,7 @@ abstract contract ERC20Gauges is ERC20 {
 
         // Remove weight from total but keep the gauge and user weights in storage in case gauge is re-added.
         uint112 weight = _getGaugeWeight[gauge].currentWeight;
-        if (weight > 0) {
+        if (weight != 0) {
             _writeGaugeWeight(_totalWeight, _subtract, weight, currentCycle);
         }
 
@@ -632,7 +632,7 @@ abstract contract ERC20Gauges is ERC20 {
                 );
 
                 unchecked {
-                    i++;
+                    ++i;
                 }
             }
         }
