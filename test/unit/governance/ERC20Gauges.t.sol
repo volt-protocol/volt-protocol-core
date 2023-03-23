@@ -405,8 +405,20 @@ contract ERC20GaugesUnitTest is Test {
         token.setMaxGauges(2);
         token.addGauge(gauge1);
         token.removeGauge(gauge1);
-        vm.expectRevert("ERC20Gauges: deprecated gauge");
+        vm.expectRevert("ERC20Gauges: invalid gauge");
         token.incrementGauge(gauge1, amount);
+    }
+
+    function testIncrementOnUnlisted(uint112 amount) public {
+        token.setMaxGauges(1);
+        vm.expectRevert("ERC20Gauges: invalid gauge");
+        token.incrementGauge(gauge1, amount);
+    }
+
+    function testIncrementsOnUnlisted(uint112 amount) public {
+        token.setMaxGauges(1);
+        vm.expectRevert("ERC20Gauges: invalid gauge");
+        token.incrementGauges(new address[](1), new uint112[](1));
     }
 
     function testIncrementOverWeight(uint112 amount) public {
@@ -463,7 +475,7 @@ contract ERC20GaugesUnitTest is Test {
         gaugeList[1] = gauge1;
         weights[0] = 2e18;
         weights[1] = 4e18;
-        vm.expectRevert("ERC20Gauges: deprecated gauge");
+        vm.expectRevert("ERC20Gauges: invalid gauge");
         token.incrementGauges(gaugeList, weights);
     }
 

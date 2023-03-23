@@ -170,7 +170,7 @@ abstract contract ERC20Gauges is ERC20 {
     }
 
     /// @notice returns true if `gauge` is not in deprecated gauges
-    function isGauge(address gauge) external view returns (bool) {
+    function isGauge(address gauge) public view returns (bool) {
         return _gauges.contains(gauge) && !_deprecatedGauges.contains(gauge);
     }
 
@@ -280,21 +280,20 @@ abstract contract ERC20Gauges is ERC20 {
         address gauge,
         uint112 weight
     ) external returns (uint112 newUserWeight) {
+        require(isGauge(gauge), "ERC20Gauges: invalid gauge");
         uint32 currentCycle = _getGaugeCycleEnd();
         _incrementGaugeWeight(msg.sender, gauge, weight, currentCycle);
         return _incrementUserAndGlobalWeights(msg.sender, weight, currentCycle);
     }
 
+    /// @dev this function does not check if the gauge exists, this is performed
+    /// in the calling function.
     function _incrementGaugeWeight(
         address user,
         address gauge,
         uint112 weight,
         uint32 cycle
     ) internal {
-        require(
-            !_deprecatedGauges.contains(gauge),
-            "ERC20Gauges: deprecated gauge"
-        );
         unchecked {
             require(
                 cycle - block.timestamp > incrementFreezeWindow,
@@ -352,6 +351,8 @@ abstract contract ERC20Gauges is ERC20 {
             address gauge = gaugeList[i];
             uint112 weight = weights[i];
             weightsSum += weight;
+
+            require(isGauge(gauge), "ERC20Gauges: invalid gauge");
 
             _incrementGaugeWeight(msg.sender, gauge, weight, currentCycle);
             unchecked {
