@@ -8,6 +8,7 @@ contract ERC20GaugesUnitTest is Test {
     MockERC20Gauges token;
     address constant gauge1 = address(0xDEAD);
     address constant gauge2 = address(0xBEEF);
+    address constant gauge3 = address(0xF000);
 
     uint32 constant _CYCLE_LENGTH = 1 hours;
     uint32 constant _FREEZE_PERIOD = 10 minutes;
@@ -415,7 +416,7 @@ contract ERC20GaugesUnitTest is Test {
         token.incrementGauge(gauge1, amount);
     }
 
-    function testIncrementsOnUnlisted(uint112 amount) public {
+    function testIncrementsOnUnlisted() public {
         token.setMaxGauges(1);
         vm.expectRevert("ERC20Gauges: invalid gauge");
         token.incrementGauges(new address[](1), new uint112[](1));
@@ -775,5 +776,44 @@ contract ERC20GaugesUnitTest is Test {
         require(token.getUserGaugeWeight(address(this), gauge2) == 0);
         require(token.getGaugeWeight(gauge2) == 0);
         require(token.totalWeight() == 0);
+    }
+
+    // Validate use case described in 2022-04 C4 audit issue:
+    // [M-07] Incorrect accounting of free weight in _decrementWeightUntilFree
+    function testDecrementUntilFreeBugM07() public {
+        token.mint(address(this), 3e18);
+
+        token.setMaxGauges(3);
+        token.addGauge(gauge1);
+        token.addGauge(gauge2);
+        token.addGauge(gauge3);
+
+        require(token.incrementGauge(gauge1, 1e18) == 1e18);
+        require(token.incrementGauge(gauge2, 1e18) == 2e18);
+        require(token.incrementGauge(gauge3, 1e18) == 3e18);
+
+        require(token.userUnusedWeight(address(this)) == 0);
+        require(token.totalWeight() == 3e18);
+        token.removeGauge(gauge1);
+        require(token.totalWeight() == 2e18);
+
+        // deprecated gauge still counts, would need to decrement
+        require(token.userUnusedWeight(address(this)) == 0);
+        require(token.getUserGaugeWeight(address(this), gauge1) == 1e18);
+        require(token.getUserGaugeWeight(address(this), gauge2) == 1e18);
+        require(token.getUserGaugeWeight(address(this), gauge3) == 1e18);
+        require(token.getUserWeight(address(this)) == 3e18);
+
+        token.mockBurn(address(this), 2e18);
+
+        require(token.userUnusedWeight(address(this)) == 0);
+        require(token.getUserGaugeWeight(address(this), gauge1) == 0);
+        require(token.getUserGaugeWeight(address(this), gauge2) == 0);
+        require(token.getUserGaugeWeight(address(this), gauge3) == 1e18);
+        require(token.getUserWeight(address(this)) == 1e18);
+        require(token.getGaugeWeight(gauge1) == 0);
+        require(token.getGaugeWeight(gauge2) == 0);
+        require(token.getGaugeWeight(gauge3) == 1e18);
+        require(token.totalWeight() == 1e18);
     }
 }

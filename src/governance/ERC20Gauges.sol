@@ -614,7 +614,7 @@ abstract contract ERC20Gauges is ERC20 {
         uint256 size = gaugeList.length;
         for (
             uint256 i = 0;
-            i < size && (userFreeWeight + totalFreed) < weight;
+            i < size && (userFreeWeight + userFreed) < weight;
 
         ) {
             address gauge = gaugeList[i];
