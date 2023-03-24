@@ -46,6 +46,8 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
     - Consistency: make incrementGauges return a uint112 instead of uint256
     - Import OpenZeppelin ERC20 & EnumerableSet instead of Solmate's
     - Update error management style (use require + messages instead of Solidity errors)
+    - Remove SafeCast (it was only used in one place, to convert block.timestamp)
+    - Implement C4 audit fixes for [M-03], [M-04], [M-07], [G-02], and [G-04].
 */
 abstract contract ERC20Gauges is ERC20 {
     using EnumerableSet for EnumerableSet.AddressSet;
