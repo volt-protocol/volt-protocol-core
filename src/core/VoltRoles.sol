@@ -26,6 +26,9 @@ library VoltRoles {
     /// @notice can mint VOLT arbitrarily
     bytes32 internal constant MINTER = keccak256("MINTER_ROLE");
 
+    /// @notice can mint GUILD arbitrarily
+    bytes32 internal constant GUILD_MINTER = keccak256("GUILD_MINTER_ROLE");
+
     /// @notice is able to withdraw whitelisted PCV deposits to a safe address
     bytes32 internal constant PCV_GUARD = keccak256("PCV_GUARD_ROLE");
 
@@ -54,6 +57,22 @@ library VoltRoles {
     /// @notice can replenish buffer through GlobalSystemExitRateLimiter
     bytes32 internal constant RATE_LIMIT_SYSTEM_EXIT_REPLENISH =
         keccak256("RATE_LIMIT_SYSTEM_EXIT_REPLENISH_ROLE");
+
+    /// ----------- GUILD Token Gauge Management ---------------
+
+    /// @notice can manage add new gauges to the system
+    bytes32 internal constant GAUGE_ADD = keccak256("GAUGE_ADD_ROLE");
+
+    /// @notice can remove gauges from the system
+    bytes32 internal constant GAUGE_REMOVE = keccak256("GAUGE_REMOVE_ROLE");
+
+    /// @notice can manage gauge parameters (max gauges, individual cap)
+    bytes32 internal constant GAUGE_PARAMETERS =
+        keccak256("GAUGE_PARAMETERS_ROLE");
+
+    /// @notice can notify of losses in a given gauge
+    bytes32 internal constant GAUGE_LOSS_NOTIFIER =
+        keccak256("GAUGE_LOSS_NOTIFIER_ROLE");
 
     /// ----------- Timelock management ----------------------------------------
     /// The hashes are the same as OpenZeppelins's roles in TimelockController
