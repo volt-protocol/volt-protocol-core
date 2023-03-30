@@ -281,7 +281,7 @@ abstract contract ERC20Gauges is ERC20 {
     function incrementGauge(
         address gauge,
         uint112 weight
-    ) external returns (uint112 newUserWeight) {
+    ) public virtual returns (uint112 newUserWeight) {
         require(isGauge(gauge), "ERC20Gauges: invalid gauge");
         uint32 currentCycle = _getGaugeCycleEnd();
         _incrementGaugeWeight(msg.sender, gauge, weight, currentCycle);
@@ -339,7 +339,7 @@ abstract contract ERC20Gauges is ERC20 {
     function incrementGauges(
         address[] calldata gaugeList,
         uint112[] calldata weights
-    ) external returns (uint112 newUserWeight) {
+    ) public virtual returns (uint112 newUserWeight) {
         uint256 size = gaugeList.length;
         require(weights.length == size, "ERC20Gauges: size mismatch");
 
@@ -378,7 +378,7 @@ abstract contract ERC20Gauges is ERC20 {
     function decrementGauge(
         address gauge,
         uint112 weight
-    ) external returns (uint112 newUserWeight) {
+    ) public virtual returns (uint112 newUserWeight) {
         uint32 currentCycle = _getGaugeCycleEnd();
 
         // All operations will revert on underflow, protecting against bad inputs
@@ -391,7 +391,7 @@ abstract contract ERC20Gauges is ERC20 {
         address gauge,
         uint112 weight,
         uint32 cycle
-    ) internal {
+    ) internal virtual {
         uint112 oldWeight = getUserGaugeWeight[user][gauge];
 
         getUserGaugeWeight[user][gauge] = oldWeight - weight;
@@ -425,7 +425,7 @@ abstract contract ERC20Gauges is ERC20 {
     function decrementGauges(
         address[] calldata gaugeList,
         uint112[] calldata weights
-    ) external returns (uint112 newUserWeight) {
+    ) public virtual returns (uint112 newUserWeight) {
         uint256 size = gaugeList.length;
         require(weights.length == size, "ERC20Gauges: size mismatch");
 
