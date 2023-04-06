@@ -615,6 +615,7 @@ contract SystemUnitTest is Test {
             address(core),
             address(mock),
             address(usdc),
+            address(0),
             address(mock),
             address(mock)
         );

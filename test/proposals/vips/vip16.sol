@@ -22,13 +22,15 @@ import {ERC20Allocator} from "@voltprotocol/pcv/ERC20Allocator.sol";
 import {NonCustodialPSM} from "@voltprotocol/peg/NonCustodialPSM.sol";
 import {MakerPCVSwapper} from "@voltprotocol/pcv/maker/MakerPCVSwapper.sol";
 import {VoltSystemOracle} from "@voltprotocol/oracle/VoltSystemOracle.sol";
+import {EulerPCVDeposit} from "@voltprotocol/pcv/euler/EulerPCVDeposit.sol";
+import {MorphoCompoundPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoCompoundPCVDeposit.sol";
+import {MorphoAavePCVDeposit} from "@voltprotocol/pcv/morpho/MorphoAavePCVDeposit.sol";
 import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
 import {IPegStabilityModule} from "@voltprotocol/peg/IPegStabilityModule.sol";
 import {ConstantPriceOracle} from "@voltprotocol/oracle/ConstantPriceOracle.sol";
 import {VoltTimelockController} from "@voltprotocol/governance/VoltTimelockController.sol";
 import {CompoundBadDebtSentinel} from "@voltprotocol/pcv/compound/CompoundBadDebtSentinel.sol";
 import {IPCVDeposit, PCVDeposit} from "@voltprotocol/pcv/PCVDeposit.sol";
-import {MorphoCompoundPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoCompoundPCVDeposit.sol";
 import {IVoltMigrator, VoltMigrator} from "@voltprotocol/v1-migration/VoltMigrator.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
 import {IGlobalRateLimitedMinter, GlobalRateLimitedMinter} from "@voltprotocol/rate-limits/GlobalRateLimitedMinter.sol";
@@ -144,29 +146,88 @@ contract vip16 is Proposal {
 
         /// PCV Deposits
         {
-            MorphoCompoundPCVDeposit morphoDaiPCVDeposit = new MorphoCompoundPCVDeposit(
+            /// Morpho Compound Deposits
+            MorphoCompoundPCVDeposit morphoCompoundDaiPCVDeposit = new MorphoCompoundPCVDeposit(
                     addresses.mainnet("CORE"),
                     addresses.mainnet("CDAI"),
                     addresses.mainnet("DAI"),
-                    addresses.mainnet("MORPHO"),
-                    addresses.mainnet("MORPHO_LENS")
+                    addresses.mainnet("COMP"),
+                    addresses.mainnet("MORPHO_COMPOUND"),
+                    addresses.mainnet("MORPHO_LENS_COMPOUND")
                 );
 
-            MorphoCompoundPCVDeposit morphoUsdcPCVDeposit = new MorphoCompoundPCVDeposit(
+            MorphoCompoundPCVDeposit morphoCompoundUsdcPCVDeposit = new MorphoCompoundPCVDeposit(
                     addresses.mainnet("CORE"),
                     addresses.mainnet("CUSDC"),
                     addresses.mainnet("USDC"),
-                    addresses.mainnet("MORPHO"),
-                    addresses.mainnet("MORPHO_LENS")
+                    addresses.mainnet("COMP"),
+                    addresses.mainnet("MORPHO_COMPOUND"),
+                    addresses.mainnet("MORPHO_LENS_COMPOUND")
                 );
 
             addresses.addMainnet(
-                "PCV_DEPOSIT_MORPHO_DAI",
-                address(morphoDaiPCVDeposit)
+                "PCV_DEPOSIT_MORPHO_COMPOUND_DAI",
+                address(morphoCompoundDaiPCVDeposit)
             );
             addresses.addMainnet(
-                "PCV_DEPOSIT_MORPHO_USDC",
-                address(morphoUsdcPCVDeposit)
+                "PCV_DEPOSIT_MORPHO_COMPOUND_USDC",
+                address(morphoCompoundUsdcPCVDeposit)
+            );
+        }
+        {
+            /// Morpho Aave Deposits
+            MorphoAavePCVDeposit morphoAaveDaiPCVDeposit = new MorphoAavePCVDeposit(
+                    addresses.mainnet("CORE"),
+                    addresses.mainnet("ADAI"),
+                    addresses.mainnet("DAI"),
+                    address(0),
+                    addresses.mainnet("MORPHO_AAVE"),
+                    addresses.mainnet("MORPHO_LENS_AAVE")
+                );
+
+            MorphoAavePCVDeposit morphoAaveUsdcPCVDeposit = new MorphoAavePCVDeposit(
+                    addresses.mainnet("CORE"),
+                    addresses.mainnet("AUSDC"),
+                    addresses.mainnet("USDC"),
+                    address(0),
+                    addresses.mainnet("MORPHO_AAVE"),
+                    addresses.mainnet("MORPHO_LENS_AAVE")
+                );
+
+            addresses.addMainnet(
+                "PCV_DEPOSIT_MORPHO_AAVE_DAI",
+                address(morphoAaveDaiPCVDeposit)
+            );
+            addresses.addMainnet(
+                "PCV_DEPOSIT_MORPHO_AAVE_USDC",
+                address(morphoAaveUsdcPCVDeposit)
+            );
+        }
+        {
+            /// Euler Deposits
+            EulerPCVDeposit eulerDaiPCVDeposit = new EulerPCVDeposit(
+                addresses.mainnet("CORE"),
+                addresses.mainnet("EDAI"),
+                addresses.mainnet("EULER_MAIN"),
+                addresses.mainnet("DAI"),
+                address(0)
+            );
+
+            EulerPCVDeposit eulerUsdcPCVDeposit = new EulerPCVDeposit(
+                addresses.mainnet("CORE"),
+                addresses.mainnet("EUSDC"),
+                addresses.mainnet("EULER_MAIN"),
+                addresses.mainnet("USDC"),
+                address(0)
+            );
+
+            addresses.addMainnet(
+                "PCV_DEPOSIT_EULER_DAI",
+                address(eulerDaiPCVDeposit)
+            );
+            addresses.addMainnet(
+                "PCV_DEPOSIT_EULER_USDC",
+                address(eulerUsdcPCVDeposit)
             );
         }
 
@@ -210,7 +271,9 @@ contract vip16 is Proposal {
                 IERC20(addresses.mainnet("USDC")),
                 VOLT_FLOOR_PRICE_USDC,
                 VOLT_CEILING_PRICE_USDC,
-                IPCVDeposit(addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC"))
+                IPCVDeposit(
+                    addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC")
+                )
             );
             NonCustodialPSM daiNonCustodialPsm = new NonCustodialPSM(
                 addresses.mainnet("CORE"),
@@ -221,7 +284,9 @@ contract vip16 is Proposal {
                 IERC20(addresses.mainnet("DAI")),
                 VOLT_FLOOR_PRICE_DAI,
                 VOLT_CEILING_PRICE_DAI,
-                IPCVDeposit(addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI"))
+                IPCVDeposit(
+                    addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI")
+                )
             );
             ERC20Allocator allocator = new ERC20Allocator(
                 addresses.mainnet("CORE")
@@ -274,15 +339,27 @@ contract vip16 is Proposal {
                 addresses.mainnet("CORE")
             );
 
-            address[] memory pcvGuardianSafeAddresses = new address[](4);
+            address[] memory pcvGuardianSafeAddresses = new address[](8);
             pcvGuardianSafeAddresses[0] = addresses.mainnet(
-                "PCV_DEPOSIT_MORPHO_DAI"
+                "PCV_DEPOSIT_MORPHO_COMPOUND_DAI"
             );
             pcvGuardianSafeAddresses[1] = addresses.mainnet(
-                "PCV_DEPOSIT_MORPHO_USDC"
+                "PCV_DEPOSIT_MORPHO_COMPOUND_USDC"
             );
             pcvGuardianSafeAddresses[2] = addresses.mainnet("PSM_USDC");
             pcvGuardianSafeAddresses[3] = addresses.mainnet("PSM_DAI");
+            pcvGuardianSafeAddresses[4] = addresses.mainnet(
+                "PCV_DEPOSIT_EULER_DAI"
+            );
+            pcvGuardianSafeAddresses[5] = addresses.mainnet(
+                "PCV_DEPOSIT_EULER_USDC"
+            );
+            pcvGuardianSafeAddresses[6] = addresses.mainnet(
+                "PCV_DEPOSIT_MORPHO_AAVE_DAI"
+            );
+            pcvGuardianSafeAddresses[7] = addresses.mainnet(
+                "PCV_DEPOSIT_MORPHO_AAVE_USDC"
+            );
 
             PCVGuardian pcvGuardian = new PCVGuardian(
                 addresses.mainnet("CORE"),
@@ -404,11 +481,27 @@ contract vip16 is Proposal {
         core.createRole(VoltRoles.PCV_DEPOSIT, VoltRoles.GOVERNOR);
         core.grantRole(
             VoltRoles.PCV_DEPOSIT,
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI")
         );
         core.grantRole(
             VoltRoles.PCV_DEPOSIT,
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC")
+        );
+        core.grantRole(
+            VoltRoles.PCV_DEPOSIT,
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_DAI")
+        );
+        core.grantRole(
+            VoltRoles.PCV_DEPOSIT,
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_USDC")
+        );
+        core.grantRole(
+            VoltRoles.PCV_DEPOSIT,
+            addresses.mainnet("PCV_DEPOSIT_EULER_DAI")
+        );
+        core.grantRole(
+            VoltRoles.PCV_DEPOSIT,
+            addresses.mainnet("PCV_DEPOSIT_EULER_USDC")
         );
 
         core.createRole(VoltRoles.TIMELOCK_PROPOSER, VoltRoles.GOVERNOR);
@@ -460,14 +553,18 @@ contract vip16 is Proposal {
         core.grantLocker(addresses.mainnet("PCV_ORACLE"));
         core.grantLocker(addresses.mainnet("PSM_DAI"));
         core.grantLocker(addresses.mainnet("PSM_USDC"));
-        core.grantLocker(addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI"));
-        core.grantLocker(addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC"));
+        core.grantLocker(addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI"));
+        core.grantLocker(addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC"));
         core.grantLocker(addresses.mainnet("GLOBAL_RATE_LIMITED_MINTER"));
         core.grantLocker(addresses.mainnet("GLOBAL_SYSTEM_EXIT_RATE_LIMITER"));
         core.grantLocker(addresses.mainnet("PCV_ROUTER"));
         core.grantLocker(addresses.mainnet("PCV_GUARDIAN"));
         core.grantLocker(addresses.mainnet("PSM_NONCUSTODIAL_DAI"));
         core.grantLocker(addresses.mainnet("PSM_NONCUSTODIAL_USDC"));
+        core.grantLocker(addresses.mainnet("PCV_DEPOSIT_EULER_DAI"));
+        core.grantLocker(addresses.mainnet("PCV_DEPOSIT_EULER_USDC"));
+        core.grantLocker(addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_DAI"));
+        core.grantLocker(addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_USDC"));
 
         core.grantMinter(addresses.mainnet("GLOBAL_RATE_LIMITED_MINTER"));
 
@@ -484,21 +581,29 @@ contract vip16 is Proposal {
         );
         allocator.connectDeposit(
             addresses.mainnet("PSM_USDC"),
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC")
         );
         allocator.connectDeposit(
             addresses.mainnet("PSM_DAI"),
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI")
         );
 
         /// Configure PCV Oracle
-        address[] memory venues = new address[](2);
-        venues[0] = addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI");
-        venues[1] = addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC");
+        address[] memory venues = new address[](6);
+        venues[0] = addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI");
+        venues[1] = addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC");
+        venues[2] = addresses.mainnet("PCV_DEPOSIT_EULER_DAI");
+        venues[3] = addresses.mainnet("PCV_DEPOSIT_EULER_USDC");
+        venues[4] = addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_DAI");
+        venues[5] = addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_USDC");
 
-        address[] memory oracles = new address[](2);
+        address[] memory oracles = new address[](6);
         oracles[0] = addresses.mainnet("ORACLE_CONSTANT_DAI");
         oracles[1] = addresses.mainnet("ORACLE_CONSTANT_USDC");
+        oracles[2] = addresses.mainnet("ORACLE_CONSTANT_DAI");
+        oracles[3] = addresses.mainnet("ORACLE_CONSTANT_USDC");
+        oracles[4] = addresses.mainnet("ORACLE_CONSTANT_DAI");
+        oracles[5] = addresses.mainnet("ORACLE_CONSTANT_USDC");
 
         pcvOracle.addVenues(venues, oracles);
 
@@ -586,13 +691,41 @@ contract vip16 is Proposal {
         );
         assertEq(
             address(
-                CoreRefV2(addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")).core()
+                CoreRefV2(addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI"))
+                    .core()
             ),
             address(core)
         );
         assertEq(
             address(
-                CoreRefV2(addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")).core()
+                CoreRefV2(addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC"))
+                    .core()
+            ),
+            address(core)
+        );
+        assertEq(
+            address(
+                CoreRefV2(addresses.mainnet("PCV_DEPOSIT_EULER_DAI")).core()
+            ),
+            address(core)
+        );
+        assertEq(
+            address(
+                CoreRefV2(addresses.mainnet("PCV_DEPOSIT_EULER_USDC")).core()
+            ),
+            address(core)
+        );
+        assertEq(
+            address(
+                CoreRefV2(addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_DAI"))
+                    .core()
+            ),
+            address(core)
+        );
+        assertEq(
+            address(
+                CoreRefV2(addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_USDC"))
+                    .core()
             ),
             address(core)
         );
@@ -683,13 +816,13 @@ contract vip16 is Proposal {
         // psm allocator
         assertEq(
             allocator.pcvDepositToPSM(
-                addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
+                addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC")
             ),
             addresses.mainnet("PSM_USDC")
         );
         assertEq(
             allocator.pcvDepositToPSM(
-                addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
+                addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI")
             ),
             addresses.mainnet("PSM_DAI")
         );
@@ -703,14 +836,30 @@ contract vip16 is Proposal {
         assertEq(psmToken2, addresses.mainnet("USDC"));
 
         // pcv oracle
-        assertEq(pcvOracle.getVenues().length, 2);
+        assertEq(pcvOracle.getVenues().length, 6);
         assertEq(
             pcvOracle.getVenues()[0],
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI")
         );
         assertEq(
             pcvOracle.getVenues()[1],
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC")
+        );
+        assertEq(
+            pcvOracle.getVenues()[2],
+            addresses.mainnet("PCV_DEPOSIT_EULER_DAI")
+        );
+        assertEq(
+            pcvOracle.getVenues()[3],
+            addresses.mainnet("PCV_DEPOSIT_EULER_USDC")
+        );
+        assertEq(
+            pcvOracle.getVenues()[4],
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_DAI")
+        );
+        assertEq(
+            pcvOracle.getVenues()[5],
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_AAVE_USDC")
         );
 
         // pcv router
@@ -738,12 +887,12 @@ contract vip16 is Proposal {
         /// compound bad debt sentinel
         assertTrue(
             badDebtSentinel.isCompoundPcvDeposit(
-                addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
+                addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC")
             )
         );
         assertTrue(
             badDebtSentinel.isCompoundPcvDeposit(
-                addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
+                addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI")
             )
         );
         assertEq(

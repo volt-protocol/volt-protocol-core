@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity ^0.8.0;
+pragma solidity =0.8.13;
 
-import {IComptroller} from "@voltprotocol/external/compound/ICompound.sol";
+import {IComptroller} from "@voltprotocol/pcv/morpho/ICompound.sol";
 
 // prettier-ignore
 interface IMorpho {
@@ -21,5 +21,9 @@ interface IMorpho {
     function liquidate(address _poolTokenBorrowedAddress, address _poolTokenCollateralAddress, address _borrower, uint256 _amount) external;
     function claimRewards(address[] calldata _cTokenAddresses, bool _tradeForMorphoToken) external returns (uint256 claimedAmount);
 
+    /// @notice compound accrue interest function
     function updateP2PIndexes(address _poolTokenAddress) external;
+
+    /// @notice aave accrue interest function
+    function updateIndexes(address _poolTokenAddress) external;
 }

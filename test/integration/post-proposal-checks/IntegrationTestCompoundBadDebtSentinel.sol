@@ -17,10 +17,10 @@ contract IntegrationTestCompoundBadDebtSentinel is PostProposalCheck {
             addresses.mainnet("PCV_GUARDIAN")
         );
         IPCVDepositV2 daiDeposit = IPCVDepositV2(
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI")
         );
         IPCVDepositV2 usdcDeposit = IPCVDepositV2(
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC")
         );
 
         address yearn = 0x342491C093A640c7c2347c4FFA7D8b9cBC84D1EB;
@@ -58,17 +58,17 @@ contract IntegrationTestCompoundBadDebtSentinel is PostProposalCheck {
             addresses.mainnet("COMPOUND_BAD_DEBT_SENTINEL")
         );
         IPCVDepositV2 daiDeposit = IPCVDepositV2(
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI")
         );
         IPCVDepositV2 usdcDeposit = IPCVDepositV2(
-            addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
+            addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC")
         );
 
         address yearn = 0x342491C093A640c7c2347c4FFA7D8b9cBC84D1EB;
 
         address[] memory users = new address[](2);
         users[0] = yearn; /// yearn is less than morpho, place it first to order list
-        users[1] = addresses.mainnet("MORPHO");
+        users[1] = addresses.mainnet("MORPHO_COMPOUND");
 
         assertEq(badDebtSentinel.getTotalBadDebt(users), 0);
 

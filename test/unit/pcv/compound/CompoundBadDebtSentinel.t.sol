@@ -2,7 +2,6 @@ pragma solidity =0.8.13;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
-import {Vm} from "@forge-std/Vm.sol";
 import {Test} from "@forge-std/Test.sol";
 import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
 import {stdError} from "@forge-std/StdError.sol";
@@ -71,6 +70,7 @@ contract UnitTestCompoundBadDebtSentinel is Test {
             address(core),
             address(morpho),
             address(token),
+            address(0),
             address(morpho),
             address(morpho)
         );

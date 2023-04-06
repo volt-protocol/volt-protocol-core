@@ -257,10 +257,7 @@ contract UnitTestERC20Allocator is Test {
         assertEq(gserl.buffer(), targetBalance / 2);
 
         (uint256 amountToDrip, uint256 adjustedAmountToDrip) = allocator
-            .getDripDetails(
-                address(newPsm),
-                PCVDeposit(address(newPcvDeposit))
-            );
+            .getDripDetails(address(newPsm), address(newPcvDeposit));
 
         allocator.drip(address(newPcvDeposit));
 
@@ -309,10 +306,7 @@ contract UnitTestERC20Allocator is Test {
         assertEq(gserl.buffer(), targetBalance / 2);
 
         (uint256 amountToDrip, uint256 adjustedAmountToDrip) = allocator
-            .getDripDetails(
-                address(newPsm),
-                PCVDeposit(address(newPcvDeposit))
-            );
+            .getDripDetails(address(newPsm), address(newPcvDeposit));
 
         allocator.drip(address(newPcvDeposit));
 
@@ -700,17 +694,14 @@ contract UnitTestERC20Allocator is Test {
             (
                 uint256 psmAmountToDrip,
                 uint256 psmAdjustedAmountToDrip
-            ) = allocator.getDripDetails(
-                    address(psm),
-                    PCVDeposit(address(pcvDeposit))
-                );
+            ) = allocator.getDripDetails(address(psm), address(pcvDeposit));
 
             (
                 uint256 newPsmAmountToDrip,
                 uint256 newPsmAdjustedAmountToDrip
             ) = allocator.getDripDetails(
                     address(newPsm),
-                    PCVDeposit(address(newPcvDeposit))
+                    address(newPcvDeposit)
                 );
 
             /// drips are 0 because pcv deposits are not funded
@@ -729,17 +720,14 @@ contract UnitTestERC20Allocator is Test {
             (
                 uint256 psmAmountToDrip,
                 uint256 psmAdjustedAmountToDrip
-            ) = allocator.getDripDetails(
-                    address(psm),
-                    PCVDeposit(address(pcvDeposit))
-                );
+            ) = allocator.getDripDetails(address(psm), address(pcvDeposit));
 
             (
                 uint256 newPsmAmountToDrip,
                 uint256 newPsmAdjustedAmountToDrip
             ) = allocator.getDripDetails(
                     address(newPsm),
-                    PCVDeposit(address(newPcvDeposit))
+                    address(newPcvDeposit)
                 );
 
             assertEq(psmAmountToDrip, targetBalance);
@@ -880,7 +868,7 @@ contract UnitTestERC20Allocator is Test {
 
         uint256 bufferStart = gserl.buffer();
         (uint256 amountToDrip, uint256 adjustedAmountToDrip) = allocator
-            .getDripDetails(address(psm), PCVDeposit(address(pcvDeposit)));
+            .getDripDetails(address(psm), address(pcvDeposit));
 
         /// this has to be true
         assertTrue(allocator.checkDripCondition(address(pcvDeposit)));

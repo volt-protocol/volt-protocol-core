@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity ^0.8.0;
+pragma solidity =0.8.13;
 
-import "@voltprotocol/external/compound/ICompound.sol";
-import "@voltprotocol/external/morpho/IMorpho.sol";
+import "@voltprotocol/pcv/morpho/ICompound.sol";
+import "@voltprotocol/pcv/morpho/IMorpho.sol";
 
 interface ILens {
     /// STORAGE ///

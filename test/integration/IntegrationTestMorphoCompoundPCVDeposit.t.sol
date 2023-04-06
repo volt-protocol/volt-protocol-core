@@ -3,13 +3,14 @@ pragma solidity =0.8.13;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
+
 import {Test} from "@forge-std/Test.sol";
+import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
 import {getCoreV2} from "@test/unit/utils/Fixtures.sol";
 import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
-import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
 import {MorphoCompoundPCVDeposit} from "@voltprotocol/pcv/morpho/MorphoCompoundPCVDeposit.sol";
+import {PegStabilityModule} from "@voltprotocol/peg/PegStabilityModule.sol";
 import {TestAddresses as addresses} from "@test/unit/utils/TestAddresses.sol";
 import {IGlobalReentrancyLock, GlobalReentrancyLock} from "@voltprotocol/core/GlobalReentrancyLock.sol";
 
@@ -56,6 +57,7 @@ contract IntegrationTestMorphoCompoundPCVDeposit is Test {
             address(core),
             CDAI,
             DAI,
+            COMP,
             MORPHO,
             MORPHO_LENS
         );
@@ -64,6 +66,7 @@ contract IntegrationTestMorphoCompoundPCVDeposit is Test {
             address(core),
             CUSDC,
             USDC,
+            COMP,
             MORPHO,
             MORPHO_LENS
         );
@@ -87,7 +90,7 @@ contract IntegrationTestMorphoCompoundPCVDeposit is Test {
         vm.label(address(usdc), "USDC");
         vm.label(address(dai), "DAI");
         vm.label(0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67, "Morpho Lens");
-        vm.label(0x8888882f8f843896699869179fB6E4f7e3B58888, "Morpho");
+        vm.label(0x8888882f8f843896699869179fB6E4f7e3B58888, "MORPHO_COMPOUND");
 
         vm.startPrank(DAI_USDC_USDT_CURVE_POOL);
         dai.transfer(address(daiDeposit), targetDaiBalance);

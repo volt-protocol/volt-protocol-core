@@ -4,14 +4,13 @@ pragma solidity =0.8.13;
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {Vm} from "@forge-std/Vm.sol";
-import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
 import {Test} from "@forge-std/Test.sol";
+import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {getCoreV2} from "@test/unit/utils/Fixtures.sol";
 import {MockMorpho} from "@test/mock/MockMorpho.sol";
-import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
 import {IPCVOracle} from "@voltprotocol/oracle/IPCVOracle.sol";
+import {PCVGuardian} from "@voltprotocol/pcv/PCVGuardian.sol";
 import {SystemEntry} from "@voltprotocol/entry/SystemEntry.sol";
 import {MockPCVOracle} from "@test/mock/MockPCVOracle.sol";
 import {InvariantTest} from "@test/invariant/InvariantTest.sol";
@@ -35,7 +34,7 @@ contract InvariantTestMorphoCompoundPCVDeposit is Test, InvariantTest {
     PCVGuardian public pcvGuardian;
     MockPCVOracle public pcvOracle;
     IGlobalReentrancyLock private lock;
-    MorphoPCVDepositTest public morphoTest;
+    MorphoCompoundPCVDepositTest public morphoTest;
     MorphoCompoundPCVDeposit public morphoDeposit;
 
     function setUp() public {
@@ -47,6 +46,7 @@ contract InvariantTestMorphoCompoundPCVDeposit is Test, InvariantTest {
             address(core),
             address(morpho),
             address(token),
+            address(0), /// no need for reward token
             address(morpho),
             address(morpho)
         );
@@ -64,7 +64,7 @@ contract InvariantTestMorphoCompoundPCVDeposit is Test, InvariantTest {
         );
 
         entry = new SystemEntry(address(core));
-        morphoTest = new MorphoPCVDepositTest(
+        morphoTest = new MorphoCompoundPCVDepositTest(
             morphoDeposit,
             token,
             morpho,
@@ -114,7 +114,7 @@ contract InvariantTestMorphoCompoundPCVDeposit is Test, InvariantTest {
     }
 }
 
-contract MorphoPCVDepositTest is Test {
+contract MorphoCompoundPCVDepositTest is Test {
     uint256 public totalDeposited;
 
     MockERC20 public token;

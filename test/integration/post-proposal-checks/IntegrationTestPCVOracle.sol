@@ -29,7 +29,9 @@ contract IntegrationTestPCVOracle is PostProposalCheck {
         dai = IERC20(addresses.mainnet("DAI"));
         volt = VoltV2(addresses.mainnet("VOLT"));
         grlm = addresses.mainnet("GLOBAL_RATE_LIMITED_MINTER");
-        morphoDaiPCVDeposit = addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI");
+        morphoDaiPCVDeposit = addresses.mainnet(
+            "PCV_DEPOSIT_MORPHO_COMPOUND_DAI"
+        );
         daipsm = PegStabilityModule(addresses.mainnet("PSM_DAI"));
         pcvOracle = PCVOracle(addresses.mainnet("PCV_ORACLE"));
         pcvGuardian = PCVGuardian(addresses.mainnet("PCV_GUARDIAN"));

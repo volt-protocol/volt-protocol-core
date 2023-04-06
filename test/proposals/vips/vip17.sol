@@ -63,7 +63,7 @@ contract vip17 is MultisigProposal {
             addresses.mainnet("USDC"),
             abi.encodeWithSignature(
                 "transfer(address,uint256)",
-                addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC"),
+                addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC"),
                 PCV_USDC - PSM_LIQUID_RESERVE * 1e6
             ),
             "Send Protocol USDC to Morpho-Compound USDC Deposit"
@@ -73,7 +73,7 @@ contract vip17 is MultisigProposal {
             addresses.mainnet("SYSTEM_ENTRY"),
             abi.encodeWithSignature(
                 "deposit(address)",
-                addresses.mainnet("PCV_DEPOSIT_MORPHO_USDC")
+                addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_USDC")
             ),
             "Deposit USDC"
         );
@@ -92,7 +92,7 @@ contract vip17 is MultisigProposal {
             addresses.mainnet("DAI"),
             abi.encodeWithSignature(
                 "transfer(address,uint256)",
-                addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI"),
+                addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI"),
                 PCV_DAI - PSM_LIQUID_RESERVE * 1e18
             ),
             "Send Protocol DAI to Morpho-Compound DAI Deposit"
@@ -102,7 +102,7 @@ contract vip17 is MultisigProposal {
             addresses.mainnet("SYSTEM_ENTRY"),
             abi.encodeWithSignature(
                 "deposit(address)",
-                addresses.mainnet("PCV_DEPOSIT_MORPHO_DAI")
+                addresses.mainnet("PCV_DEPOSIT_MORPHO_COMPOUND_DAI")
             ),
             "Deposit DAI"
         );

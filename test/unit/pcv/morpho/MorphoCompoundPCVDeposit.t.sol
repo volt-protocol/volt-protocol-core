@@ -2,7 +2,6 @@ pragma solidity =0.8.13;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
-import {Vm} from "@forge-std/Vm.sol";
 import {Test} from "@forge-std/Test.sol";
 import {CoreV2} from "@voltprotocol/core/CoreV2.sol";
 import {stdError} from "@forge-std/StdError.sol";
@@ -61,6 +60,7 @@ contract UnitTestMorphoCompoundPCVDeposit is Test {
             address(core),
             address(morpho),
             address(token),
+            address(0),
             address(morpho),
             address(morpho)
         );
@@ -83,7 +83,7 @@ contract UnitTestMorphoCompoundPCVDeposit is Test {
         core.setGlobalReentrancyLock(lock);
         vm.stopPrank();
 
-        vm.label(address(morpho), "Morpho");
+        vm.label(address(morpho), "MORPHO_COMPOUND");
         vm.label(address(token), "Token");
         vm.label(address(morphoDeposit), "MorphoDeposit");
 
@@ -96,19 +96,6 @@ contract UnitTestMorphoCompoundPCVDeposit is Test {
         assertEq(address(morphoDeposit.morpho()), address(morpho));
         assertEq(morphoDeposit.cToken(), address(morpho));
         assertEq(morphoDeposit.lastRecordedBalance(), 0);
-    }
-
-    function testUnderlyingMismatchConstructionFails() public {
-        MockCToken cToken = new MockCToken(address(1));
-
-        vm.expectRevert("MorphoCompoundPCVDeposit: Underlying mismatch");
-        new MorphoCompoundPCVDeposit(
-            address(core),
-            address(cToken),
-            address(token),
-            address(morpho),
-            address(morpho)
-        );
     }
 
     function testDeposit(uint120 depositAmount) public {
@@ -348,6 +335,7 @@ contract UnitTestMorphoCompoundPCVDeposit is Test {
             address(core),
             address(maliciousMorpho), /// cToken is not used in mock morpho deposit
             address(token),
+            address(0),
             address(maliciousMorpho),
             address(maliciousMorpho)
         );
