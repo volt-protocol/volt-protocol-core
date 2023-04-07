@@ -26,6 +26,13 @@ library VoltRoles {
     /// @notice can mint VOLT arbitrarily
     bytes32 internal constant MINTER = keccak256("MINTER_ROLE");
 
+    /// @notice can mint CREDIT arbitrarily
+    bytes32 internal constant CREDIT_MINTER = keccak256("CREDIT_MINTER_ROLE");
+
+    /// @notice can mint CREDIT within rate limits
+    bytes32 internal constant RATE_LIMITED_CREDIT_MINTER =
+        keccak256("RATE_LIMITED_CREDIT_MINTER_ROLE");
+
     /// @notice can mint GUILD arbitrarily
     bytes32 internal constant GUILD_MINTER = keccak256("GUILD_MINTER_ROLE");
 
