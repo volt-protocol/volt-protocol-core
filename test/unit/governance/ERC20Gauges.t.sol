@@ -61,6 +61,10 @@ contract ERC20GaugesUnitTest is Test {
     function testSetCanExceedMaxGauges() public {
         token.setCanExceedMaxGauges(address(this), true);
         require(token.canExceedMaxGauges(address(this)));
+
+        // revert for non-smart contracts
+        vm.expectRevert("ERC20Gauges: not a smart contract");
+        token.setCanExceedMaxGauges(address(0xBEEF), true);
     }
 
     function testAddGauge(address[8] memory gauges) public {
