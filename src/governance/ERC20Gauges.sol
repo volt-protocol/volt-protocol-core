@@ -560,6 +560,13 @@ abstract contract ERC20Gauges is ERC20 {
         address account,
         bool canExceedMax
     ) internal {
+        if (canExceedMax) {
+            require(
+                account.code.length != 0,
+                "ERC20Gauges: not a smart contract"
+            );
+        }
+
         canExceedMaxGauges[account] = canExceedMax;
 
         emit CanExceedMaxGaugesUpdate(account, canExceedMax);
